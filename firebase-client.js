@@ -37,6 +37,8 @@ const db = getFirestore(app);
 
 const USER_LOCAL_KEY = 'currentUser';
 const DEVICE_ID_KEY = 'uzdarus_device_id';
+const PROFILE_CACHE_TTL_MS = 15000;
+const profileCache = new Map();
 
 const packToCourses = {
     A1A2: ['a1-course.html', 'a1-vocabulary.html', 'a2-course.html', 'a2-vocabulary.html'],
@@ -51,14 +53,6 @@ function extractRole(userOrRole) {
     }
 
     return String(userOrRole?.role || '').trim().toLowerCase();
-}
-
-function isModeratorBypassEnabled(profile) {
-    if (extractRole(profile) !== 'moderator') {
-        return false;
-    }
-
-    return Boolean(profile?.paidAccessBypass || profile?.staffPaidAccess || profile?.moderatorBypass);
 }
 
 function normalizeUsername(rawValue) {
@@ -82,17 +76,46 @@ export function emailToUsername(email) {
     return email.replace('@uzdarus.local', '');
 }
 
-export async function getUserProfile(uid) {
+export async function getUserProfile(uid, options = {}) {
+    const useCache = options.useCache !== false;
+    const forceRefresh = options.forceRefresh === true;
+
+    if (useCache && !forceRefresh) {
+        const cached = profileCache.get(uid);
+        if (cached && Date.now() - cached.savedAt <= PROFILE_CACHE_TTL_MS) {
+            return cached.profile;
+        }
+    }
+
     const profileRef = doc(db, 'users', uid);
     const profileSnap = await getDoc(profileRef);
     if (!profileSnap.exists()) {
+        profileCache.delete(uid);
         return null;
     }
 
-    return {
+    const profile = {
         uid,
         ...profileSnap.data()
     };
+
+    if (useCache) {
+        profileCache.set(uid, {
+            profile,
+            savedAt: Date.now()
+        });
+    }
+
+    return profile;
+}
+
+export function invalidateUserProfileCache(uid) {
+    if (uid) {
+        profileCache.delete(uid);
+        return;
+    }
+
+    profileCache.clear();
 }
 
 export function normalizeDate(value) {
@@ -127,7 +150,7 @@ export function isPrivilegedRole(userOrRole) {
 export function hasActiveSubscription(profile, options = {}) {
     const { allowPrivileged = true } = options;
 
-    if (allowPrivileged && (isPrivilegedRole(profile) || isModeratorBypassEnabled(profile))) {
+    if (allowPrivileged && isPrivilegedRole(profile)) {
         return true;
     }
 
@@ -150,7 +173,7 @@ export function hasPackAccess(profile, requiredPack, options = {}) {
         return true;
     }
 
-    if (allowPrivileged && (isPrivilegedRole(profile) || isModeratorBypassEnabled(profile))) {
+    if (allowPrivileged && isPrivilegedRole(profile)) {
         return true;
     }
 
@@ -165,10 +188,6 @@ export function canAccessPaid(profile, requiredPack) {
 
     if (isPrivilegedRole(profile)) {
         return { allowed: true, reason: 'privileged' };
-    }
-
-    if (isModeratorBypassEnabled(profile)) {
-        return { allowed: true, reason: 'moderator-bypass' };
     }
 
     if (profile.blocked) {

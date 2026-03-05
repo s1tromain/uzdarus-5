@@ -144,6 +144,12 @@ select:focus {
     font-size: 0.92rem;
 }
 
+.countdown-meta {
+    margin-top: 6px;
+    font-size: 0.86rem;
+    color: #4b5563;
+}
+
 .status-pill {
     display: inline-flex;
     align-items: center;

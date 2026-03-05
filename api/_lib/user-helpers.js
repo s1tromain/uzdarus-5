@@ -1,4 +1,5 @@
 import { initAdmin } from '../_firebaseAdmin.js';
+import { normalizeRole, isSupportedRoleInput } from './roles.js';
 
 const VALID_PACKS = new Set(['A1A2', 'B1B2']);
 
@@ -25,6 +26,83 @@ export function normalizePacks(rawPacks) {
     }
 
     return rawPacks.filter((pack) => VALID_PACKS.has(pack));
+}
+
+export function toDate(value) {
+    if (!value) {
+        return null;
+    }
+
+    if (typeof value?.toDate === 'function') {
+        return value.toDate();
+    }
+
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function resolveUsername(data = {}) {
+    const fromUsername = normalizeUsername(data.username);
+    if (fromUsername) {
+        return fromUsername;
+    }
+
+    return normalizeUsername(data.login);
+}
+
+function hasRecordId(userId, data = {}) {
+    if (String(userId || '').trim()) {
+        return true;
+    }
+
+    return String(data.uid || data.docId || '').trim().length > 0;
+}
+
+export function normalizeUserDocument(userId, data = {}) {
+    if (!data || typeof data !== 'object') {
+        return null;
+    }
+
+    if (!hasRecordId(userId, data)) {
+        return null;
+    }
+
+    const username = resolveUsername(data);
+    if (!username || username === '-') {
+        return null;
+    }
+
+    if (!isSupportedRoleInput(data.role)) {
+        return null;
+    }
+
+    const role = normalizeRole(data.role);
+    const uid = String(userId || data.uid || data.docId || '').trim();
+
+    if (!uid) {
+        return null;
+    }
+
+    return {
+        uid,
+        username,
+        displayName: String(data.displayName || '').trim() || username,
+        email: String(data.email || '').trim(),
+        role,
+        blocked: Boolean(data.blocked),
+        blockedReason: data.blockedReason || null,
+        forcePasswordChange: Boolean(data.forcePasswordChange),
+        accessPacks: normalizePacks(data.accessPacks),
+        deviceHashes: Array.isArray(data.deviceHashes) ? data.deviceHashes.filter(Boolean) : [],
+        subscription: data.subscription && typeof data.subscription === 'object'
+            ? data.subscription
+            : {},
+        updatedAt: data.updatedAt || null
+    };
+}
+
+export function isValidUserDocument(userId, data = {}) {
+    return Boolean(normalizeUserDocument(userId, data));
 }
 
 function resolveEndDate({ active, durationDays, endAt }) {
@@ -64,23 +142,28 @@ export function buildSubscription(input = {}) {
 }
 
 export function toPublicUser(userId, data = {}) {
-    const subscription = data.subscription || {};
+    const normalized = normalizeUserDocument(userId, data);
+    if (!normalized) {
+        return null;
+    }
+
+    const subscription = normalized.subscription || {};
 
     return {
-        uid: userId,
-        username: data.username || '',
-        displayName: data.displayName || '',
-        email: data.email || '',
-        role: data.role || 'customer',
-        blocked: Boolean(data.blocked),
-        forcePasswordChange: Boolean(data.forcePasswordChange),
-        accessPacks: Array.isArray(data.accessPacks) ? data.accessPacks : [],
-        deviceCount: Array.isArray(data.deviceHashes) ? data.deviceHashes.length : 0,
+        uid: normalized.uid,
+        username: normalized.username,
+        displayName: normalized.displayName,
+        email: normalized.email,
+        role: normalized.role,
+        blocked: normalized.blocked,
+        forcePasswordChange: normalized.forcePasswordChange,
+        accessPacks: normalized.accessPacks,
+        deviceCount: normalized.deviceHashes.length,
         subscription: {
             active: Boolean(subscription.active),
             tariff: subscription.tariff || null,
             endAt: subscription.endAt || null
         },
-        updatedAt: data.updatedAt || null
+        updatedAt: normalized.updatedAt
     };
 }

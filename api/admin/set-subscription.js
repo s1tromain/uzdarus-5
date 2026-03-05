@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     try {
         const session = await requireSession(req);
         const { adminDb, FieldValue } = initAdmin();
-        requireRole(session, 'moderator');
+        requireRole(session, 'admin');
 
         const body = await readBody(req);
         const userId = String(body.userId || '').trim();

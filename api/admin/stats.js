@@ -1,18 +1,25 @@
 import { initAdmin } from '../_firebaseAdmin.js';
 import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError } from '../_lib/request.js';
 import { normalizeRole } from '../_lib/roles.js';
+import { normalizeUserDocument, toDate } from '../_lib/user-helpers.js';
 
-function toDate(value) {
-    if (!value) {
-        return null;
+function canViewTarget(actorRole, actorUid, targetUid, targetRole) {
+    const actor = normalizeRole(actorRole);
+    const target = normalizeRole(targetRole);
+
+    if (actor === 'developer') {
+        return true;
     }
 
-    if (typeof value?.toDate === 'function') {
-        return value.toDate();
+    if (actor === 'admin') {
+        return target !== 'developer';
     }
 
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
+    if (actor === 'moderator') {
+        return target === 'customer' || target === 'moderator' || actorUid === targetUid;
+    }
+
+    return false;
 }
 
 export default async function handler(req, res) {
@@ -30,7 +37,10 @@ export default async function handler(req, res) {
         requireRole(session, 'moderator');
 
         const snapshot = await adminDb.collection('users').get();
-        const docs = snapshot.docs.map((docSnap) => ({ uid: docSnap.id, ...docSnap.data() }));
+        const docs = snapshot.docs
+            .map((docSnap) => normalizeUserDocument(docSnap.id, docSnap.data()))
+            .filter(Boolean)
+            .filter((user) => canViewTarget(session.role, session.uid, user.uid, user.role));
 
         const roleCounts = {
             customer: 0,

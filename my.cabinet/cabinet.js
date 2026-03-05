@@ -96,6 +96,21 @@ function formatDate(dateValue) {
     return date.toLocaleDateString('uz-UZ');
 }
 
+function normalizeRole(rawRole) {
+    const role = String(rawRole || '').trim().toLowerCase();
+    return role === 'user' ? 'customer' : role;
+}
+
+function getDaysLeft(dateValue) {
+    const date = typeof dateValue?.toDate === 'function' ? dateValue.toDate() : new Date(dateValue);
+    if (!dateValue || Number.isNaN(date.getTime())) {
+        return null;
+    }
+
+    const diffMs = date.getTime() - Date.now();
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
 async function ensureAuthenticated({ requirePasswordReset = false } = {}) {
     return new Promise((resolve, reject) => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -308,13 +323,21 @@ async function initDashboardPage() {
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
     const subscriptionBadge = document.getElementById('subscriptionBadge');
+    const subscriptionCountdown = document.getElementById('subscriptionCountdown');
     const dashboardError = document.getElementById('dashboardError');
     const dashboardInfo = document.getElementById('dashboardInfo');
     const blockBanner = document.getElementById('dashboardBlock');
     const packGrid = document.getElementById('packGrid');
     const logoutBtn = document.getElementById('logoutBtn');
+    const adminPanelBtn = document.getElementById('adminPanelBtn');
 
     const { user, profile } = await ensureAuthenticated();
+    const role = normalizeRole(profile.role);
+    const canOpenAdminPanel = ['developer', 'admin', 'moderator'].includes(role);
+
+    if (adminPanelBtn) {
+        adminPanelBtn.style.display = canOpenAdminPanel ? 'inline-flex' : 'none';
+    }
 
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
@@ -345,8 +368,24 @@ async function initDashboardPage() {
     profileName.textContent = profile.displayName || profile.username || 'Foydalanuvchi';
     if (privilegedRole) {
         profileMeta.textContent = `@${profile.username || ''} • ${profile.role || 'customer'} • To‘liq ruxsat`;
+    } else if (role === 'moderator') {
+        profileMeta.textContent = `@${profile.username || ''} • moderator • Admin panel ruxsati`;
     } else {
         profileMeta.textContent = `@${profile.username || ''} • ${profile.role || 'customer'} • ${profile.subscription?.tariff || 'Tarif yo‘q'} (${formatDate(profile.subscription?.endAt)} gacha)`;
+    }
+
+    if (subscriptionCountdown) {
+        if (privilegedRole) {
+            subscriptionCountdown.textContent = 'Muddatsiz';
+        } else if (role === 'moderator') {
+            subscriptionCountdown.textContent = 'Staff akkaunt: customer obuna hisobi qo‘llanmaydi';
+        } else {
+            const daysLeft = getDaysLeft(profile.subscription?.endAt);
+            subscriptionCountdown.textContent =
+                daysLeft && daysLeft > 0
+                    ? `Qolgan: ${daysLeft} kun`
+                    : 'Muddati tugagan';
+        }
     }
 
     if (profile.blocked && !privilegedRole) {
@@ -363,6 +402,9 @@ async function initDashboardPage() {
             blockBanner.style.display = 'none';
             blockBanner.textContent = '';
         }
+    } else if (role === 'moderator') {
+        subscriptionBadge.textContent = 'Staff';
+        subscriptionBadge.className = 'status-pill status-active';
     } else if (activeSubscription) {
         subscriptionBadge.textContent = 'Obuna faol';
         subscriptionBadge.className = 'status-pill status-active';

@@ -10,18 +10,6 @@ export function isPrivilegedRole(profileOrRole) {
     return PRIVILEGED_ROLES.has(role);
 }
 
-export function isModeratorBypassEnabled(profile) {
-    if (normalizeRole(profile?.role) !== 'moderator') {
-        return false;
-    }
-
-    if (String(process.env.MODERATOR_DEVICE_BYPASS || '').toLowerCase() === 'true') {
-        return true;
-    }
-
-    return Boolean(profile?.deviceLimitBypass || profile?.paidAccessBypass || profile?.moderatorBypass);
-}
-
 export function shouldBypassDeviceLimit(profile) {
-    return isPrivilegedRole(profile) || isModeratorBypassEnabled(profile);
+    return isPrivilegedRole(profile);
 }

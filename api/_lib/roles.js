@@ -5,9 +5,25 @@ export const ROLE_LEVEL = {
     developer: 3
 };
 
+const ROLE_ALIASES = {
+    user: 'customer'
+};
+
+export const CANONICAL_ROLES = new Set(Object.keys(ROLE_LEVEL));
+
 export function normalizeRole(role) {
     const value = String(role || '').trim().toLowerCase();
-    return Object.prototype.hasOwnProperty.call(ROLE_LEVEL, value) ? value : 'customer';
+    const canonical = ROLE_ALIASES[value] || value;
+    return Object.prototype.hasOwnProperty.call(ROLE_LEVEL, canonical) ? canonical : 'customer';
+}
+
+export function isCanonicalRole(role) {
+    return CANONICAL_ROLES.has(normalizeRole(role));
+}
+
+export function isSupportedRoleInput(role) {
+    const value = String(role || '').trim().toLowerCase();
+    return value === 'user' || Object.prototype.hasOwnProperty.call(ROLE_LEVEL, value);
 }
 
 export function isRoleAtLeast(role, minimumRole) {

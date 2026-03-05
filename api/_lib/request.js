@@ -90,12 +90,16 @@ export async function requireSession(req) {
     }
 
     const profile = profileSnap.data() || {};
-    const role = normalizeRole(profile.role || decoded.role);
+    const claimsRole = decoded?.role ? normalizeRole(decoded.role) : null;
+    const profileRole = normalizeRole(profile.role);
+    const role = claimsRole || profileRole;
 
     return {
         uid: decoded.uid,
         decoded,
         role,
+        claimsRole,
+        profileRole,
         profile,
         profileRef
     };
@@ -117,13 +121,16 @@ export function safeError(res, error) {
     const allowedStatuses = new Set([400, 401, 403, 404, 405, 409]);
     const authError = typeof error?.code === 'string' && error.code.startsWith('auth/');
     const requestedStatus = error?.statusCode || (authError ? 401 : null);
-    const statusCode = allowedStatuses.has(requestedStatus) ? requestedStatus : 500;
-    const message = error?.message || 'Unexpected server error';
+    const isWhitelisted = allowedStatuses.has(requestedStatus);
+    const statusCode = isWhitelisted ? requestedStatus : 400;
+    const message = isWhitelisted
+        ? (error?.message || (statusCode === 400 ? 'Noto‘g‘ri so‘rov' : 'Kirish rad etildi'))
+        : 'So‘rovni bajarib bo‘lmadi';
 
-    if (statusCode >= 500) {
-        console.error('[API_ERROR]', error);
-    } else {
+    if (isWhitelisted) {
         console.error(`[API_${statusCode}]`, message);
+    } else {
+        console.error('[API_UNEXPECTED]', error);
     }
 
     sendJson(res, statusCode, { error: message });

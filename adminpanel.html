@@ -12,7 +12,27 @@
 </head>
 
 <body>
-    <main class="admin-shell">
+    <section id="adminGate" class="gate-shell">
+        <main class="gate-card">
+            <h1>Admin Panelga kirish</h1>
+            <p id="gateInfo">Xavfsizlik uchun admin panel alohida login talab qiladi.</p>
+            <div id="gateError" class="notice error"></div>
+            <form id="adminLoginForm" class="form-grid gate-form">
+                <label>
+                    Login
+                    <input type="text" id="adminLoginUsername" name="username" autocomplete="username" required>
+                </label>
+                <label>
+                    Parol
+                    <input type="password" id="adminLoginPassword" name="password" autocomplete="current-password" required>
+                </label>
+                <button id="adminLoginBtn" class="btn" type="submit">Kirish</button>
+            </form>
+            <a class="btn btn-ghost" href="./my.cabinet/dashboard.html">Kabinetga qaytish</a>
+        </main>
+    </section>
+
+    <main id="adminApp" class="admin-shell" hidden>
         <header class="admin-header">
             <div>
                 <h1>UZDARUS Admin Panel</h1>
@@ -91,8 +111,12 @@
             <div class="card">
                 <div class="card-title-row">
                     <h2>Customerlar ro‘yxati</h2>
-                    <button class="btn btn-ghost" id="refreshUsersBtn" type="button">Yangilash</button>
+                    <div class="card-controls">
+                        <input type="search" id="usersSearchInput" placeholder="Login yoki ism bo‘yicha qidirish">
+                        <button class="btn btn-ghost" id="refreshUsersBtn" type="button">Yangilash</button>
+                    </div>
                 </div>
+                <p class="table-meta" id="customersMeta">0 ta customer</p>
                 <div class="table-wrap">
                     <table>
                         <thead>
@@ -113,7 +137,7 @@
         </section>
 
         <section class="tab-panel" id="tab-admin">
-            <div class="card">
+            <div class="card" id="createStaffCard">
                 <h2>Staff foydalanuvchi yaratish</h2>
                 <form id="createStaffForm" class="form-grid">
                     <label>
@@ -141,6 +165,7 @@
 
             <div class="card">
                 <h2>Staff ro‘yxati</h2>
+                <p class="table-meta" id="staffMeta">0 ta staff</p>
                 <div class="table-wrap">
                     <table>
                         <thead>
