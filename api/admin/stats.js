@@ -1,5 +1,5 @@
-import { adminDb } from '../_lib/firebase-admin.js';
-import { assertMethod, requireSession, requireRole, sendJson, safeError } from '../_lib/request.js';
+import { initAdmin } from '../_firebaseAdmin.js';
+import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError } from '../_lib/request.js';
 import { normalizeRole } from '../_lib/roles.js';
 
 function toDate(value) {
@@ -16,12 +16,17 @@ function toDate(value) {
 }
 
 export default async function handler(req, res) {
+    if (handleCors(req, res, ['GET'])) {
+        return;
+    }
+
     if (!assertMethod(req, res, 'GET')) {
         return;
     }
 
     try {
         const session = await requireSession(req);
+        const { adminDb } = initAdmin();
         requireRole(session, 'moderator');
 
         const snapshot = await adminDb.collection('users').get();

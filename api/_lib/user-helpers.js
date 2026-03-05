@@ -1,4 +1,4 @@
-import { Timestamp } from './firebase-admin.js';
+import { initAdmin } from '../_firebaseAdmin.js';
 
 const VALID_PACKS = new Set(['A1A2', 'B1B2']);
 
@@ -50,6 +50,7 @@ function resolveEndDate({ active, durationDays, endAt }) {
 }
 
 export function buildSubscription(input = {}) {
+    const { Timestamp } = initAdmin();
     const active = Boolean(input.active);
     const endDate = resolveEndDate(input);
 

@@ -43,6 +43,24 @@ const packToCourses = {
     B1B2: ['b1-course.html', 'b1-vocabulary.html', 'b2-course.html', 'b2-vocabulary.html']
 };
 
+const PRIVILEGED_ROLES = new Set(['developer', 'admin']);
+
+function extractRole(userOrRole) {
+    if (typeof userOrRole === 'string') {
+        return userOrRole.trim().toLowerCase();
+    }
+
+    return String(userOrRole?.role || '').trim().toLowerCase();
+}
+
+function isModeratorBypassEnabled(profile) {
+    if (extractRole(profile) !== 'moderator') {
+        return false;
+    }
+
+    return Boolean(profile?.paidAccessBypass || profile?.staffPaidAccess || profile?.moderatorBypass);
+}
+
 function normalizeUsername(rawValue) {
     return String(rawValue || '').trim().toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9._-]/g, '');
 }
@@ -102,7 +120,17 @@ export function normalizeDate(value) {
     return null;
 }
 
-export function isSubscriptionActive(profile) {
+export function isPrivilegedRole(userOrRole) {
+    return PRIVILEGED_ROLES.has(extractRole(userOrRole));
+}
+
+export function hasActiveSubscription(profile, options = {}) {
+    const { allowPrivileged = true } = options;
+
+    if (allowPrivileged && (isPrivilegedRole(profile) || isModeratorBypassEnabled(profile))) {
+        return true;
+    }
+
     if (!profile?.subscription?.active) {
         return false;
     }
@@ -115,13 +143,51 @@ export function isSubscriptionActive(profile) {
     return endDate.getTime() >= Date.now();
 }
 
-export function hasPackAccess(profile, requiredPack) {
+export function hasPackAccess(profile, requiredPack, options = {}) {
+    const { allowPrivileged = true } = options;
+
     if (!requiredPack) {
+        return true;
+    }
+
+    if (allowPrivileged && (isPrivilegedRole(profile) || isModeratorBypassEnabled(profile))) {
         return true;
     }
 
     const packs = Array.isArray(profile?.accessPacks) ? profile.accessPacks : [];
     return packs.includes(requiredPack);
+}
+
+export function canAccessPaid(profile, requiredPack) {
+    if (!profile) {
+        return { allowed: false, reason: 'no-profile' };
+    }
+
+    if (isPrivilegedRole(profile)) {
+        return { allowed: true, reason: 'privileged' };
+    }
+
+    if (isModeratorBypassEnabled(profile)) {
+        return { allowed: true, reason: 'moderator-bypass' };
+    }
+
+    if (profile.blocked) {
+        return { allowed: false, reason: 'blocked' };
+    }
+
+    if (!hasActiveSubscription(profile, { allowPrivileged: false })) {
+        return { allowed: false, reason: 'subscription' };
+    }
+
+    if (!hasPackAccess(profile, requiredPack, { allowPrivileged: false })) {
+        return { allowed: false, reason: 'pack' };
+    }
+
+    return { allowed: true, reason: 'ok' };
+}
+
+export function isSubscriptionActive(profile) {
+    return hasActiveSubscription(profile, { allowPrivileged: true });
 }
 
 export function getPackByPageName(pageName) {

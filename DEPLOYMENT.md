@@ -14,11 +14,7 @@ Set the variables from `.env.example` in your host (Vercel Project Settings → 
 
 Required:
 - `FIREBASE_SERVICE_ACCOUNT_KEY`
-
-Or use split variables:
 - `FIREBASE_PROJECT_ID`
-- `FIREBASE_CLIENT_EMAIL`
-- `FIREBASE_PRIVATE_KEY`
 
 If you still run `server/server.js`, also set:
 - `SUPABASE_URL`

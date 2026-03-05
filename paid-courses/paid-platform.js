@@ -6,8 +6,8 @@ import {
     saveLocalUser,
     clearLocalUser,
     getPackByPageName,
-    hasPackAccess,
-    isSubscriptionActive,
+    isPrivilegedRole,
+    canAccessPaid,
     getOrCreateDeviceId,
     sha256Hex,
     callApi
@@ -88,33 +88,41 @@ async function enforceAccess() {
             }
 
             saveLocalUser(user, profile);
+            const privilegedRole = isPrivilegedRole(profile);
 
             if (profile.forcePasswordChange) {
                 window.location.href = '../my.cabinet/change-password.html';
                 return;
             }
 
-            if (profile.blocked) {
-                showOverlayMessage('Akkaunt vaqtincha bloklangan. Moderatsiyaga murojaat qiling.');
-                redirectToDashboard('blocked');
-                return;
-            }
+            const access = canAccessPaid(profile, requiredPack);
+            if (!access.allowed) {
+                if (access.reason === 'blocked') {
+                    showOverlayMessage('Akkaunt vaqtincha bloklangan. Moderatsiyaga murojaat qiling.');
+                    redirectToDashboard('blocked');
+                    return;
+                }
 
-            if (!isSubscriptionActive(profile)) {
-                showOverlayMessage('Obuna muddati tugagan yoki faol emas. Moderatsiyaga murojaat qiling.');
-                redirectToDashboard('expired');
-                return;
-            }
+                if (access.reason === 'subscription') {
+                    showOverlayMessage('Obuna muddati tugagan yoki faol emas. Moderatsiyaga murojaat qiling.');
+                    redirectToDashboard('expired');
+                    return;
+                }
 
-            if (!hasPackAccess(profile, requiredPack)) {
-                showOverlayMessage('Ushbu bo‘lim sizning pack huquqingizga kirmaydi.');
+                if (access.reason === 'pack') {
+                    showOverlayMessage('Ushbu bo‘lim sizning pack huquqingizga kirmaydi.');
+                    redirectToDashboard('no-access');
+                    return;
+                }
+
+                showOverlayMessage('Kirish amalga oshmadi. Qayta urinib ko‘ring.');
                 redirectToDashboard('no-access');
                 return;
             }
 
             try {
                 const deviceResult = await registerDevice();
-                if (deviceResult?.blocked) {
+                if (deviceResult?.blocked && !privilegedRole) {
                     showOverlayMessage('Qurilmalar limiti oshgan. Akkaunt bloklandi, moderatsiyaga murojaat qiling.');
                     redirectToDashboard('blocked');
                     return;

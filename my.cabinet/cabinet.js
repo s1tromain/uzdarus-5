@@ -10,9 +10,9 @@ import {
     updatePassword,
     usernameToEmail,
     getUserProfile,
-    getPackByPageName,
-    hasPackAccess,
-    isSubscriptionActive,
+    isPrivilegedRole,
+    hasActiveSubscription,
+    canAccessPaid,
     saveLocalUser,
     clearLocalUser,
     getOrCreateDeviceId,
@@ -39,6 +39,39 @@ function clearNotice(element) {
     element.classList.remove('show', 'error', 'success');
 }
 
+function resolveFirebaseAuthCode(error) {
+    const directCode = typeof error?.code === 'string' ? error.code : '';
+    if (directCode.startsWith('auth/')) {
+        return directCode;
+    }
+
+    const message = String(error?.message || '');
+    const match = message.match(/auth\/[a-z-]+/i);
+    return match ? match[0].toLowerCase() : '';
+}
+
+function mapLoginErrorMessage(error) {
+    const code = resolveFirebaseAuthCode(error);
+
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        return 'Login yoki parol noto‘g‘ri';
+    }
+
+    if (code === 'auth/too-many-requests') {
+        return 'Juda ko‘p urinish. Keyinroq qayta urinib ko‘ring';
+    }
+
+    if (code === 'auth/network-request-failed') {
+        return 'Internet aloqasi mavjud emas';
+    }
+
+    if (error?.message === 'Profil topilmadi. Moderatsiyaga murojaat qiling.') {
+        return error.message;
+    }
+
+    return 'Xatolik yuz berdi. Keyinroq qayta urinib ko‘ring';
+}
+
 function getRedirectTarget(defaultPath = './dashboard.html') {
     const params = new URLSearchParams(window.location.search);
     return params.get('redirect') || defaultPath;
@@ -48,10 +81,6 @@ async function registerCurrentDevice() {
     const deviceId = getOrCreateDeviceId();
     const deviceIdHash = await sha256Hex(deviceId);
     return callApi('/api/auth/register-device', 'POST', { deviceIdHash });
-}
-
-function asArray(value) {
-    return Array.isArray(value) ? value : [];
 }
 
 function formatDate(dateValue) {
@@ -189,7 +218,7 @@ async function initLoginPage() {
             const redirect = getRedirectTarget('./dashboard.html');
             window.location.href = redirect;
         } catch (error) {
-            showNotice(loginError, error.message || 'Kirish amalga oshmadi.');
+            showNotice(loginError, mapLoginErrorMessage(error));
         } finally {
             loginBtn.disabled = false;
             loginBtn.textContent = 'Kirish';
@@ -297,31 +326,42 @@ async function initDashboardPage() {
 
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
+    const privilegedRole = isPrivilegedRole(profile);
 
-    if (status === 'blocked') {
+    if (status === 'blocked' && !privilegedRole) {
         showNotice(dashboardError, 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.');
     }
 
-    if (status === 'expired') {
+    if (status === 'expired' && !privilegedRole) {
         showNotice(dashboardError, 'Obuna muddati tugagan. Moderatsiyaga murojaat qiling.');
     }
 
-    if (status === 'no-access') {
+    if (status === 'no-access' && !privilegedRole) {
         showNotice(dashboardError, 'Sizda bu kursga ruxsat yo‘q.');
     }
 
-    const activeSubscription = isSubscriptionActive(profile);
-    const packs = asArray(profile.accessPacks);
+    const activeSubscription = hasActiveSubscription(profile);
 
     profileName.textContent = profile.displayName || profile.username || 'Foydalanuvchi';
-    profileMeta.textContent = `@${profile.username || ''} • ${profile.role || 'customer'} • ${profile.subscription?.tariff || 'Tarif yo‘q'} (${formatDate(profile.subscription?.endAt)} gacha)`;
+    if (privilegedRole) {
+        profileMeta.textContent = `@${profile.username || ''} • ${profile.role || 'customer'} • To‘liq ruxsat`;
+    } else {
+        profileMeta.textContent = `@${profile.username || ''} • ${profile.role || 'customer'} • ${profile.subscription?.tariff || 'Tarif yo‘q'} (${formatDate(profile.subscription?.endAt)} gacha)`;
+    }
 
-    if (profile.blocked) {
+    if (profile.blocked && !privilegedRole) {
         subscriptionBadge.textContent = 'Bloklangan';
         subscriptionBadge.className = 'status-pill status-inactive';
         if (blockBanner) {
             blockBanner.style.display = 'block';
             blockBanner.textContent = 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.';
+        }
+    } else if (privilegedRole) {
+        subscriptionBadge.textContent = 'To‘liq ruxsat';
+        subscriptionBadge.className = 'status-pill status-active';
+        if (blockBanner) {
+            blockBanner.style.display = 'none';
+            blockBanner.textContent = '';
         }
     } else if (activeSubscription) {
         subscriptionBadge.textContent = 'Obuna faol';
@@ -331,10 +371,10 @@ async function initDashboardPage() {
         subscriptionBadge.className = 'status-pill status-inactive';
     }
 
-    if (!profile.blocked) {
+    if (!profile.blocked || privilegedRole) {
         try {
             const registerResult = await registerCurrentDevice();
-            if (registerResult?.blocked) {
+            if (registerResult?.blocked && !privilegedRole) {
                 if (blockBanner) {
                     blockBanner.style.display = 'block';
                     blockBanner.textContent = 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.';
@@ -350,13 +390,13 @@ async function initDashboardPage() {
             title: 'Pack 1: A1–A2',
             description: 'Boshlang‘ich va asosiy bosqichlar',
             href: '../paid-courses/a1-course.html',
-            enabled: activeSubscription && !profile.blocked && packs.includes('A1A2')
+            enabled: canAccessPaid(profile, 'A1A2').allowed
         },
         {
             title: 'Pack 2: B1–B2',
             description: 'O‘rta va yuqori-o‘rta bosqichlar',
             href: '../paid-courses/b1-course.html',
-            enabled: activeSubscription && !profile.blocked && packs.includes('B1B2')
+            enabled: canAccessPaid(profile, 'B1B2').allowed
         }
     ];
 

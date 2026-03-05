@@ -1,11 +1,8 @@
-import {
-    adminAuth,
-    adminDb,
-    FieldValue,
-    Timestamp
-} from '../api/_lib/firebase-admin.js';
+import { initAdmin } from '../api/_firebaseAdmin.js';
 import { randomInt } from 'node:crypto';
 import { usernameToEmail } from '../api/_lib/user-helpers.js';
+
+const { adminAuth, adminDb, FieldValue, Timestamp } = initAdmin();
 
 const DEVELOPER_USERNAME = 'developer';
 const DEVELOPER_DISPLAY_NAME = 'Platform Owner';
@@ -54,6 +51,7 @@ async function findDeveloperByRole() {
 async function ensureDeveloper() {
     const email = usernameToEmail(DEVELOPER_USERNAME);
     const temporaryPassword = generateTemporaryPassword(18);
+    const farFutureEndDate = Timestamp.fromDate(new Date('2099-12-31T23:59:59.999Z'));
 
     let action = 'created';
     let uid = null;
@@ -111,9 +109,9 @@ async function ensureDeveloper() {
         accessPacks: ['A1A2', 'B1B2'],
         subscription: {
             active: true,
-            tariff: 'PLATFORM_OWNER',
+            tariff: 'DEVELOPER',
             startAt: Timestamp.now(),
-            endAt: null,
+            endAt: farFutureEndDate,
             updatedAt: Timestamp.now()
         },
         updatedAt: FieldValue.serverTimestamp()

@@ -1,6 +1,7 @@
-import { adminDb, FieldValue } from '../_lib/firebase-admin.js';
+import { initAdmin } from '../_firebaseAdmin.js';
 import {
     assertMethod,
+    handleCors,
     readBody,
     requireSession,
     requireRole,
@@ -12,12 +13,17 @@ import { normalizeRole } from '../_lib/roles.js';
 import { buildSubscription, normalizePacks } from '../_lib/user-helpers.js';
 
 export default async function handler(req, res) {
+    if (handleCors(req, res, ['POST'])) {
+        return;
+    }
+
     if (!assertMethod(req, res, 'POST')) {
         return;
     }
 
     try {
         const session = await requireSession(req);
+        const { adminDb, FieldValue } = initAdmin();
         requireRole(session, 'moderator');
 
         const body = await readBody(req);

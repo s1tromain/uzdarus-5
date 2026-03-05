@@ -1,8 +1,34 @@
-import { adminAuth, adminDb } from './firebase-admin.js';
+import { initAdmin } from '../_firebaseAdmin.js';
 import { normalizeRole, isRoleAtLeast, canManageRole } from './roles.js';
 
 export function sendJson(res, statusCode, payload) {
     res.status(statusCode).json(payload);
+}
+
+export function handleCors(req, res, allowedMethods = ['POST']) {
+    const methods = Array.from(new Set([...allowedMethods, 'OPTIONS']));
+
+    if (typeof res.setHeader === 'function') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+        res.setHeader('Access-Control-Allow-Methods', methods.join(', '));
+    }
+
+    if (req.method === 'OPTIONS') {
+        if (typeof res.status === 'function') {
+            res.status(204);
+        }
+
+        if (typeof res.end === 'function') {
+            res.end();
+        } else if (typeof res.json === 'function') {
+            res.json({ ok: true });
+        }
+
+        return true;
+    }
+
+    return false;
 }
 
 export function assertMethod(req, res, method) {
@@ -23,8 +49,12 @@ export async function readBody(req) {
         try {
             return JSON.parse(req.body);
         } catch (error) {
-            return {};
+            throw Object.assign(new Error('Invalid JSON body'), { statusCode: 400 });
         }
+    }
+
+    if (req.body != null && typeof req.body !== 'string' && typeof req.body !== 'object') {
+        throw Object.assign(new Error('Invalid request body'), { statusCode: 400 });
     }
 
     return {};
@@ -43,7 +73,15 @@ export async function requireSession(req) {
         throw Object.assign(new Error('Invalid token'), { statusCode: 401 });
     }
 
-    const decoded = await adminAuth.verifyIdToken(token, true);
+    const { adminAuth, adminDb } = initAdmin();
+
+    let decoded;
+    try {
+        decoded = await adminAuth.verifyIdToken(token, true);
+    } catch (error) {
+        throw Object.assign(new Error('Invalid or expired authorization token'), { statusCode: 401 });
+    }
+
     const profileRef = adminDb.collection('users').doc(decoded.uid);
     const profileSnap = await profileRef.get();
 
@@ -76,7 +114,17 @@ export function requireManagePermission(session, targetRole) {
 }
 
 export function safeError(res, error) {
-    const statusCode = error?.statusCode || 500;
+    const allowedStatuses = new Set([400, 401, 403, 404, 405, 409]);
+    const authError = typeof error?.code === 'string' && error.code.startsWith('auth/');
+    const requestedStatus = error?.statusCode || (authError ? 401 : null);
+    const statusCode = allowedStatuses.has(requestedStatus) ? requestedStatus : 500;
     const message = error?.message || 'Unexpected server error';
+
+    if (statusCode >= 500) {
+        console.error('[API_ERROR]', error);
+    } else {
+        console.error(`[API_${statusCode}]`, message);
+    }
+
     sendJson(res, statusCode, { error: message });
 }

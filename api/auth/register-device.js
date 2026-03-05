@@ -1,15 +1,21 @@
-import { adminDb, FieldValue } from '../_lib/firebase-admin.js';
-import { assertMethod, readBody, requireSession, sendJson, safeError } from '../_lib/request.js';
+import { initAdmin } from '../_firebaseAdmin.js';
+import { assertMethod, handleCors, readBody, requireSession, sendJson, safeError } from '../_lib/request.js';
+import { shouldBypassDeviceLimit } from '../_lib/access-control.js';
 
 const MAX_DEVICES = 3;
 
 export default async function handler(req, res) {
+    if (handleCors(req, res, ['POST'])) {
+        return;
+    }
+
     if (!assertMethod(req, res, 'POST')) {
         return;
     }
 
     try {
         const session = await requireSession(req);
+        const { adminDb, FieldValue } = initAdmin();
         const body = await readBody(req);
         const deviceIdHash = String(body.deviceIdHash || '').trim().toLowerCase();
 
@@ -28,6 +34,28 @@ export default async function handler(req, res) {
 
             const profile = profileSnap.data() || {};
             const existingHashes = Array.isArray(profile.deviceHashes) ? profile.deviceHashes : [];
+
+            if (shouldBypassDeviceLimit(profile)) {
+                const knownDevice = existingHashes.includes(deviceIdHash);
+                const nextHashes = knownDevice ? existingHashes : [...existingHashes, deviceIdHash];
+
+                transaction.update(profileRef, {
+                    deviceHashes: nextHashes,
+                    blocked: false,
+                    blockedReason: null,
+                    blockedAt: null,
+                    lastDeviceSeenAt: FieldValue.serverTimestamp(),
+                    updatedAt: FieldValue.serverTimestamp()
+                });
+
+                return {
+                    blocked: false,
+                    bypassed: true,
+                    knownDevice,
+                    deviceCount: nextHashes.length,
+                    maxDevices: MAX_DEVICES
+                };
+            }
 
             if (profile.blocked) {
                 return {
