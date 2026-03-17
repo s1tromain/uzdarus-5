@@ -418,10 +418,15 @@
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
 
-        .flashcard-back {
-            transform: rotateY(180deg);
+        .flashcard-front {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+            background: white;
+            color: var(--dark);
         }
 
         .word-russian {
@@ -907,10 +912,10 @@
             <div class="flashcard" id="flashcard" onclick="flipCard()">
                 <div class="flashcard-inner">
                     <div class="flashcard-front">
-                        <div class="word-russian" id="wordRussian">Здравствуйте</div>
+                        <div class="word-uzbek" id="wordUzbek">Assalomu alaykum</div>
                     </div>
                     <div class="flashcard-back">
-                        <div class="word-uzbek" id="wordUzbek">Assalomu alaykum</div>
+                        <div class="word-russian" id="wordRussian">Здравствуйте</div>
                     </div>
                 </div>
             </div>

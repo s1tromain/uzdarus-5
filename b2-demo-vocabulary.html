@@ -420,14 +420,23 @@
 
         .flashcard-front {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
         }
 
         .flashcard-back {
-            background: linear-gradient(135deg, #4CAF50, #388E3C);
+            background: white;
             transform: rotateY(180deg);
+            color: var(--dark);
         }
 
-        .word-russian,
+        .word-russian {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--dark);
+            text-shadow: none;
+        }
+
         .word-uzbek {
             font-size: 2.5rem;
             font-weight: 700;
@@ -744,10 +753,10 @@
             <div class="flashcard" id="flashcard" onclick="flipCard()">
                 <div class="flashcard-inner">
                     <div class="flashcard-front">
-                        <div class="word-russian" id="wordRussian">смысл жизни</div>
+                        <div class="word-uzbek" id="wordUzbek">hayotning ma'nosi</div>
                     </div>
                     <div class="flashcard-back">
-                        <div class="word-uzbek" id="wordUzbek">hayotning ma'nosi</div>
+                        <div class="word-russian" id="wordRussian">смысл жизни</div>
                     </div>
                 </div>
             </div>
