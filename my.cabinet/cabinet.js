@@ -20,6 +20,51 @@ import {
     callApi
 } from '../firebase-client.js';
 
+const COURSE_TOTAL_TOPICS = Object.freeze({
+    A1: 12,
+    A2: 16,
+    B1: 20,
+    B2: 16
+});
+
+const COURSE_CONFIG = Object.freeze({
+    A1: {
+        title: 'A1 kursi',
+        description: 'Boshlang‘ich daraja materiallari',
+        href: '../paid-courses/a1-course.html'
+    },
+    A2: {
+        title: 'A2 kursi',
+        description: 'Asosiy daraja materiallari',
+        href: '../paid-courses/a2-course.html'
+    },
+    B1: {
+        title: 'B1 kursi',
+        description: 'O‘rta daraja materiallari',
+        href: '../paid-courses/b1-course.html'
+    },
+    B2: {
+        title: 'B2 kursi',
+        description: 'Yuqori-o‘rta daraja materiallari',
+        href: '../paid-courses/b2-course.html'
+    }
+});
+
+const PACKAGE_CONFIG = Object.freeze({
+    A1A2: {
+        title: 'Pack 1: A1-A2',
+        description: 'A1 va A2 kurslarining progress holati',
+        href: './a1-a2.html',
+        courses: ['A1', 'A2']
+    },
+    B1B2: {
+        title: 'Pack 2: B1-B2',
+        description: 'B1 va B2 kurslarining progress holati',
+        href: './b1-b2.html',
+        courses: ['B1', 'B2']
+    }
+});
+
 function showNotice(element, text, type = 'error') {
     if (!element) {
         return;
@@ -109,6 +154,142 @@ function getDaysLeft(dateValue) {
 
     const diffMs = date.getTime() - Date.now();
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function getCompletedTopicsCount(courseProgress) {
+    if (!courseProgress) {
+        return 0;
+    }
+
+    if (Array.isArray(courseProgress)) {
+        return new Set(courseProgress).size;
+    }
+
+    const directCompleted = courseProgress.completedTopics;
+    if (Array.isArray(directCompleted)) {
+        return new Set(directCompleted).size;
+    }
+
+    if (directCompleted && typeof directCompleted === 'object') {
+        return Object.values(directCompleted).filter((item) => {
+            if (typeof item === 'boolean') {
+                return item;
+            }
+
+            if (item && typeof item === 'object') {
+                return Boolean(item.completed);
+            }
+
+            return Boolean(item);
+        }).length;
+    }
+
+    const objectProgress = courseProgress.userProgress;
+    if (objectProgress && typeof objectProgress === 'object') {
+        return Object.values(objectProgress).filter((item) => item?.completed).length;
+    }
+
+    return 0;
+}
+
+function getCourseProgress(profile, courseCode) {
+    const totalTopics = COURSE_TOTAL_TOPICS[courseCode] || 0;
+    const courseProgress = profile?.courses?.[courseCode] || null;
+    const completedTopicsRaw = getCompletedTopicsCount(courseProgress);
+    const completedTopics = Math.max(0, Math.min(totalTopics, completedTopicsRaw));
+    const progressPercent = totalTopics > 0
+        ? Math.round((completedTopics / totalTopics) * 100)
+        : 0;
+
+    return {
+        completedTopics,
+        totalTopics,
+        progressPercent
+    };
+}
+
+function buildProfileMeta(profile, role, privilegedRole) {
+    if (privilegedRole) {
+        return `@${profile.username || ''} • ${profile.role || 'customer'} • To‘liq ruxsat`;
+    }
+
+    if (role === 'moderator') {
+        return `@${profile.username || ''} • moderator • Admin panel ruxsati`;
+    }
+
+    return `@${profile.username || ''} • ${profile.role || 'customer'} • ${profile.subscription?.tariff || 'Tarif yo‘q'} (${formatDate(profile.subscription?.endAt)} gacha)`;
+}
+
+function buildCountdownText(profile, role, privilegedRole) {
+    if (privilegedRole) {
+        return 'Muddatsiz';
+    }
+
+    if (role === 'moderator') {
+        return 'Staff akkaunt: customer obuna hisobi qo‘llanmaydi';
+    }
+
+    const daysLeft = getDaysLeft(profile.subscription?.endAt);
+    return daysLeft && daysLeft > 0
+        ? `Qolgan: ${daysLeft} kun`
+        : 'Muddati tugagan';
+}
+
+function applySubscriptionBadge(profile, role, privilegedRole, activeSubscription, badgeElement) {
+    if (!badgeElement) {
+        return;
+    }
+
+    if (profile.blocked && !privilegedRole) {
+        badgeElement.textContent = 'Bloklangan';
+        badgeElement.className = 'status-pill status-inactive';
+        return;
+    }
+
+    if (privilegedRole) {
+        badgeElement.textContent = 'To‘liq ruxsat';
+        badgeElement.className = 'status-pill status-active';
+        return;
+    }
+
+    if (role === 'moderator') {
+        badgeElement.textContent = 'Staff';
+        badgeElement.className = 'status-pill status-active';
+        return;
+    }
+
+    if (activeSubscription) {
+        badgeElement.textContent = 'Obuna faol';
+        badgeElement.className = 'status-pill status-active';
+        return;
+    }
+
+    badgeElement.textContent = 'Obuna faol emas';
+    badgeElement.className = 'status-pill status-inactive';
+}
+
+function attachLogoutHandler(button) {
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener('click', async () => {
+        await signOut(auth);
+        clearLocalUser();
+        window.location.href = './index.html';
+    });
+}
+
+function mapAccessReasonToDashboardStatus(reason) {
+    if (reason === 'blocked') {
+        return 'blocked';
+    }
+
+    if (reason === 'subscription') {
+        return 'expired';
+    }
+
+    return 'no-access';
 }
 
 async function ensureAuthenticated({ requirePasswordReset = false } = {}) {
@@ -306,15 +487,67 @@ function createPackCard({ title, description, href, enabled }) {
     const card = document.createElement('article');
     card.className = 'pack-card';
 
-    const action = enabled
-        ? `<a class="btn" href="${href}">Kursni ochish</a>`
-        : '<button class="btn btn-secondary" type="button" disabled>Ruxsat yo‘q</button>';
+    const titleElement = document.createElement('h3');
+    titleElement.textContent = title;
 
-    card.innerHTML = `
-        <h3>${title}</h3>
-        <p>${description}</p>
-        ${action}
-    `;
+    const descriptionElement = document.createElement('p');
+    descriptionElement.textContent = description;
+
+    card.appendChild(titleElement);
+    card.appendChild(descriptionElement);
+
+    if (enabled) {
+        const link = document.createElement('a');
+        link.className = 'btn';
+        link.href = href;
+        link.textContent = 'Paketni ochish';
+        card.appendChild(link);
+    } else {
+        const button = document.createElement('button');
+        button.className = 'btn btn-secondary';
+        button.type = 'button';
+        button.disabled = true;
+        button.textContent = 'Ruxsat yo‘q';
+        card.appendChild(button);
+    }
+
+    return card;
+}
+
+function createCourseCard({ courseCode, title, description, href, progress }) {
+    const card = document.createElement('article');
+    card.className = 'pack-card course-card';
+
+    const titleElement = document.createElement('h3');
+    titleElement.textContent = title;
+
+    const descriptionElement = document.createElement('p');
+    descriptionElement.textContent = description;
+
+    const progressText = document.createElement('p');
+    progressText.className = 'course-progress-text';
+    progressText.textContent = `Progress: ${progress.progressPercent}% (${progress.completedTopics}/${progress.totalTopics})`;
+
+    const progressTrack = document.createElement('div');
+    progressTrack.className = 'course-progress-track';
+
+    const progressFill = document.createElement('div');
+    progressFill.className = 'course-progress-fill';
+    progressFill.style.width = `${progress.progressPercent}%`;
+    progressFill.setAttribute('aria-label', `${courseCode} progress ${progress.progressPercent}%`);
+
+    progressTrack.appendChild(progressFill);
+
+    const actionLink = document.createElement('a');
+    actionLink.className = 'btn';
+    actionLink.href = href;
+    actionLink.textContent = 'Kursni ochish';
+
+    card.appendChild(titleElement);
+    card.appendChild(descriptionElement);
+    card.appendChild(progressText);
+    card.appendChild(progressTrack);
+    card.appendChild(actionLink);
 
     return card;
 }
@@ -339,13 +572,7 @@ async function initDashboardPage() {
         adminPanelBtn.style.display = canOpenAdminPanel ? 'inline-flex' : 'none';
     }
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            await signOut(auth);
-            clearLocalUser();
-            window.location.href = './index.html';
-        });
-    }
+    attachLogoutHandler(logoutBtn);
 
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
@@ -366,51 +593,24 @@ async function initDashboardPage() {
     const activeSubscription = hasActiveSubscription(profile);
 
     profileName.textContent = profile.displayName || profile.username || 'Foydalanuvchi';
-    if (privilegedRole) {
-        profileMeta.textContent = `@${profile.username || ''} • ${profile.role || 'customer'} • To‘liq ruxsat`;
-    } else if (role === 'moderator') {
-        profileMeta.textContent = `@${profile.username || ''} • moderator • Admin panel ruxsati`;
-    } else {
-        profileMeta.textContent = `@${profile.username || ''} • ${profile.role || 'customer'} • ${profile.subscription?.tariff || 'Tarif yo‘q'} (${formatDate(profile.subscription?.endAt)} gacha)`;
-    }
+    profileMeta.textContent = buildProfileMeta(profile, role, privilegedRole);
 
     if (subscriptionCountdown) {
-        if (privilegedRole) {
-            subscriptionCountdown.textContent = 'Muddatsiz';
-        } else if (role === 'moderator') {
-            subscriptionCountdown.textContent = 'Staff akkaunt: customer obuna hisobi qo‘llanmaydi';
-        } else {
-            const daysLeft = getDaysLeft(profile.subscription?.endAt);
-            subscriptionCountdown.textContent =
-                daysLeft && daysLeft > 0
-                    ? `Qolgan: ${daysLeft} kun`
-                    : 'Muddati tugagan';
-        }
+        subscriptionCountdown.textContent = buildCountdownText(profile, role, privilegedRole);
     }
 
+    applySubscriptionBadge(profile, role, privilegedRole, activeSubscription, subscriptionBadge);
+
     if (profile.blocked && !privilegedRole) {
-        subscriptionBadge.textContent = 'Bloklangan';
-        subscriptionBadge.className = 'status-pill status-inactive';
         if (blockBanner) {
             blockBanner.style.display = 'block';
             blockBanner.textContent = 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.';
         }
     } else if (privilegedRole) {
-        subscriptionBadge.textContent = 'To‘liq ruxsat';
-        subscriptionBadge.className = 'status-pill status-active';
         if (blockBanner) {
             blockBanner.style.display = 'none';
             blockBanner.textContent = '';
         }
-    } else if (role === 'moderator') {
-        subscriptionBadge.textContent = 'Staff';
-        subscriptionBadge.className = 'status-pill status-active';
-    } else if (activeSubscription) {
-        subscriptionBadge.textContent = 'Obuna faol';
-        subscriptionBadge.className = 'status-pill status-active';
-    } else {
-        subscriptionBadge.textContent = 'Obuna faol emas';
-        subscriptionBadge.className = 'status-pill status-inactive';
     }
 
     if (!profile.blocked || privilegedRole) {
@@ -427,20 +627,21 @@ async function initDashboardPage() {
         }
     }
 
-    const cards = [
-        {
-            title: 'Pack 1: A1–A2',
-            description: 'Boshlang‘ich va asosiy bosqichlar',
-            href: '../paid-courses/a1-course.html',
-            enabled: canAccessPaid(profile, 'A1A2').allowed
-        },
-        {
-            title: 'Pack 2: B1–B2',
-            description: 'O‘rta va yuqori-o‘rta bosqichlar',
-            href: '../paid-courses/b1-course.html',
-            enabled: canAccessPaid(profile, 'B1B2').allowed
-        }
-    ];
+    const cards = ['A1A2', 'B1B2']
+        .map((packCode) => {
+            const config = PACKAGE_CONFIG[packCode];
+            if (!config) {
+                return null;
+            }
+
+            return {
+                title: config.title,
+                description: config.description,
+                href: config.href,
+                enabled: canAccessPaid(profile, packCode).allowed
+            };
+        })
+        .filter(Boolean);
 
     packGrid.innerHTML = '';
     cards.forEach((card) => packGrid.appendChild(createPackCard(card)));
@@ -448,6 +649,88 @@ async function initDashboardPage() {
     saveLocalUser(user, profile);
 
     showNotice(dashboardInfo, 'Kabinet muvaffaqiyatli yuklandi.', 'success');
+}
+
+async function initPackageOverviewPage() {
+    const packageTitle = document.getElementById('packageTitle');
+    const packageSubtitle = document.getElementById('packageSubtitle');
+    const packageError = document.getElementById('packageError');
+    const packageInfo = document.getElementById('packageInfo');
+    const profileName = document.getElementById('profileName');
+    const profileMeta = document.getElementById('profileMeta');
+    const subscriptionBadge = document.getElementById('subscriptionBadge');
+    const subscriptionCountdown = document.getElementById('subscriptionCountdown');
+    const courseGrid = document.getElementById('courseGrid');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    const packCode = String(document.body.dataset.pack || '').toUpperCase();
+    const packageConfig = PACKAGE_CONFIG[packCode];
+
+    if (!packageConfig || !courseGrid) {
+        throw new Error('Paket sahifasi noto‘g‘ri sozlangan.');
+    }
+
+    const authState = await ensureAuthenticated();
+    const freshProfile = await getUserProfile(authState.user.uid, { forceRefresh: true });
+    const user = authState.user;
+    const profile = freshProfile || authState.profile;
+
+    const role = normalizeRole(profile.role);
+    const privilegedRole = isPrivilegedRole(profile);
+    const activeSubscription = hasActiveSubscription(profile);
+    const access = canAccessPaid(profile, packCode);
+
+    if (!access.allowed) {
+        const status = mapAccessReasonToDashboardStatus(access.reason);
+        window.location.href = `./dashboard.html?status=${status}`;
+        return;
+    }
+
+    if (packageTitle) {
+        packageTitle.textContent = packageConfig.title;
+    }
+
+    if (packageSubtitle) {
+        packageSubtitle.textContent = packageConfig.description;
+    }
+
+    if (profileName) {
+        profileName.textContent = profile.displayName || profile.username || 'Foydalanuvchi';
+    }
+
+    if (profileMeta) {
+        profileMeta.textContent = buildProfileMeta(profile, role, privilegedRole);
+    }
+
+    if (subscriptionCountdown) {
+        subscriptionCountdown.textContent = buildCountdownText(profile, role, privilegedRole);
+    }
+
+    applySubscriptionBadge(profile, role, privilegedRole, activeSubscription, subscriptionBadge);
+    attachLogoutHandler(logoutBtn);
+
+    courseGrid.innerHTML = '';
+    packageConfig.courses.forEach((courseCode) => {
+        const courseConfig = COURSE_CONFIG[courseCode];
+        if (!courseConfig) {
+            return;
+        }
+
+        const progress = getCourseProgress(profile, courseCode);
+        const card = createCourseCard({
+            courseCode,
+            title: courseConfig.title,
+            description: courseConfig.description,
+            href: courseConfig.href,
+            progress
+        });
+
+        courseGrid.appendChild(card);
+    });
+
+    saveLocalUser(user, profile);
+    clearNotice(packageError);
+    showNotice(packageInfo, 'Kurslardan birini tanlab davom eting.', 'success');
 }
 
 const page = document.body.dataset.page;
@@ -467,5 +750,12 @@ if (page === 'dashboard') {
     initDashboardPage().catch((error) => {
         const notice = document.getElementById('dashboardError');
         showNotice(notice, error.message || 'Dashboard yuklanmadi.');
+    });
+}
+
+if (page === 'package-overview') {
+    initPackageOverviewPage().catch((error) => {
+        const notice = document.getElementById('packageError');
+        showNotice(notice, error.message || 'Paket sahifasini yuklashda xatolik.');
     });
 }

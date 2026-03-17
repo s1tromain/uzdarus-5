@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UZDARUS PRO | Pack 2: B1-B2</title>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+
+<body data-page="package-overview" data-pack="B1B2">
+    <main class="cabinet-shell">
+        <header class="cabinet-header">
+            <h1 id="packageTitle">Pack 2: B1-B2</h1>
+            <p id="packageSubtitle">Kurslar yuklanmoqda...</p>
+        </header>
+
+        <section class="cabinet-body">
+            <div class="notice error" id="packageError"></div>
+            <div class="notice success" id="packageInfo"></div>
+
+            <div class="profile-top">
+                <div class="profile-title">
+                    <h2 id="profileName">Foydalanuvchi</h2>
+                    <p id="profileMeta">Yuklanmoqda...</p>
+                    <p id="subscriptionCountdown" class="countdown-meta">Obuna holati tekshirilmoqda...</p>
+                </div>
+                <span id="subscriptionBadge" class="status-pill status-inactive">Tekshirilmoqda...</span>
+            </div>
+
+            <div class="pack-grid course-grid" id="courseGrid"></div>
+
+            <div class="actions">
+                <a class="btn btn-secondary" href="./dashboard.html">Dashboardga qaytish</a>
+                <a class="btn" href="../index.html">Bosh sahifaga qaytish</a>
+                <button class="btn btn-secondary" id="logoutBtn" type="button">Chiqish</button>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="./cabinet.js"></script>
+</body>
+
+</html>
