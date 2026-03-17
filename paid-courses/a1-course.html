@@ -1198,6 +1198,158 @@
             margin-bottom: 15px;
         }
 
+        /* Matching Game Styles (reused from premium B1/B2 component) */
+        .matching-game-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .matching-game-title {
+            color: var(--primary-dark);
+            font-size: 1.4rem;
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 3px solid var(--primary);
+            word-wrap: break-word;
+        }
+
+        .matching-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+            position: relative;
+            min-height: 320px;
+        }
+
+        .matching-column {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .matching-item {
+            padding: 12px 14px;
+            background: var(--light);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent;
+            font-weight: 600;
+            font-size: 0.92rem;
+            text-align: center;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .matching-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .matching-item.selected {
+            background: var(--secondary);
+            border-color: var(--primary);
+            transform: scale(1.06);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.3);
+        }
+
+        .matching-item.matched {
+            background: #c8e6c9;
+            border-color: var(--success);
+            cursor: not-allowed;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+
+        .matching-item.wrong {
+            background: #ffcdd2;
+            border-color: var(--error);
+            animation: shake 0.5s;
+        }
+
+        .matching-item.drawing {
+            background: var(--secondary);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(255, 152, 0, 0.5);
+        }
+
+        #matchingCanvasA1 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .temp-line-a1 {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .matching-controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .matching-btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            color: white;
+        }
+
+        .reset-matching-btn {
+            background: linear-gradient(135deg, var(--error), #D32F2F);
+        }
+
+        .check-matching-btn {
+            background: linear-gradient(135deg, var(--success), #45a049);
+        }
+
+        .matching-score {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-top: 14px;
+            padding: 12px;
+            background: var(--light);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .matching-score.show {
+            display: block;
+        }
+
         .extra-exercises-title {
             color: var(--primary-dark);
             font-size: 1.8rem;
@@ -2097,36 +2249,132 @@
                 },
                 {
                     id: 4,
-                    title: "Kunlar, oylar va fasllar",
-                    description: "Vaqt va fasllar haqida so'zlashish",
+                    title: "Vaqt va ob-havo",
+                    description: "Ob-havo, fasllar va vaqt ifodalari",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <h4>1. Ob-havo holati qanday ifodalanadi?</h4>
+                        <p>Rus tilida ob-havo holatlari ko'pincha ravish ko'rinishida ishlatiladi: <strong>жарко, холодно, солнечно, пасмурно</strong>.</p>
+                        <p>Fasllar va oylar bilan gapirganda <strong>весной, летом, осенью, зимой</strong> hamda <strong>в январе, в июле, в декабре</strong> shakllari qo'llanadi.</p>
+
+<div class="image-preview" onclick="openImageFullscreen('../images/Grammatik qism Vaqt va ob-havo 4 dars _page-0001.jpg')">
+    <img
+        src="../images/Grammatik qism Vaqt va ob-havo 4 dars _page-0001.jpg"
+        alt="Vaqt va ob-havo mavzusi grammatik jadvali"
+        class="grammar-image"
+    />
+    <span class="zoom-hint">🔍 Bosib kattalashtiring</span>
+</div>
+
+                    `,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq. Obuna bo'lish orqali 4-mavzuni va barcha qo'shimcha materiallarni o'rganing."
+                        uz: "Bu mavzuda ob-havo, fasllar, oylar va kun qismlarini rus tilida tabiiy gaplarda ishlatishni o'rganasiz."
                     },
                     content: `
-                        <div style="text-align: center; padding: 50px 20px;">
-                            <i class="fas fa-book-open" style="font-size: 4rem; color: var(--primary); margin-bottom: 20px;"></i>
-                            <h3 style="color: var(--primary-dark); margin-bottom: 15px;">Bu mavzu ochiq</h3>
-                            <p style="font-size: 1.2rem; margin-bottom: 30px; max-width: 600px; margin-left: auto; margin-right: auto;">
-                                Bu mavzu uchun qo'shimcha materiallar bosqichma-bosqich yangilanadi:
+                        <div style="background: linear-gradient(135deg, #4CAF50, #2E7D32); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🌦️</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Vaqt va ob-havo lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                Ushbu mavzuda <strong>52 ta so'z va ibora</strong> o'rganasiz
                             </p>
-                            <ul style="text-align: left; display: inline-block; margin-bottom: 30px;">
-                                <li>4-mavzu va undan keyingi barcha mavzularni o'rganasiz (9 ta qo'shimcha mavzu)</li>
-                                <li>Video darslar va audio materiallarga ega bo'lasiz</li>
-                                <li>Qo'shimcha mashqlar va testlarni yechasiz</li>
-                                <li>Yakunda sertifikat olish imkoniyatiga ega bo'lasiz</li>
-                            </ul>
-                            
+                            <button onclick="window.location.href='a1-vocabulary.html'"
+                                    style="background: white; color: #2E7D32; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-cloud-sun"></i> Kundalik ob-havo suhbatlari uchun tayyor bo'ling
+                            </p>
                         </div>
+
+                        <h3>Muhim qoidalar:</h3>
+                        <p>• Fasllar bilan ko'pincha <strong>весной, летом, осенью, зимой</strong> shakllari ishlatiladi.</p>
+                        <p>• Ob-havo holati uchun ravish ishlatiladi: <strong>сегодня холодно, вечером ветрено</strong>.</p>
+                        <p>• Oylar bilan gapda odatda <strong>в январе, в июле, в декабре</strong> modeli qo'llanadi.</p>
                     `,
                     quiz: {
-                        mcQuestions: [],
-                        mcOptions: [],
-                        mcAnswers: [],
-                        blankQuestions: [],
-                        blankAnswers: []
+                        mcQuestions: [
+                            'Сегодня (жаркий / жарко)',
+                            'Утром (туман / туманный)',
+                            'Ночью (холод / холодно)',
+                            'Вечером (ветер / ветреный)',
+                            'Весной (дождливый / дождь)',
+                            'Зимой (морозный / мороз)',
+                            'Летом (солнечный / солнце)',
+                            'Осенью (пасмурный / пасмурно)'
+                        ],
+                        mcOptions: [
+                            ['жаркий', 'жарко'],
+                            ['туман', 'туманный'],
+                            ['холод', 'холодно'],
+                            ['ветер', 'ветреный'],
+                            ['дождливый', 'дождь'],
+                            ['морозный', 'мороз'],
+                            ['солнечный', 'солнце'],
+                            ['пасмурный', 'пасмурно']
+                        ],
+                        mcAnswers: [1, 0, 1, 0, 1, 1, 1, 1],
+                        blankQuestions: [
+                            'Bugun sovuq',
+                            'Ertalab tuman',
+                            'Kechqurun shamol',
+                            'Tunda qor',
+                            'Bahorda yomg\'ir',
+                            'Yozda issiq',
+                            'Kuzda shamolli ob-havo',
+                            'Qishda ayoz',
+                            'Martda iliq ob-havo',
+                            'Iyulda jazirama'
+                        ],
+                        blankAnswers: [
+                            'сегодня холодно',
+                            'утром туман',
+                            'вечером ветер',
+                            'ночью снег',
+                            'весной дождь',
+                            'летом жарко',
+                            'осенью ветреная погода',
+                            'зимой мороз',
+                            'в марте теплая погода',
+                            'в июле жара'
+                        ],
+                        matchingGame: {
+                            title: '3-mashq: Mos juftlikni toping',
+                            instruction: 'Chap tomondagi vaqt/faslni o\'ng tomondagi mos so\'z bilan juftlang.',
+                            pairs: [
+                                { left: 'Зимой', right: 'мороз' },
+                                { left: 'Весной', right: 'дождь' },
+                                { left: 'Летом', right: 'жара' },
+                                { left: 'Осенью', right: 'ветер' },
+                                { left: 'Вечером', right: 'прохладно' },
+                                { left: 'Утром', right: 'туман' }
+                            ]
+                        }
+                    },
+                    topic4FillExercise: {
+                        title: '4-mashq: Gapni to\'ldiring',
+                        questions: [
+                            'холодно',
+                            'дождь',
+                            'снег',
+                            'туман',
+                            'жара',
+                            'прохладно',
+                            'пасмурно',
+                            'ветер'
+                        ],
+                        answers: [
+                            'зимой холодно',
+                            'весной дождь',
+                            'зимой снег',
+                            'утром туман',
+                            'летом жара',
+                            'вечером прохладно',
+                            'осенью пасмурно',
+                            'вечером ветер'
+                        ]
                     }
                 },
                 {
@@ -2618,6 +2866,11 @@
             if (existingExercises) {
                 existingExercises.remove();
             }
+
+            const topic4FillExercise = document.getElementById('topic4FillExercise');
+            if (topic4FillExercise) {
+                topic4FillExercise.remove();
+            }
         }
 
         // Load lesson content
@@ -2726,6 +2979,10 @@
                 `;
             }
 
+            if (topic.quiz.matchingGame) {
+                quizHTML += renderMatchingGameA1(topic);
+            }
+
             quizHTML += `
                 </div>
                 <button class="submit-btn" id="submitQuiz">Javoblarni tekshirish</button>
@@ -2747,6 +3004,12 @@
             document.getElementById('submitQuiz').addEventListener('click', async () => {
                 await checkAnswers(topicId);
             });
+
+            if (topic.quiz.matchingGame) {
+                setTimeout(() => {
+                    initMatchingGameA1(topic);
+                }, 120);
+            }
             
             // Если есть сохраненные результаты, показываем их
             if (topicResults) {
@@ -2759,6 +3022,13 @@
             if (topicId === 3) {
                 setTimeout(() => {
                     loadExtraExercises(topicId);
+                }, 100);
+            }
+
+            // Load fill exercise for topic 4
+            if (topicId === 4) {
+                setTimeout(() => {
+                    loadTopic4FillExercise(topicId);
                 }, 100);
             }
         }
@@ -3085,6 +3355,497 @@
 
             resultsDiv.classList.add('show');
             resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        // ==================== TOPIC 4 MATCHING GAME ====================
+        let matchingStateA1 = {
+            selectedLeft: null,
+            selectedRight: null,
+            matches: [],
+            attempts: 0
+        };
+
+        let matchingDragStateA1 = {
+            isDragging: false,
+            startItem: null,
+            tempCanvas: null
+        };
+
+        let matchingTopicIdA1 = null;
+        let matchingDocListenersBoundA1 = false;
+
+        function renderMatchingGameA1(topic) {
+            return `
+                <div class="matching-game-container" id="matchingGameA1">
+                    <h3 class="matching-game-title">
+                        <i class="fas fa-puzzle-piece"></i> ${topic.quiz.matchingGame.title}
+                    </h3>
+                    <p style="text-align: center; margin-bottom: 16px; font-size: 1.05rem;">
+                        ${topic.quiz.matchingGame.instruction}
+                    </p>
+                    <div class="matching-columns" id="matchingColumnsA1">
+                        <canvas id="matchingCanvasA1"></canvas>
+                        <div class="matching-column" id="leftColumnA1"></div>
+                        <div class="matching-column" id="rightColumnA1"></div>
+                    </div>
+                    <div class="matching-controls">
+                        <button class="matching-btn reset-matching-btn" onclick="window.resetMatchingA1()">
+                            <i class="fas fa-redo"></i> Qaytadan
+                        </button>
+                        <button class="matching-btn check-matching-btn" onclick="window.checkMatchingA1()">
+                            <i class="fas fa-check"></i> Tekshirish
+                        </button>
+                    </div>
+                    <div class="matching-score" id="matchingScoreA1"></div>
+                </div>
+            `;
+        }
+
+        function initMatchingGameA1(topic) {
+            if (!topic?.quiz?.matchingGame) {
+                return;
+            }
+
+            matchingTopicIdA1 = topic.id;
+            const game = topic.quiz.matchingGame;
+            const shuffledRight = [...game.pairs].sort(() => Math.random() - 0.5);
+
+            matchingStateA1 = {
+                selectedLeft: null,
+                selectedRight: null,
+                matches: [],
+                attempts: 0
+            };
+
+            const leftColumn = document.getElementById('leftColumnA1');
+            const rightColumn = document.getElementById('rightColumnA1');
+
+            if (!leftColumn || !rightColumn) {
+                return;
+            }
+
+            leftColumn.innerHTML = game.pairs.map((pair, index) => `
+                <div class="matching-item" data-left="${index}" data-word="${pair.left}">
+                    ${pair.left}
+                </div>
+            `).join('');
+
+            rightColumn.innerHTML = shuffledRight.map((pair) => `
+                <div class="matching-item" data-right="${game.pairs.findIndex((p) => p.right === pair.right)}" data-word="${pair.right}">
+                    ${pair.right}
+                </div>
+            `).join('');
+
+            setTimeout(() => {
+                setupMatchingCanvasA1();
+                attachMatchingListenersA1();
+            }, 100);
+        }
+
+        function setupMatchingCanvasA1() {
+            const container = document.getElementById('matchingColumnsA1');
+            const canvas = document.getElementById('matchingCanvasA1');
+            if (!container || !canvas) {
+                return;
+            }
+
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+        }
+
+        function attachMatchingListenersA1() {
+            const container = document.getElementById('matchingColumnsA1');
+            if (!container) {
+                return;
+            }
+
+            document.querySelectorAll('#matchingColumnsA1 .matching-item[data-left]').forEach((item) => {
+                item.addEventListener('mousedown', function(e) {
+                    startDragA1(this, e.clientX, e.clientY);
+                });
+
+                item.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    startDragA1(this, touch.clientX, touch.clientY);
+                }, { passive: false });
+
+                item.addEventListener('click', function() {
+                    if (matchingDragStateA1.isDragging || this.classList.contains('matched')) {
+                        return;
+                    }
+
+                    document.querySelectorAll('#matchingColumnsA1 .matching-item[data-left]').forEach((i) => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    matchingStateA1.selectedLeft = parseInt(this.dataset.left, 10);
+
+                    if (matchingStateA1.selectedRight !== null) {
+                        createMatchA1();
+                    }
+                });
+            });
+
+            document.querySelectorAll('#matchingColumnsA1 .matching-item[data-right]').forEach((item) => {
+                item.addEventListener('click', function() {
+                    if (matchingDragStateA1.isDragging || this.classList.contains('matched')) {
+                        return;
+                    }
+
+                    document.querySelectorAll('#matchingColumnsA1 .matching-item[data-right]').forEach((i) => i.classList.remove('selected'));
+                    this.classList.add('selected');
+                    matchingStateA1.selectedRight = parseInt(this.dataset.right, 10);
+
+                    if (matchingStateA1.selectedLeft !== null) {
+                        createMatchA1();
+                    }
+                });
+            });
+
+            container.addEventListener('mousemove', function(e) {
+                if (matchingDragStateA1.isDragging) {
+                    updateDragLineA1(e.clientX, e.clientY);
+                }
+            });
+
+            container.addEventListener('touchmove', function(e) {
+                if (matchingDragStateA1.isDragging) {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    updateDragLineA1(touch.clientX, touch.clientY);
+                }
+            }, { passive: false });
+
+            if (!matchingDocListenersBoundA1) {
+                document.addEventListener('mouseup', function(e) {
+                    if (matchingDragStateA1.isDragging) {
+                        endDragA1(e.clientX, e.clientY);
+                    }
+                });
+
+                document.addEventListener('touchend', function(e) {
+                    if (matchingDragStateA1.isDragging) {
+                        const touch = e.changedTouches[0];
+                        endDragA1(touch.clientX, touch.clientY);
+                    }
+                });
+
+                matchingDocListenersBoundA1 = true;
+            }
+        }
+
+        function startDragA1(item, x, y) {
+            if (item.classList.contains('matched')) {
+                return;
+            }
+
+            matchingDragStateA1.isDragging = true;
+            matchingDragStateA1.startItem = item;
+            item.classList.add('drawing');
+
+            if (!matchingDragStateA1.tempCanvas) {
+                const container = document.getElementById('matchingColumnsA1');
+                const canvas = document.createElement('canvas');
+                canvas.className = 'temp-line-a1';
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+                container.appendChild(canvas);
+                matchingDragStateA1.tempCanvas = canvas;
+            }
+
+            updateDragLineA1(x, y);
+        }
+
+        function updateDragLineA1(x, y) {
+            if (!matchingDragStateA1.isDragging || !matchingDragStateA1.tempCanvas || !matchingDragStateA1.startItem) {
+                return;
+            }
+
+            const container = document.getElementById('matchingColumnsA1');
+            const containerRect = container.getBoundingClientRect();
+            const startRect = matchingDragStateA1.startItem.getBoundingClientRect();
+            const ctx = matchingDragStateA1.tempCanvas.getContext('2d');
+
+            ctx.clearRect(0, 0, matchingDragStateA1.tempCanvas.width, matchingDragStateA1.tempCanvas.height);
+
+            const startX = startRect.right - containerRect.left;
+            const startY = startRect.top + startRect.height / 2 - containerRect.top;
+            const endX = x - containerRect.left;
+            const endY = y - containerRect.top;
+
+            ctx.strokeStyle = 'rgba(255, 152, 0, 0.8)';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(255, 152, 0, 0.5)';
+
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            const controlOffset = Math.min(Math.abs(endX - startX) / 3, 55);
+            ctx.bezierCurveTo(startX + controlOffset, startY, endX - controlOffset, endY, endX, endY);
+            ctx.stroke();
+        }
+
+        function endDragA1(x, y) {
+            if (!matchingDragStateA1.isDragging) {
+                return;
+            }
+
+            const targetElement = document.elementFromPoint(x, y);
+            const rightItem = targetElement?.closest('#matchingColumnsA1 .matching-item[data-right]');
+
+            if (rightItem && !rightItem.classList.contains('matched')) {
+                matchingStateA1.selectedLeft = parseInt(matchingDragStateA1.startItem.dataset.left, 10);
+                matchingStateA1.selectedRight = parseInt(rightItem.dataset.right, 10);
+                createMatchA1();
+            }
+
+            if (matchingDragStateA1.startItem) {
+                matchingDragStateA1.startItem.classList.remove('drawing');
+            }
+
+            if (matchingDragStateA1.tempCanvas) {
+                matchingDragStateA1.tempCanvas.remove();
+                matchingDragStateA1.tempCanvas = null;
+            }
+
+            matchingDragStateA1.isDragging = false;
+            matchingDragStateA1.startItem = null;
+        }
+
+        function createMatchA1() {
+            if (matchingStateA1.selectedLeft === null || matchingStateA1.selectedRight === null) {
+                return;
+            }
+
+            const leftItem = document.querySelector(`#matchingColumnsA1 .matching-item[data-left="${matchingStateA1.selectedLeft}"]`);
+            const rightItem = document.querySelector(`#matchingColumnsA1 .matching-item[data-right="${matchingStateA1.selectedRight}"]`);
+            if (!leftItem || !rightItem) {
+                return;
+            }
+
+            matchingStateA1.matches.push({ left: matchingStateA1.selectedLeft, right: matchingStateA1.selectedRight });
+            leftItem.classList.remove('selected');
+            rightItem.classList.remove('selected');
+            leftItem.classList.add('matched');
+            rightItem.classList.add('matched');
+
+            drawConnectionA1(leftItem, rightItem, matchingStateA1.matches.length - 1);
+
+            matchingStateA1.selectedLeft = null;
+            matchingStateA1.selectedRight = null;
+        }
+
+        function drawConnectionA1(leftItem, rightItem, colorIndex) {
+            const canvas = document.getElementById('matchingCanvasA1');
+            if (!canvas) {
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7B731', '#5F27CD', '#00D2D3'];
+            const leftRect = leftItem.getBoundingClientRect();
+            const rightRect = rightItem.getBoundingClientRect();
+            const containerRect = canvas.getBoundingClientRect();
+
+            const startX = leftRect.right - containerRect.left;
+            const startY = leftRect.top + leftRect.height / 2 - containerRect.top;
+            const endX = rightRect.left - containerRect.left;
+            const endY = rightRect.top + rightRect.height / 2 - containerRect.top;
+
+            ctx.strokeStyle = colors[colorIndex % colors.length];
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            const controlOffset = Math.min(Math.abs(endX - startX) / 3, 55);
+            ctx.bezierCurveTo(startX + controlOffset, startY, endX - controlOffset, endY, endX, endY);
+            ctx.stroke();
+        }
+
+        function clearMatchingCanvasA1() {
+            const canvas = document.getElementById('matchingCanvasA1');
+            if (!canvas) {
+                return;
+            }
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        window.resetMatchingA1 = function() {
+            matchingStateA1 = {
+                selectedLeft: null,
+                selectedRight: null,
+                matches: [],
+                attempts: 0
+            };
+
+            document.querySelectorAll('#matchingColumnsA1 .matching-item').forEach((item) => {
+                item.classList.remove('selected', 'matched', 'wrong', 'drawing');
+            });
+
+            clearMatchingCanvasA1();
+
+            const scoreDiv = document.getElementById('matchingScoreA1');
+            if (scoreDiv) {
+                scoreDiv.classList.remove('show');
+                scoreDiv.innerHTML = '';
+            }
+        };
+
+        window.checkMatchingA1 = function() {
+            const topic = courseData.topics.find((t) => t.id === matchingTopicIdA1);
+            if (!topic?.quiz?.matchingGame) {
+                return;
+            }
+
+            let correct = 0;
+            const total = topic.quiz.matchingGame.pairs.length;
+
+            document.querySelectorAll('#matchingColumnsA1 .matching-item').forEach((item) => {
+                item.classList.remove('wrong');
+            });
+
+            matchingStateA1.matches.forEach((match) => {
+                if (match.left === match.right) {
+                    correct++;
+                    return;
+                }
+
+                const leftItem = document.querySelector(`#matchingColumnsA1 .matching-item[data-left="${match.left}"]`);
+                const rightItem = document.querySelector(`#matchingColumnsA1 .matching-item[data-right="${match.right}"]`);
+                if (leftItem) {
+                    leftItem.classList.add('wrong');
+                }
+                if (rightItem) {
+                    rightItem.classList.add('wrong');
+                }
+            });
+
+            const percentage = Math.round((correct / total) * 100);
+            const scoreDiv = document.getElementById('matchingScoreA1');
+            if (scoreDiv) {
+                scoreDiv.innerHTML = `
+                    <div style="font-size: 1.5rem; margin-bottom: 8px;">Natija: ${correct}/${total}</div>
+                    <div style="font-size: 1.1rem;">${percentage}% ${percentage >= 70 ? '👍 Yaxshi!' : '📚 Yana mashq qiling.'}</div>
+                `;
+                scoreDiv.classList.add('show');
+            }
+        };
+
+        // ==================== TOPIC 4 FILL EXERCISE ====================
+        function loadTopic4FillExercise(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            const quizSection = document.getElementById('quizSection');
+
+            if (!topic || topicId !== 4 || !topic.topic4FillExercise || topicId !== currentTopicId || !quizSection) {
+                return;
+            }
+
+            const saved = userQuizResults[`topic_${topicId}_fill`] || {};
+            const savedAnswers = Array.isArray(saved.answers) ? saved.answers : [];
+
+            let html = `
+                <div class="extra-exercises-section" id="topic4FillExercise">
+                    <h2 class="extra-exercises-title">
+                        <i class="fas fa-pen"></i> ${topic.topic4FillExercise.title}
+                    </h2>
+                    <p style="text-align:center; margin-bottom: 16px; color: var(--gray);">
+                        Har bir qatorda chapdagi bo'sh joyga mos vaqt/fasl ifodasini yozing.
+                    </p>
+                    <div class="exercise-grid">
+            `;
+
+            topic.topic4FillExercise.questions.forEach((phrase, index) => {
+                const value = savedAnswers[index] || '';
+                const normalizedUser = value.toLowerCase().replace(/ё/g, 'е').trim();
+                const normalizedCorrect = topic.topic4FillExercise.answers[index].toLowerCase().replace(/ё/g, 'е').trim();
+                const stateClass = value
+                    ? (normalizedUser === normalizedCorrect ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="exercise-item">
+                        <input type="text"
+                               class="exercise-input ${stateClass}"
+                               data-topic4-fill="${index}"
+                               value="${value}"
+                               placeholder="..." />
+                        <span>${phrase}</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <button class="check-exercises-btn" onclick="window.checkTopic4FillExercise(${topicId})">
+                        <i class="fas fa-check-circle"></i> 4-mashq javoblarini tekshirish
+                    </button>
+                    <div class="exercise-results" id="topic4FillResults">
+                        <div class="exercise-score" id="topic4FillScore"></div>
+                    </div>
+                </div>
+            `;
+
+            quizSection.insertAdjacentHTML('afterend', html);
+        }
+
+        window.checkTopic4FillExercise = async function(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 4 || !topic.topic4FillExercise) {
+                return;
+            }
+
+            const normalize = (value) => String(value || '').trim().toLowerCase().replace(/ё/g, 'е');
+            const answers = [];
+            let correct = 0;
+
+            topic.topic4FillExercise.questions.forEach((_, index) => {
+                const input = document.querySelector(`input[data-topic4-fill="${index}"]`);
+                if (!input) {
+                    answers.push('');
+                    return;
+                }
+
+                const userValue = input.value.trim();
+                const expected = topic.topic4FillExercise.answers[index];
+                answers.push(userValue);
+
+                input.classList.remove('correct', 'incorrect');
+
+                if (!userValue) {
+                    return;
+                }
+
+                if (normalize(userValue) === normalize(expected)) {
+                    input.classList.add('correct');
+                    correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            const total = topic.topic4FillExercise.questions.length;
+            const percentage = Math.round((correct / total) * 100);
+            const resultData = {
+                answers,
+                score: correct,
+                total,
+                timestamp: new Date().toISOString()
+            };
+
+            await saveQuizResultToFirebase(`${topicId}_fill`, resultData);
+            userQuizResults[`topic_${topicId}_fill`] = resultData;
+
+            const resultsDiv = document.getElementById('topic4FillResults');
+            const scoreDiv = document.getElementById('topic4FillScore');
+            if (resultsDiv && scoreDiv) {
+                scoreDiv.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 8px;">${correct}/${total}</div>
+                    <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
+                `;
+                resultsDiv.classList.add('show');
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         };
 
         // Check answers and show results
