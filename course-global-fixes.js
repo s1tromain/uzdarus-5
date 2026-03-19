@@ -114,6 +114,18 @@
         return Array.from(scope ? scope.querySelectorAll(selector) : document.querySelectorAll(selector));
     }
 
+    function bindTopicCheckButton(host) {
+        var button = queryIn(host, '.check-topic-btn');
+        if (!button) {
+            return;
+        }
+
+        if (!button.dataset.topicCheckBound) {
+            button.addEventListener('click', runTopicCheck);
+            button.dataset.topicCheckBound = '1';
+        }
+    }
+
     function collectMainQuizFeedback(topic, scope) {
         var rows = [];
         if (!topic || !topic.quiz) {
@@ -578,11 +590,13 @@
 
     function getActiveTopicRoot() {
         var quizSection = document.getElementById('quizSection');
+        var quizContainerRoot = quizSection ? (quizSection.parentElement || quizSection) : null;
+
         if (
-            quizSection &&
-            quizSection.querySelector('.quiz-container, .quiz-question, .fill-blank, .exercise-block, .matching-game-container, #extraExercises, #topic4FillExercise, #topic5PracticeSection, .blank-section')
+            quizContainerRoot &&
+            quizContainerRoot.querySelector('.quiz-container, .quiz-question, .fill-blank, .exercise-block, .matching-game-container, #extraExercises, #topic4FillExercise, #topic5PracticeSection, .blank-section')
         ) {
-            return quizSection;
+            return quizContainerRoot;
         }
 
         var lessonContent = document.getElementById('lessonContent');
@@ -596,29 +610,9 @@
         return null;
     }
 
-    function pickTopicAnchor(root) {
-        if (!root) {
-            return null;
-        }
-
-        return (
-            queryIn(root, '#topic5PracticeSection') ||
-            queryIn(root, '#topic4FillExercise') ||
-            queryIn(root, '#extraExercises') ||
-            queryIn(root, '#matchingGameA1') ||
-            queryIn(root, '#matchingGame') ||
-            queryIn(root, '.matching-game-container:last-of-type') ||
-            queryIn(root, '.blank-section:last-of-type') ||
-            queryIn(root, '.quiz-section:last-of-type') ||
-            queryIn(root, '.quiz-container:last-of-type') ||
-            root.lastElementChild ||
-            root
-        );
-    }
-
     async function runTopicCheck(event) {
         var button = event.currentTarget;
-        var host = button ? button.closest('.topic-check-host') : null;
+        var host = button ? button.closest('.topic-check-section, .topic-check-host') : null;
         var topicRoot = host ? host.closest('.topic-exercises') : getActiveTopicRoot();
 
         var rows = [];
@@ -679,17 +673,14 @@
 
     function createTopicHost(topicKey) {
         var host = document.createElement('div');
-        host.className = 'topic-check-host';
+        host.className = 'topic-check-section';
         host.dataset.topicId = topicKey;
 
         host.innerHTML =
             '<button class="check-topic-btn" type="button">Javoblarni tekshirish</button>' +
             '<div class="topic-feedback hidden"></div>';
 
-        var button = queryIn(host, '.check-topic-btn');
-        if (button) {
-            button.addEventListener('click', runTopicCheck);
-        }
+        bindTopicCheckButton(host);
 
         return host;
     }
@@ -702,7 +693,7 @@
         var root = getActiveTopicRoot();
 
         if (!root || !topicKey) {
-            queryAllIn(document, '.topic-check-host').forEach(function (node) {
+            queryAllIn(document, '.topic-check-section, .topic-check-host').forEach(function (node) {
                 node.remove();
             });
             return;
@@ -716,26 +707,39 @@
             lastTopicKey = topicKey;
         }
 
-        var hosts = queryAllIn(root, '.topic-check-host');
-        if (hosts.length > 1) {
-            hosts.slice(1).forEach(function (node) {
-                node.remove();
+        var sections = queryAllIn(root, '.topic-check-section, .topic-check-host');
+        var host = sections.length ? sections[0] : null;
+
+        if (sections.length > 1) {
+            sections.slice(1).forEach(function (node) {
+                if (node !== host) {
+                    node.remove();
+                }
             });
         }
 
-        var host = queryIn(root, '.topic-check-host');
         if (!host) {
             host = createTopicHost(topicKey);
+        } else {
+            host.classList.remove('topic-check-host');
+            host.classList.add('topic-check-section');
+
+            if (!queryIn(host, '.check-topic-btn') || !queryIn(host, '.topic-feedback')) {
+                host.innerHTML =
+                    '<button class="check-topic-btn" type="button">Javoblarni tekshirish</button>' +
+                    '<div class="topic-feedback hidden"></div>';
+            }
+
+            bindTopicCheckButton(host);
         }
 
         host.dataset.topicId = topicKey;
 
-        var anchor = pickTopicAnchor(root);
-        if (anchor && anchor !== host && host.previousElementSibling !== anchor) {
-            anchor.insertAdjacentElement('afterend', host);
+        if (root.lastElementChild !== host) {
+            root.appendChild(host);
         }
 
-        queryAllIn(document, '.topic-check-host').forEach(function (node) {
+        queryAllIn(document, '.topic-check-section, .topic-check-host').forEach(function (node) {
             if (!root.contains(node)) {
                 node.remove();
             }
