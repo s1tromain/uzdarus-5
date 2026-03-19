@@ -1198,6 +1198,117 @@
             margin-bottom: 15px;
         }
 
+        /* Topic 5 practice exercises */
+        .topic5-exercise-block {
+            background: white;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: 0 5px 14px rgba(0, 0, 0, 0.08);
+        }
+
+        .topic5-exercise-title {
+            color: var(--primary-dark);
+            font-size: 1.25rem;
+            margin-bottom: 14px;
+            font-weight: 700;
+        }
+
+        .topic5-select-question {
+            margin-bottom: 14px;
+        }
+
+        .topic5-select-line {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px;
+            background: var(--light);
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .topic5-select-line span {
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .topic5-select-blank {
+            min-width: 130px;
+            padding: 8px 12px;
+            border: 2px dashed var(--primary);
+            border-radius: 8px;
+            background: white;
+            color: var(--primary-dark);
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .topic5-select-blank:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+        }
+
+        .topic5-select-blank.filled {
+            border-style: solid;
+            background: #fff6db;
+        }
+
+        .topic5-select-blank.correct {
+            border-color: var(--success);
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .topic5-select-blank.incorrect {
+            border-color: var(--error);
+            background: #ffcdd2;
+            color: #c62828;
+        }
+
+        .topic5-options {
+            display: none;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            padding-left: 8px;
+        }
+
+        .topic5-options.active {
+            display: flex;
+        }
+
+        .topic5-option-chip {
+            border: 2px solid #e3e3e3;
+            background: white;
+            color: var(--dark);
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .topic5-option-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .topic5-option-chip.selected {
+            border-color: var(--primary);
+            background: var(--secondary);
+            color: #5f4600;
+        }
+
+        .topic5-text-input {
+            width: 100%;
+            min-width: 170px;
+            flex: 1;
+        }
+
         /* Matching Game Styles (reused from premium B1/B2 component) */
         .matching-game-container {
             background: white;
@@ -1595,6 +1706,19 @@
                 width: 100%;
                 max-width: 100%;
             }
+
+            .topic5-select-line {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .topic5-select-blank {
+                width: 100%;
+            }
+
+            .topic5-options {
+                padding-left: 0;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1676,6 +1800,15 @@
             .fill-blank input {
                 font-size: 0.9rem;
                 width: 100%;
+            }
+
+            .topic5-exercise-title {
+                font-size: 1.1rem;
+            }
+
+            .topic5-option-chip {
+                width: 100%;
+                text-align: center;
             }
         }
     </style>
@@ -2383,17 +2516,134 @@
                     description: "Kasblar va ish haqida gapirish",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <h4>1. Kasb aytish va "ishlash" fe'li bilan farq</h4>
+                        <p>Rus tilida kasbni oddiy aytganda odatda bosh kelishik ishlatiladi: <strong>Он врач. Она инженер.</strong></p>
+                        <p>Lekin <strong>работать</strong> fe'li bilan kasb ko'pincha ijodiy/instrumental shaklda keladi: <strong>Он работает врачом. Я работаю менеджером.</strong></p>
+
+<div class="image-preview" onclick="openImageFullscreen('../images/Grammatik qism 5 dars 2_page-0001.jpg')">
+    <img
+        src="../images/Grammatik qism 5 dars 2_page-0001.jpg"
+        alt="Kasblar mavzusi grammatik jadvali"
+        class="grammar-image"
+    />
+    <span class="zoom-hint">🔍 Bosib kattalashtiring</span>
+</div>
+
+                    `,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Bu mavzuda kasblar, ish joylari va mashg'ulotlarni rus tilida to'g'ri aytish, ayniqsa 'работать' bilan to'g'ri shaklni ishlatishni o'rganasiz."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #009688, #00695C); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(0, 150, 136, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">💼</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Kasblar va mashg'ulotlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                Ushbu mavzuda <strong>67 ta so'z va fe'l</strong> o'rganasiz
+                            </p>
+                            <button onclick="window.location.href='a1-vocabulary.html'"
+                                    style="background: white; color: #00695C; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-briefcase"></i> Ish va kasb haqida erkin gapirishni boshlang
+                            </p>
+                        </div>
+
+                        <h3>Muhim qoidalar:</h3>
+                        <p>• <strong>U kim?</strong> savoliga ko'pincha: <strong>Он врач. Она актриса.</strong></p>
+                        <p>• <strong>U nimada ishlaydi?</strong> deyilganda: <strong>Он работает врачом. Она работает переводчицей.</strong></p>
+                        <p>• O'qish joyini aytishda: <strong>учится в университете, учится в школе</strong>.</p>
+                    `,
                     quiz: {
-                        mcQuestions: [],
-                        mcOptions: [],
-                        mcAnswers: [],
-                        blankQuestions: [],
-                        blankAnswers: []
+                        mcQuestions: [
+                            'Она ______.',
+                            'Я работаю ______.',
+                            'Моя мама ______.',
+                            'Он работает ______.',
+                            'Моя сестра работает ______.'
+                        ],
+                        mcOptions: [
+                            ['врач', 'врачом'],
+                            ['менеджер', 'менеджером'],
+                            ['инженер', 'инженером'],
+                            ['директор', 'директором'],
+                            ['учительница', 'учительницей']
+                        ],
+                        mcAnswers: [0, 1, 0, 1, 1],
+                        blankQuestions: [
+                            'U shifokor',
+                            'U tarjimon bo\'lib ishlaydi',
+                            'U haydovchi bo\'lib ishlaydi',
+                            'U universitetda o\'qiydi',
+                            'Men sport bilan shug\'ullanaman'
+                        ],
+                        blankAnswers: [
+                            'он врач',
+                            'она работает переводчицей',
+                            'он работает водителем',
+                            'он учится в университете',
+                            'я занимаюсь спортом'
+                        ]
+                    },
+                    topic5Exercises: {
+                        exercise1: {
+                            title: '1-mashq. To\'g\'ri variantni tanlang',
+                            questions: [
+                                { text: 'Она ______.', options: ['врач', 'врачом'], answer: 'врач' },
+                                { text: 'Я работаю ______.', options: ['менеджер', 'менеджером'], answer: 'менеджером' },
+                                { text: 'Моя мама ______.', options: ['инженер', 'инженером'], answer: 'инженер' },
+                                { text: 'Он работает ______.', options: ['директор', 'директором'], answer: 'директором' },
+                                { text: 'Моя сестра работает ______.', options: ['учительницей', 'учительница'], answer: 'учительницей' }
+                            ]
+                        },
+                        exercise2: {
+                            title: '2-mashq. Gapni davom ettiring',
+                            prompts: [
+                                'Он врач -> Он работает ______',
+                                'Она переводчица -> Она работает ______',
+                                'Он водитель -> Он работает ______',
+                                'Она актриса -> Она работает ______',
+                                'Он студент -> Он учится в ______'
+                            ],
+                            answers: ['врачом', 'переводчицей', 'водителем', 'актрисой', 'университете']
+                        },
+                        exercise3: {
+                            title: '3-mashq. Xatoni toping va to\'g\'rilang',
+                            prompts: [
+                                'Она работает врач',
+                                'Я работаю учитель',
+                                'Моя мама директором',
+                                'Он работает водитель',
+                                'Она работает менеджер'
+                            ],
+                            answers: [
+                                'она работает врачом',
+                                'я работаю учителем',
+                                'моя мама директор',
+                                'он работает водителем',
+                                'она работает менеджером'
+                            ]
+                        },
+                        exercise4: {
+                            title: '4-mashq. Tarjima qiling',
+                            prompts: [
+                                'U shifokor -> ______',
+                                'U muhandis bo\'lib ishlaydi -> ______',
+                                'Men o\'qituvchi bo\'lib ishlayman -> ______',
+                                'U universitetda o\'qiydi -> ______',
+                                'Mening opam direktor -> ______'
+                            ],
+                            answers: [
+                                ['он врач', 'она врач'],
+                                ['он работает инженером', 'она работает инженером'],
+                                ['я работаю учителем', 'я работаю учительницей'],
+                                ['он учится в университете', 'она учится в университете'],
+                                ['моя сестра директор']
+                            ]
+                        }
                     }
                 },
                 {
@@ -2871,6 +3121,11 @@
             if (topic4FillExercise) {
                 topic4FillExercise.remove();
             }
+
+            const topic5PracticeSection = document.getElementById('topic5PracticeSection');
+            if (topic5PracticeSection) {
+                topic5PracticeSection.remove();
+            }
         }
 
         // Load lesson content
@@ -3029,6 +3284,13 @@
             if (topicId === 4) {
                 setTimeout(() => {
                     loadTopic4FillExercise(topicId);
+                }, 100);
+            }
+
+            // Load exercises for topic 5
+            if (topicId === 5) {
+                setTimeout(() => {
+                    loadTopic5Exercises(topicId);
                 }, 100);
             }
         }
@@ -3842,6 +4104,375 @@
                 scoreDiv.innerHTML = `
                     <div style="font-size: 2rem; margin-bottom: 8px;">${correct}/${total}</div>
                     <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
+                `;
+                resultsDiv.classList.add('show');
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        // ==================== TOPIC 5 EXERCISES ====================
+        function normalizeTopic5Text(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'`«»\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function topic5IsCorrect(userValue, expected) {
+            const normalizedUser = normalizeTopic5Text(userValue);
+            if (!normalizedUser) {
+                return false;
+            }
+
+            if (Array.isArray(expected)) {
+                return expected.some((item) => normalizeTopic5Text(item) === normalizedUser);
+            }
+
+            return normalizeTopic5Text(expected) === normalizedUser;
+        }
+
+        function closeTopic5OptionPanels() {
+            document.querySelectorAll('.topic5-options').forEach((panel) => {
+                panel.classList.remove('active');
+            });
+        }
+
+        let topic5OutsideClickBound = false;
+
+        function bindTopic5ExerciseEvents() {
+            document.querySelectorAll('.topic5-select-blank').forEach((blank) => {
+                blank.addEventListener('click', function() {
+                    const index = this.dataset.topic5Select;
+                    const targetPanel = document.querySelector(`.topic5-options[data-topic5-options="${index}"]`);
+                    if (!targetPanel) {
+                        return;
+                    }
+
+                    const isOpen = targetPanel.classList.contains('active');
+                    closeTopic5OptionPanels();
+                    if (!isOpen) {
+                        targetPanel.classList.add('active');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.topic5-option-chip').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic5OptionIndex;
+                    const value = this.dataset.value;
+                    const blank = document.querySelector(`.topic5-select-blank[data-topic5-select="${index}"]`);
+                    if (!blank) {
+                        return;
+                    }
+
+                    blank.dataset.value = value;
+                    blank.textContent = value;
+                    blank.classList.add('filled');
+                    blank.classList.remove('correct', 'incorrect');
+
+                    document.querySelectorAll(`.topic5-option-chip[data-topic5-option-index="${index}"]`).forEach((chip) => {
+                        chip.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+
+                    closeTopic5OptionPanels();
+                });
+            });
+
+            if (!topic5OutsideClickBound) {
+                document.addEventListener('click', function(event) {
+                    if (!event.target.closest('.topic5-select-question')) {
+                        closeTopic5OptionPanels();
+                    }
+                });
+                topic5OutsideClickBound = true;
+            }
+        }
+
+        function loadTopic5Exercises(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            const quizSection = document.getElementById('quizSection');
+
+            if (!topic || topicId !== 5 || !topic.topic5Exercises || topicId !== currentTopicId || !quizSection) {
+                return;
+            }
+
+            const saved = userQuizResults[`topic_${topicId}_practice`] || {};
+            const ex1Answers = Array.isArray(saved.exercise1Answers) ? saved.exercise1Answers : [];
+            const ex2Answers = Array.isArray(saved.exercise2Answers) ? saved.exercise2Answers : [];
+            const ex3Answers = Array.isArray(saved.exercise3Answers) ? saved.exercise3Answers : [];
+            const ex4Answers = Array.isArray(saved.exercise4Answers) ? saved.exercise4Answers : [];
+
+            let html = `
+                <div class="extra-exercises-section" id="topic5PracticeSection">
+                    <h2 class="extra-exercises-title">
+                        <i class="fas fa-briefcase"></i> Amaliy mashqlar: Kasblar va mashg'ulotlar
+                    </h2>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic5Exercises.exercise1.title}</h3>
+            `;
+
+            topic.topic5Exercises.exercise1.questions.forEach((question, index) => {
+                const parts = question.text.split('______');
+                const savedValue = ex1Answers[index] || '';
+                const buttonClasses = ['topic5-select-blank'];
+                if (savedValue) {
+                    buttonClasses.push('filled');
+                }
+
+                html += `
+                    <div class="topic5-select-question">
+                        <div class="topic5-select-line">
+                            <span>${parts[0] || ''}</span>
+                            <button type="button"
+                                    class="${buttonClasses.join(' ')}"
+                                    data-topic5-select="${index}"
+                                    data-value="${savedValue}">${savedValue || 'Variantni tanlang'}</button>
+                            <span>${parts[1] || ''}</span>
+                        </div>
+                        <div class="topic5-options" data-topic5-options="${index}">
+                            ${question.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic5-option-index="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic5Exercises.exercise2.title}</h3>
+                        <div class="exercise-grid">
+            `;
+
+            topic.topic5Exercises.exercise2.prompts.forEach((prompt, index) => {
+                const savedValue = ex2Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic5IsCorrect(savedValue, topic.topic5Exercises.exercise2.answers[index]) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="exercise-item">
+                        <span>${prompt}</span>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic5-e2="${index}"
+                               value="${savedValue}"
+                               placeholder="..." />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic5Exercises.exercise3.title}</h3>
+                        <div class="exercise-grid">
+            `;
+
+            topic.topic5Exercises.exercise3.prompts.forEach((prompt, index) => {
+                const savedValue = ex3Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic5IsCorrect(savedValue, topic.topic5Exercises.exercise3.answers[index]) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="exercise-item">
+                        <span>${prompt}</span>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic5-e3="${index}"
+                               value="${savedValue}"
+                               placeholder="To'g'ri variantni yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic5Exercises.exercise4.title}</h3>
+                        <div class="exercise-grid">
+            `;
+
+            topic.topic5Exercises.exercise4.prompts.forEach((prompt, index) => {
+                const savedValue = ex4Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic5IsCorrect(savedValue, topic.topic5Exercises.exercise4.answers[index]) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="exercise-item">
+                        <span>${prompt}</span>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic5-e4="${index}"
+                               value="${savedValue}"
+                               placeholder="Ruscha tarjima" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <button class="check-exercises-btn" onclick="window.checkTopic5Exercises(${topicId})">
+                        <i class="fas fa-check-circle"></i> Topic 5 mashqlarini tekshirish
+                    </button>
+
+                    <div class="exercise-results" id="topic5PracticeResults">
+                        <div class="exercise-score" id="topic5PracticeScore"></div>
+                    </div>
+                </div>
+            `;
+
+            quizSection.insertAdjacentHTML('afterend', html);
+            bindTopic5ExerciseEvents();
+        }
+
+        window.checkTopic5Exercises = async function(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 5 || !topic.topic5Exercises) {
+                return;
+            }
+
+            const ex1Answers = [];
+            const ex2Answers = [];
+            const ex3Answers = [];
+            const ex4Answers = [];
+            let totalCorrect = 0;
+            let totalQuestions = 0;
+
+            topic.topic5Exercises.exercise1.questions.forEach((question, index) => {
+                const blank = document.querySelector(`.topic5-select-blank[data-topic5-select="${index}"]`);
+                const userValue = blank?.dataset.value || '';
+                ex1Answers.push(userValue);
+                totalQuestions++;
+
+                if (!blank) {
+                    return;
+                }
+
+                blank.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic5IsCorrect(userValue, question.answer)) {
+                    blank.classList.add('correct');
+                    totalCorrect++;
+                } else {
+                    blank.classList.add('incorrect');
+                }
+            });
+
+            topic.topic5Exercises.exercise2.prompts.forEach((_, index) => {
+                const input = document.querySelector(`input[data-topic5-e2="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                ex2Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic5IsCorrect(userValue, topic.topic5Exercises.exercise2.answers[index])) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            topic.topic5Exercises.exercise3.prompts.forEach((_, index) => {
+                const input = document.querySelector(`input[data-topic5-e3="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                ex3Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic5IsCorrect(userValue, topic.topic5Exercises.exercise3.answers[index])) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            topic.topic5Exercises.exercise4.prompts.forEach((_, index) => {
+                const input = document.querySelector(`input[data-topic5-e4="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                ex4Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic5IsCorrect(userValue, topic.topic5Exercises.exercise4.answers[index])) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            const percentage = Math.round((totalCorrect / totalQuestions) * 100);
+            const resultData = {
+                exercise1Answers: ex1Answers,
+                exercise2Answers: ex2Answers,
+                exercise3Answers: ex3Answers,
+                exercise4Answers: ex4Answers,
+                score: totalCorrect,
+                total: totalQuestions,
+                timestamp: new Date().toISOString()
+            };
+
+            await saveQuizResultToFirebase(`${topicId}_practice`, resultData);
+            userQuizResults[`topic_${topicId}_practice`] = resultData;
+
+            const resultsDiv = document.getElementById('topic5PracticeResults');
+            const scoreDiv = document.getElementById('topic5PracticeScore');
+            if (resultsDiv && scoreDiv) {
+                const message = percentage >= 90
+                    ? 'Ajoyib! Kasblar bo\'yicha gaplarni juda yaxshi tuzdingiz.'
+                    : percentage >= 70
+                        ? 'Yaxshi! Yana bir marta mashq qilsangiz yanada mustahkam bo\'ladi.'
+                        : 'Mashqlarni yana bir bor ishlab chiqing va qayta tekshiring.';
+
+                scoreDiv.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 10px;">${totalCorrect}/${totalQuestions}</div>
+                    <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
+                    <p style="margin-top: 12px; font-size: 1rem;">${message}</p>
                 `;
                 resultsDiv.classList.add('show');
                 resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
