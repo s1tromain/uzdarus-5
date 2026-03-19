@@ -1,12 +1,17 @@
 (function () {
     'use strict';
 
+    var lastTopicKey = null;
+
     function getCourseData() {
         try {
-            if (typeof courseData !== 'undefined') return courseData;
+            if (typeof courseData !== 'undefined') {
+                return courseData;
+            }
         } catch (e) {
             // ignore
         }
+
         return window.courseData || null;
     }
 
@@ -34,26 +39,40 @@
         } catch (e) {
             // ignore
         }
+
         return window.currentTopic || null;
     }
 
     function getTopicById(topicId) {
-        const data = getCourseData();
+        var data = getCourseData();
         if (!data || !Array.isArray(data.topics)) {
             return null;
         }
-        return data.topics.find((topic) => topic.id === topicId) || null;
+
+        return data.topics.find(function (topic) {
+            return topic.id === topicId;
+        }) || null;
     }
 
     function getActiveTopic() {
-        const topicId = getCurrentTopicId();
+        var topicId = getCurrentTopicId();
         if (Number.isFinite(topicId)) {
             return getTopicById(topicId);
         }
 
-        const topic = getCurrentTopicObject();
-        if (topic) {
-            return topic;
+        var topic = getCurrentTopicObject();
+        return topic || null;
+    }
+
+    function getActiveTopicKey(topic) {
+        var topicId = getCurrentTopicId();
+
+        if (Number.isFinite(topicId)) {
+            return 'topic-' + String(topicId);
+        }
+
+        if (topic && topic.id !== undefined && topic.id !== null) {
+            return 'topic-' + String(topic.id);
         }
 
         return null;
@@ -62,70 +81,85 @@
     function normalize(value) {
         return String(value || '')
             .toLowerCase()
-            .replace(/ё/g, 'е')
-            .replace(/[.,!?;:()"'`«»\-]/g, ' ')
+            .replace(/\u0451/g, '\u0435')
+            .replace(/[.,!?;:()"'`<>\-]/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
     }
 
     function isCorrect(userValue, expected) {
-        const normalizedUser = normalize(userValue);
+        var normalizedUser = normalize(userValue);
         if (!normalizedUser) {
             return false;
         }
 
         if (Array.isArray(expected)) {
-            return expected.some((item) => normalize(item) === normalizedUser);
+            return expected.some(function (item) {
+                return normalize(item) === normalizedUser;
+            });
         }
 
         return normalize(expected) === normalizedUser;
     }
 
     function feedbackRow(type, text) {
-        return `<div class="feedback-row ${type}">${text}</div>`;
+        return '<div class="feedback-row ' + type + '">' + text + '</div>';
     }
 
-    function collectMainQuizFeedback(topic) {
-        const rows = [];
+    function queryIn(scope, selector) {
+        return scope ? scope.querySelector(selector) : document.querySelector(selector);
+    }
+
+    function queryAllIn(scope, selector) {
+        return Array.from(scope ? scope.querySelectorAll(selector) : document.querySelectorAll(selector));
+    }
+
+    function collectMainQuizFeedback(topic, scope) {
+        var rows = [];
         if (!topic || !topic.quiz) {
             return rows;
         }
 
         if (Array.isArray(topic.quiz.mcQuestions) && Array.isArray(topic.quiz.mcAnswers)) {
-            topic.quiz.mcQuestions.forEach((question, index) => {
-                const selectedOption = document.querySelector(`.quiz-options[data-question="${index}"] .quiz-option.selected`);
-                const selectedIndex = selectedOption ? parseInt(selectedOption.getAttribute('data-option'), 10) : -1;
-                const options = Array.isArray(topic.quiz.mcOptions?.[index]) ? topic.quiz.mcOptions[index] : [];
-                const correctIndex = Number.isInteger(topic.quiz.mcAnswers[index])
-                    ? topic.quiz.mcAnswers[index]
-                    : parseInt(topic.quiz.mcAnswers[index], 10);
-                const correctText = options[correctIndex] || '(javob topilmadi)';
-                const userText = selectedIndex >= 0 ? (options[selectedIndex] || '(tanlanmagan)') : '(tanlanmagan)';
-                const ok = selectedIndex === correctIndex;
-                const status = ok ? 'OK' : 'X';
+            topic.quiz.mcQuestions.forEach(function (question, index) {
+                var selectedOption = queryIn(scope, '.quiz-options[data-question="' + index + '"] .quiz-option.selected');
+                var selectedIndex = selectedOption ? parseInt(selectedOption.getAttribute('data-option'), 10) : -1;
+                var options = Array.isArray(topic.quiz.mcOptions && topic.quiz.mcOptions[index])
+                    ? topic.quiz.mcOptions[index]
+                    : [];
+
+                var rawCorrectIndex = topic.quiz.mcAnswers[index];
+                var correctIndex = Number.isInteger(rawCorrectIndex)
+                    ? rawCorrectIndex
+                    : parseInt(rawCorrectIndex, 10);
+
+                var correctText = options[correctIndex] || '(javob topilmadi)';
+                var userText = selectedIndex >= 0 ? (options[selectedIndex] || '(tanlanmagan)') : '(tanlanmagan)';
+                var ok = selectedIndex === correctIndex;
+                var status = ok ? 'OK' : 'X';
 
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} ${question} - Siz: <strong>${userText}</strong>; To'g'ri javob: <strong>${correctText}</strong>`
+                        status + ' ' + question + ' - Siz: <strong>' + userText + '</strong>; To\'g\'ri javob: <strong>' + correctText + '</strong>'
                     )
                 );
             });
         }
 
         if (Array.isArray(topic.quiz.blankQuestions) && Array.isArray(topic.quiz.blankAnswers)) {
-            topic.quiz.blankQuestions.forEach((question, index) => {
-                const input = document.querySelector(`input[data-blank="${index}"]`);
-                const userValue = input ? input.value.trim() : '';
-                const expected = topic.quiz.blankAnswers[index];
-                const ok = isCorrect(userValue, expected);
-                const expectedText = Array.isArray(expected) ? expected.join(' / ') : expected;
-                const status = ok ? 'OK' : 'X';
+            topic.quiz.blankQuestions.forEach(function (question, index) {
+                var input = queryIn(scope, 'input[data-blank="' + index + '"]');
+                var userValue = input ? input.value.trim() : '';
+                var expected = topic.quiz.blankAnswers[index];
+                var ok = isCorrect(userValue, expected);
+                var expectedText = Array.isArray(expected) ? expected.join(' / ') : expected;
+                var status = ok ? 'OK' : 'X';
 
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} ${question} - To'g'ri javob: <strong>${expectedText}</strong>`
+                        status + ' ' + question + ' - To\'g\'ri javob: <strong>' + expectedText + '</strong>'
                     )
                 );
             });
@@ -151,28 +185,33 @@
     }
 
     function collectB2QuizFeedback(topic) {
-        const rows = [];
+        var rows = [];
         if (!topic || !topic.quiz || !Array.isArray(topic.quiz.mcQuestions) || !Array.isArray(topic.quiz.mcAnswers)) {
             return rows;
         }
 
-        const answers = getB2UserAnswers();
+        var answers = getB2UserAnswers();
 
-        topic.quiz.mcQuestions.forEach((question, index) => {
-            const selectedIndex = Number.isInteger(answers[index]) ? answers[index] : -1;
-            const options = Array.isArray(topic.quiz.mcOptions?.[index]) ? topic.quiz.mcOptions[index] : [];
-            const correctIndex = Number.isInteger(topic.quiz.mcAnswers[index])
-                ? topic.quiz.mcAnswers[index]
-                : parseInt(topic.quiz.mcAnswers[index], 10);
-            const correctText = options[correctIndex] || '(javob topilmadi)';
-            const userText = selectedIndex >= 0 ? (options[selectedIndex] || '(tanlanmagan)') : '(tanlanmagan)';
-            const ok = selectedIndex === correctIndex;
-            const status = ok ? 'OK' : 'X';
+        topic.quiz.mcQuestions.forEach(function (question, index) {
+            var selectedIndex = Number.isInteger(answers[index]) ? answers[index] : -1;
+            var options = Array.isArray(topic.quiz.mcOptions && topic.quiz.mcOptions[index])
+                ? topic.quiz.mcOptions[index]
+                : [];
+
+            var rawCorrectIndex = topic.quiz.mcAnswers[index];
+            var correctIndex = Number.isInteger(rawCorrectIndex)
+                ? rawCorrectIndex
+                : parseInt(rawCorrectIndex, 10);
+
+            var correctText = options[correctIndex] || '(javob topilmadi)';
+            var userText = selectedIndex >= 0 ? (options[selectedIndex] || '(tanlanmagan)') : '(tanlanmagan)';
+            var ok = selectedIndex === correctIndex;
+            var status = ok ? 'OK' : 'X';
 
             rows.push(
                 feedbackRow(
                     ok ? 'ok' : 'bad',
-                    `${status} ${question} - Siz: <strong>${userText}</strong>; To'g'ri javob: <strong>${correctText}</strong>`
+                    status + ' ' + question + ' - Siz: <strong>' + userText + '</strong>; To\'g\'ri javob: <strong>' + correctText + '</strong>'
                 )
             );
         });
@@ -180,23 +219,23 @@
         return rows;
     }
 
-    function collectExtraExercisesFeedback(topic) {
-        const rows = [];
+    function collectExtraExercisesFeedback(topic, scope) {
+        var rows = [];
         if (!topic || !topic.extraExercises) {
             return rows;
         }
 
-        Object.keys(topic.extraExercises).forEach((sectionKey) => {
-            const section = topic.extraExercises[sectionKey];
+        Object.keys(topic.extraExercises).forEach(function (sectionKey) {
+            var section = topic.extraExercises[sectionKey];
             if (!section || !Array.isArray(section.questions) || !Array.isArray(section.answers)) {
                 return;
             }
 
-            section.questions.forEach((question, index) => {
-                const input = document.querySelector(`input[data-section="${sectionKey}"][data-index="${index}"]`);
-                const userValue = input ? input.value.trim() : '';
-                const expected = section.answers[index];
-                const ok = isCorrect(userValue, expected);
+            section.questions.forEach(function (question, index) {
+                var input = queryIn(scope, 'input[data-section="' + sectionKey + '"][data-index="' + index + '"]');
+                var userValue = input ? input.value.trim() : '';
+                var expected = section.answers[index];
+                var ok = isCorrect(userValue, expected);
 
                 if (input) {
                     input.classList.remove('correct', 'incorrect');
@@ -209,12 +248,13 @@
                     }
                 }
 
-                const readableQuestion = String(question || '').replace(/…/g, '_____');
-                const status = ok ? 'OK' : 'X';
+                var readableQuestion = String(question || '').replace(/\u2026/g, '_____');
+                var status = ok ? 'OK' : 'X';
+
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} ${readableQuestion} - To'g'ri javob: <strong>${expected}</strong>`
+                        status + ' ' + readableQuestion + ' - To\'g\'ri javob: <strong>' + expected + '</strong>'
                     )
                 );
             });
@@ -223,17 +263,17 @@
         return rows;
     }
 
-    function collectTopic4Feedback(topic) {
-        const rows = [];
+    function collectTopic4Feedback(topic, scope) {
+        var rows = [];
         if (!topic || !topic.topic4FillExercise) {
             return rows;
         }
 
-        topic.topic4FillExercise.questions.forEach((prompt, index) => {
-            const input = document.querySelector(`input[data-topic4-fill="${index}"]`);
-            const userValue = input ? input.value.trim() : '';
-            const expected = topic.topic4FillExercise.answers[index];
-            const ok = isCorrect(userValue, expected);
+        topic.topic4FillExercise.questions.forEach(function (prompt, index) {
+            var input = queryIn(scope, 'input[data-topic4-fill="' + index + '"]');
+            var userValue = input ? input.value.trim() : '';
+            var expected = topic.topic4FillExercise.answers[index];
+            var ok = isCorrect(userValue, expected);
 
             if (input) {
                 input.classList.remove('correct', 'incorrect');
@@ -246,11 +286,11 @@
                 }
             }
 
-            const status = ok ? 'OK' : 'X';
+            var status = ok ? 'OK' : 'X';
             rows.push(
                 feedbackRow(
                     ok ? 'ok' : 'bad',
-                    `${status} ${prompt} - To'g'ri javob: <strong>${expected}</strong>`
+                    status + ' ' + prompt + ' - To\'g\'ri javob: <strong>' + expected + '</strong>'
                 )
             );
         });
@@ -258,19 +298,19 @@
         return rows;
     }
 
-    function collectTopic5Feedback(topic) {
-        const rows = [];
+    function collectTopic5Feedback(topic, scope) {
+        var rows = [];
         if (!topic || !topic.topic5Exercises) {
             return rows;
         }
 
-        const ex1 = topic.topic5Exercises.exercise1;
+        var ex1 = topic.topic5Exercises.exercise1;
         if (ex1 && Array.isArray(ex1.questions)) {
-            ex1.questions.forEach((question, index) => {
-                const blank = document.querySelector(`.topic5-select-blank[data-topic5-select="${index}"]`);
-                const userValue = blank ? (blank.dataset.value || '').trim() : '';
-                const expected = question.answer;
-                const ok = isCorrect(userValue, expected);
+            ex1.questions.forEach(function (question, index) {
+                var blank = queryIn(scope, '.topic5-select-blank[data-topic5-select="' + index + '"]');
+                var userValue = blank ? (blank.dataset.value || '').trim() : '';
+                var expected = question.answer;
+                var ok = isCorrect(userValue, expected);
 
                 if (blank) {
                     blank.classList.remove('correct', 'incorrect');
@@ -283,23 +323,23 @@
                     }
                 }
 
-                const status = ok ? 'OK' : 'X';
+                var status = ok ? 'OK' : 'X';
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} ${question.text} - To'g'ri javob: <strong>${expected}</strong>`
+                        status + ' ' + question.text + ' - To\'g\'ri javob: <strong>' + expected + '</strong>'
                     )
                 );
             });
         }
 
-        const ex2 = topic.topic5Exercises.exercise2;
+        var ex2 = topic.topic5Exercises.exercise2;
         if (ex2 && Array.isArray(ex2.prompts) && Array.isArray(ex2.answers)) {
-            ex2.prompts.forEach((prompt, index) => {
-                const input = document.querySelector(`input[data-topic5-e2="${index}"]`);
-                const userValue = input ? input.value.trim() : '';
-                const expected = ex2.answers[index];
-                const ok = isCorrect(userValue, expected);
+            ex2.prompts.forEach(function (prompt, index) {
+                var input = queryIn(scope, 'input[data-topic5-e2="' + index + '"]');
+                var userValue = input ? input.value.trim() : '';
+                var expected = ex2.answers[index];
+                var ok = isCorrect(userValue, expected);
 
                 if (input) {
                     input.classList.remove('correct', 'incorrect');
@@ -312,23 +352,23 @@
                     }
                 }
 
-                const status = ok ? 'OK' : 'X';
+                var status = ok ? 'OK' : 'X';
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} ${prompt} - To'g'ri javob: <strong>${expected}</strong>`
+                        status + ' ' + prompt + ' - To\'g\'ri javob: <strong>' + expected + '</strong>'
                     )
                 );
             });
         }
 
-        const ex3 = topic.topic5Exercises.exercise3;
+        var ex3 = topic.topic5Exercises.exercise3;
         if (ex3 && Array.isArray(ex3.prompts) && Array.isArray(ex3.answers)) {
-            ex3.prompts.forEach((prompt, index) => {
-                const input = document.querySelector(`input[data-topic5-e3="${index}"]`);
-                const userValue = input ? input.value.trim() : '';
-                const expected = ex3.answers[index];
-                const ok = isCorrect(userValue, expected);
+            ex3.prompts.forEach(function (prompt, index) {
+                var input = queryIn(scope, 'input[data-topic5-e3="' + index + '"]');
+                var userValue = input ? input.value.trim() : '';
+                var expected = ex3.answers[index];
+                var ok = isCorrect(userValue, expected);
 
                 if (input) {
                     input.classList.remove('correct', 'incorrect');
@@ -341,24 +381,24 @@
                     }
                 }
 
-                const status = ok ? 'OK' : 'X';
+                var status = ok ? 'OK' : 'X';
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} ${prompt} - To'g'ri javob: <strong>${expected}</strong>`
+                        status + ' ' + prompt + ' - To\'g\'ri javob: <strong>' + expected + '</strong>'
                     )
                 );
             });
         }
 
-        const ex4 = topic.topic5Exercises.exercise4;
+        var ex4 = topic.topic5Exercises.exercise4;
         if (ex4 && Array.isArray(ex4.prompts) && Array.isArray(ex4.answers)) {
-            ex4.prompts.forEach((prompt, index) => {
-                const input = document.querySelector(`input[data-topic5-e4="${index}"]`);
-                const userValue = input ? input.value.trim() : '';
-                const expected = ex4.answers[index];
-                const ok = isCorrect(userValue, expected);
-                const expectedText = Array.isArray(expected) ? expected.join(' / ') : expected;
+            ex4.prompts.forEach(function (prompt, index) {
+                var input = queryIn(scope, 'input[data-topic5-e4="' + index + '"]');
+                var userValue = input ? input.value.trim() : '';
+                var expected = ex4.answers[index];
+                var ok = isCorrect(userValue, expected);
+                var expectedText = Array.isArray(expected) ? expected.join(' / ') : expected;
 
                 if (input) {
                     input.classList.remove('correct', 'incorrect');
@@ -371,11 +411,11 @@
                     }
                 }
 
-                const status = ok ? 'OK' : 'X';
+                var status = ok ? 'OK' : 'X';
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} ${prompt} - To'g'ri javob: <strong>${expectedText}</strong>`
+                        status + ' ' + prompt + ' - To\'g\'ri javob: <strong>' + expectedText + '</strong>'
                     )
                 );
             });
@@ -405,34 +445,34 @@
     }
 
     function collectMatchingFeedback(topic) {
-        const rows = [];
+        var rows = [];
         if (!topic || !topic.quiz || !topic.quiz.matchingGame || !Array.isArray(topic.quiz.matchingGame.pairs)) {
             return rows;
         }
 
-        const state = getMatchingState();
-        const pairs = topic.quiz.matchingGame.pairs;
-        const map = new Map();
+        var state = getMatchingState();
+        var pairs = topic.quiz.matchingGame.pairs;
+        var map = new Map();
 
         if (state && Array.isArray(state.matches)) {
-            state.matches.forEach((match) => {
+            state.matches.forEach(function (match) {
                 if (Number.isInteger(match.left) && Number.isInteger(match.right) && !map.has(match.left)) {
                     map.set(match.left, match.right);
                 }
             });
         }
 
-        pairs.forEach((pair, index) => {
-            const selectedRight = map.has(index) ? map.get(index) : null;
-            const ok = selectedRight === index;
-            const selectedPair = Number.isInteger(selectedRight) ? pairs[selectedRight] : null;
-            const selectedText = selectedPair ? selectedPair.right : '(tanlanmagan)';
-            const status = ok ? 'OK' : 'X';
+        pairs.forEach(function (pair, index) {
+            var selectedRight = map.has(index) ? map.get(index) : null;
+            var ok = selectedRight === index;
+            var selectedPair = Number.isInteger(selectedRight) ? pairs[selectedRight] : null;
+            var selectedText = selectedPair ? selectedPair.right : '(tanlanmagan)';
+            var status = ok ? 'OK' : 'X';
 
             rows.push(
                 feedbackRow(
                     ok ? 'ok' : 'bad',
-                    `${status} ${pair.left} -> ${selectedText} - To'g'ri javob: <strong>${pair.right}</strong>`
+                    status + ' ' + pair.left + ' -> ' + selectedText + ' - To\'g\'ri javob: <strong>' + pair.right + '</strong>'
                 )
             );
         });
@@ -440,20 +480,21 @@
         return rows;
     }
 
-    function collectB2BlankFeedback(topic) {
-        const rows = [];
+    function collectB2BlankFeedback(topic, scope) {
+        var rows = [];
         if (!topic || !topic.quiz || !Array.isArray(topic.quiz.blankQuestions) || !Array.isArray(topic.quiz.blankAnswers)) {
             return rows;
         }
 
-        topic.quiz.blankQuestions.forEach((_, qIndex) => {
-            const expectedList = topic.quiz.blankAnswers[qIndex];
-            const normalizedExpectedList = Array.isArray(expectedList) ? expectedList : [expectedList];
+        topic.quiz.blankQuestions.forEach(function (_, qIndex) {
+            var expectedList = topic.quiz.blankAnswers[qIndex];
+            var normalizedExpectedList = Array.isArray(expectedList) ? expectedList : [expectedList];
 
-            normalizedExpectedList.forEach((expected, inputIndex) => {
-                const input = document.querySelector(`.blank-input-inline[data-q-index="${qIndex}"][data-input-index="${inputIndex}"]`);
-                const userValue = input ? input.value.trim() : '';
-                const ok = isCorrect(userValue, expected);
+            normalizedExpectedList.forEach(function (expected, inputIndex) {
+                var selector = '.blank-input-inline[data-q-index="' + qIndex + '"][data-input-index="' + inputIndex + '"]';
+                var input = queryIn(scope, selector);
+                var userValue = input ? input.value.trim() : '';
+                var ok = isCorrect(userValue, expected);
 
                 if (input) {
                     input.classList.remove('correct', 'incorrect');
@@ -466,11 +507,11 @@
                     }
                 }
 
-                const status = ok ? 'OK' : 'X';
+                var status = ok ? 'OK' : 'X';
                 rows.push(
                     feedbackRow(
                         ok ? 'ok' : 'bad',
-                        `${status} Yozma mashq ${qIndex + 1}.${inputIndex + 1} - To'g'ri javob: <strong>${expected}</strong>`
+                        status + ' Yozma mashq ' + (qIndex + 1) + '.' + (inputIndex + 1) + ' - To\'g\'ri javob: <strong>' + expected + '</strong>'
                     )
                 );
             });
@@ -479,72 +520,110 @@
         return rows;
     }
 
-    function renderGlobalFeedback(rows) {
-        const feedback = document.getElementById('globalFeedback');
+    function clearFeedbackNode(node) {
+        if (!node) {
+            return;
+        }
+
+        node.innerHTML = '';
+        node.classList.remove('show');
+        node.classList.add('hidden');
+    }
+
+    function clearAllTopicFeedback() {
+        queryAllIn(document, '.topic-feedback').forEach(function (node) {
+            clearFeedbackNode(node);
+        });
+    }
+
+    function renderTopicFeedback(host, rows) {
+        var feedback = host ? queryIn(host, '.topic-feedback') : null;
         if (!feedback) {
             return;
         }
 
-        if (!rows.length) {
+        var totalCount = rows.length;
+        var correctCount = rows.filter(function (row) {
+            return row.indexOf('feedback-row ok') !== -1;
+        }).length;
+
+        if (!totalCount) {
             feedback.innerHTML = '<div class="feedback-empty">Tekshirish uchun mashqlar topilmadi.</div>';
+            feedback.classList.remove('hidden');
             feedback.classList.add('show');
             return;
         }
 
-        feedback.innerHTML = `
-            <div class="global-feedback-title">Umumiy natija (barcha mashqlar)</div>
-            ${rows.join('')}
-        `;
+        feedback.innerHTML =
+            '<div class="topic-feedback-title">Natija: ' + correctCount + '/' + totalCount + '</div>' +
+            rows.join('');
+
+        feedback.classList.remove('hidden');
         feedback.classList.add('show');
     }
 
-    function pickAnchor() {
+    function removeLegacyGlobalControls() {
+        queryAllIn(document, '#globalCheckHost').forEach(function (node) {
+            node.remove();
+        });
+
+        queryAllIn(document, '#checkAllAnswersBtn').forEach(function (node) {
+            node.remove();
+        });
+
+        queryAllIn(document, '#globalFeedback').forEach(function (node) {
+            node.remove();
+        });
+    }
+
+    function getActiveTopicRoot() {
+        var quizSection = document.getElementById('quizSection');
+        if (
+            quizSection &&
+            quizSection.querySelector('.quiz-container, .quiz-question, .fill-blank, .exercise-block, .matching-game-container, #extraExercises, #topic4FillExercise, #topic5PracticeSection, .blank-section')
+        ) {
+            return quizSection;
+        }
+
+        var lessonContent = document.getElementById('lessonContent');
+        if (
+            lessonContent &&
+            lessonContent.querySelector('.quiz-section, .blank-section, .matching-game-container, .quiz-question, .exercise-block, #extraExercises, #topic4FillExercise, #topic5PracticeSection')
+        ) {
+            return lessonContent;
+        }
+
+        return null;
+    }
+
+    function pickTopicAnchor(root) {
+        if (!root) {
+            return null;
+        }
+
         return (
-            document.getElementById('topic5PracticeSection') ||
-            document.getElementById('topic4FillExercise') ||
-            document.getElementById('extraExercises') ||
-            document.getElementById('matchingGameA1') ||
-            document.getElementById('matchingGame') ||
-            document.querySelector('.matching-game-container:last-of-type') ||
-            document.querySelector('.blank-section:last-of-type') ||
-            document.querySelector('.quiz-section:last-of-type') ||
-            document.getElementById('quizSection') ||
-            document.getElementById('lessonContent')
+            queryIn(root, '#topic5PracticeSection') ||
+            queryIn(root, '#topic4FillExercise') ||
+            queryIn(root, '#extraExercises') ||
+            queryIn(root, '#matchingGameA1') ||
+            queryIn(root, '#matchingGame') ||
+            queryIn(root, '.matching-game-container:last-of-type') ||
+            queryIn(root, '.blank-section:last-of-type') ||
+            queryIn(root, '.quiz-section:last-of-type') ||
+            queryIn(root, '.quiz-container:last-of-type') ||
+            root.lastElementChild ||
+            root
         );
     }
 
-    function ensureGlobalControls() {
-        const anchor = pickAnchor();
-        if (!anchor || !anchor.parentNode) {
-            return;
-        }
+    async function runTopicCheck(event) {
+        var button = event.currentTarget;
+        var host = button ? button.closest('.topic-check-host') : null;
+        var topicRoot = host ? host.closest('.topic-exercises') : getActiveTopicRoot();
 
-        let host = document.getElementById('globalCheckHost');
-        if (!host) {
-            host = document.createElement('div');
-            host.id = 'globalCheckHost';
-            host.className = 'exercise-block';
-            host.innerHTML = `
-                <button id="checkAllAnswersBtn" class="primary-btn" type="button">Javoblarni tekshirish</button>
-                <div id="globalFeedback"></div>
-            `;
-
-            const btn = host.querySelector('#checkAllAnswersBtn');
-            if (btn) {
-                btn.addEventListener('click', runGlobalCheck);
-            }
-        }
-
-        const shouldMove = host.previousElementSibling !== anchor;
-        if (shouldMove) {
-            anchor.insertAdjacentElement('afterend', host);
-        }
-    }
-
-    async function runGlobalCheck() {
-        const rows = [];
-        const topicId = getCurrentTopicId();
-        const topic = getActiveTopic();
+        var rows = [];
+        var topicId = getCurrentTopicId();
+        var topic = getActiveTopic();
 
         if (typeof window.checkAnswers === 'function' && Number.isFinite(topicId)) {
             await window.checkAnswers(topicId);
@@ -571,11 +650,11 @@
                 }
             }
 
-            rows.push(...collectMainQuizFeedback(topic));
-            rows.push(...collectExtraExercisesFeedback(topic));
-            rows.push(...collectTopic4Feedback(topic));
-            rows.push(...collectTopic5Feedback(topic));
-            rows.push(...collectMatchingFeedback(topic));
+            rows.push.apply(rows, collectMainQuizFeedback(topic, topicRoot));
+            rows.push.apply(rows, collectExtraExercisesFeedback(topic, topicRoot));
+            rows.push.apply(rows, collectTopic4Feedback(topic, topicRoot));
+            rows.push.apply(rows, collectTopic5Feedback(topic, topicRoot));
+            rows.push.apply(rows, collectMatchingFeedback(topic));
         } else {
             if (typeof window.submitQuiz === 'function') {
                 window.submitQuiz();
@@ -589,20 +668,85 @@
                 window.checkMatching();
             }
 
-            const b2Topic = getActiveTopic();
-            rows.push(...collectB2QuizFeedback(b2Topic));
-            rows.push(...collectB2BlankFeedback(b2Topic));
-            rows.push(...collectMatchingFeedback(b2Topic));
+            var b2Topic = getActiveTopic();
+            rows.push.apply(rows, collectB2QuizFeedback(b2Topic));
+            rows.push.apply(rows, collectB2BlankFeedback(b2Topic, topicRoot));
+            rows.push.apply(rows, collectMatchingFeedback(b2Topic));
         }
 
-        renderGlobalFeedback(rows);
+        renderTopicFeedback(host, rows);
     }
 
-    function startGlobalObserver() {
-        ensureGlobalControls();
+    function createTopicHost(topicKey) {
+        var host = document.createElement('div');
+        host.className = 'topic-check-host';
+        host.dataset.topicId = topicKey;
 
-        const observer = new MutationObserver(() => {
-            ensureGlobalControls();
+        host.innerHTML =
+            '<button class="check-topic-btn" type="button">Javoblarni tekshirish</button>' +
+            '<div class="topic-feedback hidden"></div>';
+
+        var button = queryIn(host, '.check-topic-btn');
+        if (button) {
+            button.addEventListener('click', runTopicCheck);
+        }
+
+        return host;
+    }
+
+    function ensureSingleTopicControls() {
+        removeLegacyGlobalControls();
+
+        var topic = getActiveTopic();
+        var topicKey = getActiveTopicKey(topic);
+        var root = getActiveTopicRoot();
+
+        if (!root || !topicKey) {
+            queryAllIn(document, '.topic-check-host').forEach(function (node) {
+                node.remove();
+            });
+            return;
+        }
+
+        root.classList.add('topic-exercises');
+        root.setAttribute('data-topic-id', topicKey);
+
+        if (lastTopicKey !== topicKey) {
+            clearAllTopicFeedback();
+            lastTopicKey = topicKey;
+        }
+
+        var hosts = queryAllIn(root, '.topic-check-host');
+        if (hosts.length > 1) {
+            hosts.slice(1).forEach(function (node) {
+                node.remove();
+            });
+        }
+
+        var host = queryIn(root, '.topic-check-host');
+        if (!host) {
+            host = createTopicHost(topicKey);
+        }
+
+        host.dataset.topicId = topicKey;
+
+        var anchor = pickTopicAnchor(root);
+        if (anchor && anchor !== host && host.previousElementSibling !== anchor) {
+            anchor.insertAdjacentElement('afterend', host);
+        }
+
+        queryAllIn(document, '.topic-check-host').forEach(function (node) {
+            if (!root.contains(node)) {
+                node.remove();
+            }
+        });
+    }
+
+    function startTopicObserver() {
+        ensureSingleTopicControls();
+
+        var observer = new MutationObserver(function () {
+            ensureSingleTopicControls();
         });
 
         if (document.body) {
@@ -612,12 +756,12 @@
             });
         }
 
-        setInterval(ensureGlobalControls, 700);
+        setInterval(ensureSingleTopicControls, 650);
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', startGlobalObserver);
+        document.addEventListener('DOMContentLoaded', startTopicObserver);
     } else {
-        startGlobalObserver();
+        startTopicObserver();
     }
 })();
