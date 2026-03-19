@@ -1,0 +1,160 @@
+/* Global course UI/logic unification (demo + paid) */
+
+.exercise-block {
+    margin-bottom: 32px !important;
+}
+
+.exercise-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+}
+
+.exercise-item {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    align-items: center !important;
+}
+
+.exercise-item span {
+    word-break: break-word !important;
+    max-width: 100%;
+}
+
+.exercise-item input {
+    max-width: 200px !important;
+    flex: 1 1 200px !important;
+}
+
+input,
+.option-chip,
+.topic5-option-chip {
+    min-height: 40px;
+    border-radius: 10px;
+}
+
+.option-chip,
+.topic5-option-chip {
+    padding: 8px 14px;
+    border-radius: 20px;
+    background: #f3f3f3;
+    cursor: pointer;
+    border: 1px solid #dddddd;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.option-chip:hover,
+.topic5-option-chip:hover {
+    background: #e0e0e0;
+    border-color: #c7c7c7;
+}
+
+#globalCheckHost {
+    margin: 28px 0 12px;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: #ffffff;
+    padding: 14px 32px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 8px 20px rgba(255, 152, 0, 0.35);
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(255, 152, 0, 0.45);
+}
+
+#globalFeedback {
+    margin-top: 14px;
+    background: #fff8e1;
+    border: 1px solid #ffd180;
+    border-radius: 12px;
+    padding: 14px;
+    display: none;
+}
+
+#globalFeedback.show {
+    display: block;
+}
+
+#globalFeedback .global-feedback-title {
+    font-weight: 700;
+    color: #e65100;
+    margin-bottom: 10px;
+}
+
+#globalFeedback .feedback-row {
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+#globalFeedback .feedback-row.ok {
+    background: #e8f5e9;
+    color: #1b5e20;
+}
+
+#globalFeedback .feedback-row.bad {
+    background: #ffebee;
+    color: #b71c1c;
+}
+
+#globalFeedback .feedback-row.note {
+    background: #eef6ff;
+    color: #0d47a1;
+}
+
+#globalFeedback .feedback-empty {
+    color: #555;
+    font-size: 0.95rem;
+}
+
+/* Keep only one visible check button per topic */
+.check-exercises-btn,
+.check-matching-btn,
+.check-blank-btn,
+.submit-btn,
+.submit-quiz-btn {
+    display: none !important;
+}
+
+/* Hide local duplicated score blocks; unified feedback lives in #globalFeedback */
+.exercise-results,
+.matching-score,
+.blank-results,
+.quiz-results {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .exercise-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+    }
+
+    input,
+    .exercise-item input,
+    .topic5-select-blank,
+    .topic5-text-input {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    .primary-btn {
+        width: 100%;
+    }
+}
