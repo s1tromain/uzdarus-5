@@ -1491,14 +1491,42 @@
             font-weight: 600;
         }
 
-        .topic6-topic-check-controls {
-            margin-top: 18px;
+        .topic-check-section {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
         }
 
-        .topic6-topic-check-controls .check-exercises-btn {
-            display: block;
-            width: fit-content;
-            max-width: 100%;
+        .check-topic-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 14px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .check-topic-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 9px 26px rgba(255, 152, 0, 0.55);
+        }
+
+        .topic-feedback {
+            margin-top: 14px;
+            background: var(--light);
+            border-left: 4px solid var(--primary);
+            border-radius: 10px;
+            padding: 18px;
+            text-align: left;
+        }
+
+        .topic-feedback.hidden {
+            display: none;
         }
 
         /* Matching Game Styles (reused from premium B1/B2 component) */
@@ -5114,50 +5142,19 @@
             }
         }
 
-        function ensureTopic6BottomCheckControls(topicId) {
-            const topic6Section = document.getElementById('topic6PracticeSection');
-            if (!topic6Section) {
+        function bindTopic6CheckButton(topicId) {
+            const checkButton = document.getElementById('checkTopic6Btn');
+            const feedback = document.getElementById('topic6Feedback');
+            if (!checkButton || !feedback) {
                 return;
             }
 
-            const duplicates = topic6Section.querySelectorAll('.topic6-topic-check-controls');
-            if (duplicates.length > 1) {
-                duplicates.forEach((node, index) => {
-                    if (index > 0) {
-                        node.remove();
-                    }
-                });
-            }
+            feedback.classList.add('hidden');
+            feedback.innerHTML = '';
 
-            let controls = topic6Section.querySelector('.topic6-topic-check-controls');
-            if (!controls) {
-                controls = document.createElement('div');
-                controls.className = 'topic6-topic-check-controls';
-                controls.innerHTML = `
-                    <button type="button" class="check-exercises-btn" data-topic6-check-button="true">
-                        <i class="fas fa-check-circle"></i> Javoblarni tekshirish
-                    </button>
-
-                    <div class="exercise-results" id="topic6PracticeResults">
-                        <div class="exercise-score" id="topic6PracticeScore"></div>
-                        <div class="topic6-feedback-list" id="topic6PracticeBreakdown"></div>
-                    </div>
-                `;
-                topic6Section.appendChild(controls);
-            }
-
-            // Always keep a single topic-level checker at the very bottom.
-            topic6Section.appendChild(controls);
-
-            const button = controls.querySelector('[data-topic6-check-button="true"]');
-            if (button) {
-                button.onclick = () => window.checkTopic6Exercises(topicId);
-            }
-
-            const resultsDiv = controls.querySelector('#topic6PracticeResults');
-            if (resultsDiv) {
-                resultsDiv.classList.remove('show');
-            }
+            checkButton.onclick = () => {
+                window.checkTopic6Exercises(topicId);
+            };
         }
 
         function loadTopic6Exercises(topicId) {
@@ -5333,13 +5330,20 @@
                 `;
             });
 
-            html += `
-                    </div>
-                </div>
-            `;
+                        html += `
+                                        </div>
 
-            quizSection.innerHTML = html;
-            ensureTopic6BottomCheckControls(topicId);
+                                        <div class="topic-check-section" data-topic-check="topic-6">
+                                            <button type="button" class="check-topic-btn" id="checkTopic6Btn">
+                                                Javoblarni tekshirish
+                                            </button>
+                                            <div class="topic-feedback hidden" id="topic6Feedback"></div>
+                                        </div>
+                                </div>
+                        `;
+
+                        quizSection.innerHTML = html;
+                        bindTopic6CheckButton(topicId);
 
             topic.topic6Exercises.exercise5.items.forEach((item, index) => {
                 renderTopic6BuilderSelection(index);
@@ -5580,26 +5584,24 @@
                     : 'Mashqlarni qayta ko\'rib chiqing va yana bir marta tekshirib ko\'ring.';
 
             const topic6Section = document.getElementById('topic6PracticeSection');
-            const resultsDiv = topic6Section?.querySelector('#topic6PracticeResults');
-            const scoreDiv = topic6Section?.querySelector('#topic6PracticeScore');
-            const breakdownDiv = topic6Section?.querySelector('#topic6PracticeBreakdown');
-            if (resultsDiv && scoreDiv && breakdownDiv) {
-                scoreDiv.innerHTML = `
+            const feedbackDiv = topic6Section?.querySelector('#topic6Feedback');
+            if (feedbackDiv) {
+                feedbackDiv.innerHTML = `
                     <div style="font-size: 2rem; margin-bottom: 10px;">${totalCorrect}/${totalQuestions}</div>
                     <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
                     <p style="margin-top: 12px; font-size: 1rem;">${message}</p>
+
+                    <div class="topic6-feedback-list">
+                        <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exerciseData.exercise1.sentences.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exerciseData.exercise2.items.length}</div>
+                        <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exerciseData.exercise3.prompts.length}</div>
+                        <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exerciseData.exercise4.prompts.length}</div>
+                        <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exerciseData.exercise5.items.length}</div>
+                    </div>
                 `;
 
-                breakdownDiv.innerHTML = `
-                    <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exerciseData.exercise1.sentences.length}</div>
-                    <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exerciseData.exercise2.items.length}</div>
-                    <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exerciseData.exercise3.prompts.length}</div>
-                    <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exerciseData.exercise4.prompts.length}</div>
-                    <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exerciseData.exercise5.items.length}</div>
-                `;
-
-                resultsDiv.classList.add('show');
-                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                feedbackDiv.classList.remove('hidden');
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         };
 
