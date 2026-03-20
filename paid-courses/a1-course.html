@@ -1311,6 +1311,186 @@
             flex: 1;
         }
 
+        /* Topic 6 practice section */
+        .topic6-inline-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            background: var(--light);
+            border-left: 3px solid var(--primary);
+        }
+
+        .topic6-inline-number {
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+        .topic6-inline-text {
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .topic6-inline-input {
+            min-width: 140px;
+            max-width: 190px;
+            flex: 0 0 170px;
+        }
+
+        .topic6-text-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .topic6-text-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            border-radius: 10px;
+            background: var(--light);
+            border-left: 3px solid var(--primary);
+        }
+
+        .topic6-text-prompt {
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .topic6-builder-item {
+            background: var(--light);
+            border: 1px solid #f1d9a0;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+
+        .topic6-builder-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .topic6-builder-index {
+            color: var(--primary-dark);
+            font-weight: 700;
+        }
+
+        .topic6-builder-target {
+            flex: 1;
+            min-height: 44px;
+            background: white;
+            border: 2px dashed var(--primary);
+            border-radius: 10px;
+            padding: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .topic6-builder-target.correct {
+            border-color: var(--success);
+            background: #c8e6c9;
+        }
+
+        .topic6-builder-target.incorrect {
+            border-color: var(--error);
+            background: #ffcdd2;
+        }
+
+        .topic6-builder-placeholder {
+            color: #8c8c8c;
+            font-size: 0.95rem;
+            font-style: italic;
+        }
+
+        .topic6-builder-token {
+            border: none;
+            background: #fff6db;
+            color: #6a4e08;
+            border-radius: 999px;
+            padding: 7px 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .topic6-builder-token:hover {
+            background: #ffe6a2;
+        }
+
+        .topic6-builder-bank {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .topic6-word-chip {
+            border: 2px solid #e3e3e3;
+            background: white;
+            color: var(--dark);
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .topic6-word-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+
+        .topic6-word-chip.used {
+            border-color: var(--primary);
+            background: var(--secondary);
+            color: #5f4600;
+        }
+
+        .topic6-clear-btn {
+            border: none;
+            background: white;
+            color: var(--primary-dark);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .topic6-correct-hint {
+            display: none;
+            margin-top: 8px;
+            color: #c62828;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .topic6-correct-hint.show {
+            display: block;
+        }
+
+        .topic6-feedback-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .topic6-feedback-row {
+            background: white;
+            border-left: 3px solid var(--primary);
+            border-radius: 8px;
+            padding: 10px 12px;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
         /* Matching Game Styles (reused from premium B1/B2 component) */
         .matching-game-container {
             background: white;
@@ -1721,6 +1901,20 @@
             .topic5-options {
                 padding-left: 0;
             }
+
+            .topic6-inline-input {
+                max-width: 100%;
+                flex: 1 1 100%;
+            }
+
+            .topic6-builder-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .topic6-clear-btn {
+                width: 100%;
+            }
         }
 
         @media (max-width: 480px) {
@@ -1809,6 +2003,12 @@
             }
 
             .topic5-option-chip {
+                width: 100%;
+                text-align: center;
+            }
+
+            .topic6-word-chip,
+            .topic6-builder-token {
                 width: 100%;
                 text-align: center;
             }
@@ -2665,15 +2865,219 @@
 </div>
                     `,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Bu mavzuda shahar joylari, yo'nalish so'rash va yo'l ko'rsatish iboralarini rus tilida amaliy gaplarda qo'llaysiz."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #3F51B5, #283593); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(63, 81, 181, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🗺️</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Shaharning joylari lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                Ushbu mavzuda <strong>38 ta so'z va ibora</strong> o'rganasiz
+                            </p>
+                            <button onclick="window.location.href='a1-vocabulary.html?topic=6'"
+                                    style="background: white; color: #283593; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-location-arrow"></i> Yo'nalishlarni so'rash va tushuntirishni mashq qiling
+                            </p>
+                        </div>
+
+                        <h3>Muhim qoidalar:</h3>
+                        <p>• Joylashuv uchun ko'pincha <strong>где?</strong>, yo'nalish uchun esa <strong>куда?</strong> savoli ishlatiladi.</p>
+                        <p>• <strong>направо / налево / прямо</strong> harakat yo'nalishini, <strong>справа / слева / впереди / сзади</strong> esa joylashuvni bildiradi.</p>
+                        <p>• Yo'nalishni aytishda ketma-ketlikni <strong>потом</strong> bilan bog'lash nutqni tabiiy qiladi.</p>
+                    `,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
                         blankAnswers: []
+                    },
+                    topic6Exercises: {
+                        exercise1: {
+                            title: '1. Mashq: Куда? yoki Где?',
+                            sentences: [
+                                '___ находится банк?',
+                                '___ вы идёте?',
+                                '___ аптека?',
+                                '___ он едет?',
+                                '___ находится школа?',
+                                '___ ты живёшь?',
+                                '___ мы идём сейчас?',
+                                '___ находится магазин?',
+                                '___ они идут?',
+                                '___ находится парк?'
+                            ],
+                            answers: ['где', 'куда', 'где', 'куда', 'где', 'где', 'куда', 'где', 'куда', 'где']
+                        },
+                        exercise2: {
+                            title: '2. Mashq: To\'ldiring',
+                            items: [
+                                {
+                                    template: 'Идите ___ потом направо.',
+                                    placeholder: 'chapga',
+                                    answer: 'налево',
+                                    options: ['налево', 'направо', 'прямо']
+                                },
+                                {
+                                    template: 'Банк находится ___.',
+                                    placeholder: 'o\'ngda',
+                                    answer: 'справа',
+                                    options: ['справа', 'слева', 'прямо', 'близко']
+                                },
+                                {
+                                    template: 'Поверните ___.',
+                                    placeholder: 'o\'ngga',
+                                    answer: 'направо',
+                                    options: ['направо', 'налево', 'прямо']
+                                },
+                                {
+                                    template: 'Аптека ___ от школы.',
+                                    placeholder: 'chapda',
+                                    answer: 'слева',
+                                    options: ['слева', 'справа', 'далеко', 'близко']
+                                },
+                                {
+                                    template: 'Машина едет ___.',
+                                    placeholder: 'to\'g\'riga',
+                                    answer: 'прямо',
+                                    options: ['прямо', 'налево', 'направо']
+                                },
+                                {
+                                    template: 'Кафе ___ от банка.',
+                                    placeholder: 'uzoqda',
+                                    answer: 'далеко',
+                                    options: ['далеко', 'близко', 'справа', 'слева']
+                                },
+                                {
+                                    template: 'Идите ___, потом налево.',
+                                    placeholder: 'to\'g\'riga',
+                                    answer: 'прямо',
+                                    options: ['прямо', 'направо', 'налево']
+                                },
+                                {
+                                    template: 'Магазин находится ___.',
+                                    placeholder: 'to\'g\'rida',
+                                    answer: 'прямо',
+                                    options: ['прямо', 'справа', 'слева', 'близко']
+                                },
+                                {
+                                    template: 'Поверните ___, потом идите прямо.',
+                                    placeholder: 'chapga',
+                                    answer: 'налево',
+                                    options: ['налево', 'направо', 'прямо']
+                                },
+                                {
+                                    template: 'Школа ___ от магазина.',
+                                    placeholder: 'uzoqda',
+                                    answer: 'далеко',
+                                    options: ['далеко', 'близко', 'справа', 'слева']
+                                }
+                            ]
+                        },
+                        exercise3: {
+                            title: '3. Mashq: Tarjima qiling',
+                            prompts: [
+                                'O\'ngga boring.',
+                                'Chapga buriling.',
+                                'To\'g\'ri boring.',
+                                'Bank o\'ng tomonda.',
+                                'Do\'kon chap tomonda.',
+                                'Dorixona oldinda.',
+                                'Park orqada.',
+                                'O\'ngga buriling va to\'g\'ri boring.',
+                                'Chapga buriling va keyin o\'ngga boring.',
+                                'Maktab yaqin.'
+                            ],
+                            answers: [
+                                ['идите направо'],
+                                ['поверните налево', 'идите налево'],
+                                ['идите прямо'],
+                                ['банк справа', 'банк находится справа'],
+                                ['магазин слева', 'магазин находится слева'],
+                                ['аптека впереди'],
+                                ['парк сзади'],
+                                ['поверните направо и идите прямо', 'поверните направо, идите прямо'],
+                                ['поверните налево и потом идите направо', 'поверните налево, потом идите направо', 'поверните налево и затем идите направо'],
+                                ['школа близко', 'школа находится близко']
+                            ]
+                        },
+                        exercise4: {
+                            title: '4. Mashq: Xatoni toping va to\'g\'rilang',
+                            prompts: [
+                                'Банк находится направо.',
+                                'Идите справа.',
+                                'Аптека налево от школы.',
+                                'Поверните слева.',
+                                'Магазин прямо.',
+                                'Кафе направо от банка.',
+                                'Идите слева.',
+                                'Школа налево.',
+                                'Поверните справа.',
+                                'Больница прямо от парка.'
+                            ],
+                            answers: [
+                                ['банк находится справа'],
+                                ['идите направо'],
+                                ['аптека слева от школы'],
+                                ['поверните налево'],
+                                ['магазин находится прямо'],
+                                ['кафе справа от банка'],
+                                ['идите налево'],
+                                ['школа слева'],
+                                ['поверните направо'],
+                                ['больница недалеко от парка']
+                            ]
+                        },
+                        exercise5: {
+                            title: '5. Mashq: Gap tuzing',
+                            items: [
+                                {
+                                    words: ['идите', 'прямо', 'потом', 'направо'],
+                                    answers: ['идите прямо потом направо', 'идите прямо, потом направо']
+                                },
+                                {
+                                    words: ['находится', 'аптека', 'справа'],
+                                    answers: ['аптека находится справа']
+                                },
+                                {
+                                    words: ['поверните', 'налево'],
+                                    answers: ['поверните налево']
+                                },
+                                {
+                                    words: ['банк', 'где', 'находится'],
+                                    answers: ['где находится банк', 'где банк находится']
+                                },
+                                {
+                                    words: ['магазин', 'слева', 'от', 'школы'],
+                                    answers: ['магазин слева от школы']
+                                },
+                                {
+                                    words: ['идите', 'прямо', 'потом', 'налево'],
+                                    answers: ['идите прямо потом налево', 'идите прямо, потом налево']
+                                },
+                                {
+                                    words: ['кафе', 'находится', 'справа'],
+                                    answers: ['кафе находится справа']
+                                },
+                                {
+                                    words: ['где', 'парк', 'находится'],
+                                    answers: ['где находится парк', 'где парк находится']
+                                },
+                                {
+                                    words: ['поверните', 'направо', 'потом', 'прямо'],
+                                    answers: ['поверните направо потом прямо', 'поверните направо, потом прямо']
+                                },
+                                {
+                                    words: ['аптека', 'слева', 'от', 'банка'],
+                                    answers: ['аптека слева от банка']
+                                }
+                            ]
+                        }
                     }
                 },
                 {
@@ -3164,6 +3568,11 @@
             if (topic5PracticeSection) {
                 topic5PracticeSection.remove();
             }
+
+            const topic6PracticeSection = document.getElementById('topic6PracticeSection');
+            if (topic6PracticeSection) {
+                topic6PracticeSection.remove();
+            }
         }
 
         // Load lesson content
@@ -3212,7 +3621,17 @@
             lessonContent.innerHTML = lessonHTML;
 
             if (!topic.isSubscriptionLocked) {
-                loadQuiz(topicId);
+                if (topicId === 6) {
+                    quizSection.innerHTML = '';
+                    resultsSection.classList.remove('show');
+                    completeBtn.style.display = 'none';
+                    retryBtn.style.display = 'none';
+                    setTimeout(() => {
+                        loadTopic6Exercises(topicId);
+                    }, 100);
+                } else {
+                    loadQuiz(topicId);
+                }
             } else {
                 quizSection.innerHTML = '';
             }
@@ -4512,6 +4931,637 @@
                     <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
                     <p style="margin-top: 12px; font-size: 1rem;">${message}</p>
                 `;
+                resultsDiv.classList.add('show');
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        // ==================== TOPIC 6 EXERCISES ====================
+        function normalizeTopic6Text(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'`«»]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function topic6IsCorrect(userValue, expected) {
+            const normalizedUser = normalizeTopic6Text(userValue);
+            if (!normalizedUser) {
+                return false;
+            }
+
+            if (Array.isArray(expected)) {
+                return expected.some((item) => normalizeTopic6Text(item) === normalizedUser);
+            }
+
+            return normalizeTopic6Text(expected) === normalizedUser;
+        }
+
+        function closeTopic6OptionPanels() {
+            document.querySelectorAll('.topic5-options[data-topic6-options]').forEach((panel) => {
+                panel.classList.remove('active');
+            });
+        }
+
+        function getTopic6BuilderSelection(index) {
+            const holder = document.querySelector(`input[data-topic6-builder-selected="${index}"]`);
+            if (!holder || !holder.value) {
+                return [];
+            }
+
+            return holder.value
+                .split('|')
+                .map((item) => item.trim())
+                .filter(Boolean);
+        }
+
+        function setTopic6BuilderSelection(index, values) {
+            const holder = document.querySelector(`input[data-topic6-builder-selected="${index}"]`);
+            if (holder) {
+                holder.value = values.join('|');
+            }
+        }
+
+        function renderTopic6BuilderSelection(index) {
+            const target = document.querySelector(`[data-topic6-builder-target="${index}"]`);
+            const bank = document.querySelector(`[data-topic6-builder-bank="${index}"]`);
+            if (!target || !bank) {
+                return;
+            }
+
+            const selection = getTopic6BuilderSelection(index);
+
+            if (selection.length === 0) {
+                target.innerHTML = '<span class="topic6-builder-placeholder">So\'zlarni ketma-ket tanlang</span>';
+            } else {
+                target.innerHTML = selection.map((word, wordIndex) => `
+                    <button type="button"
+                            class="topic6-builder-token"
+                            data-topic6-builder-remove="${index}"
+                            data-remove-index="${wordIndex}">${word}</button>
+                `).join('');
+            }
+
+            bank.querySelectorAll(`[data-topic6-builder-word="${index}"]`).forEach((chip) => {
+                const isUsed = selection.includes(chip.dataset.value);
+                chip.classList.toggle('used', isUsed);
+            });
+        }
+
+        let topic6OutsideClickBound = false;
+
+        function bindTopic6ExerciseEvents() {
+            document.querySelectorAll('[data-topic6-select]').forEach((blank) => {
+                blank.addEventListener('click', function() {
+                    const index = this.dataset.topic6Select;
+                    const targetPanel = document.querySelector(`.topic5-options[data-topic6-options="${index}"]`);
+                    if (!targetPanel) {
+                        return;
+                    }
+
+                    const isOpen = targetPanel.classList.contains('active');
+                    closeTopic6OptionPanels();
+                    if (!isOpen) {
+                        targetPanel.classList.add('active');
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-topic6-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic6Option;
+                    const value = this.dataset.value;
+                    const blank = document.querySelector(`[data-topic6-select="${index}"]`);
+                    if (!blank) {
+                        return;
+                    }
+
+                    blank.dataset.value = value;
+                    blank.textContent = value;
+                    blank.classList.add('filled');
+                    blank.classList.remove('correct', 'incorrect');
+
+                    document.querySelectorAll(`[data-topic6-option="${index}"]`).forEach((chip) => {
+                        chip.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+
+                    closeTopic6OptionPanels();
+                });
+            });
+
+            document.querySelectorAll('[data-topic6-builder-word]').forEach((chip) => {
+                chip.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.topic6BuilderWord, 10);
+                    const value = this.dataset.value;
+                    const selection = getTopic6BuilderSelection(index);
+                    if (!selection.includes(value)) {
+                        selection.push(value);
+                        setTopic6BuilderSelection(index, selection);
+                        renderTopic6BuilderSelection(index);
+                    }
+                });
+            });
+
+            document.querySelectorAll('[data-topic6-builder-clear]').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.topic6BuilderClear, 10);
+                    setTopic6BuilderSelection(index, []);
+                    renderTopic6BuilderSelection(index);
+                });
+            });
+
+            const topic6Section = document.getElementById('topic6PracticeSection');
+            if (topic6Section && !topic6Section.dataset.removeBound) {
+                topic6Section.addEventListener('click', function(event) {
+                    const removeButton = event.target.closest('[data-topic6-builder-remove]');
+                    if (!removeButton) {
+                        return;
+                    }
+
+                    const index = parseInt(removeButton.dataset.topic6BuilderRemove, 10);
+                    const removeIndex = parseInt(removeButton.dataset.removeIndex, 10);
+                    const selection = getTopic6BuilderSelection(index);
+                    if (Number.isInteger(removeIndex) && removeIndex >= 0 && removeIndex < selection.length) {
+                        selection.splice(removeIndex, 1);
+                        setTopic6BuilderSelection(index, selection);
+                        renderTopic6BuilderSelection(index);
+                    }
+                });
+
+                topic6Section.dataset.removeBound = 'true';
+            }
+
+            if (!topic6OutsideClickBound) {
+                document.addEventListener('click', function(event) {
+                    if (!event.target.closest('.topic6-select-question')) {
+                        closeTopic6OptionPanels();
+                    }
+                });
+                topic6OutsideClickBound = true;
+            }
+        }
+
+        function loadTopic6Exercises(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 6 || !topic.topic6Exercises || topicId !== currentTopicId || !quizSection) {
+                return;
+            }
+
+            clearExtraExercises();
+
+            const saved = userQuizResults[`topic_${topicId}_practice`] || {};
+            const ex1Answers = Array.isArray(saved.exercise1Answers) ? saved.exercise1Answers : [];
+            const ex2Answers = Array.isArray(saved.exercise2Answers) ? saved.exercise2Answers : [];
+            const ex3Answers = Array.isArray(saved.exercise3Answers) ? saved.exercise3Answers : [];
+            const ex4Answers = Array.isArray(saved.exercise4Answers) ? saved.exercise4Answers : [];
+            const ex5Answers = Array.isArray(saved.exercise5Answers)
+                ? saved.exercise5Answers.map((item) => (Array.isArray(item) ? item : []))
+                : [];
+
+            let html = `
+                <div class="extra-exercises-section" id="topic6PracticeSection">
+                    <h2 class="extra-exercises-title">
+                        <i class="fas fa-map-signs"></i> Amaliy mashqlar: Shaharning joylari
+                    </h2>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic6Exercises.exercise1.title}</h3>
+            `;
+
+            topic.topic6Exercises.exercise1.sentences.forEach((sentence, index) => {
+                const parts = sentence.split('___');
+                const savedValue = ex1Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic6IsCorrect(savedValue, topic.topic6Exercises.exercise1.answers[index]) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic6-inline-row">
+                        <span class="topic6-inline-number">${index + 1}.</span>
+                        <input type="text"
+                               class="exercise-input topic6-inline-input ${inputClass}"
+                               data-topic6-e1="${index}"
+                               value="${savedValue}"
+                               placeholder="Где / Куда" />
+                        <span class="topic6-inline-text">${parts[1] || ''}</span>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic6Exercises.exercise2.title}</h3>
+            `;
+
+            topic.topic6Exercises.exercise2.items.forEach((item, index) => {
+                const parts = item.template.split('___');
+                const savedValue = ex2Answers[index] || '';
+                const buttonClasses = ['topic5-select-blank'];
+                if (savedValue) {
+                    buttonClasses.push('filled');
+                    buttonClasses.push(topic6IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect');
+                }
+
+                html += `
+                    <div class="topic6-select-question topic5-select-question">
+                        <div class="topic5-select-line">
+                            <span>${index + 1}. ${parts[0] || ''}</span>
+                            <button type="button"
+                                    class="${buttonClasses.join(' ')}"
+                                    data-topic6-select="${index}"
+                                    data-value="${savedValue}">${savedValue || item.placeholder}</button>
+                            <span>${parts[1] || ''}</span>
+                        </div>
+                        <div class="topic5-options" data-topic6-options="${index}">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic6-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                        <div class="topic6-correct-hint" data-topic6-e2-hint="${index}"></div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic6Exercises.exercise3.title}</h3>
+                        <div class="topic6-text-list">
+            `;
+
+            topic.topic6Exercises.exercise3.prompts.forEach((prompt, index) => {
+                const savedValue = ex3Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic6IsCorrect(savedValue, topic.topic6Exercises.exercise3.answers[index]) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic6-e3="${index}"
+                               value="${savedValue}"
+                               placeholder="Ruscha tarjimani yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic6Exercises.exercise4.title}</h3>
+                        <div class="topic6-text-list">
+            `;
+
+            topic.topic6Exercises.exercise4.prompts.forEach((prompt, index) => {
+                const savedValue = ex4Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic6IsCorrect(savedValue, topic.topic6Exercises.exercise4.answers[index]) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic6-e4="${index}"
+                               value="${savedValue}"
+                               placeholder="To'g'ri variantni yozing" />
+                        <div class="topic6-correct-hint" data-topic6-e4-hint="${index}"></div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${topic.topic6Exercises.exercise5.title}</h3>
+            `;
+
+            topic.topic6Exercises.exercise5.items.forEach((item, index) => {
+                const savedWords = Array.isArray(ex5Answers[index]) ? ex5Answers[index] : [];
+                const savedWordsValue = savedWords.join('|');
+
+                html += `
+                    <div class="topic6-builder-item">
+                        <div class="topic6-builder-top">
+                            <span class="topic6-builder-index">${index + 1}.</span>
+                            <div class="topic6-builder-target" data-topic6-builder-target="${index}"></div>
+                            <button type="button" class="topic6-clear-btn" data-topic6-builder-clear="${index}">
+                                <i class="fas fa-eraser"></i> Tozalash
+                            </button>
+                        </div>
+                        <div class="topic6-builder-bank" data-topic6-builder-bank="${index}">
+                            ${item.words.map((word) => `
+                                <button type="button"
+                                        class="topic6-word-chip"
+                                        data-topic6-builder-word="${index}"
+                                        data-value="${word}">${word}</button>
+                            `).join('')}
+                        </div>
+                        <div class="topic6-correct-hint" data-topic6-e5-hint="${index}"></div>
+                        <input type="hidden" data-topic6-builder-selected="${index}" value="${savedWordsValue}" />
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+
+                    <button class="check-exercises-btn" onclick="window.checkTopic6Exercises(${topicId})">
+                        <i class="fas fa-check-circle"></i> Javoblarni tekshirish
+                    </button>
+
+                    <div class="exercise-results" id="topic6PracticeResults">
+                        <div class="exercise-score" id="topic6PracticeScore"></div>
+                        <div class="topic6-feedback-list" id="topic6PracticeBreakdown"></div>
+                    </div>
+                </div>
+            `;
+
+            quizSection.innerHTML = html;
+
+            topic.topic6Exercises.exercise5.items.forEach((item, index) => {
+                renderTopic6BuilderSelection(index);
+                const target = document.querySelector(`[data-topic6-builder-target="${index}"]`);
+                const selection = getTopic6BuilderSelection(index);
+                if (target && selection.length > 0) {
+                    target.classList.toggle('correct', topic6IsCorrect(selection.join(' '), item.answers));
+                    target.classList.toggle('incorrect', !topic6IsCorrect(selection.join(' '), item.answers));
+                }
+            });
+
+            bindTopic6ExerciseEvents();
+
+            if (saved && typeof saved.score === 'number' && typeof saved.total === 'number') {
+                const resultsDiv = document.getElementById('topic6PracticeResults');
+                const scoreDiv = document.getElementById('topic6PracticeScore');
+                if (resultsDiv && scoreDiv) {
+                    const percentage = saved.total > 0 ? Math.round((saved.score / saved.total) * 100) : 0;
+                    scoreDiv.innerHTML = `
+                        <div style="font-size: 2rem; margin-bottom: 10px;">${saved.score}/${saved.total}</div>
+                        <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
+                    `;
+                    resultsDiv.classList.add('show');
+                }
+            }
+        }
+
+        window.checkTopic6Exercises = async function(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 6 || !topic.topic6Exercises) {
+                return;
+            }
+
+            const exerciseData = topic.topic6Exercises;
+            const ex1Answers = [];
+            const ex2Answers = [];
+            const ex3Answers = [];
+            const ex4Answers = [];
+            const ex5Answers = [];
+
+            let totalCorrect = 0;
+            let totalQuestions = 0;
+            let ex1Correct = 0;
+            let ex2Correct = 0;
+            let ex3Correct = 0;
+            let ex4Correct = 0;
+            let ex5Correct = 0;
+
+            exerciseData.exercise1.sentences.forEach((_, index) => {
+                const input = document.querySelector(`input[data-topic6-e1="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                ex1Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic6IsCorrect(userValue, exerciseData.exercise1.answers[index])) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex1Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            exerciseData.exercise2.items.forEach((item, index) => {
+                const blank = document.querySelector(`[data-topic6-select="${index}"]`);
+                const hint = document.querySelector(`[data-topic6-e2-hint="${index}"]`);
+                const userValue = blank?.dataset.value || '';
+                ex2Answers.push(userValue);
+                totalQuestions++;
+
+                if (hint) {
+                    hint.classList.remove('show');
+                    hint.textContent = '';
+                }
+
+                if (!blank) {
+                    return;
+                }
+
+                blank.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    if (hint) {
+                        hint.textContent = `To'g'ri javob: ${item.answer}`;
+                        hint.classList.add('show');
+                    }
+                    return;
+                }
+
+                if (topic6IsCorrect(userValue, item.answer)) {
+                    blank.classList.add('correct');
+                    totalCorrect++;
+                    ex2Correct++;
+                } else {
+                    blank.classList.add('incorrect');
+                    if (hint) {
+                        hint.textContent = `To'g'ri javob: ${item.answer}`;
+                        hint.classList.add('show');
+                    }
+                }
+            });
+
+            exerciseData.exercise3.prompts.forEach((_, index) => {
+                const input = document.querySelector(`input[data-topic6-e3="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                ex3Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic6IsCorrect(userValue, exerciseData.exercise3.answers[index])) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex3Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            exerciseData.exercise4.prompts.forEach((_, index) => {
+                const input = document.querySelector(`input[data-topic6-e4="${index}"]`);
+                const hint = document.querySelector(`[data-topic6-e4-hint="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                ex4Answers.push(userValue);
+                totalQuestions++;
+
+                if (hint) {
+                    hint.classList.remove('show');
+                    hint.textContent = '';
+                }
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    if (hint) {
+                        const correctText = Array.isArray(exerciseData.exercise4.answers[index])
+                            ? exerciseData.exercise4.answers[index][0]
+                            : exerciseData.exercise4.answers[index];
+                        hint.textContent = `To'g'ri javob: ${correctText}`;
+                        hint.classList.add('show');
+                    }
+                    return;
+                }
+
+                if (topic6IsCorrect(userValue, exerciseData.exercise4.answers[index])) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex4Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                    if (hint) {
+                        const correctText = Array.isArray(exerciseData.exercise4.answers[index])
+                            ? exerciseData.exercise4.answers[index][0]
+                            : exerciseData.exercise4.answers[index];
+                        hint.textContent = `To'g'ri javob: ${correctText}`;
+                        hint.classList.add('show');
+                    }
+                }
+            });
+
+            exerciseData.exercise5.items.forEach((item, index) => {
+                const target = document.querySelector(`[data-topic6-builder-target="${index}"]`);
+                const hint = document.querySelector(`[data-topic6-e5-hint="${index}"]`);
+                const selection = getTopic6BuilderSelection(index);
+                const userSentence = selection.join(' ');
+                ex5Answers.push(selection);
+                totalQuestions++;
+
+                if (target) {
+                    target.classList.remove('correct', 'incorrect');
+                }
+                if (hint) {
+                    hint.classList.remove('show');
+                    hint.textContent = '';
+                }
+
+                if (!selection.length) {
+                    if (target) {
+                        target.classList.add('incorrect');
+                    }
+                    if (hint) {
+                        const correctText = Array.isArray(item.answers) ? item.answers[0] : item.answers;
+                        hint.textContent = `To'g'ri javob: ${correctText}`;
+                        hint.classList.add('show');
+                    }
+                    return;
+                }
+
+                if (topic6IsCorrect(userSentence, item.answers)) {
+                    if (target) {
+                        target.classList.add('correct');
+                    }
+                    totalCorrect++;
+                    ex5Correct++;
+                } else {
+                    if (target) {
+                        target.classList.add('incorrect');
+                    }
+                    if (hint) {
+                        const correctText = Array.isArray(item.answers) ? item.answers[0] : item.answers;
+                        hint.textContent = `To'g'ri javob: ${correctText}`;
+                        hint.classList.add('show');
+                    }
+                }
+            });
+
+            const percentage = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+            const resultData = {
+                exercise1Answers: ex1Answers,
+                exercise2Answers: ex2Answers,
+                exercise3Answers: ex3Answers,
+                exercise4Answers: ex4Answers,
+                exercise5Answers: ex5Answers,
+                score: totalCorrect,
+                total: totalQuestions,
+                breakdown: {
+                    exercise1: ex1Correct,
+                    exercise2: ex2Correct,
+                    exercise3: ex3Correct,
+                    exercise4: ex4Correct,
+                    exercise5: ex5Correct
+                },
+                timestamp: new Date().toISOString()
+            };
+
+            await saveQuizResultToFirebase(`${topicId}_practice`, resultData);
+            userQuizResults[`topic_${topicId}_practice`] = resultData;
+
+            const message = percentage >= 90
+                ? 'Ajoyib! Yo\'nalishlarni juda yaxshi tushundingiz.'
+                : percentage >= 70
+                    ? 'Yaxshi natija! Yana bir bor mashq qilsangiz yanada mustahkam bo\'ladi.'
+                    : 'Mashqlarni qayta ko\'rib chiqing va yana bir marta tekshirib ko\'ring.';
+
+            const resultsDiv = document.getElementById('topic6PracticeResults');
+            const scoreDiv = document.getElementById('topic6PracticeScore');
+            const breakdownDiv = document.getElementById('topic6PracticeBreakdown');
+            if (resultsDiv && scoreDiv && breakdownDiv) {
+                scoreDiv.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 10px;">${totalCorrect}/${totalQuestions}</div>
+                    <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
+                    <p style="margin-top: 12px; font-size: 1rem;">${message}</p>
+                `;
+
+                breakdownDiv.innerHTML = `
+                    <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exerciseData.exercise1.sentences.length}</div>
+                    <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exerciseData.exercise2.items.length}</div>
+                    <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exerciseData.exercise3.prompts.length}</div>
+                    <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exerciseData.exercise4.prompts.length}</div>
+                    <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exerciseData.exercise5.items.length}</div>
+                `;
+
                 resultsDiv.classList.add('show');
                 resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
