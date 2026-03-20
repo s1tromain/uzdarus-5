@@ -1491,6 +1491,16 @@
             font-weight: 600;
         }
 
+        .topic6-topic-check-controls {
+            margin-top: 18px;
+        }
+
+        .topic6-topic-check-controls .check-exercises-btn {
+            display: block;
+            width: fit-content;
+            max-width: 100%;
+        }
+
         /* Matching Game Styles (reused from premium B1/B2 component) */
         .matching-game-container {
             background: white;
@@ -5104,6 +5114,52 @@
             }
         }
 
+        function ensureTopic6BottomCheckControls(topicId) {
+            const topic6Section = document.getElementById('topic6PracticeSection');
+            if (!topic6Section) {
+                return;
+            }
+
+            const duplicates = topic6Section.querySelectorAll('.topic6-topic-check-controls');
+            if (duplicates.length > 1) {
+                duplicates.forEach((node, index) => {
+                    if (index > 0) {
+                        node.remove();
+                    }
+                });
+            }
+
+            let controls = topic6Section.querySelector('.topic6-topic-check-controls');
+            if (!controls) {
+                controls = document.createElement('div');
+                controls.className = 'topic6-topic-check-controls';
+                controls.innerHTML = `
+                    <button type="button" class="check-exercises-btn" data-topic6-check-button="true">
+                        <i class="fas fa-check-circle"></i> Javoblarni tekshirish
+                    </button>
+
+                    <div class="exercise-results" id="topic6PracticeResults">
+                        <div class="exercise-score" id="topic6PracticeScore"></div>
+                        <div class="topic6-feedback-list" id="topic6PracticeBreakdown"></div>
+                    </div>
+                `;
+                topic6Section.appendChild(controls);
+            }
+
+            // Always keep a single topic-level checker at the very bottom.
+            topic6Section.appendChild(controls);
+
+            const button = controls.querySelector('[data-topic6-check-button="true"]');
+            if (button) {
+                button.onclick = () => window.checkTopic6Exercises(topicId);
+            }
+
+            const resultsDiv = controls.querySelector('#topic6PracticeResults');
+            if (resultsDiv) {
+                resultsDiv.classList.remove('show');
+            }
+        }
+
         function loadTopic6Exercises(topicId) {
             const topic = courseData.topics.find((t) => t.id === topicId);
             if (!topic || topicId !== 6 || !topic.topic6Exercises || topicId !== currentTopicId || !quizSection) {
@@ -5279,19 +5335,11 @@
 
             html += `
                     </div>
-
-                    <button class="check-exercises-btn" onclick="window.checkTopic6Exercises(${topicId})">
-                        <i class="fas fa-check-circle"></i> Javoblarni tekshirish
-                    </button>
-
-                    <div class="exercise-results" id="topic6PracticeResults">
-                        <div class="exercise-score" id="topic6PracticeScore"></div>
-                        <div class="topic6-feedback-list" id="topic6PracticeBreakdown"></div>
-                    </div>
                 </div>
             `;
 
             quizSection.innerHTML = html;
+            ensureTopic6BottomCheckControls(topicId);
 
             topic.topic6Exercises.exercise5.items.forEach((item, index) => {
                 renderTopic6BuilderSelection(index);
@@ -5304,19 +5352,6 @@
             });
 
             bindTopic6ExerciseEvents();
-
-            if (saved && typeof saved.score === 'number' && typeof saved.total === 'number') {
-                const resultsDiv = document.getElementById('topic6PracticeResults');
-                const scoreDiv = document.getElementById('topic6PracticeScore');
-                if (resultsDiv && scoreDiv) {
-                    const percentage = saved.total > 0 ? Math.round((saved.score / saved.total) * 100) : 0;
-                    scoreDiv.innerHTML = `
-                        <div style="font-size: 2rem; margin-bottom: 10px;">${saved.score}/${saved.total}</div>
-                        <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
-                    `;
-                    resultsDiv.classList.add('show');
-                }
-            }
         }
 
         window.checkTopic6Exercises = async function(topicId) {
@@ -5544,9 +5579,10 @@
                     ? 'Yaxshi natija! Yana bir bor mashq qilsangiz yanada mustahkam bo\'ladi.'
                     : 'Mashqlarni qayta ko\'rib chiqing va yana bir marta tekshirib ko\'ring.';
 
-            const resultsDiv = document.getElementById('topic6PracticeResults');
-            const scoreDiv = document.getElementById('topic6PracticeScore');
-            const breakdownDiv = document.getElementById('topic6PracticeBreakdown');
+            const topic6Section = document.getElementById('topic6PracticeSection');
+            const resultsDiv = topic6Section?.querySelector('#topic6PracticeResults');
+            const scoreDiv = topic6Section?.querySelector('#topic6PracticeScore');
+            const breakdownDiv = topic6Section?.querySelector('#topic6PracticeBreakdown');
             if (resultsDiv && scoreDiv && breakdownDiv) {
                 scoreDiv.innerHTML = `
                     <div style="font-size: 2rem; margin-bottom: 10px;">${totalCorrect}/${totalQuestions}</div>
