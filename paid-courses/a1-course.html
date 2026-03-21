@@ -3251,16 +3251,16 @@
                         exercise3: {
                             title: '3. Gap tuzing (Я хочу + В.п.)',
                             items: [
-                                { prompt: 'я / хотеть / чай', chips: ['я', 'хочу', 'чай'], answer: 'я хочу чай' },
-                                { prompt: 'я / хотеть / салат', chips: ['я', 'хочу', 'салат'], answer: 'я хочу салат' },
-                                { prompt: 'мы / хотеть / пицца', chips: ['мы', 'хотим', 'пиццу'], answer: 'мы хотим пиццу' },
-                                { prompt: 'я / хотеть / суп', chips: ['я', 'хочу', 'суп'], answer: 'я хочу суп' },
-                                { prompt: 'он / хотеть / кофе', chips: ['он', 'хочет', 'кофе'], answer: 'он хочет кофе' },
-                                { prompt: 'она / хотеть / вода', chips: ['она', 'хочет', 'воду'], answer: 'она хочет воду' },
-                                { prompt: 'мы / хотеть / паста', chips: ['мы', 'хотим', 'пасту'], answer: 'мы хотим пасту' },
-                                { prompt: 'я / хотеть / рыба', chips: ['я', 'хочу', 'рыбу'], answer: 'я хочу рыбу' },
-                                { prompt: 'он / хотеть / картошка', chips: ['он', 'хочет', 'картошку'], answer: 'он хочет картошку' },
-                                { prompt: 'я / хотеть / лапша', chips: ['я', 'хочу', 'лапшу'], answer: 'я хочу лапшу' }
+                                { prompt: 'я / хотеть / чай', answers: ['я хочу чай'] },
+                                { prompt: 'я / хотеть / салат', answers: ['я хочу салат'] },
+                                { prompt: 'мы / хотеть / пицца', answers: ['мы хотим пиццу'] },
+                                { prompt: 'я / хотеть / суп', answers: ['я хочу суп'] },
+                                { prompt: 'он / хотеть / кофе', answers: ['он хочет кофе'] },
+                                { prompt: 'она / хотеть / вода', answers: ['она хочет воду'] },
+                                { prompt: 'мы / хотеть / паста', answers: ['мы хотим пасту'] },
+                                { prompt: 'я / хотеть / рыба', answers: ['я хочу рыбу'] },
+                                { prompt: 'он / хотеть / картошка', answers: ['он хочет картошку'] },
+                                { prompt: 'я / хотеть / лапша', answers: ['я хочу лапшу'] }
                             ]
                         },
                         exercise4: {
@@ -5980,9 +5980,7 @@
             const saved = userQuizResults[`topic_${topicId}_practice`] || {};
             const ex1Answers = Array.isArray(saved.exercise1Answers) ? saved.exercise1Answers : [];
             const ex2Answers = Array.isArray(saved.exercise2Answers) ? saved.exercise2Answers : [];
-            const ex3Answers = Array.isArray(saved.exercise3Answers)
-                ? saved.exercise3Answers.map((item) => (Array.isArray(item) ? item : []))
-                : [];
+            const ex3Answers = Array.isArray(saved.exercise3Answers) ? saved.exercise3Answers : [];
             const ex4Answers = Array.isArray(saved.exercise4Answers) ? saved.exercise4Answers : [];
             const ex5Answers = Array.isArray(saved.exercise5Answers) ? saved.exercise5Answers : [];
             const ex6Answers = Array.isArray(saved.exercise6Answers) ? saved.exercise6Answers : [];
@@ -6053,31 +6051,23 @@
 
                     <div class="topic5-exercise-block">
                         <h3 class="topic5-exercise-title">${exercises.exercise3.title}</h3>
-                        <div class="topic7-sentence-builder">
+                        <div class="topic7-input-list">
             `;
 
             exercises.exercise3.items.forEach((item, index) => {
-                const savedWords = Array.isArray(ex3Answers[index]) ? ex3Answers[index] : [];
+                const savedValue = ex3Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic7IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
 
                 html += `
-                    <div class="topic6-builder-item">
-                        <div class="topic7-builder-prompt">${index + 1}. Gapni tuzing</div>
-                        <div class="topic7-builder-source">So'zlar: ${item.prompt}</div>
-                        <div class="topic6-builder-top">
-                            <div class="topic6-builder-target" data-topic7-builder-target="${index}"></div>
-                            <button type="button" class="topic6-clear-btn" data-topic7-builder-clear="${index}">
-                                <i class="fas fa-eraser"></i> Tozalash
-                            </button>
-                        </div>
-                        <div class="topic6-builder-bank" data-topic7-builder-bank="${index}">
-                            ${item.chips.map((word) => `
-                                <button type="button"
-                                        class="topic6-word-chip"
-                                        data-topic7-builder-word="${index}"
-                                        data-value="${word}">${word}</button>
-                            `).join('')}
-                        </div>
-                        <input type="hidden" data-topic7-builder-selected="${index}" value="${savedWords.join('|')}" />
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. So'zlar: ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic7-e3="${index}"
+                               value="${savedValue}"
+                               placeholder="To'liq gapni yozing" />
                     </div>
                 `;
             });
@@ -6210,18 +6200,7 @@
 
             quizSection.innerHTML = html;
             bindTopic7ChoiceEvents();
-            bindTopic7BuilderEvents();
             bindTopic7CheckButton(topicId);
-
-            exercises.exercise3.items.forEach((item, index) => {
-                renderTopic7BuilderSelection(index);
-                const target = document.querySelector(`[data-topic7-builder-target="${index}"]`);
-                const selection = getTopic7BuilderSelection(index);
-                if (target && selection.length > 0) {
-                    target.classList.toggle('correct', topic7IsCorrect(selection.join(' '), item.answer));
-                    target.classList.toggle('incorrect', !topic7IsCorrect(selection.join(' '), item.answer));
-                }
-            });
 
             setTimeout(() => {
                 initMatchingGameA1(topic);
@@ -6315,31 +6294,26 @@
             });
 
             exercises.exercise3.items.forEach((item, index) => {
-                const target = document.querySelector(`[data-topic7-builder-target="${index}"]`);
-                const selection = getTopic7BuilderSelection(index);
-                const userSentence = selection.join(' ');
-                resultData.exercise3Answers.push(selection);
+                const input = document.querySelector(`input[data-topic7-e3="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise3Answers.push(userValue);
                 totalQuestions++;
 
-                if (target) {
-                    target.classList.remove('correct', 'incorrect');
-                }
-
-                if (!selection.length) {
-                    if (target) {
-                        target.classList.add('incorrect');
-                    }
+                if (!input) {
                     return;
                 }
 
-                if (topic7IsCorrect(userSentence, item.answer)) {
-                    if (target) {
-                        target.classList.add('correct');
-                    }
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic7IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
                     totalCorrect++;
                     ex3Correct++;
-                } else if (target) {
-                    target.classList.add('incorrect');
+                } else {
+                    input.classList.add('incorrect');
                 }
             });
 
