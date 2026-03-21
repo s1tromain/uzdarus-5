@@ -1562,8 +1562,28 @@
             min-width: 0;
         }
 
-        .topic7-matching-block {
+        .topic7-matching-block,
+        .topic8-matching-block {
             margin-top: 4px;
+        }
+
+        .topic8-test-item {
+            background: var(--light);
+            border-left: 3px solid var(--primary);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .topic8-test-prompt {
+            color: var(--dark);
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .topic8-test-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .topic-check-section {
@@ -3342,15 +3362,191 @@
 </div>
                     `,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Bu mavzuda kiyim-kechak nomlari, ranglar, носить / надевать fe'llari va это / этот / эта / эти ko'rsatish olmoshlarini o'rganasiz.\n\n💡 Qisqa eslab qolish:\n• носить → odatda (har kuni)\n• надевать → hozir (jarayon)\n• любить → yoqtirish / odat"
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #7E57C2, #5E35B1); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(94, 53, 177, 0.28);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">👔</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Kiyim-kechak va moda lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.92); margin-bottom: 25px; font-size: 1.1rem;">
+                                Ushbu mavzuda <strong>54 ta so'z va ibora</strong> o'rganasiz
+                            </p>
+                            <button onclick="window.location.href='a1-vocabulary.html?topic=8'"
+                                    style="background: white; color: #5E35B1; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.18);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.18)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.82); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-tshirt"></i> Kiyim-kechak va moda mavzusini mashq qiling
+                            </p>
+                        </div>
+
+                        <h3>Muhim qoidalar:</h3>
+                        <p>• <strong>носить</strong> — odatda, har kuni kiyib yurish: <em>Я ношу куртку зимой.</em></p>
+                        <p>• <strong>надевать</strong> — hozir, shu paytda kiyish jarayoni: <em>Я надеваю шапку.</em></p>
+                        <p>• <strong>это</strong> (umumiy), <strong>этот</strong> (м.р.), <strong>эта</strong> (ж.р.), <strong>эти</strong> (мн.ч.) — ko'rsatish olmoshlari.</p>
+                        <p>• <strong>любить + инфинитив</strong>: <em>Я люблю носить джинсы.</em></p>
+                    `,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
-                        blankAnswers: []
+                        blankAnswers: [],
+                        matchingGame: {
+                            title: '7. Moslashtiring (matching)',
+                            instruction: "Chap tomondagi so'zlarni o'ng tomondagi mos tarjimalari bilan ulang.",
+                            pairs: [
+                                { left: 'куртка', right: 'kurtka' },
+                                { left: 'рубашка', right: "ko'ylak" },
+                                { left: 'брюки', right: 'shim' },
+                                { left: 'перчатки', right: "qo'lqop" },
+                                { left: 'шапка', right: 'shapka' },
+                                { left: 'обувь', right: 'oyoq kiyim' },
+                                { left: 'платье', right: "ko'ylak (ayollar)" },
+                                { left: 'юбка', right: 'yubka' },
+                                { left: 'носки', right: 'paypoq' },
+                                { left: 'шарф', right: 'sharf' }
+                            ]
+                        }
+                    },
+                    topic8Exercises: {
+                        exercise1: {
+                            title: "1. Винительный падеж — o'zgartiring",
+                            items: [
+                                { word: 'куртка', hint: 'kurtkani', answer: 'куртку' },
+                                { word: 'рубашка', hint: "ko'ylakni", answer: 'рубашку' },
+                                { word: 'шапка', hint: 'shapkani', answer: 'шапку' },
+                                { word: 'юбка', hint: 'yubkani', answer: 'юбку' },
+                                { word: 'футболка', hint: 'futbolkani', answer: 'футболку' },
+                                { word: 'майка', hint: 'maykani', answer: 'майку' },
+                                { word: 'обувь', hint: 'oyoq kiyimni', answer: 'обувь' },
+                                { word: 'пальто', hint: 'paltoni', answer: 'пальто' },
+                                { word: 'платье', hint: "ko'ylakni", answer: 'платье' },
+                                { word: 'кроссовки', hint: 'krossovkalarni', answer: 'кроссовки' }
+                            ]
+                        },
+                        exercise2: {
+                            title: "2. To'g'ri variantni tanlang (носить / надевать)",
+                            items: [
+                                { prompt: 'Я каждый день ___ джинсы.', options: ['ношу', 'надеваю'], answer: 'ношу' },
+                                { prompt: 'Сейчас я ___ куртку.', options: ['ношу', 'надеваю'], answer: 'надеваю' },
+                                { prompt: 'Она всегда ___ юбку.', options: ['носит', 'надевает'], answer: 'носит' },
+                                { prompt: 'Он сейчас ___ шапку.', options: ['носит', 'надевает'], answer: 'надевает' },
+                                { prompt: 'Мы зимой ___ перчатки.', options: ['носим', 'надеваем'], answer: 'носим' },
+                                { prompt: 'Я сейчас ___ шарф.', options: ['ношу', 'надеваю'], answer: 'надеваю' },
+                                { prompt: 'Дети обычно ___ кроссовки.', options: ['носят', 'надевают'], answer: 'носят' },
+                                { prompt: 'Она сейчас ___ платье.', options: ['носит', 'надевает'], answer: 'надевает' },
+                                { prompt: 'Он обычно ___ костюм.', options: ['носит', 'надевает'], answer: 'носит' },
+                                { prompt: 'Мы сейчас ___ обувь.', options: ['носим', 'надеваем'], answer: 'надеваем' }
+                            ]
+                        },
+                        exercise3: {
+                            title: '3. Gap tuzing (носить)',
+                            items: [
+                                { prompt: 'я / носить / куртка', answers: ['я ношу куртку'] },
+                                { prompt: 'он / носить / костюм', answers: ['он носит костюм'] },
+                                { prompt: 'она / носить / юбка', answers: ['она носит юбку'] },
+                                { prompt: 'мы / носить / джинсы', answers: ['мы носим джинсы'] },
+                                { prompt: 'я / носить / шапка', answers: ['я ношу шапку'] },
+                                { prompt: 'они / носить / кроссовки', answers: ['они носят кроссовки'] },
+                                { prompt: 'он / носить / рубашка', answers: ['он носит рубашку'] },
+                                { prompt: 'я / носить / перчатки', answers: ['я ношу перчатки'] },
+                                { prompt: 'она / носить / платье', answers: ['она носит платье'] },
+                                { prompt: 'мы / носить / шарф', answers: ['мы носим шарф'] }
+                            ]
+                        },
+                        exercise4: {
+                            title: '4. Надевать — gapni yozing',
+                            items: [
+                                { prompt: 'Я сейчас ___ (куртка)', answers: ['надеваю куртку'] },
+                                { prompt: 'Он сейчас ___ (шапка)', answers: ['надевает шапку'] },
+                                { prompt: 'Она сейчас ___ (платье)', answers: ['надевает платье'] },
+                                { prompt: 'Мы сейчас ___ (перчатки)', answers: ['надеваем перчатки'] },
+                                { prompt: 'Я сейчас ___ (шарф)', answers: ['надеваю шарф'] },
+                                { prompt: 'Они сейчас ___ (обувь)', answers: ['надевают обувь'] },
+                                { prompt: 'Он сейчас ___ (костюм)', answers: ['надевает костюм'] },
+                                { prompt: 'Я сейчас ___ (футболка)', answers: ['надеваю футболку'] },
+                                { prompt: 'Она сейчас ___ (юбка)', answers: ['надевает юбку'] },
+                                { prompt: 'Мы сейчас ___ (свитер)', answers: ['надеваем свитер'] }
+                            ]
+                        },
+                        exercise5: {
+                            title: '5. Носить yoki надевать — tanlang',
+                            items: [
+                                { prompt: 'Зимой я всегда ___ шапку.', options: ['ношу', 'надеваю'], answer: 'ношу' },
+                                { prompt: 'Подожди, я ___ обувь.', options: ['ношу', 'надеваю'], answer: 'надеваю' },
+                                { prompt: 'Она каждый день ___ платье.', options: ['носит', 'надевает'], answer: 'носит' },
+                                { prompt: 'Он сейчас ___ пальто.', options: ['носит', 'надевает'], answer: 'надевает' },
+                                { prompt: 'Мы обычно ___ джинсы.', options: ['носим', 'надеваем'], answer: 'носим' },
+                                { prompt: 'Я ___ свитер, холодно.', options: ['ношу', 'надеваю'], answer: 'надеваю' },
+                                { prompt: 'Она любит ___ юбки.', options: ['носить', 'надевать'], answer: 'носить' },
+                                { prompt: 'Дети ___ кроссовки каждый день.', options: ['носят', 'надевают'], answer: 'носят' },
+                                { prompt: 'Я сейчас ___ перчатки.', options: ['ношу', 'надеваю'], answer: 'надеваю' },
+                                { prompt: 'Он всегда ___ костюм на работу.', options: ['носит', 'надевает'], answer: 'носит' }
+                            ]
+                        },
+                        exercise6: {
+                            title: '6. Любить + infinitiv — gapni yozing',
+                            items: [
+                                { prompt: 'я / любить / носить / джинсы', answers: ['я люблю носить джинсы'] },
+                                { prompt: 'она / любить / носить / платья', answers: ['она любит носить платья'] },
+                                { prompt: 'он / любить / носить / костюм', answers: ['он любит носить костюм'] },
+                                { prompt: 'мы / любить / носить / кроссовки', answers: ['мы любим носить кроссовки'] },
+                                { prompt: 'я / любить / покупать / обувь', answers: ['я люблю покупать обувь'] },
+                                { prompt: 'она / любить / выбирать / одежду', answers: ['она любит выбирать одежду'] },
+                                { prompt: 'они / любить / носить / шорты', answers: ['они любят носить шорты'] },
+                                { prompt: 'он / любить / носить / свитер', answers: ['он любит носить свитер'] },
+                                { prompt: 'я / любить / носить / футболки', answers: ['я люблю носить футболки'] },
+                                { prompt: 'мы / любить / покупать / одежду', answers: ['мы любим покупать одежду'] }
+                            ]
+                        },
+                        exercise8: {
+                            title: '8. Это / этот / эта / эти — tanlang',
+                            items: [
+                                { prompt: '___ куртка тёплая.', options: ['это', 'этот', 'эта', 'эти'], answer: 'эта' },
+                                { prompt: '___ свитер большой.', options: ['это', 'этот', 'эта', 'эти'], answer: 'этот' },
+                                { prompt: '___ платье красивое.', options: ['это', 'этот', 'эта', 'эти'], answer: 'это' },
+                                { prompt: '___ туфли новые.', options: ['это', 'этот', 'эта', 'эти'], answer: 'эти' },
+                                { prompt: '___ шапка моя.', options: ['это', 'этот', 'эта', 'эти'], answer: 'эта' },
+                                { prompt: '___ костюм дорогой.', options: ['это', 'этот', 'эта', 'эти'], answer: 'этот' },
+                                { prompt: '___ перчатки чёрные.', options: ['это', 'этот', 'эта', 'эти'], answer: 'эти' },
+                                { prompt: '___ юбка красная.', options: ['это', 'этот', 'эта', 'эти'], answer: 'эта' },
+                                { prompt: '___ шарф длинный.', options: ['это', 'этот', 'эта', 'эти'], answer: 'этот' },
+                                { prompt: '___ джинсы синие.', options: ['это', 'этот', 'эта', 'эти'], answer: 'эти' }
+                            ]
+                        },
+                        exercise9: {
+                            title: '9. Test — to\'g\'ri javobni tanlang',
+                            items: [
+                                { prompt: 'Как будет "kurtka" по-русски?', options: ['куртка', 'рубашка', 'юбка', 'шапка'], answer: 'куртка' },
+                                { prompt: '"Носить" nimani bildiradi?', options: ['har kuni kiyib yurish', 'hozir kiyish', 'sotib olish', 'yuvish'], answer: 'har kuni kiyib yurish' },
+                                { prompt: '"Я надеваю шапку" — qachon?', options: ['hozir', 'har kuni', 'kecha', 'har doim'], answer: 'hozir' },
+                                { prompt: '"Эта юбка красная" — nima uchun "эта"?', options: ['юбка — ж.р.', 'юбка — м.р.', 'юбка — мн.ч.', 'юбка — ср.р.'], answer: 'юбка — ж.р.' },
+                                { prompt: '"Я люблю носить джинсы" — bu qanday konstruksiya?', options: ['любить + инфинитив', 'надевать + сейчас', 'это + род', 'можно + просьба'], answer: 'любить + инфинитив' },
+                                { prompt: '"Этот" qaysi rod uchun?', options: ['мужской', 'женский', 'средний', 'множественное'], answer: 'мужской' },
+                                { prompt: 'Qaysi gap to\'g\'ri?', options: ['Она носит юбку.', 'Она носит юбка.', 'Она ношу юбку.', 'Она надевать юбку.'], answer: 'Она носит юбку.' },
+                                { prompt: '"Перчатки" — bu nima?', options: ["qo'lqop", 'paypoq', 'shapka', 'sharf'], answer: "qo'lqop" },
+                                { prompt: '"Мы носим джинсы" — qanday odат?', options: ['har kuni', 'hozir', 'kecha', 'ertaga'], answer: 'har kuni' },
+                                { prompt: '"Эти туфли красивые" — nima uchun "эти"?', options: ['туфли — мн.ч.', 'туфли — ж.р.', 'туфли — м.р.', 'туфли — ср.р.'], answer: 'туфли — мн.ч.' }
+                            ]
+                        },
+                        exercise10: {
+                            title: "10. Xatoni toping va to'g'rilang",
+                            items: [
+                                { prompt: 'Я ношу куртка', answers: ['я ношу куртку'] },
+                                { prompt: 'Она носит юбка', answers: ['она носит юбку'] },
+                                { prompt: 'Он надевает шапку сейчас', answers: ['он надевает шапку'] },
+                                { prompt: 'Мы носим перчатка', answers: ['мы носим перчатки'] },
+                                { prompt: 'Я люблю носить платья', answers: ['я люблю носить платья'] },
+                                { prompt: 'Этот юбка красная', answers: ['эта юбка красная'] },
+                                { prompt: 'Эта костюм дорогой', answers: ['этот костюм дорогой'] },
+                                { prompt: 'Я надеваю рубашка', answers: ['я надеваю рубашку'] },
+                                { prompt: 'Эти шарф длинный', answers: ['этот шарф длинный'] },
+                                { prompt: 'Она любит носить юбка', answers: ['она любит носить юбки', 'она любит носить юбку'] }
+                            ]
+                        }
                     }
                 },
                 {
@@ -3795,6 +3991,11 @@
             if (topic7PracticeSection) {
                 topic7PracticeSection.remove();
             }
+
+            const topic8PracticeSection = document.getElementById('topic8PracticeSection');
+            if (topic8PracticeSection) {
+                topic8PracticeSection.remove();
+            }
         }
 
         // Load lesson content
@@ -3843,7 +4044,7 @@
             lessonContent.innerHTML = lessonHTML;
 
             if (!topic.isSubscriptionLocked) {
-                if (topicId === 6 || topicId === 7) {
+                if (topicId === 6 || topicId === 7 || topicId === 8) {
                     quizSection.innerHTML = '';
                     resultsSection.classList.remove('show');
                     completeBtn.style.display = 'none';
@@ -3851,8 +4052,10 @@
                     setTimeout(() => {
                         if (topicId === 6) {
                             loadTopic6Exercises(topicId);
-                        } else {
+                        } else if (topicId === 7) {
                             loadTopic7Exercises(topicId);
+                        } else {
+                            loadTopic8Exercises(topicId);
                         }
                     }, 100);
                 } else {
@@ -6480,6 +6683,733 @@
                         <div class="topic6-feedback-row">6-mashq: ${ex6Correct}/${exercises.exercise6.items.length}</div>
                         <div class="topic6-feedback-row">7-mashq: ${ex7Correct}/${matchingPairs.length}</div>
                         <div class="topic6-feedback-row">8-mashq: ${ex8Correct}/${exercises.exercise8.items.length}</div>
+                    </div>
+                `;
+
+                feedbackDiv.classList.remove('hidden');
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        // ========== TOPIC 8 FUNCTIONS ==========
+
+        function normalizeTopic8Text(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'`«»\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function topic8IsCorrect(userValue, expected) {
+            const normalizedUser = normalizeTopic8Text(userValue);
+            if (!normalizedUser) {
+                return false;
+            }
+
+            if (Array.isArray(expected)) {
+                return expected.some((item) => normalizeTopic8Text(item) === normalizedUser);
+            }
+
+            return normalizeTopic8Text(expected) === normalizedUser;
+        }
+
+        function bindTopic8ChoiceEvents() {
+            document.querySelectorAll('[data-topic8-e2-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic8E2Option;
+                    const value = this.dataset.value;
+                    const row = document.querySelector(`[data-topic8-e2-row="${index}"]`);
+                    if (!row) {
+                        return;
+                    }
+
+                    row.dataset.value = value;
+                    row.querySelectorAll('.topic5-option-chip').forEach((chip) => chip.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            document.querySelectorAll('[data-topic8-e5-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic8E5Option;
+                    const value = this.dataset.value;
+                    const row = document.querySelector(`[data-topic8-e5-row="${index}"]`);
+                    if (!row) {
+                        return;
+                    }
+
+                    row.dataset.value = value;
+                    row.querySelectorAll('.topic5-option-chip').forEach((chip) => chip.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            document.querySelectorAll('[data-topic8-e8-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic8E8Option;
+                    const value = this.dataset.value;
+                    const row = document.querySelector(`[data-topic8-e8-row="${index}"]`);
+                    if (!row) {
+                        return;
+                    }
+
+                    row.dataset.value = value;
+                    row.querySelectorAll('.topic5-option-chip').forEach((chip) => chip.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+
+            document.querySelectorAll('[data-topic8-e9-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic8E9Option;
+                    const value = this.dataset.value;
+                    const row = document.querySelector(`[data-topic8-e9-row="${index}"]`);
+                    if (!row) {
+                        return;
+                    }
+
+                    row.dataset.value = value;
+                    row.querySelectorAll('.topic5-option-chip').forEach((chip) => chip.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+        }
+
+        function bindTopic8CheckButton(topicId) {
+            const checkButton = document.getElementById('checkTopic8Btn');
+            const feedback = document.getElementById('topic8Feedback');
+            if (!checkButton || !feedback) {
+                return;
+            }
+
+            checkButton.dataset.topicCheckBound = '1';
+            feedback.classList.add('hidden');
+            feedback.innerHTML = '';
+
+            checkButton.onclick = () => {
+                window.checkTopic8Exercises(topicId);
+            };
+        }
+
+        function loadTopic8Exercises(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 8 || !topic.topic8Exercises || topicId !== currentTopicId || !quizSection) {
+                return;
+            }
+
+            clearExtraExercises();
+
+            const saved = userQuizResults[`topic_${topicId}_practice`] || {};
+            const ex1Answers = Array.isArray(saved.exercise1Answers) ? saved.exercise1Answers : [];
+            const ex2Answers = Array.isArray(saved.exercise2Answers) ? saved.exercise2Answers : [];
+            const ex3Answers = Array.isArray(saved.exercise3Answers) ? saved.exercise3Answers : [];
+            const ex4Answers = Array.isArray(saved.exercise4Answers) ? saved.exercise4Answers : [];
+            const ex5Answers = Array.isArray(saved.exercise5Answers) ? saved.exercise5Answers : [];
+            const ex6Answers = Array.isArray(saved.exercise6Answers) ? saved.exercise6Answers : [];
+            const ex7Matches = Array.isArray(saved.exercise7Matches) ? saved.exercise7Matches : [];
+            const ex8Answers = Array.isArray(saved.exercise8Answers) ? saved.exercise8Answers : [];
+            const ex9Answers = Array.isArray(saved.exercise9Answers) ? saved.exercise9Answers : [];
+            const ex10Answers = Array.isArray(saved.exercise10Answers) ? saved.exercise10Answers : [];
+
+            const exercises = topic.topic8Exercises;
+
+            let html = `
+                <div class="quiz-container topic-practice-quiz">
+                <div class="extra-exercises-section" id="topic8PracticeSection">
+                    <h2 class="extra-exercises-title">
+                        <i class="fas fa-tshirt"></i> Amaliy mashqlar: Kiyim-kechak va moda
+                    </h2>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise1.title}</h3>
+            `;
+
+            exercises.exercise1.items.forEach((item, index) => {
+                const savedValue = ex1Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic8IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic7-accusative-row">
+                        <div class="topic7-word-label">${index + 1}. ${item.word}</div>
+                        <div class="topic7-input-wrap">
+                            <input type="text"
+                                   class="exercise-input ${inputClass}"
+                                   data-topic8-e1="${index}"
+                                   value="${savedValue}"
+                                   placeholder="${item.hint}" />
+                            <div class="topic7-helper-text">Yordamchi ishora: ${item.hint}</div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise2.title}</h3>
+                        <div class="topic7-choice-list">
+            `;
+
+            exercises.exercise2.items.forEach((item, index) => {
+                const savedValue = ex2Answers[index] || '';
+
+                html += `
+                    <div class="topic7-choice-item" data-topic8-e2-row="${index}" data-value="${savedValue}">
+                        <div class="topic7-choice-text">${index + 1}. ${item.prompt}</div>
+                        <div class="topic7-choice-options">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic8-e2-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise3.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise3.items.forEach((item, index) => {
+                const savedValue = ex3Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic8IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. So'zlar: ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic8-e3="${index}"
+                               value="${savedValue}"
+                               placeholder="To'liq gapni yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise4.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise4.items.forEach((item, index) => {
+                const savedValue = ex4Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic8IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic8-e4="${index}"
+                               value="${savedValue}"
+                               placeholder="Bo'sh joyni to'ldiring" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise5.title}</h3>
+                        <div class="topic7-choice-list">
+            `;
+
+            exercises.exercise5.items.forEach((item, index) => {
+                const savedValue = ex5Answers[index] || '';
+
+                html += `
+                    <div class="topic7-choice-item" data-topic8-e5-row="${index}" data-value="${savedValue}">
+                        <div class="topic7-choice-text">${index + 1}. ${item.prompt}</div>
+                        <div class="topic7-choice-options">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic8-e5-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise6.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise6.items.forEach((item, index) => {
+                const savedValue = ex6Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic8IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. So'zlar: ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic8-e6="${index}"
+                               value="${savedValue}"
+                               placeholder="To'liq gapni yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block topic8-matching-block">
+                        ${renderMatchingGameA1(topic, { showCheckButton: false, showScore: false })}
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise8.title}</h3>
+                        <div class="topic7-choice-list">
+            `;
+
+            exercises.exercise8.items.forEach((item, index) => {
+                const savedValue = ex8Answers[index] || '';
+
+                html += `
+                    <div class="topic7-choice-item" data-topic8-e8-row="${index}" data-value="${savedValue}">
+                        <div class="topic7-choice-text">${index + 1}. ${item.prompt}</div>
+                        <div class="topic7-choice-options">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic8-e8-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise9.title}</h3>
+                        <div class="topic7-choice-list">
+            `;
+
+            exercises.exercise9.items.forEach((item, index) => {
+                const savedValue = ex9Answers[index] || '';
+
+                html += `
+                    <div class="topic8-test-item" data-topic8-e9-row="${index}" data-value="${savedValue}">
+                        <div class="topic8-test-prompt">${index + 1}. ${item.prompt}</div>
+                        <div class="topic8-test-options">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic8-e9-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise10.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise10.items.forEach((item, index) => {
+                const savedValue = ex10Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic8IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic8-e10="${index}"
+                               value="${savedValue}"
+                               placeholder="To'g'ri gapni yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic-check-section">
+                        <button class="check-topic-btn" id="checkTopic8Btn" type="button">
+                            Javoblarni tekshirish
+                        </button>
+                        <div class="topic-feedback hidden" id="topic8Feedback"></div>
+                    </div>
+                </div>
+                </div>
+            `;
+
+            quizSection.innerHTML = html;
+            bindTopic8ChoiceEvents();
+            bindTopic8CheckButton(topicId);
+
+            setTimeout(() => {
+                initMatchingGameA1(topic);
+                if (ex7Matches.length > 0) {
+                    setTimeout(() => {
+                        restoreMatchingA1Matches(ex7Matches);
+                    }, 160);
+                }
+            }, 120);
+        }
+
+        window.checkTopic8Exercises = async function(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 8 || !topic.topic8Exercises) {
+                return;
+            }
+
+            const exercises = topic.topic8Exercises;
+            const resultData = {
+                exercise1Answers: [],
+                exercise2Answers: [],
+                exercise3Answers: [],
+                exercise4Answers: [],
+                exercise5Answers: [],
+                exercise6Answers: [],
+                exercise7Matches: [],
+                exercise8Answers: [],
+                exercise9Answers: [],
+                exercise10Answers: [],
+                breakdown: {},
+                score: 0,
+                total: 0,
+                timestamp: new Date().toISOString()
+            };
+
+            let totalCorrect = 0;
+            let totalQuestions = 0;
+            let ex1Correct = 0;
+            let ex2Correct = 0;
+            let ex3Correct = 0;
+            let ex4Correct = 0;
+            let ex5Correct = 0;
+            let ex6Correct = 0;
+            let ex7Correct = 0;
+            let ex8Correct = 0;
+            let ex9Correct = 0;
+            let ex10Correct = 0;
+
+            exercises.exercise1.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic8-e1="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise1Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answer)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex1Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            exercises.exercise2.items.forEach((item, index) => {
+                const row = document.querySelector(`[data-topic8-e2-row="${index}"]`);
+                const userValue = row?.dataset.value || '';
+                resultData.exercise2Answers.push(userValue);
+                totalQuestions++;
+
+                if (!row) {
+                    return;
+                }
+
+                row.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answer)) {
+                    row.classList.add('correct');
+                    totalCorrect++;
+                    ex2Correct++;
+                } else {
+                    row.classList.add('incorrect');
+                }
+            });
+
+            exercises.exercise3.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic8-e3="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise3Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex3Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            exercises.exercise4.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic8-e4="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise4Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex4Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            exercises.exercise5.items.forEach((item, index) => {
+                const row = document.querySelector(`[data-topic8-e5-row="${index}"]`);
+                const userValue = row?.dataset.value || '';
+                resultData.exercise5Answers.push(userValue);
+                totalQuestions++;
+
+                if (!row) {
+                    return;
+                }
+
+                row.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answer)) {
+                    row.classList.add('correct');
+                    totalCorrect++;
+                    ex5Correct++;
+                } else {
+                    row.classList.add('incorrect');
+                }
+            });
+
+            exercises.exercise6.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic8-e6="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise6Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex6Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            const matchingPairs = topic.quiz.matchingGame?.pairs || [];
+            resultData.exercise7Matches = matchingStateA1.matches.map((match) => ({
+                left: match.left,
+                right: match.right
+            }));
+            totalQuestions += matchingPairs.length;
+
+            document.querySelectorAll('#matchingColumnsA1 .matching-item').forEach((item) => {
+                item.classList.remove('wrong');
+            });
+
+            matchingStateA1.matches.forEach((match) => {
+                if (match.left === match.right) {
+                    totalCorrect++;
+                    ex7Correct++;
+                    return;
+                }
+
+                const leftItem = document.querySelector(`#matchingColumnsA1 .matching-item[data-left="${match.left}"]`);
+                const rightItem = document.querySelector(`#matchingColumnsA1 .matching-item[data-right="${match.right}"]`);
+                if (leftItem) {
+                    leftItem.classList.add('wrong');
+                }
+                if (rightItem) {
+                    rightItem.classList.add('wrong');
+                }
+            });
+
+            exercises.exercise8.items.forEach((item, index) => {
+                const row = document.querySelector(`[data-topic8-e8-row="${index}"]`);
+                const userValue = row?.dataset.value || '';
+                resultData.exercise8Answers.push(userValue);
+                totalQuestions++;
+
+                if (!row) {
+                    return;
+                }
+
+                row.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answer)) {
+                    row.classList.add('correct');
+                    totalCorrect++;
+                    ex8Correct++;
+                } else {
+                    row.classList.add('incorrect');
+                }
+            });
+
+            exercises.exercise9.items.forEach((item, index) => {
+                const row = document.querySelector(`[data-topic8-e9-row="${index}"]`);
+                const userValue = row?.dataset.value || '';
+                resultData.exercise9Answers.push(userValue);
+                totalQuestions++;
+
+                if (!row) {
+                    return;
+                }
+
+                row.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answer)) {
+                    row.classList.add('correct');
+                    totalCorrect++;
+                    ex9Correct++;
+                } else {
+                    row.classList.add('incorrect');
+                }
+            });
+
+            exercises.exercise10.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic8-e10="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise10Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) {
+                    return;
+                }
+
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) {
+                    return;
+                }
+
+                if (topic8IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex10Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            const percentage = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+            resultData.breakdown = {
+                exercise1: ex1Correct,
+                exercise2: ex2Correct,
+                exercise3: ex3Correct,
+                exercise4: ex4Correct,
+                exercise5: ex5Correct,
+                exercise6: ex6Correct,
+                exercise7: ex7Correct,
+                exercise8: ex8Correct,
+                exercise9: ex9Correct,
+                exercise10: ex10Correct
+            };
+            resultData.score = totalCorrect;
+            resultData.total = totalQuestions;
+
+            await saveQuizResultToFirebase(`${topicId}_practice`, resultData);
+            userQuizResults[`topic_${topicId}_practice`] = resultData;
+
+            const message = percentage >= 90
+                ? 'Ajoyib! Kiyim-kechak mavzusini juda yaxshi o\'zlashtirdingiz.'
+                : percentage >= 70
+                    ? 'Yaxshi natija! Носить va надевать farqini yana bir bor mashq qilsangiz, yanada mustahkam bo\'ladi.'
+                    : 'Mashqlarni yana bir bor ko\'rib chiqing va keyin qayta tekshiring.';
+
+            const feedbackDiv = document.getElementById('topic8Feedback');
+            if (feedbackDiv) {
+                feedbackDiv.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 10px;">${totalCorrect}/${totalQuestions}</div>
+                    <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
+                    <p style="margin-top: 12px; font-size: 1rem;">${message}</p>
+
+                    <div class="topic6-feedback-list">
+                        <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
+                        <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
+                        <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
+                        <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
+                        <div class="topic6-feedback-row">6-mashq: ${ex6Correct}/${exercises.exercise6.items.length}</div>
+                        <div class="topic6-feedback-row">7-mashq: ${ex7Correct}/${matchingPairs.length}</div>
+                        <div class="topic6-feedback-row">8-mashq: ${ex8Correct}/${exercises.exercise8.items.length}</div>
+                        <div class="topic6-feedback-row">9-mashq: ${ex9Correct}/${exercises.exercise9.items.length}</div>
+                        <div class="topic6-feedback-row">10-mashq: ${ex10Correct}/${exercises.exercise10.items.length}</div>
                     </div>
                 `;
 
