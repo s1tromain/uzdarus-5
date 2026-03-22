@@ -3566,15 +3566,119 @@
 </div>
                     `,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Bu mavzuda transport va sayohat fe'llarini o'rganasiz: ехать/ездить (quruqlikda), лететь/летать (havoda), hamda predloglar: в (ichkariga), на (transport/yuzaga), из (ichkaridan), до (gacha).\n\n💡 Qisqa eslab qolish:\n• ехать → hozir ketayapman (transportda)\n• ездить → odatda borib turaman\n• лететь → hozir uchayapman\n• летать → odatda uchib turaman\n• в + город/shahar → yo'nalish\n• на + transport → vosita\n• из + shahar → qayerdan\n• до + joy → gacha"
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #0288D1, #01579B); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(1, 87, 155, 0.28);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🚗</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Transport va sayohat lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.92); margin-bottom: 25px; font-size: 1.1rem;">
+                                Ushbu mavzuda <strong>60 ta so'z va ibora</strong> o'rganasiz
+                            </p>
+                            <button onclick="window.location.href='a1-vocabulary.html?topic=9'"
+                                    style="background: white; color: #01579B; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.18);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.18)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.82); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-car"></i> Transport va sayohat mavzusini mashq qiling
+                            </p>
+                        </div>
+
+                        <h3>Muhim qoidalar:</h3>
+                        <p>• <strong>ехать</strong> — hozir transportda ketayapman: <em>Я еду в город.</em></p>
+                        <p>• <strong>ездить</strong> — odatda borib turaman: <em>Я езжу на работу каждый день.</em></p>
+                        <p>• <strong>лететь</strong> — hozir samolyotda uchayapman: <em>Я лечу в Москву.</em></p>
+                        <p>• <strong>летать</strong> — odatda uchib turaman: <em>Я летаю в Ташкент каждый месяц.</em></p>
+                        <p>• <strong>в</strong> + shahar/joy — yo'nalish: <em>Я еду в Ташкент.</em></p>
+                        <p>• <strong>на</strong> + transport — vosita: <em>Я еду на автобусе.</em></p>
+                        <p>• <strong>из</strong> + shahar — qayerdan: <em>Я приехал из Самарканда.</em></p>
+                        <p>• <strong>до</strong> + joy — gacha: <em>Я доехал до аэропорта.</em></p>
+                    `,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
                         blankAnswers: []
+                    },
+                    topic9Exercises: {
+                        exercise1: {
+                            title: "1. To'g'ri predlogni tanlang (в / на / из / до)",
+                            items: [
+                                { prompt: 'Я еду ___ город.', options: ['в', 'на', 'из', 'до'], answer: 'в' },
+                                { prompt: 'Мы летим ___ Москву.', options: ['в', 'на', 'из', 'до'], answer: 'в' },
+                                { prompt: 'Он едет ___ автобусе.', options: ['в', 'на', 'из', 'до'], answer: 'на' },
+                                { prompt: 'Я приехал ___ Самарканда.', options: ['в', 'на', 'из', 'до'], answer: 'из' },
+                                { prompt: 'Мы доехали ___ аэропорта.', options: ['в', 'на', 'из', 'до'], answer: 'до' },
+                                { prompt: 'Она едет ___ машине.', options: ['в', 'на', 'из', 'до'], answer: 'на' },
+                                { prompt: 'Они прилетели ___ Бухары.', options: ['в', 'на', 'из', 'до'], answer: 'из' },
+                                { prompt: 'Я лечу ___ Ташкент.', options: ['в', 'на', 'из', 'до'], answer: 'в' },
+                                { prompt: 'Мы едем ___ поезде.', options: ['в', 'на', 'из', 'до'], answer: 'на' },
+                                { prompt: 'Он долетел ___ Москвы.', options: ['в', 'на', 'из', 'до'], answer: 'до' }
+                            ]
+                        },
+                        exercise2: {
+                            title: "2. So'zlarni to'g'ri shaklga qo'ying",
+                            items: [
+                                { prompt: 'Я еду в (город) →', answer: 'город' },
+                                { prompt: 'Мы летим в (Москва) →', answer: 'Москву' },
+                                { prompt: 'Он едет на (автобус) →', answer: 'автобусе' },
+                                { prompt: 'Я приехал из (Самарканд) →', answer: 'Самарканда' },
+                                { prompt: 'Мы доехали до (аэропорт) →', answer: 'аэропорта' },
+                                { prompt: 'Она едет на (машина) →', answer: 'машине' },
+                                { prompt: 'Они прилетели из (Бухара) →', answer: 'Бухары' },
+                                { prompt: 'Я лечу в (Ташкент) →', answer: 'Ташкент' },
+                                { prompt: 'Мы едем на (поезд) →', answer: 'поезде' },
+                                { prompt: 'Он долетел до (Москва) →', answer: 'Москвы' }
+                            ]
+                        },
+                        exercise3: {
+                            title: '3. Tarjima qiling',
+                            items: [
+                                { prompt: 'Men aeroportga ketyapman', answers: ['я еду в аэропорт'] },
+                                { prompt: 'Biz Toshkentga uchyapmiz', answers: ['мы летим в ташкент'] },
+                                { prompt: 'U poyezdda ketyapti', answers: ['он едет на поезде', 'она едет на поезде'] },
+                                { prompt: 'Men Buxorodan keldim', answers: ['я приехал из бухары', 'я приехала из бухары'] },
+                                { prompt: 'Biz vokzalgacha bordik', answers: ['мы доехали до вокзала'] },
+                                { prompt: 'U avtobusda ketmoqda', answers: ['она едет на автобусе', 'он едет на автобусе'] },
+                                { prompt: 'Ular Samarqanddan uchib kelishdi', answers: ['они прилетели из самарканда'] },
+                                { prompt: 'Men Moskvaga uchyapman', answers: ['я лечу в москву'] },
+                                { prompt: 'Biz mashinada ketayapmiz', answers: ['мы едем на машине'] },
+                                { prompt: 'U Toshkentgacha uchib bordi', answers: ['он долетел до ташкента', 'она долетела до ташкента'] }
+                            ]
+                        },
+                        exercise4: {
+                            title: '4. Xatoni toping',
+                            items: [
+                                { prompt: 'Я лечу на Ташкент', answers: ['я лечу в ташкент'] },
+                                { prompt: 'Мы едем в автобусе', answers: ['мы едем на автобусе'] },
+                                { prompt: 'Он летит на Москву', answers: ['он летит в москву'] },
+                                { prompt: 'Я прилетел в Бухары', answers: ['я прилетел из бухары'] },
+                                { prompt: 'Мы доехали в вокзала', answers: ['мы доехали до вокзала'] },
+                                { prompt: 'Она едет в машине', answers: ['она едет на машине'] },
+                                { prompt: 'Они приехали в Самарканда', answers: ['они приехали из самарканда'] },
+                                { prompt: 'Я доехал в аэропорта', answers: ['я доехал до аэропорта'] },
+                                { prompt: 'Мы летим на Ташкент', answers: ['мы летим в ташкент'] },
+                                { prompt: 'Он прилетел из Москву', answers: ['он прилетел из москвы'] }
+                            ]
+                        },
+                        exercise5: {
+                            title: '5. Gapni tuzing',
+                            items: [
+                                { prompt: 'еду / я / аэропорт / в', answers: ['я еду в аэропорт'] },
+                                { prompt: 'летим / мы / Ташкент / в', answers: ['мы летим в ташкент'] },
+                                { prompt: 'на / едет / он / автобусе', answers: ['он едет на автобусе'] },
+                                { prompt: 'из / я / Самарканда / приехал', answers: ['я приехал из самарканда'] },
+                                { prompt: 'до / мы / доехали / вокзала', answers: ['мы доехали до вокзала'] },
+                                { prompt: 'лечу / я / Москву / в', answers: ['я лечу в москву'] },
+                                { prompt: 'на / едем / мы / поезде', answers: ['мы едем на поезде'] },
+                                { prompt: 'из / прилетели / они / Бухары', answers: ['они прилетели из бухары'] },
+                                { prompt: 'до / он / доехал / аэропорта', answers: ['он доехал до аэропорта'] },
+                                { prompt: 'на / она / едет / машине', answers: ['она едет на машине'] }
+                            ]
+                        }
                     }
                 },
                 {
@@ -3996,6 +4100,11 @@
             if (topic8PracticeSection) {
                 topic8PracticeSection.remove();
             }
+
+            const topic9PracticeSection = document.getElementById('topic9PracticeSection');
+            if (topic9PracticeSection) {
+                topic9PracticeSection.remove();
+            }
         }
 
         // Load lesson content
@@ -4044,7 +4153,7 @@
             lessonContent.innerHTML = lessonHTML;
 
             if (!topic.isSubscriptionLocked) {
-                if (topicId === 6 || topicId === 7 || topicId === 8) {
+                if (topicId === 6 || topicId === 7 || topicId === 8 || topicId === 9) {
                     quizSection.innerHTML = '';
                     resultsSection.classList.remove('show');
                     completeBtn.style.display = 'none';
@@ -4054,8 +4163,10 @@
                             loadTopic6Exercises(topicId);
                         } else if (topicId === 7) {
                             loadTopic7Exercises(topicId);
-                        } else {
+                        } else if (topicId === 8) {
                             loadTopic8Exercises(topicId);
+                        } else if (topicId === 9) {
+                            loadTopic9Exercises(topicId);
                         }
                     }, 100);
                 } else {
@@ -7410,6 +7521,385 @@
                         <div class="topic6-feedback-row">8-mashq: ${ex8Correct}/${exercises.exercise8.items.length}</div>
                         <div class="topic6-feedback-row">9-mashq: ${ex9Correct}/${exercises.exercise9.items.length}</div>
                         <div class="topic6-feedback-row">10-mashq: ${ex10Correct}/${exercises.exercise10.items.length}</div>
+                    </div>
+                `;
+
+                feedbackDiv.classList.remove('hidden');
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        // ========== TOPIC 9 FUNCTIONS ==========
+
+        function normalizeTopic9Text(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'`«»\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function topic9IsCorrect(userValue, expected) {
+            const normalizedUser = normalizeTopic9Text(userValue);
+            if (!normalizedUser) return false;
+            if (Array.isArray(expected)) {
+                return expected.some((item) => normalizeTopic9Text(item) === normalizedUser);
+            }
+            return normalizeTopic9Text(expected) === normalizedUser;
+        }
+
+        function bindTopic9ChoiceEvents() {
+            document.querySelectorAll('[data-topic9-e1-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic9E1Option;
+                    const value = this.dataset.value;
+                    const row = document.querySelector(`[data-topic9-e1-row="${index}"]`);
+                    if (!row) return;
+                    row.dataset.value = value;
+                    row.querySelectorAll('.topic5-option-chip').forEach((chip) => chip.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+        }
+
+        function bindTopic9CheckButton(topicId) {
+            const checkButton = document.getElementById('checkTopic9Btn');
+            const feedback = document.getElementById('topic9Feedback');
+            if (!checkButton || !feedback) return;
+
+            checkButton.dataset.topicCheckBound = '1';
+            feedback.classList.add('hidden');
+            feedback.innerHTML = '';
+
+            checkButton.onclick = () => {
+                window.checkTopic9Exercises(topicId);
+            };
+        }
+
+        function loadTopic9Exercises(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 9 || !topic.topic9Exercises || topicId !== currentTopicId || !quizSection) return;
+
+            clearExtraExercises();
+
+            const saved = userQuizResults[`topic_${topicId}_practice`] || {};
+            const ex1Answers = Array.isArray(saved.exercise1Answers) ? saved.exercise1Answers : [];
+            const ex2Answers = Array.isArray(saved.exercise2Answers) ? saved.exercise2Answers : [];
+            const ex3Answers = Array.isArray(saved.exercise3Answers) ? saved.exercise3Answers : [];
+            const ex4Answers = Array.isArray(saved.exercise4Answers) ? saved.exercise4Answers : [];
+            const ex5Answers = Array.isArray(saved.exercise5Answers) ? saved.exercise5Answers : [];
+
+            const exercises = topic.topic9Exercises;
+
+            let html = `
+                <div class="quiz-container topic-practice-quiz">
+                <div class="extra-exercises-section" id="topic9PracticeSection">
+                    <h2 class="extra-exercises-title">
+                        <i class="fas fa-car"></i> Amaliy mashqlar: Transport va sayohat
+                    </h2>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise1.title}</h3>
+                        <div class="topic7-choice-list">
+            `;
+
+            exercises.exercise1.items.forEach((item, index) => {
+                const savedValue = ex1Answers[index] || '';
+                html += `
+                    <div class="topic7-choice-item" data-topic9-e1-row="${index}" data-value="${savedValue}">
+                        <div class="topic7-choice-text">${index + 1}. ${item.prompt}</div>
+                        <div class="topic7-choice-options">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic9-e1-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise2.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise2.items.forEach((item, index) => {
+                const savedValue = ex2Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic9IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect')
+                    : '';
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic9-e2="${index}"
+                               value="${savedValue}"
+                               placeholder="To'g'ri shaklni yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise3.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise3.items.forEach((item, index) => {
+                const savedValue = ex3Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic9IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic9-e3="${index}"
+                               value="${savedValue}"
+                               placeholder="Ruscha tarjimani yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise4.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise4.items.forEach((item, index) => {
+                const savedValue = ex4Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic9IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic9-e4="${index}"
+                               value="${savedValue}"
+                               placeholder="To'g'ri gapni yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise5.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+
+            exercises.exercise5.items.forEach((item, index) => {
+                const savedValue = ex5Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic9IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. So'zlar: ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic9-e5="${index}"
+                               value="${savedValue}"
+                               placeholder="To'liq gapni yozing" />
+                    </div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+
+                    <div class="topic-check-section">
+                        <button class="check-topic-btn" id="checkTopic9Btn" type="button">
+                            Javoblarni tekshirish
+                        </button>
+                        <div class="topic-feedback hidden" id="topic9Feedback"></div>
+                    </div>
+                </div>
+                </div>
+            `;
+
+            quizSection.innerHTML = html;
+            bindTopic9ChoiceEvents();
+            bindTopic9CheckButton(topicId);
+        }
+
+        window.checkTopic9Exercises = async function(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 9 || !topic.topic9Exercises) return;
+
+            const exercises = topic.topic9Exercises;
+            const resultData = {
+                exercise1Answers: [],
+                exercise2Answers: [],
+                exercise3Answers: [],
+                exercise4Answers: [],
+                exercise5Answers: [],
+                breakdown: {},
+                score: 0,
+                total: 0,
+                timestamp: new Date().toISOString()
+            };
+
+            let totalCorrect = 0;
+            let totalQuestions = 0;
+            let ex1Correct = 0;
+            let ex2Correct = 0;
+            let ex3Correct = 0;
+            let ex4Correct = 0;
+            let ex5Correct = 0;
+
+            // Exercise 1 — chip selection (prepositions)
+            exercises.exercise1.items.forEach((item, index) => {
+                const row = document.querySelector(`[data-topic9-e1-row="${index}"]`);
+                const userValue = row?.dataset.value || '';
+                resultData.exercise1Answers.push(userValue);
+                totalQuestions++;
+
+                if (!row) return;
+                row.classList.remove('correct', 'incorrect');
+                if (!userValue) return;
+
+                if (topic9IsCorrect(userValue, item.answer)) {
+                    row.classList.add('correct');
+                    totalCorrect++;
+                    ex1Correct++;
+                } else {
+                    row.classList.add('incorrect');
+                }
+            });
+
+            // Exercise 2 — word form input
+            exercises.exercise2.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic9-e2="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise2Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) return;
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) return;
+
+                if (topic9IsCorrect(userValue, item.answer)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex2Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            // Exercise 3 — translation input
+            exercises.exercise3.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic9-e3="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise3Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) return;
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) return;
+
+                if (topic9IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex3Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            // Exercise 4 — error correction input
+            exercises.exercise4.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic9-e4="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise4Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) return;
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) return;
+
+                if (topic9IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex4Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            // Exercise 5 — sentence building input
+            exercises.exercise5.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic9-e5="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                resultData.exercise5Answers.push(userValue);
+                totalQuestions++;
+
+                if (!input) return;
+                input.classList.remove('correct', 'incorrect');
+                if (!userValue) return;
+
+                if (topic9IsCorrect(userValue, item.answers)) {
+                    input.classList.add('correct');
+                    totalCorrect++;
+                    ex5Correct++;
+                } else {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            const percentage = totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+            resultData.breakdown = {
+                exercise1: ex1Correct,
+                exercise2: ex2Correct,
+                exercise3: ex3Correct,
+                exercise4: ex4Correct,
+                exercise5: ex5Correct
+            };
+            resultData.score = totalCorrect;
+            resultData.total = totalQuestions;
+
+            await saveQuizResultToFirebase(`${topicId}_practice`, resultData);
+            userQuizResults[`topic_${topicId}_practice`] = resultData;
+
+            const message = percentage >= 90
+                ? 'Ajoyib! Transport va sayohat mavzusini juda yaxshi o\'zlashtirdingiz.'
+                : percentage >= 70
+                    ? 'Yaxshi natija! Predloglarni yana bir bor mashq qilsangiz, yanada mustahkam bo\'ladi.'
+                    : 'Mashqlarni yana bir bor ko\'rib chiqing va keyin qayta tekshiring.';
+
+            const feedbackDiv = document.getElementById('topic9Feedback');
+            if (feedbackDiv) {
+                feedbackDiv.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 10px;">${totalCorrect}/${totalQuestions}</div>
+                    <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
+                    <p style="margin-top: 12px; font-size: 1rem;">${message}</p>
+
+                    <div class="topic6-feedback-list">
+                        <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
+                        <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
+                        <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
+                        <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
                     </div>
                 `;
 
