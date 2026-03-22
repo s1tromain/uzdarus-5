@@ -3786,9 +3786,35 @@
 </div>
                     `,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Bu mavzuda sog'liq, tana a'zolari va dorixona mavzusini o'rganasiz. Siz \"у меня болит / болят\", \"у меня есть / нет\", \"мне холодно / жарко\", \"мне нужно / надо\" kabi foydali ruscha konstruksiyalarni ishlatishni mashq qilasiz.\n\n💡 Qisqa eslab qolish:\n• болит → bitta narsa og'risa: У меня болит голова.\n• болят → ko'p narsa yoki juft a'zo og'risa: У меня болят зубы.\n• у меня есть → menda bor\n• у меня нет → menda yo'q\n• мне холодно / жарко → menga sovuq / issiq\n• мне нужно / надо → menga kerak"
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #00897B, #00695C); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(0, 105, 92, 0.28);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🩺</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Sog'liq va dorixona lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.92); margin-bottom: 25px; font-size: 1.1rem;">
+                                Ushbu mavzuda sog'liq va tana a'zolari bo'yicha asosiy so'z va iboralarni o'rganasiz
+                            </p>
+                            <button onclick="window.location.href='a1-vocabulary.html?topic=10'"
+                                    style="background: white; color: #00695C; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.18);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.18)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.82); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-heartbeat"></i> Sog'liq va dorixona mavzusini mashq qiling
+                            </p>
+                        </div>
+
+                        <h3>Muhim qoidalar:</h3>
+                        <p>• <strong>У меня болит голова.</strong> — bitta a'zo, shuning uchun "болит".</p>
+                        <p>• <strong>У меня болят зубы.</strong> — ko'plik, shuning uchun "болят".</p>
+                        <p>• <strong>У меня есть температура.</strong> — biror narsa borligini aytamiz.</p>
+                        <p>• <strong>У меня нет аппетита.</strong> — yo'qlikni aytamiz, ko'pincha ot genitiv shaklida keladi.</p>
+                        <p>• <strong>Мне холодно.</strong> / <strong>Мне жарко.</strong> — holatni ifodalaydi.</p>
+                        <p>• <strong>Мне нужно идти к врачу.</strong> — zaruratni bildiradi.</p>
+                        <p>• <strong>Мне надо купить лекарство.</strong> — kerakli harakatni bildiradi.</p>
+                    `,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
@@ -8485,7 +8511,7 @@
                     : '';
                 html += `
                     <div class="topic6-text-item">
-                        <div class="topic6-text-prompt">${index + 1}. <span style="color:#e53935;text-decoration:line-through">${item.prompt}</span></div>
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
                         <input type="text"
                                class="exercise-input topic5-text-input ${inputClass}"
                                data-topic10-e7="${index}"
