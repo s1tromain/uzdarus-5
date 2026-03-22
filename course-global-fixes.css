@@ -1,4 +1,8 @@
-/* Topic-scoped course exercise controls (demo + paid) */
+/* ================================================================
+   Topic-scoped course exercise controls (demo + paid)
+   ================================================================ */
+
+/* --- Exercise layout --- */
 
 .exercise-block {
     margin-bottom: 32px !important;
@@ -50,6 +54,8 @@ input,
     border-color: #c7c7c7;
 }
 
+/* --- Check button --- */
+
 .topic-check-section {
     margin: 28px 0 12px;
 }
@@ -76,12 +82,10 @@ input,
     box-shadow: 0 12px 26px rgba(255, 152, 0, 0.45);
 }
 
+/* --- Feedback container --- */
+
 .topic-feedback {
-    margin-top: 14px;
-    background: #fff8e1;
-    border: 1px solid #ffd180;
-    border-radius: 12px;
-    padding: 14px;
+    margin-top: 18px;
     display: none;
 }
 
@@ -93,36 +97,208 @@ input,
     display: none;
 }
 
-.topic-feedback .topic-feedback-title {
-    font-weight: 700;
-    color: #e65100;
-    margin-bottom: 10px;
+/* --- Feedback: summary box --- */
+
+.fb-summary {
+    background: linear-gradient(135deg, #fff8e1, #fff3cd);
+    border: 1px solid #ffc107;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    text-align: center;
 }
 
-.topic-feedback .feedback-row {
-    padding: 8px 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    font-size: 0.95rem;
+.fb-summary-score {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #e65100;
+    margin-bottom: 6px;
+}
+
+.fb-summary-msg {
+    font-size: 1rem;
+    color: #4e342e;
     line-height: 1.4;
 }
 
-.topic-feedback .feedback-row.ok {
-    background: #e8f5e9;
+/* --- Feedback: card list --- */
+
+.fb-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.fb-card {
+    border-radius: 12px;
+    border: 1px solid;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.fb-card:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.fb-card.fb-correct {
+    border-color: #a5d6a7;
+    background: #f1f8e9;
+}
+
+.fb-card.fb-incorrect {
+    border-color: #ef9a9a;
+    background: #fce4ec;
+}
+
+/* --- Card header --- */
+
+.fb-card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    flex-wrap: wrap;
+}
+
+.fb-card-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.82rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.fb-correct .fb-card-num {
+    background: #4caf50;
+    color: #fff;
+}
+
+.fb-incorrect .fb-card-num {
+    background: #e53935;
+    color: #fff;
+}
+
+.fb-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.fb-badge-ok {
+    background: #c8e6c9;
     color: #1b5e20;
 }
 
-.topic-feedback .feedback-row.bad {
-    background: #ffebee;
+.fb-badge-bad {
+    background: #ffcdd2;
     color: #b71c1c;
 }
 
-.topic-feedback .feedback-empty {
-    color: #555;
-    font-size: 0.95rem;
+.fb-card-label {
+    font-size: 0.82rem;
+    color: #616161;
+    font-weight: 500;
+    margin-left: auto;
+    text-align: right;
+    word-break: break-word;
 }
 
-/* Keep only one visible check button per topic */
+/* --- Card body --- */
+
+.fb-card-body {
+    padding: 12px 14px;
+}
+
+.fb-card-q {
+    font-size: 0.95rem;
+    color: #37474f;
+    margin-bottom: 10px;
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.fb-card-field {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    flex-wrap: wrap;
+}
+
+.fb-card-lbl {
+    color: #757575;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.fb-card-uval {
+    color: #37474f;
+    word-break: break-word;
+}
+
+.fb-card-cval {
+    color: #1b5e20;
+    word-break: break-word;
+}
+
+.fb-incorrect .fb-card-uval {
+    color: #c62828;
+    text-decoration: line-through;
+    text-decoration-color: rgba(198, 40, 40, 0.4);
+}
+
+/* --- Explanation --- */
+
+.fb-card-expl {
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.fb-correct .fb-card-expl {
+    background: rgba(76, 175, 80, 0.1);
+    color: #2e7d32;
+    border-left: 3px solid #4caf50;
+}
+
+.fb-incorrect .fb-card-expl {
+    background: rgba(229, 57, 53, 0.08);
+    color: #b71c1c;
+    border-left: 3px solid #e53935;
+}
+
+/* --- Empty state --- */
+
+.fb-empty {
+    color: #555;
+    font-size: 0.95rem;
+    padding: 14px;
+    text-align: center;
+    background: #fff8e1;
+    border: 1px solid #ffd180;
+    border-radius: 12px;
+}
+
+/* ================================================================
+   Hide legacy duplicate buttons & result blocks
+   ================================================================ */
+
 .check-exercises-btn,
 .check-matching-btn,
 .check-blank-btn,
@@ -131,13 +307,16 @@ input,
     display: none !important;
 }
 
-/* Hide duplicated local result blocks because topic-feedback is now the scoped source */
 .exercise-results,
 .matching-score,
 .blank-results,
 .quiz-results {
     display: none !important;
 }
+
+/* ================================================================
+   Responsive
+   ================================================================ */
 
 @media (max-width: 768px) {
     .exercise-item {
@@ -155,5 +334,50 @@ input,
 
     .check-topic-btn {
         width: 100%;
+    }
+
+    .fb-summary {
+        padding: 14px 12px;
+    }
+
+    .fb-summary-score {
+        font-size: 1.15rem;
+    }
+
+    .fb-card-head {
+        padding: 8px 10px;
+    }
+
+    .fb-card-body {
+        padding: 10px;
+    }
+
+    .fb-card-label {
+        margin-left: 0;
+        text-align: left;
+        width: 100%;
+    }
+
+    .fb-card-field {
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .fb-card-lbl {
+        font-size: 0.82rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .fb-summary-score {
+        font-size: 1.05rem;
+    }
+
+    .fb-card-q {
+        font-size: 0.88rem;
+    }
+
+    .fb-card-expl {
+        font-size: 0.8rem;
     }
 }
