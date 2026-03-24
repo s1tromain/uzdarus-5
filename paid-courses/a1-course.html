@@ -4145,15 +4145,147 @@
                     isSubscriptionLocked: false,
                     grammar: "",
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Bu mavzuda siz \"можно / нельзя / нужно / надо / лучше\" kabi foydali konstruksiyalarni, shuningdek oddiy bog'lovchilarni: и, а, но, или, потому что, поэтому, если, когда, чтобы ishlatishni o'rganasiz. Siz sabab, shart, tanlov va tavsiya bildirishni mashq qilasiz.\n\n💡 Qisqa eslab qolish:\n• можно → ruxsat bor\n• нельзя → ruxsat yo'q\n• нужно / надо → kerak\n• лучше + infinitiv → yaxshisi biror ishni qilish\n• потому что → sabab\n• поэтому → natija\n• если → agar\n• чтобы → maqsad uchun"
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #00796B, #004D40); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(0, 77, 64, 0.28);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">📝</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Qoidalar, bog'lovchilar va kundalik harakatlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.92); margin-bottom: 25px; font-size: 1.1rem;">
+                                Ushbu mavzuda ruxsat, taqiqlash, tavsiya va bog'lovchilar bilan ishlatiladigan asosiy so'z va iboralarni o'rganasiz
+                            </p>
+                            <button onclick="window.location.href='a1-vocabulary.html?topic=12'"
+                                    style="background: white; color: #004D40; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.18);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.18)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.82); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-list-check"></i> Qoidalar va maslahatlar mavzusini mashq qiling
+                            </p>
+                        </div>
+
+                        <h3>Muhim qoidalar:</h3>
+                        <p>• <strong>Здесь можно фотографировать.</strong> — bu yerda ruxsat bor.</p>
+                        <p>• <strong>Здесь нельзя шуметь.</strong> — bu yerda mumkin emas.</p>
+                        <p>• <strong>Тебе нужно больше читать.</strong> — keraklikni bildiradi.</p>
+                        <p>• <strong>Лучше ложиться раньше.</strong> — tavsiya, "лучше" dan keyin ko'pincha infinitiv keladi.</p>
+                        <p>• <strong>Я не пришёл, потому что был занят.</strong> — sabab.</p>
+                        <p>• <strong>Я был занят, поэтому не пришёл.</strong> — natija.</p>
+                        <p>• <strong>Если будет время, я помогу.</strong> — shart.</p>
+                        <p>• <strong>Я учу русский, чтобы говорить.</strong> — maqsad.</p>
+                    `,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
                         blankAnswers: []
+                    },
+                    topic12Exercises: {
+                        exercise1: {
+                            title: "1. To'g'ri variantni tanlang",
+                            items: [
+                                { prompt: 'Тебе ___ учить русский каждый день', options: ['нужно', 'нельзя'], answer: 'нужно' },
+                                { prompt: 'Здесь ___ фотографировать', options: ['можно', 'нельзя'], answer: 'нельзя' },
+                                { prompt: 'Я хочу пойти, ___ у меня работа', options: ['и', 'но'], answer: 'но' },
+                                { prompt: 'Мы будем смотреть фильм ___ сериал', options: ['или', 'потому что'], answer: 'или' },
+                                { prompt: 'Я не пришёл, ___ был занят', options: ['потому что', 'и'], answer: 'потому что' },
+                                { prompt: '___ будет время, я помогу', options: ['если', 'но'], answer: 'если' },
+                                { prompt: 'Тебе ___ больше читать', options: ['надо', 'нельзя'], answer: 'надо' },
+                                { prompt: 'Я люблю чай, ___ он любит кофе', options: ['а', 'и'], answer: 'а' },
+                                { prompt: 'Лучше ___ раньше', options: ['вставать', 'встаю'], answer: 'вставать' },
+                                { prompt: '___ здесь парковаться?', options: ['можно', 'нужно'], answer: 'можно' }
+                            ]
+                        },
+                        exercise2: {
+                            title: "2. To'g'ri variantni tanlang",
+                            instruction: "Har bir gap uchun mos variantni tanlang",
+                            items: [
+                                { prompt: 'Я остался дома, потому что', options: ['был болен', 'буду гулять', 'читаю книгу'], answer: 'был болен' },
+                                { prompt: 'Если будет возможность,', options: ['я помог вчера', 'я помогу', 'я помогаю сейчас'], answer: 'я помогу' },
+                                { prompt: 'Нужно', options: ['учу русский', 'учить русский', 'учил русский'], answer: 'учить русский' },
+                                { prompt: 'Нельзя', options: ['говорить громко', 'говорю громко', 'сказал громко'], answer: 'говорить громко' },
+                                { prompt: 'Я учу русский, чтобы', options: ['говорил вчера', 'говорить', 'говорю'], answer: 'говорить' },
+                                { prompt: 'Мы будем пить чай или', options: ['хлеб', 'кофе', 'суп'], answer: 'кофе' },
+                                { prompt: 'Когда я пришёл домой,', options: ['я сплю', 'я буду спать', 'я сразу лёг спать'], answer: 'я сразу лёг спать' },
+                                { prompt: 'Лучше', options: ['ешь больше овощей', 'есть больше овощей', 'ел овощи'], answer: 'есть больше овощей' },
+                                { prompt: 'Я не пошёл гулять, потому что', options: ['идёт дождь', 'был дождь', 'будет дождь'], answer: 'был дождь' },
+                                { prompt: 'Если будет дождь,', options: ['мы остались дома', 'мы останемся дома', 'мы остаёмся дома вчера'], answer: 'мы останемся дома' }
+                            ]
+                        },
+                        exercise3: {
+                            title: "3. Tarjima qiling (uz → rus)",
+                            items: [
+                                { prompt: 'Men ko\'proq o\'qishim kerak', answers: ['мне нужно больше читать'] },
+                                { prompt: 'Bu yerda gaplashish mumkin emas', answers: ['здесь нельзя говорить'] },
+                                { prompt: 'Men bormoqchiman, lekin ishlayapman', answers: ['я хочу пойти, но работаю', 'я хочу пойти но работаю'] },
+                                { prompt: 'Agar imkon bo\'lsa, kelaman', answers: ['если будет возможность, я приду', 'если будет возможность я приду'] },
+                                { prompt: 'Men tushunish uchun rus tilini o\'rganayapman', answers: ['я учу русский, чтобы понимать', 'я учу русский чтобы понимать'] },
+                                { prompt: 'Yaxshisi ko\'proq suv ichish kerak', answers: ['лучше пить больше воды'] },
+                                { prompt: 'Men choy yoki sharbat ichaman', answers: ['я пью чай или сок'] },
+                                { prompt: 'U kelmadi, chunki kasal edi', answers: ['он не пришёл, потому что был болен', 'он не пришел потому что был болен', 'он не пришёл потому что был болен'] },
+                                { prompt: 'Bu yerda rasmga olish mumkinmi?', answers: ['можно ли здесь фотографировать?', 'можно ли здесь фотографировать'] },
+                                { prompt: 'Agar vaqtim bo\'lsa, sizga yozaman', answers: ['если у меня будет время, я вам напишу', 'если у меня будет время я вам напишу'] }
+                            ]
+                        },
+                        exercise4: {
+                            title: "4. Союзы (qavs ichida)",
+                            instruction: "Qavs ichidagi o'zbek so'zning ruscha tarjimasini yozing",
+                            items: [
+                                { prompt: 'Я хочу поехать, (lekin) ___ у меня нет денег', answer: 'но' },
+                                { prompt: 'Я не могу поехать, (chunki) ___ у меня нет денег', answer: 'потому что' },
+                                { prompt: 'Я дома, (chunki) ___ я устал', answer: 'потому что' },
+                                { prompt: 'Я устал, (shuning uchun) ___ я дома', answer: 'поэтому' },
+                                { prompt: 'Я учу русский, (chunki) ___ хочу работать', answer: 'потому что' },
+                                { prompt: 'Я учу русский, (uchun) ___ работать', answer: 'чтобы' },
+                                { prompt: '(Agar) ___ будет дождь, мы останемся дома', answer: 'если' },
+                                { prompt: 'Мы останемся дома, (agar) ___ будет дождь', answer: 'если' },
+                                { prompt: 'Я читаю книгу (va) ___ слушаю музыку', answer: 'и' },
+                                { prompt: 'Я читаю книгу, (va yana) ___ слушаю музыку', answer: 'а также' },
+                                { prompt: 'Я не пришёл, (chunki) ___ был занят', answer: 'потому что' },
+                                { prompt: 'Я был занят, (shuning uchun) ___ не пришёл', answer: 'поэтому' },
+                                { prompt: 'Я люблю кофе, (esa) ___ он любит чай', answer: 'а' },
+                                { prompt: 'Я люблю кофе, (lekin) ___ он любит чай', answer: 'но' },
+                                { prompt: 'Мы пойдём гулять, (agar) ___ будет хорошая погода', answer: 'если' },
+                                { prompt: '(Agar) ___ будет хорошая погода, мы пойдём гулять', answer: 'если' },
+                                { prompt: 'Я учусь, (chunki) ___ хочу знать язык', answer: 'потому что' },
+                                { prompt: 'Я учусь, (uchun) ___ знать язык', answer: 'чтобы' },
+                                { prompt: 'Я открыл окно, (chunki) ___ стало жарко', answer: 'потому что' },
+                                { prompt: 'Стало жарко, (shuning uchun) ___ я открыл окно', answer: 'поэтому' }
+                            ]
+                        },
+                        exercise5: {
+                            title: "5. Xatoni toping",
+                            instruction: "Gapni to'g'rilab yozing",
+                            items: [
+                                { prompt: 'Нужно делаю домашнее задание', answers: ['нужно делать домашнее задание'] },
+                                { prompt: 'Я хочу чай и кофе, но молоко нет', answers: ['я хочу чай и кофе, но молока нет', 'я хочу чай и кофе но молока нет'] },
+                                { prompt: 'Если будет время я позвоню тебя', answers: ['если будет время, я позвоню тебе', 'если будет время я позвоню тебе'] },
+                                { prompt: 'Нельзя говорить громко в библиотека', answers: ['нельзя говорить громко в библиотеке'] },
+                                { prompt: 'Я дома, потому что я болеть', answers: ['я дома, потому что болею', 'я дома потому что болею'] },
+                                { prompt: 'Лучше ты пойдёшь дома', answers: ['лучше пойти домой'] },
+                                { prompt: 'Можно открываешь окно?', answers: ['можно открыть окно?', 'можно открыть окно'] },
+                                { prompt: 'Я изучаю русский потому хочу говорить', answers: ['я изучаю русский, потому что хочу говорить', 'я изучаю русский потому что хочу говорить'] },
+                                { prompt: 'Он не пришла, потому что был занят вчера', answers: ['он не пришёл, потому что был занят вчера', 'он не пришел потому что был занят вчера', 'он не пришёл потому что был занят вчера'] },
+                                { prompt: 'Нельзя опаздываешь на урок', answers: ['нельзя опаздывать на урок'] }
+                            ]
+                        },
+                        exercise6: {
+                            title: "6. Gap tuzing (so'zlar aralashtirilgan)",
+                            items: [
+                                { words: ['каждый', 'заниматься', 'нужно', 'день'], answers: ['нужно заниматься каждый день'] },
+                                { words: ['но', 'я', 'прийти', 'хочу', 'не', 'могу'], answers: ['я хочу прийти, но не могу', 'я хочу прийти но не могу'] },
+                                { words: ['будет', 'если', 'время', 'я', 'позвоню'], answers: ['если будет время, я позвоню', 'если будет время я позвоню'] },
+                                { words: ['курить', 'нельзя', 'здесь'], answers: ['здесь нельзя курить'] },
+                                { words: ['чтобы', 'учу', 'говорить', 'я'], answers: ['я учу, чтобы говорить', 'я учу чтобы говорить'] },
+                                { words: ['читать', 'надо', 'больше', 'тебе'], answers: ['тебе надо больше читать'] },
+                                { words: ['можно', 'открыть', 'окно', 'здесь'], answers: ['здесь можно открыть окно'] },
+                                { words: ['я', 'потому', 'что', 'дома', 'болею'], answers: ['я дома, потому что болею', 'я дома потому что болею'] },
+                                { words: ['лучше', 'ложиться', 'раньше'], answers: ['лучше ложиться раньше'] },
+                                { words: ['если', 'дождь', 'будет', 'мы', 'останемся', 'дома'], answers: ['если будет дождь, мы останемся дома', 'если будет дождь мы останемся дома'] }
+                            ]
+                        }
                     }
                 }
             ]
@@ -4533,6 +4665,11 @@
             if (topic11PracticeSection) {
                 topic11PracticeSection.remove();
             }
+
+            const topic12PracticeSection = document.getElementById('topic12PracticeSection');
+            if (topic12PracticeSection) {
+                topic12PracticeSection.remove();
+            }
         }
 
         // Load lesson content
@@ -4584,7 +4721,7 @@
             lessonContent.innerHTML = lessonHTML;
 
             if (!topic.isSubscriptionLocked) {
-                if (topicId === 6 || topicId === 7 || topicId === 8 || topicId === 9 || topicId === 10 || topicId === 11) {
+                if (topicId === 6 || topicId === 7 || topicId === 8 || topicId === 9 || topicId === 10 || topicId === 11 || topicId === 12) {
                     quizSection.innerHTML = '';
                     resultsSection.classList.remove('show');
                     completeBtn.style.display = 'none';
@@ -4602,6 +4739,8 @@
                             loadTopic10Exercises(topicId);
                         } else if (topicId === 11) {
                             loadTopic11Exercises(topicId);
+                        } else if (topicId === 12) {
+                            loadTopic12Exercises(topicId);
                         }
                     }, 100);
                 } else {
@@ -9520,6 +9659,525 @@
 
             // Render detailed feedback
             const feedbackDiv = document.getElementById('topic11Feedback');
+            if (feedbackDiv) {
+                const pct = Math.round((totalCorrect / totalQuestions) * 100);
+                let msg;
+                if (pct >= 90) msg = "🎉 Ajoyib! Siz mavzuni mukammal o'zlashtirgansiz!";
+                else if (pct >= 70) msg = "👍 Yaxshi natija! Siz mavzuni yaxshi tushundingiz.";
+                else if (pct >= 50) msg = "📝 Qoniqarli. Ba'zi savollarni qayta ko'rib chiqing.";
+                else msg = "📚 Ko'proq mashq qiling. Mavzuni diqqat bilan o'qib chiqing.";
+
+                let fbHtml = '<div class="fb-summary">' +
+                    '<div class="fb-summary-score">' + totalCorrect + ' / ' + totalQuestions + " to'g'ri (" + pct + '%)</div>' +
+                    '<div class="fb-summary-msg">' + msg + '</div>' +
+                    '</div><div class="fb-items">';
+
+                results.forEach(function(r, i) {
+                    const cls = r.isCorrect ? 'fb-correct' : 'fb-incorrect';
+                    const badge = r.isCorrect
+                        ? "<span class=\"fb-badge fb-badge-ok\">✓ To'g'ri</span>"
+                        : "<span class=\"fb-badge fb-badge-bad\">✗ Noto'g'ri</span>";
+                    fbHtml += '<div class="fb-card ' + cls + '">';
+                    fbHtml += '<div class="fb-card-head">';
+                    fbHtml += '<span class="fb-card-num">' + (i + 1) + '</span>';
+                    fbHtml += badge;
+                    if (r.label) fbHtml += '<span class="fb-card-label">' + r.label + '</span>';
+                    fbHtml += '</div><div class="fb-card-body">';
+                    if (r.question) fbHtml += '<div class="fb-card-q">' + r.question + '</div>';
+                    fbHtml += '<div class="fb-card-field"><span class="fb-card-lbl">Sizning javobingiz:</span> <span class="fb-card-uval">' + (r.userAnswer || '(kiritilmagan)') + '</span></div>';
+                    fbHtml += '<div class="fb-card-field"><span class="fb-card-lbl">To\'g\'ri javob:</span> <strong class="fb-card-cval">' + r.correctAnswer + '</strong></div>';
+                    if (r.explanation) fbHtml += '<div class="fb-card-expl">' + r.explanation + '</div>';
+                    fbHtml += '</div></div>';
+                });
+
+                fbHtml += '</div>';
+                feedbackDiv.innerHTML = fbHtml;
+                feedbackDiv.classList.remove('hidden');
+                feedbackDiv.classList.add('show');
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+
+        // ========== TOPIC 12 FUNCTIONS ==========
+
+        function normalizeTopic12Text(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'`«»\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function topic12IsCorrect(userValue, expected) {
+            const normalizedUser = normalizeTopic12Text(userValue);
+            if (!normalizedUser) return false;
+            if (Array.isArray(expected)) {
+                return expected.some((item) => normalizeTopic12Text(item) === normalizedUser);
+            }
+            return normalizeTopic12Text(expected) === normalizedUser;
+        }
+
+        function getTopic12BuilderSelection(index) {
+            const holder = document.querySelector(`input[data-topic12-builder-selected="${index}"]`);
+            if (!holder || !holder.value) return [];
+            return holder.value.split('|').map((item) => item.trim()).filter(Boolean);
+        }
+
+        function setTopic12BuilderSelection(index, values) {
+            const holder = document.querySelector(`input[data-topic12-builder-selected="${index}"]`);
+            if (holder) holder.value = values.join('|');
+        }
+
+        function renderTopic12BuilderSelection(index) {
+            const target = document.querySelector(`[data-topic12-builder-target="${index}"]`);
+            const bank = document.querySelector(`[data-topic12-builder-bank="${index}"]`);
+            if (!target || !bank) return;
+            const selection = getTopic12BuilderSelection(index);
+            if (selection.length === 0) {
+                target.innerHTML = '<span class="topic6-builder-placeholder">So\'zlarni ketma-ket tanlang</span>';
+            } else {
+                target.innerHTML = selection.map((word, wordIndex) => `
+                    <button type="button"
+                            class="topic6-builder-token"
+                            data-topic12-builder-remove="${index}"
+                            data-remove-index="${wordIndex}">${word}</button>
+                `).join('');
+            }
+            bank.querySelectorAll(`[data-topic12-builder-word="${index}"]`).forEach((chip) => {
+                const isUsed = selection.includes(chip.dataset.value);
+                chip.classList.toggle('used', isUsed);
+            });
+        }
+
+        function bindTopic12ChoiceEvents() {
+            // Exercise 1 chips (2 options)
+            document.querySelectorAll('[data-topic12-e1-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic12E1Option;
+                    const value = this.dataset.value;
+                    const row = document.querySelector(`[data-topic12-e1-row="${index}"]`);
+                    if (!row) return;
+                    row.dataset.value = value;
+                    row.querySelectorAll('.topic5-option-chip').forEach((chip) => chip.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            // Exercise 2 chips (3 options)
+            document.querySelectorAll('[data-topic12-e2-option]').forEach((option) => {
+                option.addEventListener('click', function() {
+                    const index = this.dataset.topic12E2Option;
+                    const value = this.dataset.value;
+                    const row = document.querySelector(`[data-topic12-e2-row="${index}"]`);
+                    if (!row) return;
+                    row.dataset.value = value;
+                    row.querySelectorAll('.topic5-option-chip').forEach((chip) => chip.classList.remove('selected'));
+                    this.classList.add('selected');
+                });
+            });
+            // Exercise 6 builder word clicks
+            document.querySelectorAll('[data-topic12-builder-word]').forEach((chip) => {
+                chip.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.topic12BuilderWord, 10);
+                    const value = this.dataset.value;
+                    const selection = getTopic12BuilderSelection(index);
+                    if (!selection.includes(value)) {
+                        selection.push(value);
+                        setTopic12BuilderSelection(index, selection);
+                        renderTopic12BuilderSelection(index);
+                    }
+                });
+            });
+            // Exercise 6 builder clear buttons
+            document.querySelectorAll('[data-topic12-builder-clear]').forEach((button) => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.topic12BuilderClear, 10);
+                    setTopic12BuilderSelection(index, []);
+                    renderTopic12BuilderSelection(index);
+                });
+            });
+            // Exercise 6 builder token removal (delegated)
+            const topic12Section = document.getElementById('topic12PracticeSection');
+            if (topic12Section && !topic12Section.dataset.removeBound) {
+                topic12Section.addEventListener('click', function(event) {
+                    const removeButton = event.target.closest('[data-topic12-builder-remove]');
+                    if (!removeButton) return;
+                    const index = parseInt(removeButton.dataset.topic12BuilderRemove, 10);
+                    const removeIndex = parseInt(removeButton.dataset.removeIndex, 10);
+                    const selection = getTopic12BuilderSelection(index);
+                    if (Number.isInteger(removeIndex) && removeIndex >= 0 && removeIndex < selection.length) {
+                        selection.splice(removeIndex, 1);
+                        setTopic12BuilderSelection(index, selection);
+                        renderTopic12BuilderSelection(index);
+                    }
+                });
+                topic12Section.dataset.removeBound = 'true';
+            }
+        }
+
+        function bindTopic12CheckButton(topicId) {
+            const checkButton = document.getElementById('checkTopic12Btn');
+            const feedback = document.getElementById('topic12Feedback');
+            if (!checkButton || !feedback) return;
+            checkButton.dataset.topicCheckBound = '1';
+            feedback.classList.add('hidden');
+            feedback.innerHTML = '';
+            checkButton.onclick = () => {
+                window.checkTopic12Exercises(topicId);
+            };
+        }
+
+        function loadTopic12Exercises(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 12 || !topic.topic12Exercises || topicId !== currentTopicId || !quizSection) return;
+
+            clearExtraExercises();
+
+            const saved = userQuizResults[`topic_${topicId}_practice`] || {};
+            const ex1Answers = Array.isArray(saved.exercise1Answers) ? saved.exercise1Answers : [];
+            const ex2Answers = Array.isArray(saved.exercise2Answers) ? saved.exercise2Answers : [];
+            const ex3Answers = Array.isArray(saved.exercise3Answers) ? saved.exercise3Answers : [];
+            const ex4Answers = Array.isArray(saved.exercise4Answers) ? saved.exercise4Answers : [];
+            const ex5Answers = Array.isArray(saved.exercise5Answers) ? saved.exercise5Answers : [];
+            const ex6Answers = Array.isArray(saved.exercise6Answers) ? saved.exercise6Answers : [];
+
+            const exercises = topic.topic12Exercises;
+
+            let html = `
+                <div class="quiz-container topic-practice-quiz">
+                <div class="extra-exercises-section" id="topic12PracticeSection">
+                    <h2 class="extra-exercises-title">
+                        <i class="fas fa-list-check"></i> Amaliy mashqlar: Qoidalar va maslahatlar
+                    </h2>
+            `;
+
+            // ===== EXERCISE 1 — chip selection (2 options) =====
+            html += `
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise1.title}</h3>
+                        <div class="topic7-choice-list">
+            `;
+            exercises.exercise1.items.forEach((item, index) => {
+                const savedValue = ex1Answers[index] || '';
+                html += `
+                    <div class="topic7-choice-item" data-topic12-e1-row="${index}" data-value="${savedValue}">
+                        <div class="topic7-choice-text">${index + 1}. ${item.prompt}</div>
+                        <div class="topic7-choice-options">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic12-e1-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `
+                        </div>
+                    </div>
+            `;
+
+            // ===== EXERCISE 2 — chip selection (3 options) =====
+            html += `
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise2.title}</h3>
+                        <p class="topic5-exercise-instruction">${exercises.exercise2.instruction}</p>
+                        <div class="topic7-choice-list">
+            `;
+            exercises.exercise2.items.forEach((item, index) => {
+                const savedValue = ex2Answers[index] || '';
+                html += `
+                    <div class="topic7-choice-item" data-topic12-e2-row="${index}" data-value="${savedValue}">
+                        <div class="topic7-choice-text">${index + 1}. ${item.prompt}</div>
+                        <div class="topic7-choice-options">
+                            ${item.options.map((option) => {
+                                const selectedClass = savedValue === option ? 'selected' : '';
+                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic12-e2-option="${index}" data-value="${option}">${option}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `
+                        </div>
+                    </div>
+            `;
+
+            // ===== EXERCISE 3 — translation input (UZ→RU) =====
+            html += `
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise3.title}</h3>
+                        <div class="topic7-input-list">
+            `;
+            exercises.exercise3.items.forEach((item, index) => {
+                const savedValue = ex3Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic12IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic12-e3="${index}"
+                               value="${savedValue}"
+                               placeholder="Ruscha tarjimani yozing" />
+                    </div>
+                `;
+            });
+            html += `
+                        </div>
+                    </div>
+            `;
+
+            // ===== EXERCISE 4 — conjunction input =====
+            html += `
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise4.title}</h3>
+                        <p class="topic5-exercise-instruction">${exercises.exercise4.instruction}</p>
+                        <div class="topic7-input-list">
+            `;
+            exercises.exercise4.items.forEach((item, index) => {
+                const savedValue = ex4Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic12IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect')
+                    : '';
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic12-e4="${index}"
+                               value="${savedValue}"
+                               placeholder="Ruscha bog'lovchini yozing" />
+                    </div>
+                `;
+            });
+            html += `
+                        </div>
+                    </div>
+            `;
+
+            // ===== EXERCISE 5 — error correction input =====
+            html += `
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise5.title}</h3>
+                        <p class="topic5-exercise-instruction">${exercises.exercise5.instruction}</p>
+                        <div class="topic7-input-list">
+            `;
+            exercises.exercise5.items.forEach((item, index) => {
+                const savedValue = ex5Answers[index] || '';
+                const inputClass = savedValue
+                    ? (topic12IsCorrect(savedValue, item.answers) ? 'correct' : 'incorrect')
+                    : '';
+                html += `
+                    <div class="topic6-text-item">
+                        <div class="topic6-text-prompt">${index + 1}. ${item.prompt}</div>
+                        <input type="text"
+                               class="exercise-input topic5-text-input ${inputClass}"
+                               data-topic12-e5="${index}"
+                               value="${savedValue}"
+                               placeholder="To'g'ri gapni yozing" />
+                    </div>
+                `;
+            });
+            html += `
+                        </div>
+                    </div>
+            `;
+
+            // ===== EXERCISE 6 — word builder =====
+            html += `
+                    <div class="topic5-exercise-block">
+                        <h3 class="topic5-exercise-title">${exercises.exercise6.title}</h3>
+            `;
+            exercises.exercise6.items.forEach((item, index) => {
+                const savedWords = Array.isArray(ex6Answers[index]) ? ex6Answers[index] : [];
+                const savedWordsValue = savedWords.join('|');
+                html += `
+                    <div class="topic6-builder-item">
+                        <div class="topic6-builder-top">
+                            <span class="topic6-builder-index">${index + 1}.</span>
+                            <div class="topic6-builder-target" data-topic12-builder-target="${index}"></div>
+                            <button type="button" class="topic6-clear-btn" data-topic12-builder-clear="${index}">
+                                <i class="fas fa-eraser"></i> Tozalash
+                            </button>
+                        </div>
+                        <div class="topic6-builder-bank" data-topic12-builder-bank="${index}">
+                            ${item.words.map((word) => `
+                                <button type="button"
+                                        class="topic6-word-chip"
+                                        data-topic12-builder-word="${index}"
+                                        data-value="${word}">${word}</button>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" data-topic12-builder-selected="${index}" value="${savedWordsValue}" />
+                    </div>
+                `;
+            });
+            html += `
+                    </div>
+            `;
+
+            // ===== CHECK BUTTON =====
+            html += `
+                    <div class="topic-check-section">
+                        <button class="check-topic-btn" id="checkTopic12Btn" type="button">
+                            Javoblarni tekshirish
+                        </button>
+                        <div class="topic-feedback hidden" id="topic12Feedback"></div>
+                    </div>
+                </div>
+                </div>
+            `;
+
+            quizSection.innerHTML = html;
+
+            // Render builder saved states
+            exercises.exercise6.items.forEach((item, index) => {
+                renderTopic12BuilderSelection(index);
+            });
+
+            bindTopic12ChoiceEvents();
+            bindTopic12CheckButton(topicId);
+        }
+
+        window.checkTopic12Exercises = async function(topicId) {
+            const topic = courseData.topics.find((t) => t.id === topicId);
+            if (!topic || topicId !== 12 || !topic.topic12Exercises) return;
+
+            const exercises = topic.topic12Exercises;
+            const results = [];
+
+            // Exercise 1 — chip selection (2 options)
+            exercises.exercise1.items.forEach((item, index) => {
+                const row = document.querySelector(`[data-topic12-e1-row="${index}"]`);
+                const userValue = row?.dataset.value || '';
+                if (row) {
+                    row.classList.remove('correct', 'incorrect');
+                    if (userValue) row.classList.add(topic12IsCorrect(userValue, item.answer) ? 'correct' : 'incorrect');
+                }
+                results.push({
+                    label: '1-mashq: ' + (index + 1),
+                    question: item.prompt,
+                    userAnswer: userValue,
+                    correctAnswer: item.answer,
+                    isCorrect: topic12IsCorrect(userValue, item.answer),
+                    explanation: "можно/нельзя/нужно/надо/лучше + infinitiv; bog'lovchilar qoidasiga ko'ra"
+                });
+            });
+
+            // Exercise 2 — chip selection (3 options)
+            exercises.exercise2.items.forEach((item, index) => {
+                const row = document.querySelector(`[data-topic12-e2-row="${index}"]`);
+                const userValue = row?.dataset.value || '';
+                if (row) {
+                    row.classList.remove('correct', 'incorrect');
+                    if (userValue) row.classList.add(topic12IsCorrect(userValue, item.answer) ? 'correct' : 'incorrect');
+                }
+                results.push({
+                    label: '2-mashq: ' + (index + 1),
+                    question: item.prompt,
+                    userAnswer: userValue,
+                    correctAnswer: item.answer,
+                    isCorrect: topic12IsCorrect(userValue, item.answer),
+                    explanation: "Konstruksiya va bog'lovchilar kontekstiga qarang"
+                });
+            });
+
+            // Exercise 3 — translation input (UZ→RU)
+            exercises.exercise3.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic12-e3="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                if (input) {
+                    input.classList.remove('correct', 'incorrect');
+                    if (userValue) input.classList.add(topic12IsCorrect(userValue, item.answers) ? 'correct' : 'incorrect');
+                }
+                results.push({
+                    label: '3-mashq: ' + (index + 1),
+                    question: item.prompt,
+                    userAnswer: userValue,
+                    correctAnswer: item.answers[0],
+                    isCorrect: topic12IsCorrect(userValue, item.answers),
+                    explanation: "O'zbekchadan ruscha tarjima: konstruksiya + bog'lovchilar"
+                });
+            });
+
+            // Exercise 4 — conjunction input
+            exercises.exercise4.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic12-e4="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                if (input) {
+                    input.classList.remove('correct', 'incorrect');
+                    if (userValue) input.classList.add(topic12IsCorrect(userValue, item.answer) ? 'correct' : 'incorrect');
+                }
+                results.push({
+                    label: '4-mashq: ' + (index + 1),
+                    question: item.prompt.replace(/_+/g, '___'),
+                    userAnswer: userValue,
+                    correctAnswer: item.answer,
+                    isCorrect: topic12IsCorrect(userValue, item.answer),
+                    explanation: "Bog'lovchi: но, потому что, поэтому, чтобы, если, и, а, а также"
+                });
+            });
+
+            // Exercise 5 — error correction input
+            exercises.exercise5.items.forEach((item, index) => {
+                const input = document.querySelector(`input[data-topic12-e5="${index}"]`);
+                const userValue = input?.value.trim() || '';
+                if (input) {
+                    input.classList.remove('correct', 'incorrect');
+                    if (userValue) input.classList.add(topic12IsCorrect(userValue, item.answers) ? 'correct' : 'incorrect');
+                }
+                results.push({
+                    label: '5-mashq: ' + (index + 1),
+                    question: 'Xato: ' + item.prompt,
+                    userAnswer: userValue,
+                    correctAnswer: item.answers[0],
+                    isCorrect: topic12IsCorrect(userValue, item.answers),
+                    explanation: "Grammatik xatoni topib to'g'rilash"
+                });
+            });
+
+            // Exercise 6 — word builder
+            exercises.exercise6.items.forEach((item, index) => {
+                const selection = getTopic12BuilderSelection(index);
+                const userSentence = selection.join(' ');
+                const target = document.querySelector(`[data-topic12-builder-target="${index}"]`);
+                const correct = topic12IsCorrect(userSentence, item.answers);
+                if (target) {
+                    target.classList.remove('correct', 'incorrect');
+                    if (selection.length > 0) target.classList.add(correct ? 'correct' : 'incorrect');
+                }
+                results.push({
+                    label: '6-mashq: ' + (index + 1),
+                    question: 'So\'zlar: ' + item.words.join(' / '),
+                    userAnswer: userSentence,
+                    correctAnswer: item.answers[0],
+                    isCorrect: correct,
+                    explanation: "So'z tartibini to'g'ri joylashtirish"
+                });
+            });
+
+            // Save results
+            const totalCorrect = results.filter(r => r.isCorrect).length;
+            const totalQuestions = results.length;
+            const resultData = {
+                exercise1Answers: exercises.exercise1.items.map((_, i) => document.querySelector(`[data-topic12-e1-row="${i}"]`)?.dataset.value || ''),
+                exercise2Answers: exercises.exercise2.items.map((_, i) => document.querySelector(`[data-topic12-e2-row="${i}"]`)?.dataset.value || ''),
+                exercise3Answers: exercises.exercise3.items.map((_, i) => document.querySelector(`input[data-topic12-e3="${i}"]`)?.value.trim() || ''),
+                exercise4Answers: exercises.exercise4.items.map((_, i) => document.querySelector(`input[data-topic12-e4="${i}"]`)?.value.trim() || ''),
+                exercise5Answers: exercises.exercise5.items.map((_, i) => document.querySelector(`input[data-topic12-e5="${i}"]`)?.value.trim() || ''),
+                exercise6Answers: exercises.exercise6.items.map((_, i) => getTopic12BuilderSelection(i)),
+                score: totalCorrect,
+                total: totalQuestions,
+                timestamp: new Date().toISOString()
+            };
+
+            await saveQuizResultToFirebase(`${topicId}_practice`, resultData);
+            userQuizResults[`topic_${topicId}_practice`] = resultData;
+
+            // Render detailed feedback
+            const feedbackDiv = document.getElementById('topic12Feedback');
             if (feedbackDiv) {
                 const pct = Math.round((totalCorrect / totalQuestions) * 100);
                 let msg;
