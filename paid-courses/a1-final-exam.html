@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>A1 Yakuniy Imtihon — UzdaRus PRO</title>
+    <link rel="icon" href="../images/shared/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="../images/shared/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="pro-toast.css">
+    <script defer src="pro-toast.js"></script>
+    <script type="module" src="paid-platform.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #FF9800;
+            --primary-dark: #F57C00;
+            --secondary: #FFD54F;
+            --light: #FFF8E1;
+            --dark: #333;
+            --gray: #666;
+            --light-gray: #f5f5f5;
+            --success: #4CAF50;
+            --error: #F44336;
+            --blue: #2196F3;
+            --exam-bg: #f8f9fb;
+            --exam-header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            background: var(--exam-bg);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* ====== EXAM HEADER ====== */
+        .exam-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--exam-header-bg);
+            color: #fff;
+            padding: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+
+        .exam-header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .exam-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .exam-header-trophy {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .exam-header-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .exam-header-sub {
+            font-size: 0.82rem;
+            opacity: 0.8;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .exam-header-center {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 8px 18px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .exam-timer i {
+            font-size: 1rem;
+            opacity: 0.85;
+        }
+
+        .exam-timer.warning {
+            background: rgba(255, 152, 0, 0.25);
+            border-color: rgba(255, 152, 0, 0.5);
+            color: #FFD54F;
+            animation: timerPulse 2s ease-in-out infinite;
+        }
+
+        .exam-timer.danger {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.6);
+            color: #ff8a80;
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+
+        .exam-progress-badge {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .exam-header-right {
+            flex-shrink: 0;
+        }
+
+        .exam-exit-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .exam-exit-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        /* ====== EXAM BODY ====== */
+        .exam-body {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 24px 140px;
+        }
+
+        .exam-intro {
+            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+            border: 2px solid var(--primary);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .exam-exercise-block {
+            background: #fff;
+            border-left: 4px solid var(--primary);
+            border-radius: 14px;
+            padding: 22px 20px;
+            margin-bottom: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .exam-exercise-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #fff3e0;
+        }
+
+        .exam-q-row {
+            background: var(--light-gray);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--secondary);
+            transition: border-color 0.3s;
+        }
+
+        .exam-q-row.correct {
+            border-left-color: var(--success);
+            background: #f1f8e9;
+        }
+
+        .exam-q-row.incorrect {
+            border-left-color: var(--error);
+            background: #fce4ec;
+        }
+
+        .exam-q-text {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-size: 0.97rem;
+        }
+
+        .exam-q-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .exam-q-chip {
+            display: inline-block;
+            padding: 9px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            background: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .exam-q-chip:hover {
+            border-color: var(--primary);
+            background: var(--light);
+        }
+
+        .exam-q-chip.selected {
+            border-color: var(--primary);
+            background: var(--secondary);
+            color: var(--dark);
+        }
+
+        .exam-q-chip.correct {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .exam-q-chip.incorrect {
+            border-color: var(--error);
+            background: #fce4ec;
+        }
+
+        .exam-q-input {
+            width: 100%;
+            max-width: 420px;
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .exam-q-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .exam-q-input.correct {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .exam-q-input.incorrect {
+            border-color: var(--error);
+            background: #fce4ec;
+        }
+
+        /* ====== RESULT BOX ====== */
+        .exam-result-box {
+            max-width: 640px;
+            margin: 32px auto;
+            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 36px 28px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(255,152,0,0.18);
+        }
+
+        .exam-result-score {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+
+        .exam-result-details {
+            font-size: 1.05rem;
+            color: var(--gray);
+            margin: 10px 0;
+        }
+
+        .exam-result-status {
+            display: inline-block;
+            padding: 8px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .exam-result-status.alo { background: #c8e6c9; color: #2e7d32; }
+        .exam-result-status.yaxshi { background: #bbdefb; color: #1565c0; }
+        .exam-result-status.qoniqarli { background: #fff9c4; color: #f57f17; }
+        .exam-result-status.mashq { background: #ffcdd2; color: #c62828; }
+
+        .exam-result-time-info {
+            margin-top: 12px;
+            font-size: 0.92rem;
+            color: var(--gray);
+        }
+
+        .exam-detail-toggle {
+            display: inline-block;
+            margin-top: 18px;
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary-dark);
+            padding: 10px 28px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .exam-detail-toggle:hover {
+            background: var(--light);
+        }
+
+        .exam-detail-section {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .exam-detail-section.visible {
+            display: block;
+        }
+
+        .exam-detail-exercise {
+            margin-bottom: 16px;
+        }
+
+        .exam-detail-exercise-title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px 12px;
+            background: var(--light-gray);
+            border-radius: 8px;
+        }
+
+        .exam-detail-exercise-title:hover {
+            background: #eee;
+        }
+
+        .exam-detail-items {
+            display: none;
+            padding: 8px 0 0 12px;
+        }
+
+        .exam-detail-items.visible {
+            display: block;
+        }
+
+        .exam-detail-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .exam-detail-item:last-child { border-bottom: none; }
+        .exam-detail-item .edi-status { font-weight: 700; }
+        .exam-detail-item .edi-ok { color: var(--success); }
+        .exam-detail-item .edi-bad { color: var(--error); }
+
+        .exam-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 24px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            border: none;
+            padding: 14px 36px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255,152,0,0.35);
+            transition: all 0.3s;
+        }
+
+        .exam-back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(255,152,0,0.5);
+        }
+
+        /* ====== FOOTER ACTION BAR ====== */
+        .exam-footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: #fff;
+            border-top: 2px solid #eee;
+            padding: 14px 24px;
+            text-align: center;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+        }
+
+        .exam-footer-bar.hidden {
+            display: none;
+        }
+
+        .exam-submit-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #FF9800, #E65100);
+            color: white;
+            padding: 16px 52px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(255, 152, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .exam-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(255, 152, 0, 0.55);
+        }
+
+        .exam-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ====== TIME-UP OVERLAY ====== */
+        .time-up-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .time-up-overlay.show {
+            display: flex;
+        }
+
+        .time-up-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px 32px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+        }
+
+        .time-up-icon {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+        }
+
+        .time-up-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--error);
+            margin-bottom: 8px;
+        }
+
+        .time-up-text {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+
+        .time-up-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ====== RESPONSIVE ====== */
+        @media (max-width: 768px) {
+            .exam-header-inner {
+                padding: 10px 14px;
+                gap: 10px;
+            }
+            .exam-header-trophy { font-size: 1.5rem; }
+            .exam-header-title { font-size: 1rem; }
+            .exam-header-sub { font-size: 0.72rem; }
+            .exam-timer {
+                font-size: 1.1rem;
+                padding: 6px 12px;
+            }
+            .exam-progress-badge {
+                font-size: 0.78rem;
+                padding: 4px 10px;
+            }
+            .exam-exit-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            .exam-exit-btn span { display: none; }
+            .exam-body {
+                padding: 90px 14px 130px;
+            }
+            .exam-exercise-block {
+                padding: 16px 12px;
+            }
+            .exam-q-row {
+                padding: 12px;
+            }
+            .exam-q-chip {
+                padding: 8px 14px;
+                font-size: 0.9rem;
+            }
+            .exam-q-input { max-width: 100%; }
+            .exam-submit-btn {
+                padding: 14px 30px;
+                font-size: 1.05rem;
+                width: 100%;
+                max-width: 400px;
+            }
+            .exam-result-score { font-size: 2rem; }
+        }
+
+        @media (max-width: 480px) {
+            .exam-header-inner {
+                padding: 8px 10px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .exam-header-left { gap: 8px; }
+            .exam-header-trophy { font-size: 1.3rem; }
+            .exam-header-title { font-size: 0.92rem; }
+            .exam-header-sub { display: none; }
+            .exam-header-center {
+                gap: 8px;
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+            .exam-timer {
+                font-size: 1rem;
+                padding: 5px 10px;
+            }
+            .exam-body {
+                padding: 120px 10px 130px;
+            }
+            .exam-q-chip {
+                width: 100%;
+                text-align: center;
+            }
+            .exam-submit-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- EXAM HEADER -->
+    <header class="exam-header">
+        <div class="exam-header-inner">
+            <div class="exam-header-left">
+                <span class="exam-header-trophy">🏆</span>
+                <div>
+                    <div class="exam-header-title">A1 Yakuniy Imtihon</div>
+                    <div class="exam-header-sub">120 savol · 100 ball · 12 mashq</div>
+                </div>
+            </div>
+            <div class="exam-header-center">
+                <div class="exam-timer" id="examTimer">
+                    <i class="fas fa-clock"></i>
+                    <span id="examTimerDisplay">02:00:00</span>
+                </div>
+                <div class="exam-progress-badge" id="examProgress">0 / 120</div>
+            </div>
+            <div class="exam-header-right">
+                <button class="exam-exit-btn" id="examExitBtn" type="button">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Chiqish</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- EXAM BODY -->
+    <main class="exam-body" id="examBody">
+        <div class="exam-intro">
+            Bu yakuniy imtihon A1 kursidagi barcha 12 ta mavzuni qamrab oladi. Barcha savollarga javob bering. Imtihon vaqti — 2 soat.
+        </div>
+        <div id="examExercises"></div>
+        <div id="examFeedback"></div>
+    </main>
+
+    <!-- FOOTER ACTION BAR -->
+    <div class="exam-footer-bar" id="examFooterBar">
+        <button class="exam-submit-btn" id="examSubmitBtn" type="button">
+            <i class="fas fa-check-circle"></i> Imtihonni yakunlash va tekshirish
+        </button>
+    </div>
+
+    <!-- TIME-UP OVERLAY -->
+    <div class="time-up-overlay" id="timeUpOverlay">
+        <div class="time-up-card">
+            <div class="time-up-icon">⏰</div>
+            <div class="time-up-title">Vaqt tugadi!</div>
+            <div class="time-up-text">Imtihon vaqti tugadi. Sizning javoblaringiz avtomatik tekshirilmoqda.</div>
+            <button class="time-up-btn" id="timeUpOkBtn" type="button">Natijalarni ko'rish</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ========== FIREBASE STUBS ==========
+        var saveQuizResultToFirebase = function(key, data) {
+            try {
+                var userId = window.currentUserId || 'guest';
+                localStorage.setItem('a1_quiz_' + userId + '_' + key, JSON.stringify(data));
+            } catch(e) {}
+        };
+
+        (async function loadFirebaseStubs() {
+            try {
+                var userSession = localStorage.getItem('currentUser');
+                if (userSession) {
+                    var user = JSON.parse(userSession);
+                    window.currentUser = user;
+                    window.currentUserId = user.id;
+                }
+            } catch(e) {}
+        })();
+
+        // ========== EXAM DATA (120 QUESTIONS) ==========
+        var FINAL_EXAM_DATA = [
+            {
+                title: '1. Salomlashish va oddiy iboralar',
+                type: 'chip',
+                items: [
+                    { q: 'Доброе ___ .', opts: ['утро', 'книга'], answer: 'утро' },
+                    { q: 'До ___ .', opts: ['свидания', 'мама'], answer: 'свидания' },
+                    { q: 'Как ___ дела?', opts: ['твои', 'идёт'], answer: 'твои' },
+                    { q: 'Меня ___ Алишер.', opts: ['зовут', 'зовёт'], answer: 'зовут' },
+                    { q: 'Очень ___ познакомиться.', opts: ['приятно', 'вкусно'], answer: 'приятно' },
+                    { q: 'Спасибо — ___ пожалуйста.', opts: ['и', 'не за'], answer: 'не за' },
+                    { q: 'Я ___ из Узбекистана.', opts: ['приехал', 'буду'], answer: 'приехал' },
+                    { q: 'Как тебя ___ ?', opts: ['зовут', 'любят'], answer: 'зовут' },
+                    { q: 'До ___ встречи.', opts: ['скорой', 'хороший'], answer: 'скорой' },
+                    { q: 'Привет! Как ___ ?', opts: ['дела', 'дом'], answer: 'дела' }
+                ]
+            },
+            {
+                title: '2. Sonlar va miqdor',
+                type: 'input',
+                items: [
+                    { q: '5 = ', answer: ['пять'] },
+                    { q: '12 = ', answer: ['двенадцать'] },
+                    { q: '20 = ', answer: ['двадцать'] },
+                    { q: '33 = ', answer: ['тридцать три'] },
+                    { q: '47 = ', answer: ['сорок семь'] },
+                    { q: '58 = ', answer: ['пятьдесят восемь'] },
+                    { q: '69 = ', answer: ['шестьдесят девять'] },
+                    { q: '74 = ', answer: ['семьдесят четыре'] },
+                    { q: '86 = ', answer: ['восемьдесят шесть'] },
+                    { q: '100 = ', answer: ['сто'] }
+                ]
+            },
+            {
+                title: '3. Oila va qarindoshlar',
+                type: 'mixed',
+                items: [
+                    { q: 'mother → ', mode: 'input', answer: ['мама'] },
+                    { q: 'father → ', mode: 'input', answer: ['папа'] },
+                    { q: 'brother → ', mode: 'input', answer: ['брат'] },
+                    { q: 'sister → ', mode: 'input', answer: ['сестра'] },
+                    { q: 'grandmother → ', mode: 'input', answer: ['бабушка'] },
+                    { q: 'grandfather → ', mode: 'input', answer: ['дедушка'] },
+                    { q: 'У меня есть ___ .', mode: 'chip', opts: ['брат', 'брать'], answer: 'брат' },
+                    { q: 'Это моя ___ .', mode: 'chip', opts: ['мама', 'маму'], answer: 'мама' },
+                    { q: 'Мой ___ работает.', mode: 'chip', opts: ['отец', 'отца'], answer: 'отец' },
+                    { q: 'У меня нет ___ .', mode: 'chip', opts: ['сестра', 'сестры'], answer: 'сестры' }
+                ]
+            },
+            {
+                title: '4. Vaqt va ob-havo',
+                type: 'mixed',
+                items: [
+                    { q: 'Сегодня ___ .', mode: 'chip', opts: ['холодно', 'врач'], answer: 'холодно' },
+                    { q: 'Завтра будет ___ .', mode: 'chip', opts: ['дождь', 'брат'], answer: 'дождь' },
+                    { q: 'Сейчас три ___ .', mode: 'chip', opts: ['часа', 'книги'], answer: 'часа' },
+                    { q: 'Утром я ___ в семь.', mode: 'chip', opts: ['встаю', 'смотрю'], answer: 'встаю' },
+                    { q: 'Вечером мы ___ дома.', mode: 'chip', opts: ['отдыхаем', 'автобус'], answer: 'отдыхаем' },
+                    { q: 'Qor yog\'ayapti → ', mode: 'input', answer: ['Идёт снег', 'Идет снег'] },
+                    { q: 'Havo issiq → ', mode: 'input', answer: ['Жарко'] },
+                    { q: 'Bugun ob-havo yaxshi → ', mode: 'input', answer: ['Сегодня хорошая погода'] },
+                    { q: 'Сейчас пять ___ вечера.', mode: 'chip', opts: ['часов', 'город'], answer: 'часов' },
+                    { q: 'На улице ___ .', mode: 'chip', opts: ['ветрено', 'музыка'], answer: 'ветрено' }
+                ]
+            },
+            {
+                title: '5. Kasblar va kundalik ishlar',
+                type: 'mixed',
+                items: [
+                    { q: 'Я ___ в школе.', mode: 'chip', opts: ['работаю', 'работаешь'], answer: 'работаю' },
+                    { q: 'Он ___ врачом.', mode: 'chip', opts: ['работает', 'работаеть'], answer: 'работает' },
+                    { q: 'Мы ___ каждый день.', mode: 'chip', opts: ['учимся', 'учить'], answer: 'учимся' },
+                    { q: 'teacher → ', mode: 'input', answer: ['учитель'] },
+                    { q: 'doctor → ', mode: 'input', answer: ['врач'] },
+                    { q: 'driver → ', mode: 'input', answer: ['водитель'] },
+                    { q: 'Men ishlayapman → ', mode: 'input', answer: ['Я работаю'] },
+                    { q: 'U shifokor bo\'lib ishlaydi → ', mode: 'input', answer: ['Он работает врачом'] },
+                    { q: 'Я ___ утром.', mode: 'chip', opts: ['работаю', 'отдыхать'], answer: 'работаю' },
+                    { q: 'Они ___ вечером.', mode: 'chip', opts: ['отдыхают', 'отдыхаю'], answer: 'отдыхают' }
+                ]
+            },
+            {
+                title: '6. Shaharning joylari va yo\'nalishlar',
+                type: 'mixed',
+                items: [
+                    { q: 'Я иду в ___ .', mode: 'chip', opts: ['школу', 'школе'], answer: 'школу' },
+                    { q: 'Мы были в ___ .', mode: 'chip', opts: ['парке', 'парк'], answer: 'парке' },
+                    { q: 'Больница, магазин, аптека — bu ', mode: 'input', answer: ['места в городе'] },
+                    { q: 'Я живу в ___ .', mode: 'chip', opts: ['городе', 'город'], answer: 'городе' },
+                    { q: 'Где находится ___ ?', mode: 'chip', opts: ['вокзал', 'вокзала'], answer: 'вокзал' },
+                    { q: 'Men maktabga ketyapman → ', mode: 'input', answer: ['Я иду в школу'] },
+                    { q: 'Biz parkdamiz → ', mode: 'input', answer: ['Мы в парке'] },
+                    { q: 'Я иду ___ магазин.', mode: 'chip', opts: ['в', 'на'], answer: 'в' },
+                    { q: 'Он пришёл ___ школы.', mode: 'chip', opts: ['из', 'до'], answer: 'из' },
+                    { q: 'Мы дошли ___ дома.', mode: 'chip', opts: ['до', 'из'], answer: 'до' }
+                ]
+            },
+            {
+                title: '7. Ovqat va restoran',
+                type: 'mixed',
+                items: [
+                    { q: 'Я хочу ___ .', mode: 'chip', opts: ['суп', 'супа'], answer: 'суп' },
+                    { q: 'Мы любим ___ .', mode: 'chip', opts: ['пиццу', 'пицца'], answer: 'пиццу' },
+                    { q: 'Она пьёт ___ .', mode: 'chip', opts: ['воду', 'вода'], answer: 'воду' },
+                    { q: 'Можно мне ___ ?', mode: 'chip', opts: ['меню', 'менюю'], answer: 'меню' },
+                    { q: 'Я ем ___ .', mode: 'chip', opts: ['рыбу', 'рыба'], answer: 'рыбу' },
+                    { q: 'Men sho\'rva xohlayman → ', mode: 'input', answer: ['Я хочу суп'] },
+                    { q: 'Menga choy bering → ', mode: 'input', answer: ['Дайте мне чай'] },
+                    { q: 'Он заказал ___ .', mode: 'chip', opts: ['салат', 'салата'], answer: 'салат' },
+                    { q: 'Мы пьём ___ .', mode: 'chip', opts: ['сок', 'сока'], answer: 'сок' },
+                    { q: 'Я люблю чай ___ лимоном.', mode: 'chip', opts: ['с', 'из'], answer: 'с' }
+                ]
+            },
+            {
+                title: '8. Kiyim-kechak va moda',
+                type: 'mixed',
+                items: [
+                    { q: 'Я надеваю ___ .', mode: 'chip', opts: ['куртку', 'куртка'], answer: 'куртку' },
+                    { q: 'Он носит ___ каждый день.', mode: 'chip', opts: ['джинсы', 'джинсов'], answer: 'джинсы' },
+                    { q: 'Мне нравится эта ___ .', mode: 'chip', opts: ['рубашка', 'рубашку'], answer: 'рубашка' },
+                    { q: 'Она купила ___ .', mode: 'chip', opts: ['платье', 'платья'], answer: 'платье' },
+                    { q: 'Я люблю ___ обувь.', mode: 'chip', opts: ['удобную', 'удобно'], answer: 'удобную' },
+                    { q: 'Men futbolka kiyaman → ', mode: 'input', answer: ['Я надеваю футболку'] },
+                    { q: 'U ko\'ylak sotib oldi → ', mode: 'input', answer: ['Она купила платье'] },
+                    { q: 'Мы выбираем ___ .', mode: 'chip', opts: ['кроссовки', 'кроссовок'], answer: 'кроссовки' },
+                    { q: 'Он снимает ___ .', mode: 'chip', opts: ['пальто', 'пальта'], answer: 'пальто' },
+                    { q: 'Мне нужна ___ .', mode: 'chip', opts: ['шапка', 'шапку'], answer: 'шапка' }
+                ]
+            },
+            {
+                title: '9. Transport va sayohat',
+                type: 'mixed',
+                items: [
+                    { q: 'Я еду ___ город.', mode: 'chip', opts: ['в', 'на'], answer: 'в' },
+                    { q: 'Мы летим ___ Москву.', mode: 'chip', opts: ['в', 'из'], answer: 'в' },
+                    { q: 'Он едет ___ автобусе.', mode: 'chip', opts: ['на', 'в'], answer: 'на' },
+                    { q: 'Я приехал ___ Самарканда.', mode: 'chip', opts: ['из', 'до'], answer: 'из' },
+                    { q: 'Мы доехали ___ аэропорта.', mode: 'chip', opts: ['до', 'из'], answer: 'до' },
+                    { q: 'Men Toshkentga uchyapman → ', mode: 'input', answer: ['Я лечу в Ташкент'] },
+                    { q: 'Biz poyezdda ketyapmiz → ', mode: 'input', answer: ['Мы едем на поезде'] },
+                    { q: 'Она едет ___ машине.', mode: 'chip', opts: ['на', 'в'], answer: 'на' },
+                    { q: 'Они прилетели ___ Бухары.', mode: 'chip', opts: ['из', 'в'], answer: 'из' },
+                    { q: 'Он долетел ___ Москвы.', mode: 'chip', opts: ['до', 'на'], answer: 'до' }
+                ]
+            },
+            {
+                title: '10. Sog\'liq va dorixona',
+                type: 'mixed',
+                items: [
+                    { q: 'У меня ___ голова.', mode: 'chip', opts: ['болит', 'болят'], answer: 'болит' },
+                    { q: 'У меня ___ зубы.', mode: 'chip', opts: ['болит', 'болят'], answer: 'болят' },
+                    { q: 'У меня ___ температура.', mode: 'chip', opts: ['есть', 'нет'], answer: 'есть' },
+                    { q: 'У меня ___ аппетита.', mode: 'chip', opts: ['есть', 'нет'], answer: 'нет' },
+                    { q: 'Мне ___ .', mode: 'chip', opts: ['холодно', 'холодный'], answer: 'холодно' },
+                    { q: 'Menda yo\'tal yo\'q → ', mode: 'input', answer: ['У меня нет кашля'] },
+                    { q: 'Mening qornim og\'riyapti → ', mode: 'input', answer: ['У меня болит живот'] },
+                    { q: 'Мне нужно идти ___ врачу.', mode: 'chip', opts: ['к', 'в'], answer: 'к' },
+                    { q: 'Я принимаю ___ .', mode: 'chip', opts: ['лекарство', 'лекарству'], answer: 'лекарство' },
+                    { q: 'У меня нет ___ .', mode: 'chip', opts: ['кашель', 'кашля'], answer: 'кашля' }
+                ]
+            },
+            {
+                title: '11. Xobbi va bo\'sh vaqt',
+                type: 'mixed',
+                items: [
+                    { q: 'Я ___ спортом.', mode: 'chip', opts: ['занимаюсь', 'интересуюсь'], answer: 'занимаюсь' },
+                    { q: 'Она ___ музыкой.', mode: 'chip', opts: ['увлекается', 'занимается'], answer: 'увлекается' },
+                    { q: 'Мы ___ историей.', mode: 'chip', opts: ['интересуемся', 'занимаемся'], answer: 'интересуемся' },
+                    { q: 'Мне ___ музыка.', mode: 'chip', opts: ['нравится', 'нравятся'], answer: 'нравится' },
+                    { q: 'Мне ___ книги.', mode: 'chip', opts: ['нравится', 'нравятся'], answer: 'нравятся' },
+                    { q: 'Menga musiqa yoqadi → ', mode: 'input', answer: ['Мне нравится музыка'] },
+                    { q: 'Men sport bilan shug\'ullanaman → ', mode: 'input', answer: ['Я занимаюсь спортом'] },
+                    { q: 'Ты ___ йогой?', mode: 'chip', opts: ['занимаешься', 'интересуешься'], answer: 'занимаешься' },
+                    { q: 'Он ___ фотографией.', mode: 'chip', opts: ['увлекается', 'говорит'], answer: 'увлекается' },
+                    { q: 'Мне ___ читать.', mode: 'chip', opts: ['нравится', 'нравятся'], answer: 'нравится' }
+                ]
+            },
+            {
+                title: '12. Qoidalar va maslahatlar',
+                type: 'mixed',
+                items: [
+                    { q: 'Здесь ___ фотографировать.', mode: 'chip', opts: ['можно', 'нельзя'], answer: 'нельзя' },
+                    { q: 'Тебе ___ больше читать.', mode: 'chip', opts: ['нужно', 'нельзя'], answer: 'нужно' },
+                    { q: 'Я не пришёл, ___ был занят.', mode: 'chip', opts: ['потому что', 'и'], answer: 'потому что' },
+                    { q: 'Я был занят, ___ не пришёл.', mode: 'chip', opts: ['поэтому', 'если'], answer: 'поэтому' },
+                    { q: '___ будет время, я помогу.', mode: 'chip', opts: ['если', 'но'], answer: 'если' },
+                    { q: 'Men ko\'proq o\'qishim kerak → ', mode: 'input', answer: ['Мне нужно больше читать'] },
+                    { q: 'Bu yerda gaplashish mumkin emas → ', mode: 'input', answer: ['Здесь нельзя говорить'] },
+                    { q: 'Лучше ___ раньше.', mode: 'chip', opts: ['ложиться', 'ложусь'], answer: 'ложиться' },
+                    { q: 'Я учу русский, ___ говорить.', mode: 'chip', opts: ['чтобы', 'потому что'], answer: 'чтобы' },
+                    { q: 'Можно ли здесь ___ окно?', mode: 'chip', opts: ['открыть', 'открываю'], answer: 'открыть' }
+                ]
+            }
+        ];
+
+        // ========== TEXT NORMALIZATION ==========
+        function normalizeExamText(value) {
+            return String(value || '')
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'«»\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function examIsCorrect(userValue, expected) {
+            var normalizedUser = normalizeExamText(userValue);
+            if (!normalizedUser) return false;
+            if (Array.isArray(expected)) {
+                return expected.some(function(item) {
+                    return normalizeExamText(item) === normalizedUser;
+                });
+            }
+            return normalizeExamText(expected) === normalizedUser;
+        }
+
+        // ========== TIMER ==========
+        var TOTAL_SECONDS = 2 * 60 * 60; // 2 hours
+        var secondsLeft = TOTAL_SECONDS;
+        var timerInterval = null;
+        var examFinished = false;
+        var examStartTime = Date.now();
+
+        function formatTime(seconds) {
+            var h = Math.floor(seconds / 3600);
+            var m = Math.floor((seconds % 3600) / 60);
+            var s = seconds % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        function updateTimerDisplay() {
+            var display = document.getElementById('examTimerDisplay');
+            var timerEl = document.getElementById('examTimer');
+            if (display) display.textContent = formatTime(secondsLeft);
+
+            // Warning states
+            if (timerEl) {
+                timerEl.classList.remove('warning', 'danger');
+                if (secondsLeft <= 300) { // 5 minutes
+                    timerEl.classList.add('danger');
+                } else if (secondsLeft <= 900) { // 15 minutes
+                    timerEl.classList.add('warning');
+                }
+            }
+        }
+
+        function startTimer() {
+            updateTimerDisplay();
+            timerInterval = setInterval(function() {
+                if (examFinished) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+                secondsLeft--;
+                updateTimerDisplay();
+
+                if (secondsLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timeUp();
+                }
+            }, 1000);
+        }
+
+        function timeUp() {
+            if (examFinished) return;
+            // Show time-up overlay
+            var overlay = document.getElementById('timeUpOverlay');
+            if (overlay) overlay.classList.add('show');
+
+            // Auto-finish
+            finishExam(true);
+
+            var okBtn = document.getElementById('timeUpOkBtn');
+            if (okBtn) {
+                okBtn.addEventListener('click', function() {
+                    overlay.classList.remove('show');
+                    var resultBox = document.querySelector('.exam-result-box');
+                    if (resultBox) resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            }
+        }
+
+        // ========== RENDER EXAM ==========
+        function renderExam() {
+            var container = document.getElementById('examExercises');
+            if (!container) return;
+            var html = '';
+            var globalQ = 0;
+
+            FINAL_EXAM_DATA.forEach(function(exercise, exIdx) {
+                html += '<div class="exam-exercise-block">';
+                html += '<div class="exam-exercise-title">' + exercise.title + '</div>';
+
+                exercise.items.forEach(function(item, qIdx) {
+                    var mode = item.mode || exercise.type;
+                    globalQ++;
+                    html += '<div class="exam-q-row" data-exam-row="' + exIdx + '-' + qIdx + '">';
+                    html += '<div class="exam-q-text">' + globalQ + '. ' + item.q + '</div>';
+
+                    if (mode === 'chip') {
+                        html += '<div class="exam-q-options">';
+                        item.opts.forEach(function(opt) {
+                            html += '<button type="button" class="exam-q-chip" data-exam-chip="' + exIdx + '-' + qIdx + '" data-value="' + opt + '">' + opt + '</button>';
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<input type="text" class="exam-q-input" data-exam-input="' + exIdx + '-' + qIdx + '" placeholder="Javobni yozing" autocomplete="off" />';
+                    }
+
+                    html += '</div>';
+                });
+
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+
+            // Bind chip click events
+            container.querySelectorAll('.exam-q-chip').forEach(function(chip) {
+                chip.addEventListener('click', function() {
+                    var key = this.dataset.examChip;
+                    container.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]').forEach(function(c) {
+                        c.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    updateProgressCount();
+                });
+            });
+
+            // Bind input events for progress tracking
+            container.querySelectorAll('.exam-q-input').forEach(function(input) {
+                input.addEventListener('input', function() {
+                    updateProgressCount();
+                });
+            });
+        }
+
+        // ========== PROGRESS COUNTER ==========
+        function updateProgressCount() {
+            var answered = 0;
+            document.querySelectorAll('.exam-q-chip.selected').forEach(function() { answered++; });
+            // Count unique chip groups that have a selection
+            var chipGroups = new Set();
+            document.querySelectorAll('.exam-q-chip.selected').forEach(function(c) {
+                chipGroups.add(c.dataset.examChip);
+            });
+            answered = chipGroups.size;
+
+            document.querySelectorAll('.exam-q-input').forEach(function(input) {
+                if (input.value.trim()) answered++;
+            });
+
+            var badge = document.getElementById('examProgress');
+            if (badge) badge.textContent = answered + ' / 120';
+        }
+
+        // ========== FINISH EXAM ==========
+        function finishExam(isAutoFinish) {
+            if (examFinished) return;
+            examFinished = true;
+            clearInterval(timerInterval);
+
+            var elapsedSeconds = Math.round((Date.now() - examStartTime) / 1000);
+            var timeUsed = formatTime(Math.min(elapsedSeconds, TOTAL_SECONDS));
+
+            var results = [];
+            var totalCorrect = 0;
+
+            FINAL_EXAM_DATA.forEach(function(exercise, exIdx) {
+                exercise.items.forEach(function(item, qIdx) {
+                    var key = exIdx + '-' + qIdx;
+                    var mode = item.mode || exercise.type;
+                    var userValue = '';
+                    var expected = item.answer;
+                    var row = document.querySelector('[data-exam-row="' + key + '"]');
+
+                    if (mode === 'chip') {
+                        var selected = document.querySelector('.exam-q-chip[data-exam-chip="' + key + '"].selected');
+                        userValue = selected ? selected.dataset.value : '';
+                        document.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]').forEach(function(c) {
+                            c.classList.remove('correct', 'incorrect');
+                            if (c.classList.contains('selected')) {
+                                c.classList.add(examIsCorrect(userValue, expected) ? 'correct' : 'incorrect');
+                            }
+                        });
+                    } else {
+                        var input = document.querySelector('[data-exam-input="' + key + '"]');
+                        userValue = input ? input.value.trim() : '';
+                        if (input) {
+                            input.classList.remove('correct', 'incorrect');
+                            input.readOnly = true;
+                            if (userValue) {
+                                input.classList.add(examIsCorrect(userValue, expected) ? 'correct' : 'incorrect');
+                            }
+                        }
+                    }
+
+                    var correct = examIsCorrect(userValue, expected);
+                    if (correct) totalCorrect++;
+
+                    if (row) {
+                        row.classList.remove('correct', 'incorrect');
+                        if (userValue) row.classList.add(correct ? 'correct' : 'incorrect');
+                    }
+
+                    results.push({
+                        exIdx: exIdx,
+                        qIdx: qIdx,
+                        exTitle: exercise.title,
+                        question: item.q,
+                        userAnswer: userValue,
+                        correctAnswer: Array.isArray(expected) ? expected[0] : expected,
+                        isCorrect: correct
+                    });
+                });
+            });
+
+            // Disable all chips
+            document.querySelectorAll('.exam-q-chip').forEach(function(c) {
+                c.style.pointerEvents = 'none';
+            });
+
+            var totalQ = 120;
+            var pct = Math.round((totalCorrect / totalQ) * 100);
+            var finalScore = Math.round((totalCorrect / totalQ) * 100);
+            var statusLabel, statusClass;
+            if (finalScore >= 90) { statusLabel = "A'lo"; statusClass = 'alo'; }
+            else if (finalScore >= 75) { statusLabel = 'Yaxshi'; statusClass = 'yaxshi'; }
+            else if (finalScore >= 60) { statusLabel = 'Qoniqarli'; statusClass = 'qoniqarli'; }
+            else { statusLabel = 'Yana mashq qilish kerak'; statusClass = 'mashq'; }
+
+            var fbHtml = '<div class="exam-result-box">';
+            fbHtml += '<div class="exam-result-score">' + finalScore + ' / 100</div>';
+            fbHtml += '<div class="exam-result-details">' + totalCorrect + ' / ' + totalQ + " to'g'ri javob (" + pct + '%)</div>';
+            fbHtml += '<div class="exam-result-status ' + statusClass + '">' + statusLabel + '</div>';
+            if (isAutoFinish) {
+                fbHtml += '<div class="exam-result-time-info">⏰ Imtihon vaqti tugagani uchun avtomatik yakunlandi</div>';
+            } else {
+                fbHtml += '<div class="exam-result-time-info">⏱ Sarflangan vaqt: ' + timeUsed + '</div>';
+            }
+            fbHtml += '<br><button type="button" class="exam-detail-toggle" id="examDetailToggleBtn">Batafsil natijalarni ko\'rish</button>';
+            fbHtml += '</div>';
+
+            fbHtml += '<div class="exam-detail-section" id="examDetailSection">';
+
+            var exerciseGroups = {};
+            results.forEach(function(r) {
+                if (!exerciseGroups[r.exIdx]) exerciseGroups[r.exIdx] = { title: r.exTitle, items: [] };
+                exerciseGroups[r.exIdx].items.push(r);
+            });
+
+            Object.keys(exerciseGroups).forEach(function(exKey) {
+                var group = exerciseGroups[exKey];
+                var exCorrect = group.items.filter(function(r) { return r.isCorrect; }).length;
+                fbHtml += '<div class="exam-detail-exercise">';
+                fbHtml += '<div class="exam-detail-exercise-title" data-exam-detail-toggle="' + exKey + '">';
+                fbHtml += group.title + ' \u2014 ' + exCorrect + '/10';
+                fbHtml += '</div>';
+                fbHtml += '<div class="exam-detail-items" id="examDetailItems' + exKey + '">';
+
+                group.items.forEach(function(r, i) {
+                    var cls = r.isCorrect ? 'edi-ok' : 'edi-bad';
+                    var icon = r.isCorrect ? '\u2713' : '\u2717';
+                    fbHtml += '<div class="exam-detail-item">';
+                    fbHtml += '<span class="edi-status ' + cls + '">' + icon + '</span> ';
+                    fbHtml += '<strong>' + (i + 1) + '.</strong> ' + r.question + ' ';
+                    fbHtml += 'Javob: <em>' + (r.userAnswer || '(kiritilmagan)') + '</em>';
+                    if (!r.isCorrect) {
+                        fbHtml += ' \u2192 To\'g\'ri: <strong>' + r.correctAnswer + '</strong>';
+                    }
+                    fbHtml += '</div>';
+                });
+
+                fbHtml += '</div></div>';
+            });
+
+            fbHtml += '</div>';
+
+            fbHtml += '<div style="text-align:center; margin-top: 24px;">';
+            fbHtml += '<button class="exam-back-btn" id="examBackToCourseBtnResult" type="button"><i class="fas fa-arrow-left"></i> A1 kursga qaytish</button>';
+            fbHtml += '</div>';
+
+            var feedbackDiv = document.getElementById('examFeedback');
+            if (feedbackDiv) {
+                feedbackDiv.innerHTML = fbHtml;
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                // Toggle details
+                var toggleBtn = document.getElementById('examDetailToggleBtn');
+                var detailSection = document.getElementById('examDetailSection');
+                if (toggleBtn && detailSection) {
+                    toggleBtn.addEventListener('click', function() {
+                        detailSection.classList.toggle('visible');
+                        this.textContent = detailSection.classList.contains('visible')
+                            ? "Batafsil natijalarni yashirish"
+                            : "Batafsil natijalarni ko'rish";
+                    });
+                }
+
+                // Toggle per-exercise details
+                feedbackDiv.querySelectorAll('[data-exam-detail-toggle]').forEach(function(title) {
+                    title.addEventListener('click', function() {
+                        var idx = this.dataset.examDetailToggle;
+                        var items = document.getElementById('examDetailItems' + idx);
+                        if (items) items.classList.toggle('visible');
+                    });
+                });
+
+                // Back to course button
+                var backBtn = document.getElementById('examBackToCourseBtnResult');
+                if (backBtn) {
+                    backBtn.addEventListener('click', function() {
+                        window.location.href = 'a1-course.html#finalExamEntry';
+                    });
+                }
+            }
+
+            // Hide footer bar
+            var footerBar = document.getElementById('examFooterBar');
+            if (footerBar) footerBar.classList.add('hidden');
+
+            // Save result
+            var examResultData = {
+                score: totalCorrect,
+                total: totalQ,
+                finalScore: finalScore,
+                percentage: pct,
+                status: statusLabel,
+                timeUsed: timeUsed,
+                autoFinished: !!isAutoFinish,
+                timestamp: new Date().toISOString()
+            };
+            saveQuizResultToFirebase('final_exam_a1', examResultData);
+        }
+
+        // ========== BEFOREUNLOAD WARNING ==========
+        window.addEventListener('beforeunload', function(e) {
+            if (!examFinished) {
+                e.preventDefault();
+                e.returnValue = 'Imtihonni tark etmoqchimisiz? Saqlanmagan javoblar yo\'qolishi mumkin.';
+                return e.returnValue;
+            }
+        });
+
+        // ========== EXIT BUTTON ==========
+        document.getElementById('examExitBtn').addEventListener('click', function() {
+            if (examFinished) {
+                window.location.href = 'a1-course.html#finalExamEntry';
+                return;
+            }
+            var confirmed = confirm('Imtihonni tark etmoqchimisiz? Saqlanmagan javoblar yo\'qolishi mumkin.');
+            if (confirmed) {
+                examFinished = true; // prevent beforeunload
+                window.location.href = 'a1-course.html#finalExamEntry';
+            }
+        });
+
+        // ========== SUBMIT BUTTON ==========
+        document.getElementById('examSubmitBtn').addEventListener('click', function() {
+            var confirmed = confirm('Imtihonni yakunlash va javoblarni tekshirishni xohlaysizmi?');
+            if (confirmed) {
+                finishExam(false);
+            }
+        });
+
+        // ========== INIT ==========
+        renderExam();
+        startTimer();
+        updateProgressCount();
+
+    })();
+    </script>
+</body>
+</html>
