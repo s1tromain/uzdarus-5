@@ -2352,19 +2352,110 @@
             text-transform: uppercase;
         }
 
-        /* Exam Section */
-        .final-exam-section {
+        /* Exam Modal Overlay */
+        .exam-overlay {
             display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.65);
+            justify-content: center;
+            align-items: flex-start;
+            padding: 24px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .exam-overlay.open {
+            display: flex;
+        }
+        body.exam-modal-open {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        .exam-modal {
+            position: relative;
+            width: 100%;
             max-width: 900px;
-            margin: 0 auto 40px;
+            margin: 0 auto;
             background: #fff;
             border: 3px solid var(--primary);
             border-radius: 20px;
-            padding: 36px 28px 40px;
-            box-shadow: 0 8px 30px rgba(255, 152, 0, 0.13);
+            box-shadow: 0 16px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255,152,0,0.1);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 48px);
+            overflow: hidden;
         }
-        .final-exam-section.visible {
-            display: block;
+        .exam-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px 16px;
+            border-bottom: 2px solid var(--secondary);
+            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+            border-radius: 17px 17px 0 0;
+            flex-shrink: 0;
+        }
+        .exam-modal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .exam-modal-header-trophy {
+            font-size: 2rem;
+        }
+        .exam-modal-header-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+        .exam-modal-header-sub {
+            font-size: 0.85rem;
+            color: var(--gray);
+            font-weight: 600;
+        }
+        .exam-modal-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+            background: #fff;
+            font-size: 1.3rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .exam-modal-close:hover {
+            background: var(--error);
+            color: #fff;
+            border-color: var(--error);
+        }
+        .exam-modal-intro {
+            padding: 14px 28px;
+            background: var(--light);
+            font-size: 0.92rem;
+            color: var(--dark);
+            border-bottom: 1px solid #eee;
+            flex-shrink: 0;
+        }
+        .exam-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 28px 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .exam-modal-footer {
+            padding: 18px 28px;
+            border-top: 2px solid #eee;
+            background: #fafafa;
+            border-radius: 0 0 17px 17px;
+            flex-shrink: 0;
+            text-align: center;
         }
         .final-exam-section-title {
             text-align: center;
@@ -2372,6 +2463,7 @@
             font-weight: 800;
             color: var(--primary-dark);
             margin-bottom: 30px;
+            display: none;
         }
         .exam-exercise-block {
             background: var(--light-gray);
@@ -2481,6 +2573,9 @@
             transform: translateY(-3px);
             box-shadow: 0 12px 36px rgba(255, 152, 0, 0.6);
         }
+        .exam-modal-footer #checkFinalExamA1Btn {
+            padding: 14px 44px;
+        }
 
         .exam-result-box {
             max-width: 600px;
@@ -2585,10 +2680,12 @@
                 padding: 14px 34px;
                 font-size: 1.05rem;
             }
-            .final-exam-section {
-                margin: 0 8px 30px;
-                padding: 22px 12px 28px;
-            }
+            .exam-overlay { padding: 12px; }
+            .exam-modal { max-height: calc(100vh - 24px); }
+            .exam-modal-header { padding: 16px 18px 12px; }
+            .exam-modal-header-title { font-size: 1.15rem; }
+            .exam-modal-body { padding: 18px 14px 14px; }
+            .exam-modal-footer { padding: 14px 14px; }
             .exam-exercise-block { padding: 14px 10px; }
             .exam-q-options { gap: 6px; }
             .exam-q-chip { padding: 7px 13px; font-size: 0.9rem; }
@@ -2600,14 +2697,23 @@
                 padding: 22px 12px;
             }
             .final-exam-entry-title { font-size: 1.2rem; }
-            .final-exam-section {
-                margin: 0 4px 24px;
-                padding: 16px 8px 22px;
+            .exam-overlay { padding: 0; }
+            .exam-modal {
+                max-height: 100vh;
+                border-radius: 0;
+                border: none;
             }
+            .exam-modal-header { border-radius: 0; padding: 14px 12px 10px; }
+            .exam-modal-header-trophy { font-size: 1.5rem; }
+            .exam-modal-header-title { font-size: 1.05rem; }
+            .exam-modal-header-sub { font-size: 0.78rem; }
+            .exam-modal-body { padding: 14px 10px 10px; }
+            .exam-modal-footer { border-radius: 0; padding: 12px 10px; }
             .exam-q-chip { width: 100%; text-align: center; }
             #checkFinalExamA1Btn {
                 padding: 14px 30px;
                 font-size: 1.05rem;
+                width: 100%;
             }
         }
     </style>
@@ -2742,20 +2848,35 @@
         </div>
     </section>
 
-    <!-- ====== FINAL EXAM SECTION ====== -->
-    <section class="content-section" id="finalExamSection">
-        <div class="final-exam-section" id="finalExamContainer">
-            <div class="final-exam-section-title">🏆 A1 Yakuniy Imtihon</div>
-            <!-- Exercises rendered by JS -->
-            <div id="finalExamExercises"></div>
-            <div class="topic-check-section exam-check-section">
+    <!-- ====== FINAL EXAM MODAL OVERLAY ====== -->
+    <div class="exam-overlay" id="examOverlay">
+        <div class="exam-modal" id="examModal">
+            <div class="exam-modal-header">
+                <div class="exam-modal-header-left">
+                    <span class="exam-modal-header-trophy">🏆</span>
+                    <div>
+                        <div class="exam-modal-header-title">A1 Yakuniy Imtihon</div>
+                        <div class="exam-modal-header-sub">120 savol · 100 ball · 12 mashq</div>
+                    </div>
+                </div>
+                <button class="exam-modal-close" id="closeExamModalBtn" type="button" title="Yopish">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="exam-modal-intro">
+                Bu yakuniy imtihon A1 kursidagi barcha mavzularni qamrab oladi. Barcha savollarga javob bering va pastdagi tugmani bosing.
+            </div>
+            <div class="exam-modal-body" id="examModalBody">
+                <div id="finalExamExercises"></div>
+                <div class="topic-feedback hidden" id="finalExamA1Feedback"></div>
+            </div>
+            <div class="exam-modal-footer">
                 <button class="check-topic-btn" id="checkFinalExamA1Btn" type="button">
                     Imtihonni tekshirish
                 </button>
-                <div class="topic-feedback hidden" id="finalExamA1Feedback"></div>
             </div>
         </div>
-    </section>
+    </div>
 
     <!-- Footer -->
     <footer class="footer">
@@ -10881,16 +11002,67 @@
             });
         }
 
+        // ========== FINAL EXAM MODAL LOGIC ==========
+
+        var examScrollPos = 0;
+
+        function openExamModal() {
+            var overlay = document.getElementById('examOverlay');
+            if (!overlay) return;
+            renderFinalExam();
+            examScrollPos = window.pageYOffset || document.documentElement.scrollTop;
+            document.body.classList.add('exam-modal-open');
+            document.body.style.top = '-' + examScrollPos + 'px';
+            overlay.classList.add('open');
+            var body = document.getElementById('examModalBody');
+            if (body) body.scrollTop = 0;
+        }
+
+        function closeExamModal(force) {
+            var overlay = document.getElementById('examOverlay');
+            if (!overlay) return;
+            if (!force) {
+                var hasInput = false;
+                var chips = overlay.querySelectorAll('.exam-q-chip.selected');
+                if (chips.length > 0) hasInput = true;
+                if (!hasInput) {
+                    var inputs = overlay.querySelectorAll('.exam-q-input');
+                    inputs.forEach(function(inp) { if (inp.value.trim()) hasInput = true; });
+                }
+                if (hasInput) {
+                    var confirmed = confirm('Imtihonni yopmoqchimisiz? Kiritilgan javoblaringiz saqlanmaydi.');
+                    if (!confirmed) return;
+                }
+            }
+            overlay.classList.remove('open');
+            document.body.classList.remove('exam-modal-open');
+            document.body.style.top = '';
+            window.scrollTo(0, examScrollPos);
+        }
+
         // Start exam button
         (function() {
             var startBtn = document.getElementById('startFinalExamA1Btn');
             if (startBtn) {
                 startBtn.addEventListener('click', function() {
-                    var examContainer = document.getElementById('finalExamContainer');
-                    if (examContainer) {
-                        examContainer.classList.add('visible');
-                        renderFinalExam();
-                        examContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    openExamModal();
+                });
+            }
+        })();
+
+        // Close exam button
+        (function() {
+            var closeBtn = document.getElementById('closeExamModalBtn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    closeExamModal(false);
+                });
+            }
+            var overlay = document.getElementById('examOverlay');
+            if (overlay) {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) {
+                        closeExamModal(false);
                     }
                 });
             }
@@ -10915,7 +11087,6 @@
                         if (mode === 'chip') {
                             var selected = document.querySelector('.exam-q-chip[data-exam-chip="' + key + '"].selected');
                             userValue = selected ? selected.dataset.value : '';
-                            // highlight chips
                             document.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]').forEach(function(c) {
                                 c.classList.remove('correct', 'incorrect');
                                 if (c.classList.contains('selected')) {
@@ -10963,7 +11134,6 @@
                 else if (finalScore >= 60) { statusLabel = 'Qoniqarli'; statusClass = 'qoniqarli'; }
                 else { statusLabel = 'Yana mashq qilish kerak'; statusClass = 'mashq'; }
 
-                // Build feedback HTML
                 var fbHtml = '<div class="exam-result-box">';
                 fbHtml += '<div class="exam-result-score">' + finalScore + ' / 100</div>';
                 fbHtml += '<div class="exam-result-details">' + totalCorrect + ' / ' + totalQ + " to'g'ri javob (" + pct + '%)</div>';
@@ -10971,7 +11141,6 @@
                 fbHtml += '<br><button type="button" class="exam-detail-toggle" id="examDetailToggleBtn">Batafsil natijalarni ko\'rish</button>';
                 fbHtml += '</div>';
 
-                // detailed section
                 fbHtml += '<div class="exam-detail-section" id="examDetailSection">';
 
                 var exerciseGroups = {};
@@ -10985,19 +11154,19 @@
                     var exCorrect = group.items.filter(function(r) { return r.isCorrect; }).length;
                     fbHtml += '<div class="exam-detail-exercise">';
                     fbHtml += '<div class="exam-detail-exercise-title" data-exam-detail-toggle="' + exKey + '">';
-                    fbHtml += group.title + ' — ' + exCorrect + '/10';
+                    fbHtml += group.title + ' \u2014 ' + exCorrect + '/10';
                     fbHtml += '</div>';
                     fbHtml += '<div class="exam-detail-items" id="examDetailItems' + exKey + '">';
 
                     group.items.forEach(function(r, i) {
                         var cls = r.isCorrect ? 'edi-ok' : 'edi-bad';
-                        var icon = r.isCorrect ? '✓' : '✗';
+                        var icon = r.isCorrect ? '\u2713' : '\u2717';
                         fbHtml += '<div class="exam-detail-item">';
                         fbHtml += '<span class="edi-status ' + cls + '">' + icon + '</span> ';
                         fbHtml += '<strong>' + (i + 1) + '.</strong> ' + r.question + ' ';
                         fbHtml += 'Javob: <em>' + (r.userAnswer || '(kiritilmagan)') + '</em>';
                         if (!r.isCorrect) {
-                            fbHtml += ' → To\'g\'ri: <strong>' + r.correctAnswer + '</strong>';
+                            fbHtml += ' \u2192 To\'g\'ri: <strong>' + r.correctAnswer + '</strong>';
                         }
                         fbHtml += '</div>';
                     });
@@ -11014,7 +11183,6 @@
                     feedbackDiv.classList.add('show');
                     feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                    // Bind toggle for detail section
                     var toggleBtn = document.getElementById('examDetailToggleBtn');
                     var detailSection = document.getElementById('examDetailSection');
                     if (toggleBtn && detailSection) {
@@ -11026,7 +11194,6 @@
                         });
                     }
 
-                    // Bind accordion for each exercise
                     document.querySelectorAll('[data-exam-detail-toggle]').forEach(function(title) {
                         title.addEventListener('click', function() {
                             var idx = this.dataset.examDetailToggle;
@@ -11036,7 +11203,6 @@
                     });
                 }
 
-                // Save exam result to Firebase
                 var examResultData = {
                     score: totalCorrect,
                     total: totalQ,
