@@ -1540,6 +1540,290 @@
                 width: 100%;
             }
         }
+
+        /* ===== Topic 1 Enhanced Exercises ===== */
+        .t1-hint-images {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .t1-hint-images img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+        .t1-hint-images img:hover {
+            transform: scale(1.04);
+        }
+
+        .t1-reading-block {
+            background: white;
+            border-radius: 14px;
+            padding: 28px 24px;
+            margin: 20px 0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+            border-left: 5px solid var(--primary);
+            line-height: 1.85;
+            font-size: 1.05rem;
+            color: var(--dark);
+        }
+        .t1-reading-block p {
+            margin-bottom: 14px;
+        }
+        .t1-reading-block p:last-child {
+            margin-bottom: 0;
+        }
+
+        .t1-exercise-block {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin: 24px 0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+        }
+        .t1-exercise-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+        }
+        .t1-exercise-instruction {
+            font-size: 0.95rem;
+            color: var(--gray);
+            margin-bottom: 18px;
+        }
+
+        /* Pravda / Nepravda */
+        .t1-pn-item {
+            padding: 14px 16px;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--primary);
+        }
+        .t1-pn-text {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .t1-pn-btns {
+            display: flex;
+            gap: 10px;
+        }
+        .t1-pn-btn {
+            padding: 8px 22px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+        .t1-pn-btn:hover {
+            border-color: var(--primary);
+        }
+        .t1-pn-btn.selected {
+            border-color: var(--primary);
+            background: var(--secondary);
+            color: var(--primary-dark);
+        }
+        .t1-pn-btn.correct {
+            border-color: var(--success) !important;
+            background: #c8e6c9 !important;
+            color: #2e7d32 !important;
+        }
+        .t1-pn-btn.incorrect {
+            border-color: var(--error) !important;
+            background: #ffcdd2 !important;
+            color: #c62828 !important;
+        }
+
+        /* Fill text */
+        .t1-fill-paragraph {
+            line-height: 2.1;
+            font-size: 1.05rem;
+            margin-bottom: 16px;
+        }
+        .t1-fill-input {
+            display: inline-block;
+            width: 200px;
+            padding: 4px 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            vertical-align: baseline;
+            transition: all 0.25s ease;
+        }
+        .t1-fill-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(255,152,0,0.12);
+        }
+        .t1-fill-input.correct {
+            border-color: var(--success); background: #c8e6c9; color: #2e7d32;
+        }
+        .t1-fill-input.incorrect {
+            border-color: var(--error); background: #ffcdd2; color: #c62828;
+        }
+
+        /* Multiple choice (exercise 3) */
+        .t1-mc-section-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 18px 0 10px;
+            padding: 8px 14px;
+            border-radius: 8px;
+        }
+        .t1-mc-section-a { background: #e8f5e9; color: #2e7d32; }
+        .t1-mc-section-b { background: #fce4ec; color: #c62828; }
+        .t1-mc-item {
+            padding: 14px 16px;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--blue);
+        }
+        .t1-mc-text {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .t1-mc-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .t1-mc-opt {
+            padding: 7px 18px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+        .t1-mc-opt:hover { border-color: var(--blue); }
+        .t1-mc-opt.selected {
+            border-color: var(--blue);
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .t1-mc-opt.correct {
+            border-color: var(--success) !important;
+            background: #c8e6c9 !important;
+            color: #2e7d32 !important;
+        }
+        .t1-mc-opt.incorrect {
+            border-color: var(--error) !important;
+            background: #ffcdd2 !important;
+            color: #c62828 !important;
+        }
+
+        /* Word builder (gap tuzing) */
+        .t1-builder-item {
+            padding: 16px;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 14px;
+            border-left: 3px solid #9c27b0;
+        }
+        .t1-builder-target {
+            min-height: 42px;
+            padding: 8px 12px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: white;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .t1-builder-target .t1-token {
+            background: #e1bee7;
+            padding: 4px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .t1-builder-target .t1-token:hover {
+            background: #ce93d8;
+        }
+        .t1-builder-words {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .t1-word-chip {
+            padding: 7px 16px;
+            border: 2px solid #ce93d8;
+            border-radius: 25px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            color: #7b1fa2;
+        }
+        .t1-word-chip:hover { background: #f3e5f5; }
+        .t1-word-chip.used {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .t1-builder-reset {
+            margin-top: 8px;
+            padding: 5px 14px;
+            border: none;
+            border-radius: 15px;
+            background: #ef9a9a;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .t1-builder-reset:hover { background: #e57373; }
+
+        @media (max-width: 700px) {
+            .t1-hint-images {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+            .t1-hint-images img {
+                height: 90px;
+            }
+            .t1-fill-input {
+                width: 160px;
+                font-size: 0.88rem;
+            }
+            .t1-reading-block {
+                padding: 18px 14px;
+                font-size: 0.98rem;
+            }
+            .t1-exercise-block {
+                padding: 16px;
+            }
+        }
+        @media (max-width: 480px) {
+            .t1-fill-input {
+                width: 130px;
+                font-size: 0.82rem;
+                padding: 3px 6px;
+            }
+            .t1-hint-images img {
+                height: 70px;
+            }
+        }
     </style>
 </head>
 
@@ -1871,6 +2155,104 @@
                             '"Мы ___ в субботу" (Biz shanba kuni dam olamiz)'
                         ],
                         blankAnswers: ["Мой", "его", "Наши", "ходила", "была", "был", "Её", "были", "Ваша", "была", "Мой", "был", "Их", "готовила", "были"]
+                    },
+                    topic1Exercises: {
+                        readingText: [
+                            'Меня зовут Азиз. Я живу в Ташкенте и учусь в университете. У меня есть семья: мама, папа и младший брат. У нас есть квартира недалеко от университета.',
+                            'У меня есть занятия каждый день. Я изучаю иностранные языки и люблю учиться. У меня есть друзья в университете, и мы часто делаем домашнее задание вместе.',
+                            'Раньше у меня был старый ноутбук, но сейчас у меня есть новый ноутбук. У моего друга была машина, но сейчас у него нет машины. У нас было много времени в прошлом семестре, и мы часто гуляли после занятий.',
+                            'В школе у меня не было много свободного времени, но у меня были хорошие друзья. Мы играли в футбол и проводили время вместе.',
+                            'Сейчас у меня есть цель — хорошо учиться и найти хорошую работу. Я люблю свою жизнь и университет.'
+                        ],
+                        exercise1: {
+                            title: '1. Правда / Неправда ni tanlang',
+                            instruction: "To'g'ri javobni belgilang",
+                            items: [
+                                { text: 'Азиз живёт в Самарканде', answer: 'Неправда' },
+                                { text: 'Он учится в университете', answer: 'Правда' },
+                                { text: 'У него есть сестра', answer: 'Неправда' },
+                                { text: 'У него есть младший брат', answer: 'Правда' },
+                                { text: 'У них есть квартира недалеко от университета', answer: 'Правда' },
+                                { text: 'Азиз изучает иностранные языки', answer: 'Правда' },
+                                { text: 'У него есть друзья в университете', answer: 'Правда' },
+                                { text: 'Раньше у него был старый ноутбук', answer: 'Правда' },
+                                { text: 'Сейчас у него есть новый ноутбук', answer: 'Правда' },
+                                { text: 'В прошлом семестре у них было много времени', answer: 'Правда' },
+                                { text: 'Они часто гуляли после занятий', answer: 'Правда' },
+                                { text: 'В школе у него не было друзей', answer: 'Неправда' },
+                                { text: 'У него были хорошие друзья', answer: 'Правда' },
+                                { text: 'Они играли в футбол', answer: 'Правда' },
+                                { text: 'Сейчас у него есть цель', answer: 'Правда' }
+                            ]
+                        },
+                        exercise2: {
+                            title: '2. Mashqli matn',
+                            instruction: "To'liq variant",
+                            segments: [
+                                { before: 'Меня зовут Севара. Я живу в Ташкенте. ', hint: 'menda oila bor', answer: 'У меня есть семья', after: ': мама, папа и брат. ' },
+                                { before: '', hint: 'bizda bor', answer: 'У нас есть', after: ' большой дом и маленький сад. ' },
+                                { before: '', hint: 'menda bor', answer: 'У меня есть', after: ' работа. Я работаю в офисе.' },
+                                { before: 'Раньше ', hint: 'menda bor edi', answer: 'у меня был', after: ' старый телефон, но сейчас ' },
+                                { before: '', hint: 'menda bor', answer: 'у меня есть', after: ' новый телефон. У моего брата ' },
+                                { before: '', hint: 'unda bor edi', answer: 'у него была', after: ' машина, но сейчас ' },
+                                { before: '', hint: 'Unda yo\'q', answer: 'у него нет', after: ' машины. ' },
+                                { before: '', hint: 'bizda bor edi', answer: 'у нас было', after: ' много времени летом, и мы часто гуляли в парке.' },
+                                { before: 'В детстве ', hint: 'menda yo\'q edi', answer: 'у меня не было', after: ' компьютера, но ' },
+                                { before: '', hint: 'menda bor edi', answer: 'у меня были', after: ' друзья. Мы играли вместе каждый день. У моей мамы ' },
+                                { before: '', hint: 'bor edi', answer: 'была', after: ' интересная работа, а у папы ' },
+                                { before: '', hint: 'bor edi', answer: 'было', after: ' мало свободного времени.' },
+                                { before: 'Сейчас ', hint: 'menda bor', answer: 'у меня есть', after: ' всё, что нужно: работа, семья и друзья. Я люблю свою жизнь.' }
+                            ]
+                        },
+                        exercise3: {
+                            title: "3. To'g'ri variantni tanlang",
+                            sectionA: {
+                                label: '✅ 1–10 (oddiy gaplar)',
+                                items: [
+                                    { text: 'У меня ___ книга', options: ['был', 'была', 'были'], answer: 'была' },
+                                    { text: 'У него ___ телефон', options: ['был', 'была', 'были'], answer: 'был' },
+                                    { text: 'У нас ___ время', options: ['был', 'было', 'были'], answer: 'было' },
+                                    { text: 'У них ___ друзья', options: ['был', 'была', 'были'], answer: 'были' },
+                                    { text: 'У неё ___ машина', options: ['был', 'была', 'было'], answer: 'была' },
+                                    { text: 'У вас ___ дом', options: ['был', 'была', 'были'], answer: 'был' },
+                                    { text: 'У меня ___ письмо', options: ['был', 'было', 'были'], answer: 'было' },
+                                    { text: 'У него ___ брат', options: ['был', 'была', 'было'], answer: 'был' },
+                                    { text: 'У нас ___ уроки', options: ['был', 'была', 'были'], answer: 'были' },
+                                    { text: 'У неё ___ окно', options: ['был', 'было', 'были'], answer: 'было' }
+                                ]
+                            },
+                            sectionB: {
+                                label: '❌ 11–20 (inkor gaplar)',
+                                items: [
+                                    { text: 'У меня ___ книги', options: ['не был', 'не была', 'не было'], answer: 'не было' },
+                                    { text: 'У него ___ телефона', options: ['не был', 'не было', 'не были'], answer: 'не было' },
+                                    { text: 'У нас ___ времени', options: ['не был', 'не было', 'не были'], answer: 'не было' },
+                                    { text: 'У них ___ друзей', options: ['не был', 'не была', 'не было'], answer: 'не было' },
+                                    { text: 'У неё ___ машины', options: ['не был', 'не было', 'не были'], answer: 'не было' },
+                                    { text: 'У вас ___ дома', options: ['не был', 'не было', 'не были'], answer: 'не было' },
+                                    { text: 'У меня ___ письма', options: ['не был', 'не было', 'не были'], answer: 'не было' },
+                                    { text: 'У него ___ брата', options: ['не был', 'не было', 'не были'], answer: 'не было' },
+                                    { text: 'У нас ___ уроков', options: ['не был', 'не было', 'не были'], answer: 'не было' },
+                                    { text: 'У неё ___ окна', options: ['не был', 'не было', 'не были'], answer: 'не было' }
+                                ]
+                            }
+                        },
+                        exercise4: {
+                            title: '4. Gap tuzing',
+                            instruction: "Berilgan so'zlardan to'g'ri gap tuzing",
+                            items: [
+                                { words: ['у', 'есть', 'тебя', 'время'], answer: 'У тебя есть время' },
+                                { words: ['у', 'была', 'меня', 'машина'], answer: 'У меня была машина' },
+                                { words: ['у', 'них', 'дети', 'есть'], answer: 'У них есть дети' },
+                                { words: ['у', 'был', 'нас', 'учитель'], answer: 'У нас был учитель' },
+                                { words: ['у', 'сестра', 'есть', 'неё'], answer: 'У неё есть сестра' },
+                                { words: ['вопросы', 'вас', 'были', 'у'], answer: 'У вас были вопросы' },
+                                { words: ['у', 'него', 'работа', 'есть'], answer: 'У него есть работа' },
+                                { words: ['у', 'меня', 'деньги', 'были'], answer: 'У меня были деньги' },
+                                { words: ['у', 'неё', 'было', 'время'], answer: 'У неё было время' },
+                                { words: ['дом', 'у', 'есть', 'вас'], answer: 'У вас есть дом' }
+                            ]
+                        }
                     }
                 },
                 {
@@ -2855,6 +3237,13 @@
                     loadExtraExercises(topicId);
                 }, 100);
             }
+
+            // Load enhanced exercises for topic 1
+            if (topicId === 1) {
+                setTimeout(() => {
+                    loadTopic1Exercises(topicId);
+                }, 100);
+            }
         }
         
         // Показ сохраненных результатов
@@ -2927,6 +3316,238 @@
                 retryBtn.style.display = 'block';
             }
         }
+
+        // ==================== TOPIC 1 ENHANCED EXERCISES ====================
+
+        function loadTopic1Exercises(topicId) {
+            const topic = courseData.topics.find(t => t.id === topicId);
+            if (!topic || !topic.topic1Exercises) return;
+            const ex = topic.topic1Exercises;
+
+            const imgBase = '../images/a2/';
+            let html = '<div class="extra-exercises-section" id="topic1ExercisesSection">';
+            html += '<h2 class="extra-exercises-title"><i class="fas fa-book-reader"></i> Qo\'shimcha mashqlar</h2>';
+
+            // Part 1: 4 hint images
+            html += '<div class="t1-hint-images">';
+            html += '<img src="' + imgBase + 'Рисунок1.png" alt="Rasm 1" onclick="openImageFullscreen(this.src)">';
+            html += '<img src="' + imgBase + 'Рисунок2.png" alt="Rasm 2" onclick="openImageFullscreen(this.src)">';
+            html += '<img src="' + imgBase + 'Рисунок3.png" alt="Rasm 3" onclick="openImageFullscreen(this.src)">';
+            html += '<img src="' + imgBase + 'Рисунок4.png" alt="Rasm 4" onclick="openImageFullscreen(this.src)">';
+            html += '</div>';
+
+            // Part 2: Reading text
+            html += '<div class="t1-reading-block">';
+            ex.readingText.forEach(function(p) {
+                html += '<p>' + p + '</p>';
+            });
+            html += '</div>';
+
+            // Part 3: Exercise 1 — Pravda / Nepravda
+            html += '<div class="t1-exercise-block">';
+            html += '<div class="t1-exercise-title">' + ex.exercise1.title + '</div>';
+            html += '<div class="t1-exercise-instruction">' + ex.exercise1.instruction + '</div>';
+            ex.exercise1.items.forEach(function(item, i) {
+                html += '<div class="t1-pn-item">';
+                html += '<div class="t1-pn-text">' + (i + 1) + '. ' + item.text + '</div>';
+                html += '<div class="t1-pn-btns" data-t1-pn="' + i + '">';
+                html += '<button class="t1-pn-btn" data-value="Правда">Правда</button>';
+                html += '<button class="t1-pn-btn" data-value="Неправда">Неправда</button>';
+                html += '</div></div>';
+            });
+            html += '</div>';
+
+            // Part 4: Exercise 2 — Fill the text
+            html += '<div class="t1-exercise-block">';
+            html += '<div class="t1-exercise-title">' + ex.exercise2.title + '</div>';
+            html += '<div class="t1-exercise-instruction">' + ex.exercise2.instruction + '</div>';
+            html += '<div class="t1-fill-paragraph">';
+            ex.exercise2.segments.forEach(function(seg, i) {
+                html += seg.before;
+                html += '<input type="text" class="t1-fill-input" data-t1-fill="' + i + '" placeholder="' + seg.hint + '">';
+                html += seg.after;
+            });
+            html += '</div></div>';
+
+            // Part 5: Exercise 3 — Multiple choice
+            html += '<div class="t1-exercise-block">';
+            html += '<div class="t1-exercise-title">' + ex.exercise3.title + '</div>';
+            // Section A
+            html += '<div class="t1-mc-section-label t1-mc-section-a">' + ex.exercise3.sectionA.label + '</div>';
+            ex.exercise3.sectionA.items.forEach(function(item, i) {
+                html += '<div class="t1-mc-item">';
+                html += '<div class="t1-mc-text">' + (i + 1) + '. ' + item.text + '</div>';
+                html += '<div class="t1-mc-options" data-t1-mc="' + i + '">';
+                item.options.forEach(function(opt) {
+                    html += '<button class="t1-mc-opt" data-value="' + opt + '">' + opt + '</button>';
+                });
+                html += '</div></div>';
+            });
+            // Section B
+            html += '<div class="t1-mc-section-label t1-mc-section-b">' + ex.exercise3.sectionB.label + '</div>';
+            ex.exercise3.sectionB.items.forEach(function(item, i) {
+                var idx = i + ex.exercise3.sectionA.items.length;
+                html += '<div class="t1-mc-item">';
+                html += '<div class="t1-mc-text">' + (idx + 1) + '. ' + item.text + '</div>';
+                html += '<div class="t1-mc-options" data-t1-mc="' + idx + '">';
+                item.options.forEach(function(opt) {
+                    html += '<button class="t1-mc-opt" data-value="' + opt + '">' + opt + '</button>';
+                });
+                html += '</div></div>';
+            });
+            html += '</div>';
+
+            // Part 6: Exercise 4 — Gap tuzing (word builder)
+            html += '<div class="t1-exercise-block">';
+            html += '<div class="t1-exercise-title">' + ex.exercise4.title + '</div>';
+            html += '<div class="t1-exercise-instruction">' + ex.exercise4.instruction + '</div>';
+            ex.exercise4.items.forEach(function(item, i) {
+                html += '<div class="t1-builder-item">';
+                html += '<div class="t1-builder-target" data-t1-builder-target="' + i + '"></div>';
+                html += '<input type="hidden" data-t1-builder-selected="' + i + '" value="">';
+                html += '<div class="t1-builder-words" data-t1-builder-words="' + i + '">';
+                // Shuffle words for display
+                var shuffled = item.words.slice().sort(function() { return Math.random() - 0.5; });
+                shuffled.forEach(function(w) {
+                    html += '<button class="t1-word-chip" data-word="' + w + '">' + w + '</button>';
+                });
+                html += '</div>';
+                html += '<button class="t1-builder-reset" onclick="resetT1Builder(' + i + ')">↺ Tozalash</button>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            html += '</div>'; // close section
+
+            // Insert after quiz section
+            const quizSection = document.getElementById('quizSection');
+            if (quizSection) {
+                const existing = document.getElementById('topic1ExercisesSection');
+                if (existing) existing.remove();
+                quizSection.insertAdjacentHTML('afterend', html);
+            }
+
+            // Bind event listeners
+            bindTopic1Events();
+        }
+
+        function bindTopic1Events() {
+            // Pravda / Nepravda buttons
+            document.querySelectorAll('[data-t1-pn] .t1-pn-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var container = this.closest('.t1-pn-btns');
+                    container.querySelectorAll('.t1-pn-btn').forEach(function(b) { b.classList.remove('selected'); });
+                    this.classList.add('selected');
+                });
+            });
+
+            // MC options (exercise 3)
+            document.querySelectorAll('[data-t1-mc] .t1-mc-opt').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var container = this.closest('.t1-mc-options');
+                    container.querySelectorAll('.t1-mc-opt').forEach(function(b) { b.classList.remove('selected'); });
+                    this.classList.add('selected');
+                });
+            });
+
+            // Word builder chips
+            document.querySelectorAll('.t1-builder-words .t1-word-chip').forEach(function(chip) {
+                chip.addEventListener('click', function() {
+                    if (this.classList.contains('used')) return;
+                    var wordsContainer = this.closest('.t1-builder-words');
+                    var idx = wordsContainer.getAttribute('data-t1-builder-words');
+                    var target = document.querySelector('[data-t1-builder-target="' + idx + '"]');
+                    var hidden = document.querySelector('[data-t1-builder-selected="' + idx + '"]');
+                    var word = this.getAttribute('data-word');
+
+                    this.classList.add('used');
+                    var token = document.createElement('span');
+                    token.className = 't1-token';
+                    token.textContent = word;
+                    token.setAttribute('data-word', word);
+                    token.addEventListener('click', function() {
+                        // Remove token and un-use chip
+                        this.remove();
+                        var chips = wordsContainer.querySelectorAll('.t1-word-chip');
+                        for (var c = 0; c < chips.length; c++) {
+                            if (chips[c].getAttribute('data-word') === word && chips[c].classList.contains('used')) {
+                                chips[c].classList.remove('used');
+                                break;
+                            }
+                        }
+                        updateT1BuilderHidden(idx);
+                    });
+                    target.appendChild(token);
+                    updateT1BuilderHidden(idx);
+                });
+            });
+        }
+
+        function updateT1BuilderHidden(idx) {
+            var target = document.querySelector('[data-t1-builder-target="' + idx + '"]');
+            var hidden = document.querySelector('[data-t1-builder-selected="' + idx + '"]');
+            var tokens = target.querySelectorAll('.t1-token');
+            var words = [];
+            tokens.forEach(function(t) { words.push(t.textContent.trim()); });
+            hidden.value = words.join('|');
+        }
+
+        window.resetT1Builder = function(idx) {
+            var target = document.querySelector('[data-t1-builder-target="' + idx + '"]');
+            var wordsContainer = document.querySelector('[data-t1-builder-words="' + idx + '"]');
+            if (target) target.innerHTML = '';
+            if (wordsContainer) wordsContainer.querySelectorAll('.t1-word-chip').forEach(function(c) { c.classList.remove('used'); });
+            updateT1BuilderHidden(idx);
+        };
+
+        window.checkTopic1Exercises = async function(topicId) {
+            const topic = courseData.topics.find(t => t.id === topicId);
+            if (!topic || !topic.topic1Exercises) return;
+            const ex = topic.topic1Exercises;
+
+            // Exercise 1: Pravda/Nepravda
+            ex.exercise1.items.forEach(function(item, i) {
+                var container = document.querySelector('[data-t1-pn="' + i + '"]');
+                if (!container) return;
+                var sel = container.querySelector('.t1-pn-btn.selected');
+                var userVal = sel ? sel.getAttribute('data-value') : '';
+                container.querySelectorAll('.t1-pn-btn').forEach(function(b) {
+                    b.classList.remove('correct', 'incorrect');
+                    if (b.getAttribute('data-value') === item.answer) b.classList.add('correct');
+                    if (sel && b === sel && userVal !== item.answer) b.classList.add('incorrect');
+                });
+            });
+
+            // Exercise 2: Fill text
+            ex.exercise2.segments.forEach(function(seg, i) {
+                var input = document.querySelector('[data-t1-fill="' + i + '"]');
+                if (!input) return;
+                input.classList.remove('correct', 'incorrect');
+                var uv = input.value.trim();
+                var norm = function(s) { return s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim(); };
+                if (norm(uv) === norm(seg.answer)) {
+                    input.classList.add('correct');
+                } else if (uv) {
+                    input.classList.add('incorrect');
+                }
+            });
+
+            // Exercise 3: MC
+            var allMcItems = ex.exercise3.sectionA.items.concat(ex.exercise3.sectionB.items);
+            allMcItems.forEach(function(item, i) {
+                var container = document.querySelector('[data-t1-mc="' + i + '"]');
+                if (!container) return;
+                var sel = container.querySelector('.t1-mc-opt.selected');
+                var userVal = sel ? sel.getAttribute('data-value') : '';
+                container.querySelectorAll('.t1-mc-opt').forEach(function(b) {
+                    b.classList.remove('correct', 'incorrect');
+                    if (b.getAttribute('data-value') === item.answer) b.classList.add('correct');
+                    if (sel && b === sel && userVal !== item.answer) b.classList.add('incorrect');
+                });
+            });
+
+            // Exercise 4: Builder — visual only (collection handled by global fixes)
+        };
 
         // ==================== EXTRA EXERCISES FUNCTIONS ====================
         

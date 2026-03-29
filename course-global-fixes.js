@@ -330,6 +330,94 @@
         return results;
     }
 
+    /* ---- Topic 1 Enhanced Exercises ---- */
+
+    function collectTopic1ExercisesResults(topic, scope) {
+        var results = [];
+        if (!topic || !topic.topic1Exercises) return results;
+        var ex = topic.topic1Exercises;
+        var topicTitle = topic.title || '';
+
+        // Exercise 1: Pravda / Nepravda
+        if (ex.exercise1 && Array.isArray(ex.exercise1.items)) {
+            var e1Title = ex.exercise1.title || 'Правда / Неправда';
+            ex.exercise1.items.forEach(function (item, i) {
+                var container = queryIn(scope, '[data-t1-pn="' + i + '"]');
+                var sel = container ? container.querySelector('.t1-pn-btn.selected') : null;
+                var uv = sel ? (sel.getAttribute('data-value') || '').trim() : '';
+                var exp = item.answer;
+                var ok = isCorrect(uv, exp);
+                var ed = expectedDisplay(exp);
+                results.push(makeResult(
+                    e1Title + ' \u2014 ' + (i + 1), item.text, uv || '(tanlanmagan)', ed, ok,
+                    generateExplanation(ok, uv, ed, topicTitle, e1Title)
+                ));
+            });
+        }
+
+        // Exercise 2: Fill text
+        if (ex.exercise2 && Array.isArray(ex.exercise2.segments)) {
+            var e2Title = ex.exercise2.title || 'Mashqli matn';
+            ex.exercise2.segments.forEach(function (seg, i) {
+                var inp = queryIn(scope, '[data-t1-fill="' + i + '"]');
+                var uv = inp ? inp.value.trim() : '';
+                var exp = seg.answer;
+                var ok = isCorrect(uv, exp);
+                markInput(inp, ok);
+                var ed = expectedDisplay(exp);
+                results.push(makeResult(
+                    e2Title + ' \u2014 ' + (i + 1), seg.hint, uv, ed, ok,
+                    generateExplanation(ok, uv, ed, topicTitle, e2Title)
+                ));
+            });
+        }
+
+        // Exercise 3: MC sections
+        if (ex.exercise3) {
+            var e3Title = ex.exercise3.title || "To'g'ri variantni tanlang";
+            var allItems = [];
+            if (ex.exercise3.sectionA && Array.isArray(ex.exercise3.sectionA.items)) {
+                allItems = allItems.concat(ex.exercise3.sectionA.items);
+            }
+            if (ex.exercise3.sectionB && Array.isArray(ex.exercise3.sectionB.items)) {
+                allItems = allItems.concat(ex.exercise3.sectionB.items);
+            }
+            allItems.forEach(function (item, i) {
+                var container = queryIn(scope, '[data-t1-mc="' + i + '"]');
+                var sel = container ? container.querySelector('.t1-mc-opt.selected') : null;
+                var uv = sel ? (sel.getAttribute('data-value') || '').trim() : '';
+                var exp = item.answer;
+                var ok = isCorrect(uv, exp);
+                var ed = expectedDisplay(exp);
+                results.push(makeResult(
+                    e3Title + ' \u2014 ' + (i + 1), item.text, uv || '(tanlanmagan)', ed, ok,
+                    generateExplanation(ok, uv, ed, topicTitle, e3Title)
+                ));
+            });
+        }
+
+        // Exercise 4: Builder
+        if (ex.exercise4 && Array.isArray(ex.exercise4.items)) {
+            var e4Title = ex.exercise4.title || 'Gap tuzing';
+            ex.exercise4.items.forEach(function (item, i) {
+                var hidden = queryIn(scope, 'input[data-t1-builder-selected="' + i + '"]');
+                var uv = '';
+                if (hidden && hidden.value) {
+                    uv = hidden.value.split('|').map(function(w) { return w.trim(); }).filter(Boolean).join(' ');
+                }
+                var exp = item.answer;
+                var ok = isCorrect(uv, exp);
+                var ed = expectedDisplay(exp);
+                results.push(makeResult(
+                    e4Title + ' \u2014 ' + (i + 1), item.words.join(' / '), uv || "(yig'ilmagan)", ed, ok,
+                    generateExplanation(ok, uv, ed, topicTitle, e4Title)
+                ));
+            });
+        }
+
+        return results;
+    }
+
     /* ---- Topic 4 Fill Exercise ---- */
 
     function collectTopic4Results(topic, scope) {
@@ -570,6 +658,7 @@
             if (!m) return;
             var N = m[1];
             if (N === '5') return; // handled by dedicated collector
+            if (N === '1') return; // handled by dedicated topic1 collector
             var exercises = topic[key];
             if (!exercises || typeof exercises !== 'object') return;
 
@@ -676,6 +765,9 @@
             if (topic && topic.extraExercises && typeof window.checkExtraExercises === 'function') {
                 await window.checkExtraExercises(topicId);
             }
+            if (topic && topic.topic1Exercises && typeof window.checkTopic1Exercises === 'function') {
+                await window.checkTopic1Exercises(topicId);
+            }
             if (topic && topic.topic4FillExercise && typeof window.checkTopic4FillExercise === 'function') {
                 await window.checkTopic4FillExercise(topicId);
             }
@@ -699,6 +791,7 @@
             }
 
             results.push.apply(results, collectMainQuizResults(topic, topicRoot));
+            results.push.apply(results, collectTopic1ExercisesResults(topic, topicRoot));
             results.push.apply(results, collectExtraExercisesResults(topic, topicRoot));
             results.push.apply(results, collectTopic4Results(topic, topicRoot));
             results.push.apply(results, collectTopic5Results(topic, topicRoot));
