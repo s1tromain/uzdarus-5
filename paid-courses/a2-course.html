@@ -2199,54 +2199,7 @@
             min-width: 70px;
             max-width: 160px;
         }
-        /* Feedback panel */
-        .t2-feedback {
-            margin-top: 12px;
-            padding: 16px;
-            border-radius: 10px;
-            display: none;
-        }
-        .t2-feedback.show { display: block; }
-        .t2-feedback-item {
-            padding: 10px 14px;
-            margin-bottom: 8px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-        }
-        .t2-feedback-item.fb-correct {
-            background: #e8f5e9;
-            border-left: 3px solid #4caf50;
-        }
-        .t2-feedback-item.fb-incorrect {
-            background: #ffebee;
-            border-left: 3px solid #f44336;
-        }
-        .t2-feedback-item .fb-label {
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .t2-feedback-item .fb-user { color: #555; }
-        .t2-feedback-item .fb-correct-answer { color: #2e7d32; font-weight: 600; }
-        .t2-check-all-btn {
-            display: block;
-            width: 100%;
-            max-width: 400px;
-            margin: 30px auto;
-            padding: 16px 32px;
-            background: linear-gradient(135deg, #E91E63, #C2185B);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-size: 1.15rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(233,30,99,0.3);
-        }
-        .t2-check-all-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(233,30,99,0.4);
-        }
+
         @media (max-width: 700px) {
             .t2-exercise-block { padding: 16px; }
             .t2-trans-input, .t2-fill-input { max-width: 100%; }
@@ -4258,12 +4211,6 @@
             });
             html += '</div>';
 
-            // Check all button
-            html += '<button class="t2-check-all-btn" onclick="checkTopic2Exercises(' + topicId + ')"><i class="fas fa-check-circle"></i> Barcha mashqlarni tekshirish</button>';
-
-            // Feedback panel
-            html += '<div class="t2-feedback" id="t2Feedback"></div>';
-
             html += '</div>'; // close section
 
             var quizSection = document.getElementById('quizSection');
@@ -4451,26 +4398,25 @@
                 });
             });
 
-            // Show feedback panel
-            var fbPanel = document.getElementById('t2Feedback');
-            if (fbPanel) {
-                var fbHtml = '<h3 style="margin-bottom:12px;color:#c2185b;"><i class="fas fa-clipboard-list"></i> Natijalar</h3>';
-                var correctCount = 0;
+            // Append results to correctAnswers container
+            var correctAnswersDiv = document.getElementById('correctAnswers');
+            if (correctAnswersDiv) {
+                var t2correct = 0;
                 feedbackItems.forEach(function(fi) {
-                    if (fi.ok) correctCount++;
-                    fbHtml += '<div class="t2-feedback-item ' + (fi.ok ? 'fb-correct' : 'fb-incorrect') + '">';
-                    fbHtml += '<div class="fb-label">' + (fi.ok ? '✓' : '✗') + ' ' + fi.label + '</div>';
+                    if (fi.ok) t2correct++;
+                    var answerItem = document.createElement('div');
+                    answerItem.className = 'answer-item ' + (fi.ok ? 'correct' : 'incorrect');
+                    var innerHtml = '<span class="answer-status">' + (fi.ok ? '✓' : '✗') + '</span>';
+                    innerHtml += '<strong>' + fi.label + '</strong><br>';
                     if (!fi.ok) {
-                        fbHtml += '<div class="fb-user">Sizning javobingiz: ' + fi.user + '</div>';
-                        fbHtml += '<div class="fb-correct-answer">To\'g\'ri javob: ' + fi.correct + '</div>';
+                        innerHtml += 'Sizning javobingiz: ' + fi.user + '<br>';
+                        innerHtml += 'To\'g\'ri javob: ' + fi.correct;
                     }
-                    fbHtml += '</div>';
+                    answerItem.innerHTML = innerHtml;
+                    correctAnswersDiv.appendChild(answerItem);
                 });
-                fbHtml = '<div style="text-align:center;margin-bottom:16px;font-size:1.3rem;font-weight:700;color:' + (correctCount === feedbackItems.length ? '#2e7d32' : '#c2185b') + ';">' + correctCount + ' / ' + feedbackItems.length + ' to\'g\'ri</div>' + fbHtml;
-                fbPanel.innerHTML = fbHtml;
-                fbPanel.classList.add('show');
-                fbPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+            return { total: feedbackItems.length, correct: feedbackItems.filter(function(f) { return f.ok; }).length };
         };
 
         // ==================== EXTRA EXERCISES FUNCTIONS ====================
@@ -4862,6 +4808,27 @@
                 `;
                 correctAnswers.appendChild(answerItem);
             });
+
+            // Topic 2: also check extra exercises
+            if (topicId === 2 && topic.topic2Exercises) {
+                var t2Result = window.checkTopic2Exercises(topicId);
+                if (t2Result) {
+                    score += t2Result.correct;
+                    var combinedTotal = totalQuestions + t2Result.total;
+                    var combinedPct = Math.round((score / combinedTotal) * 100);
+                    document.getElementById('scoreDisplay').textContent = `Sizning natijangiz: ${score}/${combinedTotal}`;
+                    if (combinedPct >= 90) {
+                        document.getElementById('resultsMessage').innerHTML = 'Ajoyib natija! Siz mavzuni mukammal o\'zlashtirdingiz.';
+                    } else if (combinedPct >= 70) {
+                        document.getElementById('resultsMessage').innerHTML = 'Yaxshi natija! Siz mavzuni yaxshi tushundingiz.';
+                    } else if (combinedPct >= 50) {
+                        document.getElementById('resultsMessage').innerHTML = 'Qoniqarli. Mavzuni takrorlab, testni qayta topshiring.';
+                    } else {
+                        document.getElementById('resultsMessage').innerHTML = 'Ko\'proq mashq qiling. Mavzuni diqqat bilan o\'qib chiqing.';
+                    }
+                    currentScore = score;
+                }
+            }
 
             // Show results section
             resultsSection.classList.add('show');
