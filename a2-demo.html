@@ -2203,6 +2203,257 @@
             .t2-text-block { gap: 2px 4px; line-height: 1.9; font-size: 0.9rem; }
             .t2-text-block .t2-hint-input { min-width: 50px; max-width: 100%; }
         }
+        /* ========== TOPIC 3 GRAMMAR BLOCK ========== */
+        .t3-grammar-block {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 24px 0;
+            box-shadow: 0 4px 16px rgba(255,152,0,0.12);
+        }
+        .t3-grammar-block h3 {
+            font-size: 1.35rem;
+            color: #e65100;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .t3-grammar-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+        .t3-grammar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-top: 3px solid #FF9800;
+        }
+        .t3-grammar-card h4 {
+            font-size: 0.95rem;
+            color: #e65100;
+            margin: 0 0 8px 0;
+        }
+        .t3-grammar-card ul {
+            margin: 0; padding: 0 0 0 16px;
+            font-size: 0.88rem;
+            line-height: 1.65;
+            color: #333;
+        }
+        .t3-grammar-card ul li { margin-bottom: 3px; }
+        .t3-grammar-card ul li strong { color: #bf360c; }
+        .t3-grammar-card.wide { grid-column: span 2; }
+        /* Image row */
+        .t3-image-row {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin: 24px 0;
+            flex-wrap: wrap;
+        }
+        .t3-image-row img {
+            width: calc(25% - 14px);
+            min-width: 120px;
+            max-width: 220px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+            object-fit: cover;
+            aspect-ratio: 4/3;
+        }
+        /* ========== TOPIC 3 EXERCISES ========== */
+        .t3-exercise-block {
+            background: white;
+            border-radius: 14px;
+            padding: 24px;
+            margin: 24px 0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+        }
+        .t3-exercise-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e65100;
+            margin-bottom: 6px;
+        }
+        .t3-exercise-instruction {
+            font-size: 0.95rem;
+            color: var(--gray);
+            margin-bottom: 18px;
+        }
+        .t3-fill-item {
+            padding: 14px 16px;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #FF9800;
+        }
+        .t3-fill-sentence {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        .t3-fill-input {
+            width: 100%;
+            max-width: 340px;
+            padding: 8px 14px;
+            border: 1.5px dashed #c5c5c5;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            background: #fff;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            box-sizing: border-box;
+        }
+        .t3-fill-input:focus {
+            outline: none;
+            border-style: solid;
+            border-color: #FF9800;
+            box-shadow: 0 0 0 3px rgba(255,152,0,0.12);
+        }
+        .t3-fill-input.correct {
+            border-style: solid;
+            border-color: var(--success, #4caf50);
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .t3-fill-input.incorrect {
+            border-style: solid;
+            border-color: var(--error, #f44336);
+            background: #ffebee;
+            color: #c62828;
+        }
+        .t3-chip-item {
+            padding: 14px 16px;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #1976d2;
+        }
+        .t3-chip-text {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        .t3-chip-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .t3-chip-opt {
+            padding: 7px 18px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.25s ease;
+        }
+        .t3-chip-opt:hover { border-color: #1976d2; }
+        .t3-chip-opt.selected {
+            border-color: #1976d2;
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .t3-chip-opt.correct {
+            border-color: var(--success) !important;
+            background: #c8e6c9 !important;
+            color: #2e7d32 !important;
+        }
+        .t3-chip-opt.incorrect {
+            border-color: var(--error) !important;
+            background: #ffcdd2 !important;
+            color: #c62828 !important;
+        }
+        .t3-builder-item {
+            padding: 16px;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 14px;
+            border-left: 3px solid #9c27b0;
+        }
+        .t3-builder-target {
+            min-height: 42px;
+            padding: 8px 12px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: white;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .t3-builder-target .t3-token {
+            background: #e1bee7;
+            padding: 4px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .t3-builder-target .t3-token:hover { background: #ce93d8; }
+        .t3-builder-words {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .t3-word-chip {
+            padding: 7px 16px;
+            border: 2px solid #ce93d8;
+            border-radius: 25px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            color: #7b1fa2;
+        }
+        .t3-word-chip:hover { background: #f3e5f5; }
+        .t3-word-chip.used {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+        .t3-builder-reset {
+            margin-top: 8px;
+            padding: 5px 14px;
+            border: none;
+            border-radius: 15px;
+            background: #ef9a9a;
+            color: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .t3-builder-reset:hover { background: #e57373; }
+        .t3-fix-item {
+            padding: 14px 16px;
+            background: var(--light);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #f57c00;
+        }
+        .t3-fix-wrong {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        @media (max-width: 700px) {
+            .t3-grammar-grid { grid-template-columns: 1fr 1fr; }
+            .t3-grammar-card.wide { grid-column: span 1; }
+            .t3-exercise-block { padding: 16px; }
+            .t3-fill-input { max-width: 100%; }
+            .t3-image-row img { width: calc(50% - 14px); }
+        }
+        @media (max-width: 480px) {
+            .t3-grammar-grid { grid-template-columns: 1fr; }
+            .t3-grammar-block { padding: 16px; }
+            .t3-exercise-block { padding: 12px; }
+            .t3-image-row img { width: 100%; max-width: 280px; }
+        }
     </style>
 </head>
 
@@ -3001,6 +3252,75 @@
                             '"Машина ___ гараже" (Mashina garajda)'
                         ],
                         blankAnswers: ["на", "в", "В", "в", "в", "в", "в", "в", "на", "на", "в", "на", "в", "в", "в"]
+                    },
+                    topic3Exercises: {
+                        exercise1: {
+                            title: '1-mashq. To\'g\'ri shaklni yozing',
+                            instruction: 'Qavs ichidagi so\'zni prepozitsion kelishikda yozing',
+                            items: [
+                                { text: 'Я живу в (город)', answer: 'городе' },
+                                { text: 'Книга лежит на (стол)', answer: 'столе' },
+                                { text: 'Мы учимся в (школа)', answer: 'школе' },
+                                { text: 'Дети играют на (улица)', answer: 'улице' },
+                                { text: 'Картина висит на (стена)', answer: 'стене' },
+                                { text: 'Цветы стоят на (окно)', answer: 'окне' },
+                                { text: 'Мы гуляем в (парк)', answer: 'парке' },
+                                { text: 'Одежда лежит в (шкаф)', answer: 'шкафу' }
+                            ]
+                        },
+                        exercise2: {
+                            title: '2-mashq. To\'g\'ri shaklni tanlang',
+                            instruction: 'Har bir gap uchun to\'g\'ri variantni tanlang',
+                            items: [
+                                { text: 'Я работаю в ___', options: ['офис', 'офисе'], answer: 'офисе' },
+                                { text: 'Кошка спит на ___', options: ['диван', 'диване'], answer: 'диване' },
+                                { text: 'Мы живём в ___', options: ['квартире', 'квартира'], answer: 'квартире' },
+                                { text: 'Лампа стоит на ___', options: ['столе', 'стол'], answer: 'столе' },
+                                { text: 'Дети учатся в ___', options: ['школа', 'школе'], answer: 'школе' },
+                                { text: 'Машина стоит в ___', options: ['гараж', 'гараже'], answer: 'гараже' },
+                                { text: 'Еда готовится на ___', options: ['кухне', 'кухня'], answer: 'кухне' },
+                                { text: 'Мы отдыхаем в ___', options: ['парке', 'парк'], answer: 'парке' }
+                            ]
+                        },
+                        exercise3: {
+                            title: '3-mashq. To\'g\'ri predlogni tanlang',
+                            instruction: 'В, НА yoki С — qaysi predlog to\'g\'ri?',
+                            items: [
+                                { text: '___ комнате тепло', options: ['В', 'На', 'С'], answer: 'В' },
+                                { text: '___ улице холодно', options: ['В', 'На', 'С'], answer: 'На' },
+                                { text: 'Я пришёл ___ другом', options: ['в', 'на', 'с'], answer: 'с' },
+                                { text: 'Мы учимся ___ университете', options: ['в', 'на', 'с'], answer: 'в' },
+                                { text: 'Дети играют ___ площадке', options: ['в', 'на', 'с'], answer: 'на' },
+                                { text: 'Он живёт ___ братом', options: ['в', 'на', 'с'], answer: 'с' },
+                                { text: 'Я работаю ___ заводе', options: ['в', 'на', 'с'], answer: 'на' },
+                                { text: 'Книга лежит ___ полке', options: ['в', 'на', 'с'], answer: 'на' },
+                                { text: 'Мы гуляем ___ парке', options: ['в', 'на', 'с'], answer: 'в' },
+                                { text: 'Она пришла ___ мамой', options: ['в', 'на', 'с'], answer: 'с' }
+                            ]
+                        },
+                        exercise4: {
+                            title: '4-mashq. Gap tuzing',
+                            instruction: 'So\'zlarni to\'g\'ri tartibda joylashtiring',
+                            items: [
+                                { words: ['Я', 'живу', 'в', 'большом', 'городе'], answer: 'Я живу в большом городе' },
+                                { words: ['Книга', 'лежит', 'на', 'столе'], answer: 'Книга лежит на столе' },
+                                { words: ['Дети', 'играют', 'на', 'улице'], answer: 'Дети играют на улице' },
+                                { words: ['Мы', 'учимся', 'в', 'школе'], answer: 'Мы учимся в школе' },
+                                { words: ['Кошка', 'спит', 'на', 'диване'], answer: 'Кошка спит на диване' }
+                            ]
+                        },
+                        exercise5: {
+                            title: '5-mashq. Xatoni toping va to\'g\'rilang',
+                            instruction: 'Gapda xato bor. To\'g\'ri gapni yozing',
+                            items: [
+                                { wrong: 'Я живу в город.', answer: 'Я живу в городе.' },
+                                { wrong: 'Книга лежит на стол.', answer: 'Книга лежит на столе.' },
+                                { wrong: 'Мы учимся в школа.', answer: 'Мы учимся в школе.' },
+                                { wrong: 'Дети играют на улица.', answer: 'Дети играют на улице.' },
+                                { wrong: 'Картина висит на стена.', answer: 'Картина висит на стене.' },
+                                { wrong: 'Кошка спит на диван.', answer: 'Кошка спит на диване.' }
+                            ]
+                        }
                     }
                 },
                 {
@@ -3894,10 +4214,10 @@
                 }, 300);
             }
 
-            // Load extra exercises for topic 3
+            // Load enhanced exercises for topic 3
             if (topicId === 3) {
                 setTimeout(() => {
-                    loadExtraExercises(topicId);
+                    loadTopic3Exercises(topicId);
                 }, 100);
             }
 
@@ -4176,15 +4496,18 @@
 
         window.checkTopic1Exercises = async function(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
-            if (!topic || !topic.topic1Exercises) return;
+            if (!topic || !topic.topic1Exercises) return { total: 0, correct: 0 };
             const ex = topic.topic1Exercises;
+            var total = 0, correct = 0;
 
             // Exercise 1: Pravda/Nepravda
             ex.exercise1.items.forEach(function(item, i) {
                 var container = document.querySelector('[data-t1-pn="' + i + '"]');
                 if (!container) return;
+                total++;
                 var sel = container.querySelector('.t1-pn-btn.selected');
                 var userVal = sel ? sel.getAttribute('data-value') : '';
+                if (userVal === item.answer) correct++;
                 container.querySelectorAll('.t1-pn-btn').forEach(function(b) {
                     b.classList.remove('correct', 'incorrect');
                     if (b.getAttribute('data-value') === item.answer) b.classList.add('correct');
@@ -4196,11 +4519,13 @@
             ex.exercise2.segments.forEach(function(seg, i) {
                 var input = document.querySelector('[data-t1-fill="' + i + '"]');
                 if (!input) return;
+                total++;
                 input.classList.remove('correct', 'incorrect');
                 var uv = input.value.trim();
                 var norm = function(s) { return s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim(); };
                 if (norm(uv) === norm(seg.answer)) {
                     input.classList.add('correct');
+                    correct++;
                 } else if (uv) {
                     input.classList.add('incorrect');
                 }
@@ -4211,8 +4536,10 @@
             allMcItems.forEach(function(item, i) {
                 var container = document.querySelector('[data-t1-mc="' + i + '"]');
                 if (!container) return;
+                total++;
                 var sel = container.querySelector('.t1-mc-opt.selected');
                 var userVal = sel ? sel.getAttribute('data-value') : '';
+                if (userVal === item.answer) correct++;
                 container.querySelectorAll('.t1-mc-opt').forEach(function(b) {
                     b.classList.remove('correct', 'incorrect');
                     if (b.getAttribute('data-value') === item.answer) b.classList.add('correct');
@@ -4220,7 +4547,22 @@
                 });
             });
 
-            // Exercise 4: Builder — visual only (collection handled by global fixes)
+            // Exercise 4: Builder
+            ex.exercise4.items.forEach(function(item, i) {
+                var hidden = document.querySelector('[data-t1-builder-selected="' + i + '"]');
+                var target = document.querySelector('[data-t1-builder-target="' + i + '"]');
+                if (!hidden) return;
+                total++;
+                var norm = function(s) { return s.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim(); };
+                if (norm(hidden.value) === norm(item.answer)) {
+                    correct++;
+                    if (target) target.style.borderColor = '#4CAF50';
+                } else if (hidden.value.trim()) {
+                    if (target) target.style.borderColor = '#f44336';
+                }
+            });
+
+            return { total: total, correct: correct };
         };
 
         // ==================== TOPIC 2 ENHANCED EXERCISES ====================
@@ -4543,6 +4885,296 @@
                     var answerItem = document.createElement('div');
                     answerItem.className = 'answer-item ' + (fi.ok ? 'correct' : 'incorrect');
                     var innerHtml = '<span class="answer-status">' + (fi.ok ? '✓' : '✗') + '</span>';
+                    innerHtml += '<strong>' + fi.label + '</strong><br>';
+                    if (!fi.ok) {
+                        innerHtml += 'Sizning javobingiz: ' + fi.user + '<br>';
+                        innerHtml += 'To\'g\'ri javob: ' + fi.correct;
+                    }
+                    answerItem.innerHTML = innerHtml;
+                    correctAnswersDiv.appendChild(answerItem);
+                });
+            }
+            return { total: feedbackItems.length, correct: feedbackItems.filter(function(f) { return f.ok; }).length };
+        };
+
+        // ==================== TOPIC 3 ENHANCED EXERCISES ====================
+
+        function loadTopic3Exercises(topicId) {
+            var topic = courseData.topics.find(function(t) { return t.id === topicId; });
+            if (!topic || !topic.topic3Exercises) return;
+            var ex = topic.topic3Exercises;
+
+            var html = '<div class="extra-exercises-section" id="topic3ExercisesSection">';
+
+            // Grammar compact block
+            html += '<div class="t3-grammar-block">';
+            html += '<h3>\ud83d\udcda Qo\'shimcha qoidalar</h3>';
+            html += '<div class="t3-grammar-grid">';
+            html += '<div class="t3-grammar-card"><h4>1. Predloglar</h4><ul>';
+            html += '<li><strong>\u0412</strong> \u2014 yopiq joy: \u0432 \u043a\u043e\u043c\u043d\u0430\u0442\u0435, \u0432 \u0433\u043e\u0440\u043e\u0434\u0435</li>';
+            html += '<li><strong>\u041d\u0410</strong> \u2014 ochiq joy: \u043d\u0430 \u0443\u043b\u0438\u0446\u0435, \u043d\u0430 \u0441\u0442\u043e\u043b\u0435</li>';
+            html += '<li><strong>\u0421</strong> \u2014 birga: \u0441 \u0434\u0440\u0443\u0433\u043e\u043c, \u0441 \u043c\u0430\u043c\u043e\u0439</li>';
+            html += '</ul></div>';
+            html += '<div class="t3-grammar-card"><h4>2. Joy va predmetlar</h4><ul>';
+            html += '<li>\u043a\u043e\u043c\u043d\u0430\u0442\u0430 \u2192 <strong>\u0432 \u043a\u043e\u043c\u043d\u0430\u0442\u0435</strong></li>';
+            html += '<li>\u0448\u043a\u043e\u043b\u0430 \u2192 <strong>\u0432 \u0448\u043a\u043e\u043b\u0435</strong></li>';
+            html += '<li>\u043f\u0430\u0440\u043a \u2192 <strong>\u0432 \u043f\u0430\u0440\u043a\u0435</strong></li>';
+            html += '<li>\u0443\u043b\u0438\u0446\u0430 \u2192 <strong>\u043d\u0430 \u0443\u043b\u0438\u0446\u0435</strong></li>';
+            html += '</ul></div>';
+            html += '<div class="t3-grammar-card"><h4>3. Buyumlar</h4><ul>';
+            html += '<li>\u0441\u0442\u043e\u043b \u2192 <strong>\u043d\u0430 \u0441\u0442\u043e\u043b\u0435</strong></li>';
+            html += '<li>\u0441\u0442\u0435\u043d\u0430 \u2192 <strong>\u043d\u0430 \u0441\u0442\u0435\u043d\u0435</strong></li>';
+            html += '<li>\u043e\u043a\u043d\u043e \u2192 <strong>\u043d\u0430 \u043e\u043a\u043d\u0435</strong></li>';
+            html += '<li>\u043f\u043e\u043b\u043a\u0430 \u2192 <strong>\u043d\u0430 \u043f\u043e\u043b\u043a\u0435</strong></li>';
+            html += '</ul></div>';
+            html += '<div class="t3-grammar-card"><h4>4. Jonli mavjudotlar</h4><ul>';
+            html += '<li>\u0434\u0440\u0443\u0433 \u2192 <strong>\u0441 \u0434\u0440\u0443\u0433\u043e\u043c</strong></li>';
+            html += '<li>\u043c\u0430\u043c\u0430 \u2192 <strong>\u0441 \u043c\u0430\u043c\u043e\u0439</strong></li>';
+            html += '<li>\u0431\u0440\u0430\u0442 \u2192 <strong>\u0441 \u0431\u0440\u0430\u0442\u043e\u043c</strong></li>';
+            html += '</ul></div>';
+            html += '<div class="t3-grammar-card"><h4>5. Misollar</h4><ul>';
+            html += '<li>\u042f \u0436\u0438\u0432\u0443 <strong>\u0432 \u0433\u043e\u0440\u043e\u0434\u0435</strong></li>';
+            html += '<li>\u0414\u0435\u0442\u0438 <strong>\u043d\u0430 \u0443\u043b\u0438\u0446\u0435</strong></li>';
+            html += '<li>\u041e\u043d \u043f\u0440\u0438\u0448\u0451\u043b <strong>\u0441 \u0434\u0440\u0443\u0433\u043e\u043c</strong></li>';
+            html += '</ul></div>';
+            html += '<div class="t3-grammar-card"><h4>6. \u0412 / \u041d\u0410 olmoshlar</h4><ul>';
+            html += '<li>\u0412: \u0434\u043e\u043c, \u043a\u043e\u043c\u043d\u0430\u0442\u0430, \u0448\u043a\u043e\u043b\u0430, \u043e\u0444\u0438\u0441</li>';
+            html += '<li>\u041d\u0430: \u0443\u043b\u0438\u0446\u0430, \u043f\u043b\u043e\u0449\u0430\u0434\u043a\u0430, \u0437\u0430\u0432\u043e\u0434</li>';
+            html += '</ul></div>';
+            html += '<div class="t3-grammar-card wide"><h4>7. \u0421 bilan shakllar</h4><ul>';
+            html += '<li>\u043c\u0443\u0436. \u2014 \u0441 \u0431\u0440\u0430\u0442<strong>\u043e\u043c</strong>, \u0441 \u0434\u0440\u0443\u0433<strong>\u043e\u043c</strong></li>';
+            html += '<li>\u0436\u0435\u043d. \u2014 \u0441 \u043c\u0430\u043c<strong>\u043e\u0439</strong>, \u0441 \u0441\u0435\u0441\u0442\u0440<strong>\u043e\u0439</strong></li>';
+            html += '<li>\u0441\u0440. \u2014 \u0441 \u043e\u043a\u043d<strong>\u043e\u043c</strong>, \u0441 \u043c\u043e\u043b\u043e\u043a<strong>\u043e\u043c</strong></li>';
+            html += '</ul></div>';
+            html += '</div></div>';
+
+            // Image row
+            html += '<div class="t3-image-row">';
+            html += '<img src="images/a2/\u0420\u0438\u0441\u0443\u043d\u043e\u043a5.png" alt="Uy">';
+            html += '<img src="images/a2/\u0420\u0438\u0441\u0443\u043d\u043e\u043a6.png" alt="Xona">';
+            html += '<img src="images/a2/\u0420\u0438\u0441\u0443\u043d\u043e\u043a7.png" alt="Oshxona">';
+            html += '<img src="images/a2/\u0420\u0438\u0441\u0443\u043d\u043e\u043a8.png" alt="Mebel">';
+            html += '</div>';
+
+            // Exercise 1 — Input (prepositional form)
+            html += '<div class="t3-exercise-block">';
+            html += '<div class="t3-exercise-title">' + ex.exercise1.title + '</div>';
+            html += '<div class="t3-exercise-instruction">' + ex.exercise1.instruction + '</div>';
+            ex.exercise1.items.forEach(function(item, i) {
+                html += '<div class="t3-fill-item">';
+                html += '<div class="t3-fill-sentence">' + (i + 1) + '. ' + item.text + '</div>';
+                html += '<input type="text" class="t3-fill-input" data-t3-fill="' + i + '">';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            // Exercise 2 — Chips 2 options
+            html += '<div class="t3-exercise-block">';
+            html += '<div class="t3-exercise-title">' + ex.exercise2.title + '</div>';
+            html += '<div class="t3-exercise-instruction">' + ex.exercise2.instruction + '</div>';
+            ex.exercise2.items.forEach(function(item, i) {
+                html += '<div class="t3-chip-item">';
+                html += '<div class="t3-chip-text">' + (i + 1) + '. ' + item.text + '</div>';
+                html += '<div class="t3-chip-options" data-t3-chip2="' + i + '">';
+                item.options.forEach(function(opt) {
+                    html += '<button class="t3-chip-opt" data-value="' + opt + '">' + opt + '</button>';
+                });
+                html += '</div></div>';
+            });
+            html += '</div>';
+
+            // Exercise 3 — Preposition chips (3 options)
+            html += '<div class="t3-exercise-block">';
+            html += '<div class="t3-exercise-title">' + ex.exercise3.title + '</div>';
+            html += '<div class="t3-exercise-instruction">' + ex.exercise3.instruction + '</div>';
+            ex.exercise3.items.forEach(function(item, i) {
+                html += '<div class="t3-chip-item">';
+                html += '<div class="t3-chip-text">' + (i + 1) + '. ' + item.text + '</div>';
+                html += '<div class="t3-chip-options" data-t3-chip3="' + i + '">';
+                item.options.forEach(function(opt) {
+                    html += '<button class="t3-chip-opt" data-value="' + opt + '">' + opt + '</button>';
+                });
+                html += '</div></div>';
+            });
+            html += '</div>';
+
+            // Exercise 4 — Word builder
+            html += '<div class="t3-exercise-block">';
+            html += '<div class="t3-exercise-title">' + ex.exercise4.title + '</div>';
+            html += '<div class="t3-exercise-instruction">' + ex.exercise4.instruction + '</div>';
+            ex.exercise4.items.forEach(function(item, i) {
+                html += '<div class="t3-builder-item">';
+                html += '<div class="t3-builder-target" data-t3-builder-target="' + i + '"></div>';
+                html += '<input type="hidden" data-t3-builder-selected="' + i + '" value="">';
+                html += '<div class="t3-builder-words" data-t3-builder-words="' + i + '">';
+                var shuffled = item.words.slice().sort(function() { return Math.random() - 0.5; });
+                shuffled.forEach(function(w) {
+                    html += '<button class="t3-word-chip" data-word="' + w + '">' + w + '</button>';
+                });
+                html += '</div>';
+                html += '<button class="t3-builder-reset" onclick="resetT3Builder(' + i + ')">\u21ba Tozalash</button>';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            // Exercise 5 — Fix mistake (clean text, no strikethrough)
+            html += '<div class="t3-exercise-block">';
+            html += '<div class="t3-exercise-title">' + ex.exercise5.title + '</div>';
+            html += '<div class="t3-exercise-instruction">' + ex.exercise5.instruction + '</div>';
+            ex.exercise5.items.forEach(function(item, i) {
+                html += '<div class="t3-fix-item">';
+                html += '<div class="t3-fix-wrong">' + (i + 1) + '. ' + item.wrong + '</div>';
+                html += '<input type="text" class="t3-fill-input" data-t3-fix="' + i + '">';
+                html += '</div>';
+            });
+            html += '</div>';
+
+            html += '</div>'; // close section
+
+            var quizSection = document.getElementById('quizSection');
+            if (quizSection) {
+                var existing = document.getElementById('topic3ExercisesSection');
+                if (existing) existing.remove();
+                quizSection.insertAdjacentHTML('afterend', html);
+            }
+
+            bindTopic3Events();
+        }
+
+        function bindTopic3Events() {
+            // Chip options (exercise 2 + 3)
+            document.querySelectorAll('[data-t3-chip2] .t3-chip-opt, [data-t3-chip3] .t3-chip-opt').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var container = this.closest('.t3-chip-options');
+                    container.querySelectorAll('.t3-chip-opt').forEach(function(b) { b.classList.remove('selected'); });
+                    this.classList.add('selected');
+                });
+            });
+
+            // Word builder chips
+            document.querySelectorAll('.t3-builder-words .t3-word-chip').forEach(function(chip) {
+                chip.addEventListener('click', function() {
+                    if (this.classList.contains('used')) return;
+                    var wordsContainer = this.closest('.t3-builder-words');
+                    var idx = wordsContainer.getAttribute('data-t3-builder-words');
+                    var target = document.querySelector('[data-t3-builder-target="' + idx + '"]');
+                    var word = this.getAttribute('data-word');
+
+                    this.classList.add('used');
+                    var token = document.createElement('span');
+                    token.className = 't3-token';
+                    token.textContent = word;
+                    token.setAttribute('data-word', word);
+                    token.addEventListener('click', function() {
+                        this.remove();
+                        var chips = wordsContainer.querySelectorAll('.t3-word-chip');
+                        for (var c = 0; c < chips.length; c++) {
+                            if (chips[c].getAttribute('data-word') === word && chips[c].classList.contains('used')) {
+                                chips[c].classList.remove('used');
+                                break;
+                            }
+                        }
+                        updateT3BuilderHidden(idx);
+                    });
+                    target.appendChild(token);
+                    updateT3BuilderHidden(idx);
+                });
+            });
+        }
+
+        function updateT3BuilderHidden(idx) {
+            var target = document.querySelector('[data-t3-builder-target="' + idx + '"]');
+            var hidden = document.querySelector('[data-t3-builder-selected="' + idx + '"]');
+            var tokens = target.querySelectorAll('.t3-token');
+            var words = [];
+            tokens.forEach(function(t) { words.push(t.textContent.trim()); });
+            hidden.value = words.join('|');
+        }
+
+        window.resetT3Builder = function(idx) {
+            var target = document.querySelector('[data-t3-builder-target="' + idx + '"]');
+            var wordsContainer = document.querySelector('[data-t3-builder-words="' + idx + '"]');
+            if (target) target.innerHTML = '';
+            if (wordsContainer) wordsContainer.querySelectorAll('.t3-word-chip').forEach(function(c) { c.classList.remove('used'); });
+            updateT3BuilderHidden(idx);
+        };
+
+        window.checkTopic3Exercises = function(topicId) {
+            var topic = courseData.topics.find(function(t) { return t.id === topicId; });
+            if (!topic || !topic.topic3Exercises) return;
+            var ex = topic.topic3Exercises;
+            var norm = function(s) { return s.toLowerCase().replace(/\u0451/g, '\u0435').replace(/\s+/g, ' ').trim(); };
+            var feedbackItems = [];
+
+            // Exercise 1: Input
+            ex.exercise1.items.forEach(function(item, i) {
+                var input = document.querySelector('[data-t3-fill="' + i + '"]');
+                if (!input) return;
+                input.classList.remove('correct', 'incorrect');
+                var uv = input.value.trim();
+                var ok = norm(uv) === norm(item.answer);
+                input.classList.add(ok ? 'correct' : (uv ? 'incorrect' : ''));
+                feedbackItems.push({ label: '1-mashq #' + (i+1), user: uv || '\u2014', correct: item.answer, ok: ok });
+            });
+
+            // Exercise 2: Chips (2 options)
+            ex.exercise2.items.forEach(function(item, i) {
+                var container = document.querySelector('[data-t3-chip2="' + i + '"]');
+                if (!container) return;
+                var sel = container.querySelector('.t3-chip-opt.selected');
+                var userVal = sel ? sel.getAttribute('data-value') : '';
+                container.querySelectorAll('.t3-chip-opt').forEach(function(b) {
+                    b.classList.remove('correct', 'incorrect');
+                    if (b.getAttribute('data-value') === item.answer) b.classList.add('correct');
+                    if (sel && b === sel && userVal !== item.answer) b.classList.add('incorrect');
+                });
+                feedbackItems.push({ label: '2-mashq #' + (i+1), user: userVal || '\u2014', correct: item.answer, ok: userVal === item.answer });
+            });
+
+            // Exercise 3: Preposition chips (3 options)
+            ex.exercise3.items.forEach(function(item, i) {
+                var container = document.querySelector('[data-t3-chip3="' + i + '"]');
+                if (!container) return;
+                var sel = container.querySelector('.t3-chip-opt.selected');
+                var userVal = sel ? sel.getAttribute('data-value') : '';
+                container.querySelectorAll('.t3-chip-opt').forEach(function(b) {
+                    b.classList.remove('correct', 'incorrect');
+                    if (b.getAttribute('data-value') === item.answer) b.classList.add('correct');
+                    if (sel && b === sel && userVal !== item.answer) b.classList.add('incorrect');
+                });
+                feedbackItems.push({ label: '3-mashq #' + (i+1), user: userVal || '\u2014', correct: item.answer, ok: userVal === item.answer });
+            });
+
+            // Exercise 4: Builder
+            ex.exercise4.items.forEach(function(item, i) {
+                var hidden = document.querySelector('[data-t3-builder-selected="' + i + '"]');
+                var target = document.querySelector('[data-t3-builder-target="' + i + '"]');
+                if (!hidden || !target) return;
+                var userVal = hidden.value.replace(/\|/g, ' ').trim();
+                var ok = norm(userVal) === norm(item.answer);
+                target.style.borderColor = ok ? '#4caf50' : (userVal ? '#f44336' : '#ccc');
+                target.style.borderStyle = 'solid';
+                feedbackItems.push({ label: '4-mashq #' + (i+1), user: userVal || '\u2014', correct: item.answer, ok: ok });
+            });
+
+            // Exercise 5: Fix mistake
+            ex.exercise5.items.forEach(function(item, i) {
+                var input = document.querySelector('[data-t3-fix="' + i + '"]');
+                if (!input) return;
+                input.classList.remove('correct', 'incorrect');
+                var uv = input.value.trim();
+                var ok = norm(uv) === norm(item.answer);
+                input.classList.add(ok ? 'correct' : (uv ? 'incorrect' : ''));
+                feedbackItems.push({ label: '5-mashq #' + (i+1), user: uv || '\u2014', correct: item.answer, ok: ok });
+            });
+
+            // Append to correctAnswers
+            var correctAnswersDiv = document.getElementById('correctAnswers');
+            if (correctAnswersDiv) {
+                feedbackItems.forEach(function(fi) {
+                    var answerItem = document.createElement('div');
+                    answerItem.className = 'answer-item ' + (fi.ok ? 'correct' : 'incorrect');
+                    var innerHtml = '<span class="answer-status">' + (fi.ok ? '\u2713' : '\u2717') + '</span>';
                     innerHtml += '<strong>' + fi.label + '</strong><br>';
                     if (!fi.ok) {
                         innerHtml += 'Sizning javobingiz: ' + fi.user + '<br>';
@@ -4945,12 +5577,54 @@
                 correctAnswers.appendChild(answerItem);
             });
 
+            // Topic 1: also check extra exercises
+            if (topicId === 1 && topic.topic1Exercises) {
+                var t1Result = window.checkTopic1Exercises(topicId);
+                if (t1Result) {
+                    score += t1Result.correct;
+                    var combinedTotal = totalQuestions + t1Result.total;
+                    var combinedPct = Math.round((score / combinedTotal) * 100);
+                    document.getElementById('scoreDisplay').textContent = `Sizning natijangiz: ${score}/${combinedTotal}`;
+                    if (combinedPct >= 90) {
+                        document.getElementById('resultsMessage').innerHTML = 'Ajoyib natija! Siz mavzuni mukammal o\'zlashtirdingiz.';
+                    } else if (combinedPct >= 70) {
+                        document.getElementById('resultsMessage').innerHTML = 'Yaxshi natija! Siz mavzuni yaxshi tushundingiz.';
+                    } else if (combinedPct >= 50) {
+                        document.getElementById('resultsMessage').innerHTML = 'Qoniqarli. Mavzuni takrorlab, testni qayta topshiring.';
+                    } else {
+                        document.getElementById('resultsMessage').innerHTML = 'Ko\'proq mashq qiling. Mavzuni diqqat bilan o\'qib chiqing.';
+                    }
+                    currentScore = score;
+                }
+            }
+
             // Topic 2: also check extra exercises
             if (topicId === 2 && topic.topic2Exercises) {
                 var t2Result = window.checkTopic2Exercises(topicId);
                 if (t2Result) {
                     score += t2Result.correct;
                     var combinedTotal = totalQuestions + t2Result.total;
+                    var combinedPct = Math.round((score / combinedTotal) * 100);
+                    document.getElementById('scoreDisplay').textContent = `Sizning natijangiz: ${score}/${combinedTotal}`;
+                    if (combinedPct >= 90) {
+                        document.getElementById('resultsMessage').innerHTML = 'Ajoyib natija! Siz mavzuni mukammal o\'zlashtirdingiz.';
+                    } else if (combinedPct >= 70) {
+                        document.getElementById('resultsMessage').innerHTML = 'Yaxshi natija! Siz mavzuni yaxshi tushundingiz.';
+                    } else if (combinedPct >= 50) {
+                        document.getElementById('resultsMessage').innerHTML = 'Qoniqarli. Mavzuni takrorlab, testni qayta topshiring.';
+                    } else {
+                        document.getElementById('resultsMessage').innerHTML = 'Ko\'proq mashq qiling. Mavzuni diqqat bilan o\'qib chiqing.';
+                    }
+                    currentScore = score;
+                }
+            }
+
+            // Topic 3: also check extra exercises
+            if (topicId === 3 && topic.topic3Exercises) {
+                var t3Result = window.checkTopic3Exercises(topicId);
+                if (t3Result) {
+                    score += t3Result.correct;
+                    var combinedTotal = totalQuestions + t3Result.total;
                     var combinedPct = Math.round((score / combinedTotal) * 100);
                     document.getElementById('scoreDisplay').textContent = `Sizning natijangiz: ${score}/${combinedTotal}`;
                     if (combinedPct >= 90) {
