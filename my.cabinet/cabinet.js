@@ -576,7 +576,24 @@ async function initDashboardPage() {
 
     const params = new URLSearchParams(window.location.search);
     const status = params.get('status');
+    const paymentParam = params.get('payment');
     const privilegedRole = isPrivilegedRole(profile);
+
+    if (paymentParam === 'success') {
+        showNotice(dashboardInfo, '\u2705 To\u2018lov muvaffaqiyatli! Obuna faollashtirilmoqda\u2026');
+        // Clean URL
+        history.replaceState(null, '', window.location.pathname);
+        // Re-check profile after short delay (webhook may take a moment)
+        setTimeout(async () => {
+            try {
+                const freshProfile = await getUserProfile(user.uid);
+                if (freshProfile && hasActiveSubscription(freshProfile)) {
+                    showNotice(dashboardInfo, '\u2705 Obuna faollashtirildi! Sahifa yangilanmoqda\u2026');
+                    setTimeout(() => location.reload(), 1500);
+                }
+            } catch { /* ignore */ }
+        }, 3000);
+    }
 
     if (status === 'blocked' && !privilegedRole) {
         showNotice(dashboardError, 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.');
@@ -645,6 +662,47 @@ async function initDashboardPage() {
 
     packGrid.innerHTML = '';
     cards.forEach((card) => packGrid.appendChild(createPackCard(card)));
+
+    /* show Premium button if no active subscription */
+    if (!activeSubscription && !privilegedRole) {
+        const premiumBox = document.createElement('div');
+        premiumBox.className = 'premium-cta-box';
+        premiumBox.innerHTML =
+            '<div class="premium-cta-inner">'
+          +   '<h3>\uD83D\uDE80 Premium obunaga o\u2018ting</h3>'
+          +   '<p>Cheksiz talaffuz tekshiruvi, professional ovozlar, XP tizimi</p>'
+          +   '<div class="premium-cta-price"><span class="premium-cta-old">199 000</span> <span class="premium-cta-new">99 000 so\u2018m/oy</span></div>'
+          +   '<button class="btn btn-premium" id="premiumCheckoutBtn">\u2B50 Premium olish</button>'
+          + '</div>';
+        packGrid.parentNode.insertBefore(premiumBox, packGrid);
+
+        const checkoutBtn = document.getElementById('premiumCheckoutBtn');
+        if (checkoutBtn) {
+            checkoutBtn.addEventListener('click', async () => {
+                checkoutBtn.disabled = true;
+                checkoutBtn.textContent = 'Yuklanmoqda\u2026';
+                try {
+                    const token = await user.getIdToken();
+                    const resp = await fetch('/api/checkout', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    });
+                    const data = await resp.json();
+                    if (data.ok && data.paymentUrl) {
+                        window.location.href = data.paymentUrl;
+                    } else {
+                        showNotice(dashboardError, data.error || 'To\u2018lov sessiyasini yaratishda xatolik.');
+                        checkoutBtn.disabled = false;
+                        checkoutBtn.textContent = '\u2B50 Premium olish';
+                    }
+                } catch (err) {
+                    showNotice(dashboardError, 'Tarmoq xatoligi. Qayta urinib ko\u2018ring.');
+                    checkoutBtn.disabled = false;
+                    checkoutBtn.textContent = '\u2B50 Premium olish';
+                }
+            });
+        }
+    }
 
     saveLocalUser(user, profile);
 

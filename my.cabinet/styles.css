@@ -286,3 +286,74 @@ select:focus {
         width: 100%;
     }
 }
+
+/* ---- Premium CTA box ---- */
+.premium-cta-box {
+    margin: 16px 0;
+}
+
+.premium-cta-inner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 28px 24px;
+    text-align: center;
+    color: #fff;
+}
+
+.premium-cta-inner h3 {
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin: 0 0 8px;
+}
+
+.premium-cta-inner p {
+    font-size: .88rem;
+    opacity: .9;
+    margin: 0 0 14px;
+    line-height: 1.4;
+}
+
+.premium-cta-price {
+    margin-bottom: 18px;
+    font-size: .95rem;
+}
+
+.premium-cta-old {
+    text-decoration: line-through;
+    opacity: .6;
+    margin-right: 6px;
+}
+
+.premium-cta-new {
+    font-weight: 900;
+    font-size: 1.2rem;
+}
+
+.btn-premium {
+    display: inline-block;
+    padding: 14px 36px;
+    border: none;
+    border-radius: 14px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #667eea;
+    background: #fff;
+    box-shadow: 0 4px 0 rgba(0,0,0,.15);
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+}
+
+.btn-premium:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 0 rgba(0,0,0,.15);
+}
+
+.btn-premium:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(0,0,0,.15);
+}
+
+.btn-premium:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+}

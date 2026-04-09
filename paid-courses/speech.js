@@ -981,9 +981,28 @@ function _closePaywall() {
 }
 
 function _goToPremium() {
-    _closePaywall();
-    /* navigate to cabinet / subscription page */
-    window.location.href = '/my.cabinet/dashboard.html';
+    var btn = document.querySelector('.pw-btn-primary');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Yuklanmoqda\u2026';
+    }
+
+    var headers = _getAuthHeaders();
+    headers['Content-Type'] = 'application/json';
+
+    fetch('/api/checkout', { method: 'POST', headers: headers })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.ok && data.paymentUrl) {
+                window.location.href = data.paymentUrl;
+            } else {
+                /* not logged in or error — fall back to dashboard */
+                window.location.href = '/my.cabinet/dashboard.html';
+            }
+        })
+        .catch(function () {
+            window.location.href = '/my.cabinet/dashboard.html';
+        });
 }
 
 /* ================================================================== */
