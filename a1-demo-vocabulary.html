@@ -877,6 +877,8 @@
             }
         }
     </style>
+    <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+    <script src="paid-courses/speech.js"></script>
 </head>
 
 <body>
@@ -1364,26 +1366,13 @@
             }
         }
 
-        // ==================== AUDIO PLAYBACK ====================
-        function playAudio(event) {
-            event.stopPropagation();
+        // ==================== AUDIO (see speech.js) ====================
+        window.getCurrentWord = function () {
             const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
-            if (topic && topic.words[currentWordIndex]) {
-                const word = topic.words[currentWordIndex].uz;
-                // TODO: Integrate with Azure TTS
-                alert(`🔊 Ovoz: "${word}"\n\nAzure Speech API tez orada qo'shiladi.`);
-            }
-        }
-
-        // ==================== PRONUNCIATION CHECK ====================
-        function checkPronunciation(event) {
-            event.stopPropagation();
-            const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
-            if (topic && topic.words[currentWordIndex]) {
-                const word = topic.words[currentWordIndex].uz;
-                alert(`🎤 Talaffuzni tekshirish\n\nSo'z: "${word}"\n\nMikrofonga aytib, tekshiring.\n\n⚙️ Azure Pronunciation Assessment API integratsiya qilinadi:\n• Aniqlik: 0-100\n• Har bir tovushni baholash\n• Real-time feedback\n\n💰 Narx: $1/1000 tekshiruv`);
-            }
-        }
+            if (!topic) return null;
+            var w = topic.words[currentWordIndex];
+            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId } : null;
+        };
 
         // ==================== COMPLETION ====================
         function showCompletion() {

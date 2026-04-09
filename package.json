@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "ensure:developer": "node scripts/ensure-developer.js"
+    "ensure:developer": "node scripts/ensure-developer.js",
+    "generate:audio": "node scripts/generate-audio.js"
   },
   "engines": {
     "node": "20.x"

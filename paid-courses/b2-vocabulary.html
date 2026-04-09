@@ -717,6 +717,8 @@
             }
         }
     </style>
+    <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+    <script src="speech.js"></script>
 </head>
 
 <body>
@@ -1203,18 +1205,11 @@
             }
         }
 
-        function playAudio(event) {
-            event.stopPropagation();
-            const word = currentWords[currentCardIndex];
-            const utterance = new SpeechSynthesisUtterance(word.ru);
-            utterance.lang = 'ru-RU';
-            speechSynthesis.speak(utterance);
-        }
-
-        function checkPronunciation(event) {
-            event.stopPropagation();
-            alert('Talaffuz tekshirish funksiyasi tez orada!');
-        }
+        // ==================== AUDIO (see speech.js) ====================
+        window.getCurrentWord = function () {
+            var w = currentWords[currentCardIndex];
+            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId } : null;
+        };
 
         function closeFlashcards() {
             saveProgress();
