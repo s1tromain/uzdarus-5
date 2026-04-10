@@ -354,21 +354,31 @@ function checkPronunciation(event) {
 }
 
 async function _runPronunciationAssessment(referenceText) {
+    /* ---- 1. Explicit microphone permission request ---- */
+    let micStream;
+    try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+        alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
+        throw new Error('microphone permission denied');
+    }
+    /* Release our stream — the SDK will open its own */
+    micStream.getTracks().forEach(t => t.stop());
+
+    /* ---- 2. Speech token ---- */
     const { token, region } = await _getSpeechToken();
 
     const SpeechSDK = window.SpeechSDK;
     if (!SpeechSDK) throw new Error('Speech SDK not loaded');
 
+    /* ---- 3. Config ---- */
     const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
     speechConfig.speechRecognitionLanguage = 'ru-RU';
 
-    let audioConfig;
-    try {
-        audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-    } catch {
-        throw new Error('microphone not available');
-    }
+    /* ---- 4. Audio — always from default mic, NOT custom stream ---- */
+    const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
 
+    /* ---- 5. Pronunciation assessment config ---- */
     const pronConfig = new SpeechSDK.PronunciationAssessmentConfig(
         referenceText,
         SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
@@ -376,14 +386,16 @@ async function _runPronunciationAssessment(referenceText) {
         true
     );
 
+    /* ---- 6. Recognizer (recognizeOnceAsync only, NOT continuous) ---- */
     const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
     pronConfig.applyTo(recognizer);
 
     _showPronListening();
 
+    /* ---- 7. Promise with timeout guard ---- */
     return new Promise((resolve, reject) => {
         let settled = false;
-        const TIMEOUT_MS = 5000;
+        const TIMEOUT_MS = 10000;
 
         function finish(fn) {
             if (settled) return;
