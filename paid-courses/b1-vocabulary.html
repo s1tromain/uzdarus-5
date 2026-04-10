@@ -915,6 +915,9 @@
             <button class="close-flashcard" onclick="closeFlashcards()">
                 <i class="fas fa-times"></i> Yopish
             </button>
+            <div class="speech-progress-bar" id="speechProgressBar">
+                <div class="speech-progress-fill" id="speechProgressFill"></div>
+            </div>
             <div class="progress-indicator" id="progressIndicator">1 / 35</div>
         </div>
         <div class="flashcard-container">
@@ -929,6 +932,12 @@
                 </div>
             </div>
             <p class="hint-text">💡 Kartochkani bosing va tarjimani ko'ring</p>
+            <div style="text-align:center;margin-bottom:8px">
+                <select id="voiceSelect" style="padding:6px 14px;border-radius:10px;border:2px solid #e0e0e0;font-size:.85rem;font-weight:600;background:#fff;cursor:pointer">
+                    <option value="male">👨 Мужской</option>
+                    <option value="female">👩 Женский</option>
+                </select>
+            </div>
             <div class="audio-controls">
                 <button class="audio-button" onclick="playAudio(event)">
                     <i class="fas fa-volume-up"></i> Tinglash
@@ -1439,6 +1448,12 @@
             
             document.getElementById('topicSelection').classList.add('hidden');
             document.getElementById('flashcardScreen').classList.add('active');
+
+            /* init word progress tracking */
+            var topic = vocabularyData.topics.find(function(t) { return t.id === topicId; });
+            if (topic && typeof initWordProgress === 'function') {
+                initWordProgress(topicId, topic.words.length);
+            }
             
             loadCard();
         }
@@ -1458,6 +1473,9 @@
             document.getElementById('wordUzbek').textContent = word.uz;
             document.getElementById('progressIndicator').textContent = 
                 `${currentWordIndex + 1} / ${topic.words.length}`;
+
+            /* update progress bar */
+            if (typeof updateProgressBar === 'function') updateProgressBar(currentWordIndex, topic.words.length);
             
             // Reset flip
             const flashcard = document.getElementById('flashcard');
@@ -1477,7 +1495,14 @@
             const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
             if (!topic) return;
 
-            currentWordIndex++;
+            var nextIdx = currentWordIndex + 1;
+
+            /* enforce locked-word check: can't skip ahead */
+            if (typeof _isWordLocked === 'function' && _isWordLocked(currentTopicId, nextIdx)) {
+                return; /* word is locked, stay on current */
+            }
+
+            currentWordIndex = nextIdx;
             
             if (currentWordIndex >= topic.words.length) {
                 showCompletion();

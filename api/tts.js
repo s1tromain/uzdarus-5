@@ -65,6 +65,7 @@ export default async function handler(req, res) {
     }
 
     const text = typeof body.text === 'string' ? body.text.trim() : '';
+    const voice = body.voice === 'female' ? 'female' : 'male';
 
     if (!text) {
         return sendJson(res, 400, { error: 'Missing "text" field' });
@@ -77,8 +78,9 @@ export default async function handler(req, res) {
     /* ---- daily usage limit (user-based or IP fallback) ---- */
     if (await dailyLimit(req, res)) return;
 
-    /* ---- cache hit ---- */
-    const cached = getCached(text);
+    /* ---- cache hit (keyed by text + voice) ---- */
+    const cacheKey = `${voice}:${text}`;
+    const cached = getCached(cacheKey);
     if (cached) {
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('X-TTS-Cache', 'HIT');
@@ -86,9 +88,13 @@ export default async function handler(req, res) {
     }
 
     /* ---- call Azure Speech REST API ---- */
+    const voiceName = voice === 'female'
+        ? 'ru-RU-SvetlanaNeural'
+        : 'ru-RU-DmitryNeural';
+
     const ssml = [
         '<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="ru-RU">',
-        '  <voice name="ru-RU-DmitryNeural">',
+        `  <voice name="${voiceName}">`,
         `    ${escapeXml(text)}`,
         '  </voice>',
         '</speak>',
@@ -102,7 +108,7 @@ export default async function handler(req, res) {
             headers: {
                 'Ocp-Apim-Subscription-Key': speechKey,
                 'Content-Type': 'application/ssml+xml',
-                'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+                'X-Microsoft-OutputFormat': 'audio-24khz-160kbitrate-mono-mp3',
                 'User-Agent': 'UzdaRusTTS',
             },
             body: ssml,
@@ -118,7 +124,7 @@ export default async function handler(req, res) {
         const buffer = Buffer.from(arrayBuf);
 
         /* store in cache */
-        cache.set(text, { buffer, timestamp: Date.now() });
+        cache.set(cacheKey, { buffer, timestamp: Date.now() });
         pruneCache();
 
         res.setHeader('Content-Type', 'audio/mpeg');

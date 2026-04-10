@@ -6,7 +6,7 @@
  *
  * Dependencies:
  *   - Azure Speech SDK loaded via <script src="https://aka.ms/csspeech/jsbrowserpackageraw">
- *   - /api/tts   (POST { text } → audio/mpeg)
+ *   - /api/tts   (POST { text, voice } → audio/mpeg)
  *   - /api/speech-token (GET → { token, region })
  */
 
@@ -19,8 +19,6 @@ function _getAuthHeaders() {
         const fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
         const user = fbAuth && fbAuth.currentUser;
         if (user) {
-            // getIdToken is async; we cache synchronously from the last refresh
-            // and also kick off a fresh fetch for next call
             if (window._uzdaIdToken) {
                 headers['Authorization'] = `Bearer ${window._uzdaIdToken}`;
             }
@@ -36,7 +34,6 @@ async function _refreshAuthToken() {
         const user = fbAuth && fbAuth.currentUser;
         if (user) {
             window._uzdaIdToken = await user.getIdToken();
-            // auto-refresh every 50 min (tokens last 60 min)
             setTimeout(_refreshAuthToken, 50 * 60 * 1000);
         }
     } catch { /* ignore */ }
@@ -51,10 +48,76 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 }
 
 /* ================================================================== */
+/*  Global recording guard (anti-spam)                                */
+/* ================================================================== */
+let _isRecording = false;
+
+/* ================================================================== */
+/*  Voice selector helper                                             */
+/* ================================================================== */
+function _getVoice() {
+    return localStorage.getItem('tts_voice') || 'male';
+}
+
+/** Initialise voiceSelect dropdown if present on page */
+function _initVoiceSelector() {
+    var sel = document.getElementById('voiceSelect');
+    if (!sel) return;
+    sel.value = _getVoice();
+    sel.addEventListener('change', function () {
+        localStorage.setItem('tts_voice', sel.value);
+        /* clear TTS cache so new voice takes effect immediately */
+        _ttsCache.clear();
+    });
+}
+
+/* ================================================================== */
+/*  Status indicator (UX states)                                      */
+/* ================================================================== */
+function showStatus(text) {
+    var el = document.getElementById('speechStatus');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'speechStatus';
+        el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9600;padding:10px 22px;border-radius:16px;font-size:.9rem;font-weight:700;color:#fff;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none;transition:opacity .3s;font-family:system-ui,-apple-system,sans-serif';
+        document.body.appendChild(el);
+    }
+    if (!text) {
+        el.style.opacity = '0';
+        return;
+    }
+    el.textContent = text;
+    el.style.opacity = '1';
+}
+
+/* ================================================================== */
+/*  Sound effects (fire-and-forget, safe if autoplay blocked)         */
+/* ================================================================== */
+function _playSound(src) {
+    try {
+        var a = new Audio(src);
+        a.volume = 0.5;
+        a.play().catch(function () { /* autoplay blocked — ignore */ });
+    } catch { /* Audio constructor unavailable — ignore */ }
+}
+
+function _playSoundSuccess() { _playSound('/sounds/success.mp3'); }
+function _playSoundError()   { _playSound('/sounds/error.mp3'); }
+
+/* ================================================================== */
+/*  Haptic feedback (vibrate API, safe no-op on unsupported)          */
+/* ================================================================== */
+function _haptic(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 30); } catch {}
+}
+function _hapticSuccess() { _haptic(40); }
+function _hapticError()   { _haptic([30, 50, 30]); }
+
+/* ================================================================== */
 /*  TTS playback                                                      */
 /* ================================================================== */
 const _ttsCache = new Map();
-const _localAudioChecked = new Map();    // text → true|false (HEAD result)
+const _localAudioChecked = new Map();
 
 function playAudio(event) {
     event.stopPropagation();
@@ -135,7 +198,7 @@ async function _playTTS(text, topicId) {
             const res = await fetch('/api/tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ..._getAuthHeaders() },
-                body: JSON.stringify({ text }),
+                body: JSON.stringify({ text, voice: localStorage.getItem('tts_voice') || 'male' }),
             });
 
             if (res.status === 403) {
@@ -183,34 +246,109 @@ async function _getSpeechToken() {
 
 function checkPronunciation(event) {
     event.stopPropagation();
-    if (_pronBusy) return;
+    if (_isRecording || _pronBusy) return;
 
     const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
     if (!word || !word.ru) return;
 
+    var topicId = word.topicId != null ? word.topicId : null;
+    var wordIdx = _getWordIndex(word);
+
+    /* check if word is locked */
+    if (topicId != null && wordIdx >= 0 && _isWordLocked(topicId, wordIdx)) return;
+
     const btn = event.currentTarget;
     btn.disabled = true;
     btn.classList.add('loading');
+    _isRecording = true;
     _pronBusy = true;
+
+    showStatus('\uD83C\uDFA4 Gapiring...');
 
     _runPronunciationAssessment(word.ru)
         .then(result => {
-            _showPronResult(word.ru, result);
+            showStatus('\u23F3 Tekshirilmoqda...');
+
+            /* ---- validation: reject bad/empty results ---- */
+            if (!result || result.accuracyScore < 40) {
+                showStatus('\u274C Qayta urinib ko\'ring');
+                _animateFlashcardError();
+                _playSoundError();
+                _hapticError();
+                setTimeout(function () { showStatus(''); }, 2000);
+                var msg = result
+                    ? 'Talaffuz aniqlanmadi (ball: ' + result.accuracyScore + '). Qayta urinib ko\'ring.'
+                    : 'Natija olinmadi.';
+                alert(msg);
+                return;
+            }
+
             _logPronunciation(word.ru, result);
+
+            /* ---- retry if score < 80: do NOT unlock next word ---- */
+            if (result.pronunciationScore < 80) {
+                showStatus('\u274C Qayta urinib ko\'ring');
+                _animateFlashcardError();
+                _playSoundError();
+                _hapticError();
+                setTimeout(function () { showStatus(''); }, 2000);
+                _showPronResult(word.ru, result);
+                return;
+            }
+
+            /* ---- success: score >= 80 ---- */
+            showStatus('\uD83D\uDD25 Zo\'r!');
+            _animateFlashcardSuccess();
+            _playSoundSuccess();
+            _hapticSuccess();
+            setTimeout(function () { showStatus(''); }, 2000);
+            _showPronResult(word.ru, result);
+
+            /* ---- word progress: complete + unlock next + auto-advance ---- */
+            if (topicId != null && wordIdx >= 0) {
+                _completeWord(topicId, wordIdx);
+
+                /* check if entire lesson is done */
+                if (_isLessonComplete(topicId)) {
+                    setTimeout(function () {
+                        _showLessonCompleteOverlay();
+                    }, 1200);
+                    return; /* don't auto-advance, lesson overlay handles it */
+                }
+
+                /* auto-advance to next word after a short delay */
+                setTimeout(function () {
+                    if (typeof window.nextCard === 'function') {
+                        window.nextCard();
+                    } else if (typeof window.currentWordIndex === 'number') {
+                        window.currentWordIndex++;
+                        if (typeof window.loadCard === 'function') window.loadCard();
+                    } else if (typeof window.currentCardIndex === 'number') {
+                        window.currentCardIndex++;
+                        if (typeof window.updateCard === 'function') window.updateCard();
+                    }
+                }, 1200);
+            }
         })
         .catch(err => {
+            showStatus('\u274C Qayta urinib ko\'ring');
+            _animateFlashcardError();
+            _playSoundError();
+            _hapticError();
+            setTimeout(function () { showStatus(''); }, 2000);
             console.error('Pronunciation error:', err);
             if (err.limitExceeded) {
                 _showPaywall();
             } else if (err.message && err.message.includes('microphone')) {
                 alert('Mikrofonga ruxsat berilmadi. Brauzer sozlamalarini tekshiring.');
             } else {
-                alert('Talaffuzni tekshirishda xatolik. Qayta urinib ko\'ring.');
+                alert(err.message || 'Talaffuzni tekshirishda xatolik. Qayta urinib ko\'ring.');
             }
         })
         .finally(() => {
             btn.disabled = false;
             btn.classList.remove('loading');
+            _isRecording = false;
             _pronBusy = false;
         });
 }
@@ -244,11 +382,35 @@ async function _runPronunciationAssessment(referenceText) {
     _showPronListening();
 
     return new Promise((resolve, reject) => {
+        let settled = false;
+        const TIMEOUT_MS = 5000;
+
+        function finish(fn) {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            try { recognizer.close(); } catch { /* ignore */ }
+            fn();
+        }
+
+        const timer = setTimeout(() => {
+            finish(() => reject(new Error('Vaqt tugadi. Qayta urinib ko\'ring.')));
+        }, TIMEOUT_MS);
+
         recognizer.recognizeOnceAsync(
             result => {
-                recognizer.close();
+                if (!result) {
+                    return finish(() => reject(new Error('Natija olinmadi.')));
+                }
 
-                if (result.reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                const reason = result.reason;
+
+                if (reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                    const text = (result.text || '').trim();
+                    if (!text || text.length < 2) {
+                        return finish(() => reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.')));
+                    }
+
                     const pronResult = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
                     const nb = pronResult.detailResult;
 
@@ -258,22 +420,328 @@ async function _runPronunciationAssessment(referenceText) {
                         error: w.PronunciationAssessment?.ErrorType || 'None',
                     }));
 
-                    resolve({
+                    finish(() => resolve({
                         accuracyScore:      Math.round(pronResult.accuracyScore),
                         fluencyScore:       Math.round(pronResult.fluencyScore),
                         completenessScore:  Math.round(pronResult.completenessScore),
                         pronunciationScore: Math.round(pronResult.pronunciationScore),
                         words,
-                    });
-                } else if (result.reason === SpeechSDK.ResultReason.NoMatch) {
-                    reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.'));
+                    }));
+                } else if (reason === SpeechSDK.ResultReason.NoMatch) {
+                    finish(() => reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.')));
+                } else if (reason === SpeechSDK.ResultReason.Canceled) {
+                    const cancellation = SpeechSDK.CancellationDetails.fromResult(result);
+                    const msg = cancellation.reason === SpeechSDK.CancellationReason.Error
+                        ? (cancellation.errorDetails || 'Recognition cancelled')
+                        : 'Recognition cancelled';
+                    console.error('Pronunciation canceled:', msg);
+                    finish(() => reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.')));
                 } else {
-                    reject(new Error(result.errorDetails || 'Recognition failed'));
+                    finish(() => reject(new Error(result.errorDetails || 'Recognition failed')));
                 }
             },
-            err => { recognizer.close(); reject(err); }
+            err => {
+                finish(() => reject(err));
+            }
         );
     });
+}
+
+/* ================================================================== */
+/*  Word Progress System (localStorage)                               */
+/* ================================================================== */
+const _PROGRESS_KEY = 'uzdarus_word_progress';
+
+function _loadProgress() {
+    try {
+        var raw = localStorage.getItem(_PROGRESS_KEY);
+        if (raw) return JSON.parse(raw);
+    } catch { /* corrupted */ }
+    return {};
+}
+
+function _saveProgress(progress) {
+    try { localStorage.setItem(_PROGRESS_KEY, JSON.stringify(progress)); } catch {}
+}
+
+/**
+ * Get the progress array for a lesson/topic.
+ * Creates it on first access with word 0 unlocked (true), rest locked (false).
+ */
+function _getTopicProgress(topicId, wordCount) {
+    if (!topicId || !wordCount || wordCount < 1) return [];
+    var progress = _loadProgress();
+    var key = String(topicId);
+    if (!progress[key] || progress[key].length !== wordCount) {
+        var arr = new Array(wordCount).fill(false);
+        arr[0] = true; // first word always unlocked
+        progress[key] = arr;
+        _saveProgress(progress);
+    }
+    return progress[key];
+}
+
+/**
+ * Mark word at index as completed and unlock the next one.
+ * Always calls _applyWordProgressUI to update the DOM.
+ */
+function _completeWord(topicId, wordIndex) {
+    if (!topicId) return;
+    var progress = _loadProgress();
+    var key = String(topicId);
+    if (!progress[key]) return;
+    if (wordIndex < 0 || wordIndex >= progress[key].length) return;
+    progress[key][wordIndex] = true;
+    /* unlock the next word if it exists */
+    if (wordIndex + 1 < progress[key].length) {
+        progress[key][wordIndex + 1] = true;
+    }
+    _saveProgress(progress);
+    _applyWordProgressUI(topicId);
+}
+
+/**
+ * Check if a word is locked.
+ * A word is accessible (unlocked) only if progress[index] === true.
+ * Word 0 is always unlocked.
+ */
+function _isWordLocked(topicId, wordIndex) {
+    if (wordIndex <= 0) return false;
+    var progress = _loadProgress();
+    var key = String(topicId);
+    if (!progress[key]) return false; // no progress tracking active
+    if (wordIndex >= progress[key].length) return true; // out of bounds = locked
+    return !progress[key][wordIndex];
+}
+
+/** Try to get the word index from getCurrentWord context. */
+function _getWordIndex(word) {
+    if (typeof window._currentWordIndex === 'number') return window._currentWordIndex;
+    if (typeof window.currentWordIndex === 'number') return window.currentWordIndex;
+    if (typeof window.currentCardIndex === 'number') return window.currentCardIndex;
+    return -1;
+}
+
+/**
+ * Initialise progress tracking for a topic.
+ * Called by the page when a topic is opened.
+ *
+ * If topicId is missing, wordCount is 0, or array length doesn't match:
+ *   → recreates the array (word 0 = true, rest = false).
+ */
+function initWordProgress(topicId, wordCount) {
+    if (!topicId || !wordCount || wordCount < 1) return;
+    var progress = _loadProgress();
+    var key = String(topicId);
+    if (!progress[key] || progress[key].length !== wordCount) {
+        var arr = new Array(wordCount).fill(false);
+        arr[0] = true;
+        progress[key] = arr;
+        _saveProgress(progress);
+    }
+    _applyWordProgressUI(topicId);
+}
+
+/**
+ * Apply visual states to word items on the page.
+ * Looks for elements with [data-word-index] inside #flashcardScreen or .words-list.
+ */
+function _applyWordProgressUI(topicId) {
+    if (!topicId) return;
+    var progress = _loadProgress();
+    var key = String(topicId);
+    var arr = progress[key];
+    if (!arr) return;
+
+    /* Active word = the last true index in the array (the frontier).
+       _completeWord sets [i]=true AND [i+1]=true, so the frontier
+       is always the highest index that is true. Everything before it
+       is completed; everything after it is locked. */
+    var activeIdx = -1;
+    for (var ai = arr.length - 1; ai >= 0; ai--) {
+        if (arr[ai]) { activeIdx = ai; break; }
+    }
+
+    /* Apply to any word cards/items on page */
+    var items = document.querySelectorAll('[data-word-index]');
+    items.forEach(function (el) {
+        var idx = parseInt(el.getAttribute('data-word-index'), 10);
+        if (isNaN(idx) || idx < 0 || idx >= arr.length) return;
+
+        el.classList.remove('word-locked', 'word-active', 'word-completed');
+
+        if (!arr[idx]) {
+            /* locked */
+            el.classList.add('word-locked');
+        } else if (idx === activeIdx) {
+            /* current active word */
+            el.classList.add('word-active');
+        } else {
+            /* completed (unlocked but not the active frontier) */
+            el.classList.add('word-completed');
+        }
+    });
+
+    /* Also update audio/pronunciation buttons for the current card */
+    _updateCardButtonStates(topicId);
+}
+
+/** Disable audio buttons if current word is locked. */
+function _updateCardButtonStates(topicId) {
+    var word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
+    if (!word) return;
+    var idx = _getWordIndex(word);
+    if (idx < 0) return;
+    var locked = _isWordLocked(topicId, idx);
+    var btns = document.querySelectorAll('.audio-button');
+    btns.forEach(function (btn) {
+        if (locked) {
+            btn.disabled = true;
+            btn.style.opacity = '0.3';
+        } else {
+            btn.disabled = false;
+            btn.style.opacity = '';
+        }
+    });
+}
+
+/** Get the index of the first non-completed word (the current active one). */
+function getNextActiveWordIndex(topicId, wordCount) {
+    var progress = _getTopicProgress(topicId, wordCount);
+    for (var i = 0; i < progress.length; i++) {
+        if (!progress[i]) return i;
+    }
+    return progress.length; // all done
+}
+
+/** Check if a specific word is completed. */
+function isWordCompleted(topicId, wordIndex) {
+    var progress = _loadProgress();
+    var key = String(topicId);
+    if (!progress[key]) return false;
+    return !!progress[key][wordIndex];
+}
+
+/* ================================================================== */
+/*  Flashcard Animations (success / error)                            */
+/* ================================================================== */
+
+/** Green glow + scale bounce on the flashcard */
+function _animateFlashcardSuccess() {
+    var fc = document.querySelector('.flashcard');
+    if (!fc) return;
+    fc.classList.remove('flashcard-error');
+    fc.classList.add('flashcard-success');
+    setTimeout(function () { fc.classList.remove('flashcard-success'); }, 800);
+}
+
+/** Red border + shake on the flashcard */
+function _animateFlashcardError() {
+    var fc = document.querySelector('.flashcard');
+    if (!fc) return;
+    fc.classList.remove('flashcard-success');
+    fc.classList.add('flashcard-error');
+    setTimeout(function () { fc.classList.remove('flashcard-error'); }, 600);
+}
+
+/* ================================================================== */
+/*  Progress Bar                                                      */
+/* ================================================================== */
+
+/**
+ * Update the speech progress bar.
+ * Called by vocabulary pages on each card transition.
+ * @param {number} current — 0-based current word index
+ * @param {number} total   — total word count
+ */
+function updateProgressBar(current, total) {
+    var fill = document.getElementById('speechProgressFill');
+    if (!fill) return;
+    var pct = total > 0 ? Math.round(((current + 1) / total) * 100) : 0;
+    fill.style.width = Math.min(pct, 100) + '%';
+}
+
+/* ================================================================== */
+/*  Lesson Complete Check                                             */
+/* ================================================================== */
+
+/** Returns true if every word in the topic is completed. */
+function _isLessonComplete(topicId) {
+    var progress = _loadProgress();
+    var key = String(topicId);
+    var arr = progress[key];
+    if (!arr || arr.length === 0) return false;
+    for (var i = 0; i < arr.length; i++) {
+        if (!arr[i]) return false;
+    }
+    return true;
+}
+
+/**
+ * Show the lesson-complete overlay with bonus XP.
+ * Falls back to the page's own showCompletion if available.
+ */
+function _showLessonCompleteOverlay() {
+    _playSoundSuccess();
+    _hapticSuccess();
+
+    var xpResult = _awardXP(95); // bonus for completing whole lesson
+    _updateStreakBadge();
+
+    if (xpResult.xpGained > 0) {
+        _showXpToast(xpResult.xpGained);
+    }
+    if (xpResult.leveledUp) {
+        setTimeout(function () { _showLevelUpPopup(xpResult.level); }, 1000);
+    }
+
+    _injectWordProgressCSS(); // ensure CSS is loaded
+
+    var ov = document.getElementById('lessonCompleteOverlay');
+    if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'lessonCompleteOverlay';
+        ov.className = 'lc-overlay';
+        ov.addEventListener('click', function (e) {
+            if (e.target === ov) _closeLessonComplete();
+        });
+        document.body.appendChild(ov);
+    }
+
+    var streak = _getStreak();
+
+    var xpLine = xpResult.xpGained > 0
+        ? '<div class="lc-xp">+' + xpResult.xpGained + ' XP \u{1F525}</div>'
+        : '';
+
+    var streakLine = streak > 0
+        ? '<div class="lc-streak">\uD83D\uDD25 ' + streak + ' kun ketma-ket!</div>'
+        : '';
+
+    ov.innerHTML =
+        '<div class="lc-card">'
+      +   '<div class="lc-emoji">\uD83C\uDF89</div>'
+      +   '<div class="lc-title">Dars tugadi!</div>'
+      +   '<div class="lc-subtitle">Barcha so\u2018zlarni muvaffaqiyatli o\u2018rgandingiz</div>'
+      +   xpLine
+      +   streakLine
+      +   '<div class="lc-encourage">\uD83D\uDD25 Zo\u2018r! Ertaga yana qayting!</div>'
+      +   '<button class="lc-btn" onclick="_closeLessonComplete()">Davom etish \u2192</button>'
+      + '</div>';
+
+    ov.classList.add('active');
+}
+
+function _closeLessonComplete() {
+    var el = document.getElementById('lessonCompleteOverlay');
+    if (el) el.classList.remove('active');
+
+    /* Trigger the page's own completion flow */
+    if (typeof window.showCompletion === 'function') {
+        window.showCompletion();
+    } else if (typeof window.showCompletionScreen === 'function') {
+        window.showCompletionScreen();
+    }
 }
 
 /* ================================================================== */
@@ -518,17 +986,71 @@ function _closeLevelUp() {
     if (el) el.classList.remove('active');
 }
 
-/* init badge + streak reminder on load */
+/* init badge + streak reminder + voice selector on load */
 if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             _updateStreakBadge();
             _showStreakReminder();
+            _initVoiceSelector();
+            _injectWordProgressCSS();
         });
     } else {
         _updateStreakBadge();
         _showStreakReminder();
+        _initVoiceSelector();
+        _injectWordProgressCSS();
     }
+}
+
+/* ---- word progress CSS (injected once) ---- */
+function _injectWordProgressCSS() {
+    if (document.getElementById('wordProgressCSS')) return;
+    var s = document.createElement('style');
+    s.id = 'wordProgressCSS';
+    s.textContent = [
+        /* word states */
+        '[data-word-index]{position:relative;transition:all .3s ease}',
+        '[data-word-index].word-locked{opacity:.3;pointer-events:none;filter:grayscale(.6)}',
+        '[data-word-index].word-active{opacity:1;pointer-events:auto;border:2px solid #667eea!important;box-shadow:0 0 0 3px rgba(102,126,234,.15);background:#f8f9ff!important}',
+        '[data-word-index].word-completed{opacity:1;pointer-events:auto;border-color:#58cc02!important;background:linear-gradient(135deg,#f4fce8,#e8f5e1)!important;color:#2d6a00}',
+        '[data-word-index].word-completed::after{content:"\\2714";position:absolute;top:6px;right:8px;color:#58a700;font-size:.85rem;font-weight:900}',
+
+        /* ---- flashcard success animation ---- */
+        '@keyframes fcSuccess{0%{transform:scale(1);box-shadow:0 10px 40px rgba(0,0,0,.3)}40%{transform:scale(1.06);box-shadow:0 0 30px rgba(88,204,2,.5)}100%{transform:scale(1);box-shadow:0 10px 40px rgba(0,0,0,.3)}}',
+        '.flashcard-success .flashcard-front,.flashcard-success .flashcard-back{animation:fcSuccess .7s ease;border:3px solid #58cc02!important}',
+        '.flashcard-success{animation:fcSuccess .7s ease}',
+
+        /* ---- flashcard error / shake animation ---- */
+        '@keyframes fcShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-8px)}30%{transform:translateX(8px)}45%{transform:translateX(-6px)}60%{transform:translateX(6px)}75%{transform:translateX(-3px)}90%{transform:translateX(3px)}}',
+        '.flashcard-error .flashcard-front,.flashcard-error .flashcard-back{animation:fcShake .5s ease;border:3px solid #ff4b4b!important}',
+        '.flashcard-error{animation:fcShake .5s ease}',
+
+        /* ---- progress bar ---- */
+        '.speech-progress-bar{flex:1;height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden;margin:0 16px;min-width:80px}',
+        '.speech-progress-fill{height:100%;background:linear-gradient(90deg,#58cc02,#46a302);border-radius:4px;transition:width .4s ease;width:0}',
+
+        /* ---- lesson complete overlay ---- */
+        '.lc-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:10002;justify-content:center;align-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}',
+        '.lc-overlay.active{display:flex}',
+        '.lc-card{background:#fff;border-radius:28px;padding:44px 32px 32px;max-width:400px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.3);animation:lcPop .5s cubic-bezier(.175,.885,.32,1.275)}',
+        '@keyframes lcPop{from{opacity:0;transform:scale(.7) translateY(60px)}to{opacity:1;transform:scale(1) translateY(0)}}',
+        '.lc-emoji{font-size:4rem;margin-bottom:8px;animation:lcBounce .7s .2s both}',
+        '@keyframes lcBounce{0%{transform:scale(0) rotate(-15deg)}50%{transform:scale(1.3) rotate(5deg)}100%{transform:scale(1) rotate(0)}}',
+        '.lc-title{font-size:1.6rem;font-weight:900;color:#1a1a2e;margin-bottom:6px}',
+        '.lc-subtitle{font-size:.9rem;color:#888;margin-bottom:20px}',
+        '.lc-xp{display:inline-block;padding:10px 24px;border-radius:16px;font-size:1.1rem;font-weight:800;color:#fff;background:linear-gradient(135deg,#667eea,#764ba2);margin-bottom:12px;animation:lcXpIn .5s .4s both}',
+        '@keyframes lcXpIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}',
+        '.lc-streak{font-size:1rem;font-weight:800;color:#ff6b00;margin-bottom:8px;animation:lcXpIn .5s .5s both}',
+        '.lc-encourage{font-size:.85rem;font-weight:600;color:#888;margin-bottom:20px;animation:lcXpIn .5s .6s both}',
+        '.lc-btn{display:block;width:100%;padding:16px 0;border:none;border-radius:16px;font-size:1.05rem;font-weight:800;cursor:pointer;color:#fff;background:linear-gradient(135deg,#58cc02,#46a302);box-shadow:0 5px 0 #3a8a02;transition:transform .15s}',
+        '.lc-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #3a8a02}',
+
+        /* ---- button polish ---- */
+        '.audio-button,.control-btn,.pron-btn{transition:all .15s ease}',
+        '.audio-button:active,.control-btn:active{transform:scale(.96)}',
+    ].join('\n');
+    document.head.appendChild(s);
 }
 
 /* ---- streak-at-risk reminder ---- */
@@ -1261,29 +1783,41 @@ function _wwListen(btn) {
 }
 
 function _wwSpeak(btn) {
-    if (_pronBusy) return;
+    if (_isRecording || _pronBusy) return;
     btn.disabled = true;
+    _isRecording = true;
     _pronBusy = true;
 
     var word = _weakWords[_weakIdx].word;
 
+    showStatus('\uD83C\uDFA4 Gapiring...');
+
     _runPronunciationAssessment(word)
         .then(function (result) {
+            showStatus('\u23F3 Tekshirilmoqda...');
+            if (!result || result.accuracyScore < 40) {
+                showStatus('');
+                alert('Talaffuz aniqlanmadi. Qayta urinib ko\'ring.');
+                return;
+            }
+            showStatus('');
             _showPronResult(word, result);
             _logPronunciation(word, result);
         })
         .catch(function (err) {
+            showStatus('');
             console.error('Pronunciation error:', err);
             if (err.limitExceeded) {
                 _showPaywall();
             } else if (err.message && err.message.includes('microphone')) {
                 alert('Mikrofonga ruxsat berilmadi. Brauzer sozlamalarini tekshiring.');
             } else {
-                alert('Talaffuzni tekshirishda xatolik. Qayta urinib ko\u2018ring.');
+                alert(err.message || 'Talaffuzni tekshirishda xatolik. Qayta urinib ko\u2018ring.');
             }
         })
         .finally(function () {
             btn.disabled = false;
+            _isRecording = false;
             _pronBusy = false;
         });
 }
