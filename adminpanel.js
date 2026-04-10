@@ -396,14 +396,14 @@ function renderAll() {
 }
 
 async function loadUsers() {
-    const result = await callApi('/api/admin/list-users', 'GET');
+    const result = await callApi('/api/admin?action=list-users', 'GET');
     const rawUsers = Array.isArray(result.users) ? result.users : [];
     state.users = rawUsers.map((user) => sanitizeRecord(user)).filter(Boolean);
     renderAll();
 }
 
 async function loadStats() {
-    const result = await callApi('/api/admin/stats', 'GET');
+    const result = await callApi('/api/admin?action=stats', 'GET');
     const stats = result?.stats || {};
 
     if (statTotalUsers) {
@@ -571,7 +571,7 @@ function initCreateCustomer() {
         };
 
         try {
-            await callApi('/api/admin/create-user', 'POST', payload);
+            await callApi('/api/admin?action=create-user', 'POST', payload);
             showSuccess('Customer yaratildi.');
             form.reset();
             form.querySelector('input[name="packs"][value="A1A2"]').checked = true;
@@ -602,7 +602,7 @@ function initCreateStaff() {
         };
 
         try {
-            await callApi('/api/admin/create-user', 'POST', payload);
+            await callApi('/api/admin?action=create-user', 'POST', payload);
             showSuccess('Staff foydalanuvchi yaratildi.');
             form.reset();
             await refreshData();
@@ -618,7 +618,7 @@ async function resetPasswordFlow(userId) {
         return;
     }
 
-    await callApi('/api/admin/reset-password', 'POST', { userId, temporaryPassword });
+    await callApi('/api/admin?action=reset-password', 'POST', { userId, temporaryPassword });
     showSuccess('Parol tiklandi. Foydalanuvchi keyingi login’da almashtiradi.');
 }
 
@@ -630,7 +630,7 @@ async function subscriptionFlow(userId) {
     const active = confirm('Obuna faol bo‘lsinmi? (OK = faol, Cancel = o‘chirish)');
 
     if (!active) {
-        await callApi('/api/admin/set-subscription', 'POST', { userId, active: false });
+        await callApi('/api/admin?action=set-subscription', 'POST', { userId, active: false });
         showSuccess('Obuna o‘chirildi.');
         await refreshData();
         return;
@@ -644,7 +644,7 @@ async function subscriptionFlow(userId) {
         .map((value) => value.trim())
         .filter(Boolean);
 
-    await callApi('/api/admin/set-subscription', 'POST', {
+    await callApi('/api/admin?action=set-subscription', 'POST', {
         userId,
         active: true,
         durationDays,
@@ -666,7 +666,7 @@ async function adjustSubscriptionDays(userId, daysDelta) {
         throw new Error('Kun o‘zgarishi butun son bo‘lishi kerak.');
     }
 
-    const result = await callApi('/api/admin/adjust-subscription-days', 'POST', { userId, daysDelta: delta });
+    const result = await callApi('/api/admin?action=adjust-subscription-days', 'POST', { userId, daysDelta: delta });
     const endDate = result?.result?.newEndAt || '-';
     showSuccess(`Obuna yangilandi. Yangi tugash sanasi: ${endDate}`);
 }
@@ -705,12 +705,12 @@ function initRowActions() {
             }
 
             if (action === 'clear-devices') {
-                await callApi('/api/admin/clear-devices', 'POST', { userId });
+                await callApi('/api/admin?action=clear-devices', 'POST', { userId });
                 showSuccess('Qurilmalar ro‘yxati tozalandi.');
             }
 
             if (action === 'unblock') {
-                await callApi('/api/admin/unblock-user', 'POST', { userId });
+                await callApi('/api/admin?action=unblock-user', 'POST', { userId });
                 showSuccess('Foydalanuvchi unblock qilindi.');
             }
 
@@ -720,7 +720,7 @@ function initRowActions() {
                     return;
                 }
 
-                await callApi('/api/admin/set-role', 'POST', {
+                await callApi('/api/admin?action=set-role', 'POST', {
                     userId,
                     role: select.value
                 });
@@ -733,7 +733,7 @@ function initRowActions() {
                     return;
                 }
 
-                await callApi('/api/admin/delete-user', 'POST', { userId });
+                await callApi('/api/admin?action=delete-user', 'POST', { userId });
                 showSuccess('Foydalanuvchi o‘chirildi.');
             }
 
