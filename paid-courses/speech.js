@@ -59,15 +59,45 @@ function _getVoice() {
     return localStorage.getItem('tts_voice') || 'male';
 }
 
-/** Initialise voiceSelect dropdown if present on page */
+/** Initialise voice selector — supports both <select> and .voice-switch buttons */
 function _initVoiceSelector() {
+    var currentVoice = _getVoice();
+
+    /* ---- legacy <select> support ---- */
     var sel = document.getElementById('voiceSelect');
-    if (!sel) return;
-    sel.value = _getVoice();
-    sel.addEventListener('change', function () {
-        localStorage.setItem('tts_voice', sel.value);
-        /* clear TTS cache so new voice takes effect immediately */
-        _ttsCache.clear();
+    if (sel) {
+        sel.value = currentVoice;
+        sel.addEventListener('change', function () {
+            localStorage.setItem('tts_voice', sel.value);
+            _ttsCache.clear();
+            _syncVoiceButtons(sel.value);
+        });
+    }
+
+    /* ---- button-based .voice-switch ---- */
+    var wrap = document.querySelector('.voice-switch');
+    if (wrap) {
+        var btns = wrap.querySelectorAll('[data-voice]');
+        btns.forEach(function (btn) {
+            if (btn.getAttribute('data-voice') === currentVoice) {
+                btn.classList.add('active');
+            }
+            btn.addEventListener('click', function () {
+                var v = btn.getAttribute('data-voice');
+                localStorage.setItem('tts_voice', v);
+                _ttsCache.clear();
+                _syncVoiceButtons(v);
+                /* also sync <select> if it exists */
+                if (sel) sel.value = v;
+            });
+        });
+    }
+}
+
+function _syncVoiceButtons(voice) {
+    var btns = document.querySelectorAll('.voice-switch [data-voice]');
+    btns.forEach(function (b) {
+        b.classList.toggle('active', b.getAttribute('data-voice') === voice);
     });
 }
 
@@ -1061,6 +1091,13 @@ function _injectWordProgressCSS() {
         /* ---- button polish ---- */
         '.audio-button,.control-btn,.pron-btn{transition:all .15s ease}',
         '.audio-button:active,.control-btn:active{transform:scale(.96)}',
+
+        /* ---- voice switch buttons ---- */
+        '.voice-switch{display:flex;justify-content:center;gap:8px;margin-bottom:10px}',
+        '.voice-switch button{padding:8px 18px;border-radius:12px;border:2px solid #e0e0e0;background:#fff;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s ease;color:#555;font-family:system-ui,-apple-system,sans-serif}',
+        '.voice-switch button:hover{border-color:#667eea;color:#667eea;background:#f8f9ff}',
+        '.voice-switch button.active{border-color:#667eea;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 3px 12px rgba(102,126,234,.3)}',
+        '.voice-switch button:active{transform:scale(.95)}',
     ].join('\n');
     document.head.appendChild(s);
 }
