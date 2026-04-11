@@ -275,17 +275,30 @@ async function _getSpeechToken() {
 }
 
 function checkPronunciation(event) {
+    console.log('[PRON] CLICK WORKS — checkPronunciation called');
     event.stopPropagation();
-    if (_isRecording || _pronBusy) return;
+
+    if (_isRecording || _pronBusy) {
+        console.warn('[PRON] BLOCKED: _isRecording=' + _isRecording + ', _pronBusy=' + _pronBusy);
+        return;
+    }
 
     const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
-    if (!word || !word.ru) return;
+    console.log('[PRON] getCurrentWord result:', word);
+    if (!word || !word.ru) {
+        console.warn('[PRON] BLOCKED: word is empty or missing .ru', word);
+        return;
+    }
 
     var topicId = word.topicId != null ? word.topicId : null;
     var wordIdx = _getWordIndex(word);
+    console.log('[PRON] topicId=' + topicId + ', wordIdx=' + wordIdx);
 
     /* check if word is locked */
-    if (topicId != null && wordIdx >= 0 && _isWordLocked(topicId, wordIdx)) return;
+    if (topicId != null && wordIdx >= 0 && _isWordLocked(topicId, wordIdx)) {
+        console.warn('[PRON] BLOCKED: word is locked (topicId=' + topicId + ', wordIdx=' + wordIdx + ')');
+        return;
+    }
 
     const btn = event.currentTarget;
     btn.disabled = true;
@@ -295,8 +308,10 @@ function checkPronunciation(event) {
 
     showStatus('\uD83C\uDFA4 Gapiring...');
 
+    console.log('[PRON] Calling _runPronunciationAssessment for:', word.ru);
     _runPronunciationAssessment(word.ru)
         .then(result => {
+            console.log('[PRON] RESULT FROM _runPronunciationAssessment:', result);
             showStatus('\u23F3 Tekshirilmoqda...');
 
             /* ---- validation: reject bad/empty results ---- */
@@ -361,12 +376,12 @@ function checkPronunciation(event) {
             }
         })
         .catch(err => {
+            console.error('[PRON] CATCH in checkPronunciation:', err);
             showStatus('\u274C Qayta urinib ko\'ring');
             _animateFlashcardError();
             _playSoundError();
             _hapticError();
             setTimeout(function () { showStatus(''); }, 2000);
-            console.error('Pronunciation error:', err);
             if (err.limitExceeded) {
                 _showPaywall();
             } else if (err.message && err.message.includes('microphone')) {
@@ -376,6 +391,7 @@ function checkPronunciation(event) {
             }
         })
         .finally(() => {
+            console.log('[PRON] FINALLY — resetting flags');
             btn.disabled = false;
             btn.classList.remove('loading');
             _isRecording = false;
