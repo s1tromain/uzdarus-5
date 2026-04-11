@@ -384,32 +384,51 @@ function checkPronunciation(event) {
 }
 
 async function _runPronunciationAssessment(referenceText) {
-    /* ---- 1. Get microphone stream (keep alive for SDK) ---- */
-    let micStream;
+    console.log('[PRON] STEP 1: requesting microphone');
+
+    /* ---- 1. Microphone with fallback ---- */
+    let micStream = null;
+    let audioConfig;
+
     try {
         micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-        alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
-        throw new Error('microphone permission denied');
+        console.log('[PRON] STEP 2: stream obtained, tracks:', micStream.getAudioTracks().length);
+        const SpeechSDK = window.SpeechSDK;
+        if (!SpeechSDK) throw new Error('Speech SDK not loaded');
+        audioConfig = SpeechSDK.AudioConfig.fromStreamInput(micStream);
+        console.log('[PRON] STEP 3: audioConfig created via fromStreamInput');
+    } catch (streamErr) {
+        console.warn('[PRON] fromStreamInput failed, falling back to fromDefaultMicrophoneInput:', streamErr.message);
+        try {
+            const SpeechSDK = window.SpeechSDK;
+            if (!SpeechSDK) throw new Error('Speech SDK not loaded');
+            audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+            console.log('[PRON] STEP 3: audioConfig created via fromDefaultMicrophoneInput (fallback)');
+        } catch {
+            alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
+            throw new Error('microphone permission denied');
+        }
     }
 
     /* ---- 2. Speech token ---- */
-    const { token, region } = await _getSpeechToken();
+    console.log('[PRON] STEP 4: fetching speech token');
+    let tokenData;
+    try {
+        tokenData = await _getSpeechToken();
+    } catch (tokErr) {
+        if (micStream) micStream.getTracks().forEach(t => t.stop());
+        throw tokErr;
+    }
+    const { token, region } = tokenData;
+    console.log('[PRON] STEP 5: token OK, region:', region);
 
     const SpeechSDK = window.SpeechSDK;
-    if (!SpeechSDK) {
-        micStream.getTracks().forEach(t => t.stop());
-        throw new Error('Speech SDK not loaded');
-    }
 
     /* ---- 3. Config ---- */
     const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
     speechConfig.speechRecognitionLanguage = 'ru-RU';
 
-    /* ---- 4. Audio — pass live stream, NOT fromDefaultMicrophoneInput ---- */
-    const audioConfig = SpeechSDK.AudioConfig.fromStreamInput(micStream);
-
-    /* ---- 5. Pronunciation assessment config ---- */
+    /* ---- 4. Pronunciation assessment config ---- */
     const pronConfig = new SpeechSDK.PronunciationAssessmentConfig(
         referenceText,
         SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
@@ -417,32 +436,56 @@ async function _runPronunciationAssessment(referenceText) {
         true
     );
 
-    /* ---- 6. Recognizer (recognizeOnceAsync only, NOT continuous) ---- */
+    /* ---- 5. Recognizer ---- */
     const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
     pronConfig.applyTo(recognizer);
+    console.log('[PRON] STEP 6: recognizer created for "' + referenceText + '"');
+
+    /* ---- 6. Diagnostic event handlers ---- */
+    recognizer.recognizing = function (s, e) {
+        console.log('[PRON] INTERIM:', e.result.text);
+    };
+    recognizer.recognized = function (s, e) {
+        console.log('[PRON] FINAL reason:', e.result.reason, 'text:', e.result.text);
+    };
+    recognizer.canceled = function (s, e) {
+        console.warn('[PRON] CANCELED reason:', e.reason, 'errorDetails:', e.errorDetails);
+    };
+    recognizer.sessionStarted = function () {
+        console.log('[PRON] session started');
+    };
+    recognizer.sessionStopped = function () {
+        console.log('[PRON] session stopped');
+    };
 
     _showPronListening();
 
     /* ---- 7. Promise with timeout guard ---- */
     return new Promise((resolve, reject) => {
         let settled = false;
-        const TIMEOUT_MS = 10000;
+        const TIMEOUT_MS = 12000;
 
         function finish(fn) {
             if (settled) return;
             settled = true;
             clearTimeout(timer);
             try { recognizer.close(); } catch { /* ignore */ }
-            try { micStream.getTracks().forEach(t => t.stop()); } catch { /* ignore */ }
+            if (micStream) {
+                try { micStream.getTracks().forEach(t => t.stop()); } catch { /* ignore */ }
+            }
             fn();
         }
 
         const timer = setTimeout(() => {
+            console.error('[PRON] TIMEOUT after', TIMEOUT_MS, 'ms');
             finish(() => reject(new Error('Vaqt tugadi. Qayta urinib ko\'ring.')));
         }, TIMEOUT_MS);
 
+        console.log('[PRON] STEP 7: calling recognizeOnceAsync');
         recognizer.recognizeOnceAsync(
             result => {
+                console.log('[PRON] STEP 8: result received, reason:', result ? result.reason : 'null');
+
                 if (!result) {
                     return finish(() => reject(new Error('Natija olinmadi.')));
                 }
@@ -451,6 +494,7 @@ async function _runPronunciationAssessment(referenceText) {
 
                 if (reason === SpeechSDK.ResultReason.RecognizedSpeech) {
                     const text = (result.text || '').trim();
+                    console.log('[PRON] recognized text:', text);
                     if (!text || text.length < 2) {
                         return finish(() => reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.')));
                     }
@@ -464,6 +508,7 @@ async function _runPronunciationAssessment(referenceText) {
                         error: w.PronunciationAssessment?.ErrorType || 'None',
                     }));
 
+                    console.log('[PRON] pronunciation score:', pronResult.pronunciationScore);
                     finish(() => resolve({
                         accuracyScore:      Math.round(pronResult.accuracyScore),
                         fluencyScore:       Math.round(pronResult.fluencyScore),
@@ -472,19 +517,22 @@ async function _runPronunciationAssessment(referenceText) {
                         words,
                     }));
                 } else if (reason === SpeechSDK.ResultReason.NoMatch) {
+                    console.warn('[PRON] NoMatch — no speech recognized');
                     finish(() => reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.')));
                 } else if (reason === SpeechSDK.ResultReason.Canceled) {
                     const cancellation = SpeechSDK.CancellationDetails.fromResult(result);
                     const msg = cancellation.reason === SpeechSDK.CancellationReason.Error
                         ? (cancellation.errorDetails || 'Recognition cancelled')
                         : 'Recognition cancelled';
-                    console.error('Pronunciation canceled:', msg);
+                    console.error('[PRON] Canceled:', msg);
                     finish(() => reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.')));
                 } else {
+                    console.error('[PRON] unexpected reason:', reason);
                     finish(() => reject(new Error(result.errorDetails || 'Recognition failed')));
                 }
             },
             err => {
+                console.error('[PRON] recognizeOnceAsync error:', err);
                 finish(() => reject(err));
             }
         );
