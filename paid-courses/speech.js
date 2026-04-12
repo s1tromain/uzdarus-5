@@ -1,4 +1,10 @@
 console.log("\uD83D\uDE80 SPEECH.JS LOADED");
+
+/* ---- GLOBAL CLICK DEBUG (remove after debugging) ---- */
+document.addEventListener("click", function(e) {
+    console.log("GLOBAL CLICK:", e.target, "tag:", e.target.tagName, "classes:", e.target.className);
+}, true);  // capture phase — fires even if stopPropagation is called later
+
 /**
  * speech.js — Shared TTS & Pronunciation Assessment module for UzdaRus.
  *
@@ -251,7 +257,7 @@ const _ttsCache = new Map();
 const _localAudioChecked = new Map();
 
 function playAudio(event) {
-    event.stopPropagation();
+    // stopPropagation removed — delegation handler already prevents bubbling
     const btn = event.target.closest('.listen-btn') || event.currentTarget;
     const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
     if (!word || !word.ru) return;
@@ -377,7 +383,7 @@ async function _getSpeechToken() {
 
 function checkPronunciation(event) {
     console.log('[PRON] CLICK WORKS — checkPronunciation called');
-    event.stopPropagation();
+    // stopPropagation removed — delegation handler already prevents bubbling
 
     if (_isRecording || _pronBusy) {
         console.warn('[PRON] BLOCKED: _isRecording=' + _isRecording + ', _pronBusy=' + _pronBusy);
@@ -1317,6 +1323,7 @@ function _injectWordProgressCSS() {
         /* word states */
         '[data-word-index]{position:relative;transition:all .3s ease}',
         '[data-word-index].word-locked{opacity:.3;pointer-events:none;filter:grayscale(.6)}',
+        '[data-word-index].word-locked .pron-btn,[data-word-index].word-locked .listen-btn{pointer-events:auto!important;position:relative;z-index:2}',
         '[data-word-index].word-active{opacity:1;pointer-events:auto;border:2px solid #667eea!important;box-shadow:0 0 0 3px rgba(102,126,234,.15);background:#f8f9ff!important}',
         '[data-word-index].word-completed{opacity:1;pointer-events:auto;border-color:#58cc02!important;background:linear-gradient(135deg,#f4fce8,#e8f5e1)!important;color:#2d6a00}',
         '[data-word-index].word-completed::after{content:"\\2714";position:absolute;top:6px;right:8px;color:#58a700;font-size:.85rem;font-weight:900}',
