@@ -507,57 +507,81 @@ async function _runPronunciationAssessment(referenceText) {
         throw new Error('Speech SDK not loaded');
     }
 
-    /* ---- 1. Microphone — getUserMedia with selected device ---- */
-    var savedMic = _getSavedMicId();
-    var audioConstraints = savedMic
-        ? { deviceId: { exact: savedMic } }
-        : true;
-    console.log('[PRON] mic: requesting getUserMedia, device:', savedMic || 'default');
+    /* ---- detect mobile ---- */
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    var micStream = null;   /* only used on desktop */
+    var audioConfig;
 
-    var micStream;
-    try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-    } catch (micErr) {
-        /* if exact device failed, retry with any mic */
-        if (savedMic) {
-            console.warn('[PRON] saved mic failed, retrying default:', micErr.message);
-            try {
-                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            } catch (micErr2) {
-                console.error('[PRON] mic denied:', micErr2.name, micErr2.message);
-                alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
-                throw new Error('microphone permission denied');
-            }
-        } else {
+    console.log('[PRON] audio mode:', isMobile ? 'defaultMic (mobile)' : 'stream (desktop)');
+
+    if (isMobile) {
+        /* ---- MOBILE: let SDK manage mic directly ---- */
+        try {
+            /* trigger permission prompt first */
+            var tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+            tmp.getTracks().forEach(function (t) { t.stop(); });
+        } catch (micErr) {
             console.error('[PRON] mic denied:', micErr.name, micErr.message);
             alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
             throw new Error('microphone permission denied');
         }
-    }
+        try {
+            audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+        } catch (cfgErr) {
+            console.error('[PRON] fromDefaultMicrophoneInput failed:', cfgErr.message);
+            alert('Mikrofon sozlamalari xato. Boshqa brauzer sinab ko\'ring.');
+            throw new Error('AudioConfig failed');
+        }
+        console.log('[PRON] audioConfig: fromDefaultMicrophoneInput');
+    } else {
+        /* ---- DESKTOP: getUserMedia + fromStreamInput ---- */
+        var savedMic = _getSavedMicId();
+        var audioConstraints = savedMic
+            ? { deviceId: { exact: savedMic } }
+            : true;
+        console.log('[PRON] mic: requesting getUserMedia, device:', savedMic || 'default');
 
-    var usedTrack = micStream.getAudioTracks()[0];
-    var usedLabel = usedTrack ? usedTrack.label : 'unknown';
-    console.log('[PRON] mic granted, device:', usedLabel, 'active:', micStream.active);
+        try {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+        } catch (micErr) {
+            if (savedMic) {
+                console.warn('[PRON] saved mic failed, retrying default:', micErr.message);
+                try {
+                    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                } catch (micErr2) {
+                    console.error('[PRON] mic denied:', micErr2.name, micErr2.message);
+                    alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
+                    throw new Error('microphone permission denied');
+                }
+            } else {
+                console.error('[PRON] mic denied:', micErr.name, micErr.message);
+                alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
+                throw new Error('microphone permission denied');
+            }
+        }
 
-    /* ---- volume pre-check ---- */
-    var vol = await _checkStreamVolume(micStream);
-    console.log('[PRON] volume check:', vol);
-    if (vol < 3) {
-        showStatus('\u26A0\uFE0F Mikrofon juda past ishlayapti');
-        console.warn('[PRON] WARNING: mic volume very low (' + vol + ')');
-    }
+        var usedTrack = micStream.getAudioTracks()[0];
+        console.log('[PRON] mic granted, device:', usedTrack ? usedTrack.label : 'unknown',
+                    'active:', micStream.active);
 
-    /* ---- 2. AudioConfig from live stream ---- */
-    var audioConfig;
-    try {
-        audioConfig = SpeechSDK.AudioConfig.fromStreamInput(micStream);
-    } catch (cfgErr) {
-        micStream.getTracks().forEach(function (t) { t.stop(); });
-        console.error('[PRON] AudioConfig.fromStreamInput failed:', cfgErr.message);
-        alert('Mikrofon sozlamalari xato. Boshqa brauzer sinab ko\'ring.');
-        throw new Error('AudioConfig failed');
+        /* volume pre-check */
+        var vol = await _checkStreamVolume(micStream);
+        console.log('[PRON] volume check:', vol);
+        if (vol < 3) {
+            showStatus('\u26A0\uFE0F Mikrofon juda past ishlayapti');
+            console.warn('[PRON] WARNING: mic volume very low (' + vol + ')');
+        }
+
+        try {
+            audioConfig = SpeechSDK.AudioConfig.fromStreamInput(micStream);
+        } catch (cfgErr) {
+            micStream.getTracks().forEach(function (t) { t.stop(); });
+            console.error('[PRON] fromStreamInput failed:', cfgErr.message);
+            alert('Mikrofon sozlamalari xato. Boshqa brauzer sinab ko\'ring.');
+            throw new Error('AudioConfig failed');
+        }
+        console.log('[PRON] audioConfig: fromStreamInput');
     }
-    console.log('[PRON] audioConfig created via fromStreamInput');
 
     /* ---- 3. Speech token ---- */
     console.log('[PRON] fetching speech token');
@@ -565,7 +589,7 @@ async function _runPronunciationAssessment(referenceText) {
     try {
         tokenData = await _getSpeechToken();
     } catch (tokErr) {
-        micStream.getTracks().forEach(function (t) { t.stop(); });
+        if (micStream) micStream.getTracks().forEach(function (t) { t.stop(); });
         throw tokErr;
     }
     console.log('[PRON] token OK, region:', tokenData.region);
@@ -620,7 +644,9 @@ async function _runPronunciationAssessment(referenceText) {
             settled = true;
             clearTimeout(timer);
             try { recognizer.close(); } catch {}
-            try { micStream.getTracks().forEach(function (t) { t.stop(); }); } catch {}
+            if (micStream) {
+                try { micStream.getTracks().forEach(function (t) { t.stop(); }); } catch {}
+            }
             fn();
         }
 
