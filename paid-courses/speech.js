@@ -54,6 +54,104 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 let _isRecording = false;
 
 /* ================================================================== */
+/*  Microphone selector                                               */
+/* ================================================================== */
+function _getSavedMicId() {
+    return localStorage.getItem('mic_device') || '';
+}
+
+async function _enumerateMics() {
+    try {
+        /* permission prompt so labels are visible */
+        var tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
+        tmp.getTracks().forEach(function (t) { t.stop(); });
+    } catch { /* ignore — labels may be empty */ }
+
+    var all = await navigator.mediaDevices.enumerateDevices();
+    return all.filter(function (d) { return d.kind === 'audioinput'; });
+}
+
+async function _initMicSelector() {
+    var sel = document.getElementById('micSelect');
+    if (!sel) return;
+
+    var mics = await _enumerateMics();
+    var saved = _getSavedMicId();
+
+    sel.innerHTML = '';
+    mics.forEach(function (mic, i) {
+        var opt = document.createElement('option');
+        opt.value = mic.deviceId;
+        opt.textContent = mic.label || ('Mikrofon ' + (i + 1));
+        if (mic.deviceId === saved) opt.selected = true;
+        sel.appendChild(opt);
+    });
+
+    /* auto-select first if nothing saved */
+    if (!saved && mics.length) {
+        localStorage.setItem('mic_device', mics[0].deviceId);
+    }
+
+    sel.addEventListener('change', function () {
+        localStorage.setItem('mic_device', sel.value);
+        console.log('[MIC] selected:', sel.value);
+    });
+
+    console.log('[MIC] selector ready,', mics.length, 'device(s)');
+}
+
+/** Inject mic selector UI if no #micSelect exists on the page */
+function _injectMicSelector() {
+    if (document.getElementById('micSelect')) return;
+
+    var wrap = document.querySelector('.voice-switch');
+    if (!wrap) wrap = document.querySelector('.flashcard-controls');
+    if (!wrap) wrap = document.querySelector('.controls');
+    if (!wrap) return;
+
+    var container = document.createElement('div');
+    container.style.cssText = 'margin:8px 0;display:flex;align-items:center;gap:8px;justify-content:center';
+    container.innerHTML =
+        '<label for="micSelect" style="font-size:.85rem;font-weight:600;color:#555">' +
+        '\uD83C\uDF99 Mikrofon:</label>' +
+        '<select id="micSelect" style="font-size:.85rem;padding:4px 8px;border-radius:8px;' +
+        'border:1px solid #ccc;max-width:220px"></select>';
+    wrap.parentNode.insertBefore(container, wrap.nextSibling);
+}
+
+/** Quick RMS volume check on a stream — returns average amplitude 0..32767 */
+function _checkStreamVolume(stream) {
+    return new Promise(function (resolve) {
+        try {
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            var src = ctx.createMediaStreamSource(stream);
+            var analyser = ctx.createAnalyser();
+            analyser.fftSize = 512;
+            src.connect(analyser);
+            var buf = new Uint8Array(analyser.frequencyBinCount);
+            var checks = 0;
+            var maxVal = 0;
+
+            var iv = setInterval(function () {
+                analyser.getByteTimeDomainData(buf);
+                for (var i = 0; i < buf.length; i++) {
+                    var v = Math.abs(buf[i] - 128);
+                    if (v > maxVal) maxVal = v;
+                }
+                checks++;
+                if (checks >= 8) {  /* ~400ms of sampling */
+                    clearInterval(iv);
+                    try { src.disconnect(); ctx.close(); } catch {}
+                    resolve(maxVal);
+                }
+            }, 50);
+        } catch {
+            resolve(999); /* can't check — assume OK */
+        }
+    });
+}
+
+/* ================================================================== */
 /*  Voice selector helper                                             */
 /* ================================================================== */
 function _getVoice() {
@@ -409,18 +507,45 @@ async function _runPronunciationAssessment(referenceText) {
         throw new Error('Speech SDK not loaded');
     }
 
-    /* ---- 1. Microphone — getUserMedia is the ONLY source ---- */
-    console.log('[PRON] mic: requesting getUserMedia');
+    /* ---- 1. Microphone — getUserMedia with selected device ---- */
+    var savedMic = _getSavedMicId();
+    var audioConstraints = savedMic
+        ? { deviceId: { exact: savedMic } }
+        : true;
+    console.log('[PRON] mic: requesting getUserMedia, device:', savedMic || 'default');
+
     var micStream;
     try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
     } catch (micErr) {
-        console.error('[PRON] mic denied:', micErr.name, micErr.message);
-        alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
-        throw new Error('microphone permission denied');
+        /* if exact device failed, retry with any mic */
+        if (savedMic) {
+            console.warn('[PRON] saved mic failed, retrying default:', micErr.message);
+            try {
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (micErr2) {
+                console.error('[PRON] mic denied:', micErr2.name, micErr2.message);
+                alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
+                throw new Error('microphone permission denied');
+            }
+        } else {
+            console.error('[PRON] mic denied:', micErr.name, micErr.message);
+            alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
+            throw new Error('microphone permission denied');
+        }
     }
-    console.log('[PRON] mic granted, tracks:', micStream.getAudioTracks().length,
-                'active:', micStream.active);
+
+    var usedTrack = micStream.getAudioTracks()[0];
+    var usedLabel = usedTrack ? usedTrack.label : 'unknown';
+    console.log('[PRON] mic granted, device:', usedLabel, 'active:', micStream.active);
+
+    /* ---- volume pre-check ---- */
+    var vol = await _checkStreamVolume(micStream);
+    console.log('[PRON] volume check:', vol);
+    if (vol < 3) {
+        showStatus('\u26A0\uFE0F Mikrofon juda past ishlayapti');
+        console.warn('[PRON] WARNING: mic volume very low (' + vol + ')');
+    }
 
     /* ---- 2. AudioConfig from live stream ---- */
     var audioConfig;
@@ -1128,12 +1253,16 @@ if (typeof document !== 'undefined') {
             _updateStreakBadge();
             _showStreakReminder();
             _initVoiceSelector();
+            _injectMicSelector();
+            _initMicSelector();
             _injectWordProgressCSS();
         });
     } else {
         _updateStreakBadge();
         _showStreakReminder();
         _initVoiceSelector();
+        _injectMicSelector();
+        _initMicSelector();
         _injectWordProgressCSS();
     }
 }
