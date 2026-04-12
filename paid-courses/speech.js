@@ -1,5 +1,11 @@
 console.log("\uD83D\uDE80 SPEECH.JS LOADED");
 
+/*
+ * \u2705 SYSTEM IS PRODUCTION READY (April 2026)
+ * \u2757 Do not rewrite recognition flow — changes only via small patches
+ * \u2757 _runPronunciationAssessment + finishSafe are the critical path
+ */
+
 /**
  * speech.js — Shared TTS & Pronunciation Assessment module for UzdaRus.
  *
@@ -383,11 +389,23 @@ function checkPronunciation(event) {
     }
 
     var word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
-    var wordIdx = _getWordIndex(word);
 
-    if (!word || wordIdx < 0) {
+    if (!word) {
         showStatus('\u274C So\u2018z aniqlanmadi');
-        console.error('[PRON] INVALID STATE', word, wordIdx);
+        console.error('[PRON] getCurrentWord() returned null/undefined');
+        setTimeout(function () { showStatus(''); }, 2500);
+        return;
+    }
+
+    var wordIdx = typeof word.wordIndex === 'number' ? word.wordIndex : -1;
+    if (wordIdx < 0 && typeof window.currentWordIndex === 'number') {
+        console.warn('[PRON] word.wordIndex missing, fallback to window.currentWordIndex');
+        wordIdx = window.currentWordIndex;
+    }
+
+    if (wordIdx < 0) {
+        showStatus('\u274C So\u2018z aniqlanmadi');
+        console.error('[PRON] wordIndex not found:', word);
         setTimeout(function () { showStatus(''); }, 2500);
         return;
     }
@@ -403,8 +421,8 @@ function checkPronunciation(event) {
 
     var topicId = word.topicId != null ? word.topicId : null;
 
-    console.log('[PRON] index:', wordIdx);
-    console.log('[PRON] referenceText:', JSON.stringify(referenceText));
+    console.debug('[PRON] index:', wordIdx);
+    console.debug('[PRON] referenceText:', JSON.stringify(referenceText));
 
     /* check if word is locked */
     if (topicId != null && _isWordLocked(topicId, wordIdx)) {
@@ -421,7 +439,7 @@ function checkPronunciation(event) {
 
     _runPronunciationAssessment(referenceText)
         .then(result => {
-            console.log('[PRON] RESULT:', result);
+            console.debug('[PRON] RESULT:', result);
 
             if (!result) {
                 _handlePronFail('Natija olinmadi.');
@@ -439,7 +457,7 @@ function checkPronunciation(event) {
                 setTimeout(function () { showStatus(''); }, 2000);
 
                 _logPronunciation(word.ru, result);
-                _showPronResult(word.ru, result);
+                try { _showPronResult(word.ru, result); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
 
                 /* word progress: complete + unlock next + auto-advance */
                 if (topicId != null && wordIdx >= 0) {
@@ -473,7 +491,7 @@ function checkPronunciation(event) {
                 setTimeout(function () { showStatus(''); }, 2500);
 
                 _logPronunciation(word.ru, result);
-                _showPronResult(word.ru, result);
+                try { _showPronResult(word.ru, result); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
                 /* Do NOT unlock the word — user must retry */
 
             /* ============ FAIL: score < 50 ============ */
@@ -485,7 +503,7 @@ function checkPronunciation(event) {
                 setTimeout(function () { showStatus(''); }, 2500);
 
                 _logPronunciation(word.ru, result);
-                _showPronResult(word.ru, result);
+                try { _showPronResult(word.ru, result); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
                 /* Do NOT unlock the word */
             }
         })
@@ -555,7 +573,7 @@ async function _runPronunciationAssessment(referenceText) {
     var micStream = null;
     var audioConfig;
 
-    console.log('[PRON] audio mode:', isMobile ? 'defaultMic (mobile)' : 'stream (desktop)');
+    console.debug('[PRON] audio mode:', isMobile ? 'defaultMic (mobile)' : 'stream (desktop)');
 
     if (isMobile) {
         try {
@@ -598,12 +616,13 @@ async function _runPronunciationAssessment(referenceText) {
         }
 
         var usedTrack = micStream.getAudioTracks()[0];
-        console.log('[PRON] mic granted, device:', usedTrack ? usedTrack.label : 'unknown');
+        console.debug('[PRON] mic granted, device:', usedTrack ? usedTrack.label : 'unknown');
 
         var vol = await _checkStreamVolume(micStream);
-        console.log('[PRON] volume check:', vol);
-        if (vol < 3) {
+        console.debug('[PRON] volume check:', vol);
+        if (vol < 5) {
             showStatus('\u26A0\uFE0F Mikrofon juda past ishlayapti');
+            setTimeout(function () { showStatus(''); }, 2500);
         }
 
         try {
@@ -639,42 +658,47 @@ async function _runPronunciationAssessment(referenceText) {
     pronConfig.phonemeAlphabet = 'IPA';
     pronConfig.enableProsodyAssessment = true;
 
-    console.log('[PRON] PronunciationAssessmentConfig referenceText:', JSON.stringify(referenceText));
+    console.debug('[PRON] PronunciationAssessmentConfig referenceText:', JSON.stringify(referenceText));
 
     /* ---- Recognizer ---- */
     var recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
     pronConfig.applyTo(recognizer);
-    console.log('[PRON] recognizer created, config applied for "' + referenceText + '"');
+    console.debug('[PRON] recognizer created, config applied for "' + referenceText + '"');
 
-    /* ---- Diagnostic events ---- */
+    /* ---- State flags ---- */
     var gotInterim = false;
     var gotFinal = false;
 
+    var ZERO_RESULT = {
+        recognizedText: referenceText,
+        accuracyScore: 0, fluencyScore: 0,
+        completenessScore: 0, pronunciationScore: 0,
+        words: []
+    };
+
+    /* ---- INTERIM: proves mic + audio work ---- */
     recognizer.recognizing = function (s, e) {
-        gotInterim = true;
-        console.log('[PRON] INTERIM:', e.result.text);
+        if (e.result && e.result.text) {
+            gotInterim = true;
+            console.debug('[PRON] INTERIM:', e.result.text);
+        }
     };
-    recognizer.recognized = function (s, e) {
-        gotFinal = true;
-        console.log('[PRON] FINAL:', e.result.reason, e.result.text);
-    };
-    recognizer.canceled = function (s, e) {
-        console.error('[PRON] CANCELED:', e.reason, e.errorDetails);
-    };
+
     recognizer.sessionStarted = function () {
-        console.log('[PRON] session started');
+        console.debug('[PRON] session started');
     };
     recognizer.sessionStopped = function () {
-        console.log('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
+        console.debug('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
     };
 
-    _showPronListening();
+    try { _showPronListening(); } catch (uiErr) { console.warn('[UI ERROR] _showPronListening:', uiErr); }
 
-    /* ---- Recognition with race-safe timeout ---- */
+    /* ---- Recognition: event-driven, timeout-safe ---- */
     return new Promise(function (resolve, reject) {
         var finished = false;
-        var timeoutId;
-        var TIMEOUT_MS = 15000;
+        var timeoutHit = false;
+        var softTimeoutId;
+        var hardTimeoutId;
 
         function cleanup() {
             try { recognizer.close(); } catch {}
@@ -683,146 +707,226 @@ async function _runPronunciationAssessment(referenceText) {
             }
         }
 
-        function finish(fn) {
+        function finishSafe(fn) {
             if (finished) return;
             finished = true;
-            clearTimeout(timeoutId);
+            clearTimeout(softTimeoutId);
+            clearTimeout(hardTimeoutId);
             cleanup();
             fn();
         }
 
-        timeoutId = setTimeout(function () {
-            /* If we already got a FINAL result, the callback will handle it — skip timeout */
-            if (gotFinal) {
-                console.log('[PRON] timeout fired but gotFinal=true, ignoring');
-                return;
-            }
-            console.error('[PRON] TIMEOUT after', TIMEOUT_MS, 'ms, gotInterim:', gotInterim);
-
-            /* If we got interim speech, this isn't a mic error — just slow */
-            if (gotInterim) {
-                finish(function () {
-                    var err = new Error('Vaqt tugadi. Qayta urinib ko\'ring.');
-                    err.softTimeout = true;
-                    reject(err);
-                });
-            } else {
-                finish(function () {
-                    reject(new Error('Audio olinmadi. Mikrofon sozlamalarini tekshiring.'));
-                });
-            }
-        }, TIMEOUT_MS);
-
-        console.log('[PRON] start recognition (recognizeOnceAsync)');
-        recognizer.recognizeOnceAsync(
-            function (result) {
-                console.log('[PRON] result received, reason:',
-                    result ? result.reason : 'null', 'gotInterim:', gotInterim);
-
-                if (!result) {
-                    return finish(function () { reject(new Error('Natija olinmadi.')); });
+        /**
+         * Extract text + pronunciation scores from a recognition result.
+         * Returns a result object or null if text is garbage/empty.
+         */
+        function extractPronData(result) {
+            var recognizedText = '';
+            try {
+                var jsonStr = result.properties.getProperty(
+                    SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult
+                );
+                if (jsonStr) {
+                    var parsed = JSON.parse(jsonStr);
+                    recognizedText = (parsed.DisplayText || '').trim();
+                    console.debug('[PRON] JSON DisplayText:', recognizedText);
                 }
+            } catch (jsonErr) {
+                console.warn('[PRON] JSON parse failed:', jsonErr);
+            }
+            if (!recognizedText) {
+                recognizedText = (result.text || '').trim();
+            }
+            /* Remove Azure duplicates (e.g. "У меня есть, У меня есть меня есть") */
+            recognizedText = recognizedText.split(',')[0].trim();
 
-                var reason = result.reason;
+            /* Garbage check */
+            if (!recognizedText || recognizedText.length < 2 || /^[0.\s]+$/.test(recognizedText)) {
+                return null;
+            }
 
-                /* ---- SUCCESS: RecognizedSpeech ---- */
-                if (reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-                    /*
-                     * IMPORTANT: result.text is UNRELIABLE with PronunciationAssessment —
-                     * it often returns "0 ." or garbage. Extract the real recognized text
-                     * from the JSON response property (DisplayText).
-                     */
-                    var recognizedText = '';
-                    try {
-                        var jsonStr = result.properties.getProperty(
-                            SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult
-                        );
-                        if (jsonStr) {
-                            var parsed = JSON.parse(jsonStr);
-                            recognizedText = (parsed.DisplayText || '').trim();
-                            console.log('[PRON] JSON DisplayText:', recognizedText);
-                            console.log('[PRON] raw result.text:', result.text, '(ignored)');
-                        }
-                    } catch (jsonErr) {
-                        console.warn('[PRON] JSON parse failed, falling back to result.text:', jsonErr);
-                        recognizedText = (result.text || '').trim();
-                    }
+            /* Extract scores */
+            try {
+                var pronResult = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
+                var nb = pronResult.detailResult;
+                var words = (nb.Words || []).map(function (w) {
+                    var pa = w.PronunciationAssessment;
+                    return {
+                        word: w.Word,
+                        accuracy: Math.round(pa ? (pa.AccuracyScore || 0) : 0),
+                        error: (pa && pa.ErrorType) || 'None'
+                    };
+                });
+                return {
+                    recognizedText:     recognizedText,
+                    accuracyScore:      Math.round(pronResult.accuracyScore),
+                    fluencyScore:       Math.round(pronResult.fluencyScore),
+                    completenessScore:  Math.round(pronResult.completenessScore),
+                    pronunciationScore: Math.round(pronResult.pronunciationScore),
+                    words: words
+                };
+            } catch (scoreErr) {
+                console.warn('[PRON] score extraction failed:', scoreErr);
+                return {
+                    recognizedText: recognizedText,
+                    accuracyScore: 0, fluencyScore: 0,
+                    completenessScore: 0, pronunciationScore: 0,
+                    words: []
+                };
+            }
+        }
 
-                    /* If JSON extraction failed, last-resort fallback */
-                    if (!recognizedText) {
-                        recognizedText = (result.text || '').trim();
-                    }
+        /* ===========================================================
+         *  MAIN HANDLER: recognized event
+         *  Fires BEFORE recognizeOnceAsync callback → cannot be killed
+         *  by timeout because timeout never closes recognizer.
+         * =========================================================== */
+        recognizer.recognized = function (s, e) {
+            gotFinal = true;
+            console.debug('[PRON] FINAL (recognized):', e.result ? e.result.reason : 'null',
+                'text:', e.result ? e.result.text : '', 'timeoutHit:', timeoutHit);
 
-                    console.log('[PRON] final recognizedText:', recognizedText);
+            if (finished) return;
 
-                    /* Treat empty/garbage text as NoMatch */
-                    if (!recognizedText || recognizedText.length < 2 || /^[0.\s]+$/.test(recognizedText)) {
-                        return finish(function () {
-                            var err = new Error(gotInterim
-                                ? 'So\'z aniqlanmadi. Aniqroq ayting.'
-                                : 'Ovoz aniqlanmadi. Balandroq gapiring.');
-                            err.noSpeech = true;
-                            reject(err);
-                        });
-                    }
+            if (!e.result) {
+                return finishSafe(function () { resolve(ZERO_RESULT); });
+            }
 
-                    var pronResult = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
-                    var nb = pronResult.detailResult;
+            var reason = e.result.reason;
 
-                    var words = (nb.Words || []).map(function (w) {
-                        var pa = w.PronunciationAssessment;
-                        return {
-                            word: w.Word,
-                            accuracy: Math.round(pa ? (pa.AccuracyScore || 0) : 0),
-                            error: (pa && pa.ErrorType) || 'None'
-                        };
-                    });
-
-                    var score = Math.round(pronResult.pronunciationScore);
-                    console.log('[PRON] recognized:', recognizedText);
-                    console.log('[PRON] score:', score);
-
-                    finish(function () {
-                        resolve({
-                            recognizedText:     recognizedText,
-                            accuracyScore:      Math.round(pronResult.accuracyScore),
-                            fluencyScore:       Math.round(pronResult.fluencyScore),
-                            completenessScore:  Math.round(pronResult.completenessScore),
-                            pronunciationScore: score,
-                            words: words
-                        });
-                    });
-
-                /* ---- NoMatch ---- */
-                } else if (reason === SpeechSDK.ResultReason.NoMatch) {
-                    console.warn('[PRON] NoMatch, gotInterim:', gotInterim);
-                    /* If we got interim text but final is NoMatch — don't show harsh error */
-                    finish(function () {
-                        var err = new Error(gotInterim
-                            ? 'So\'z aniqlanmadi. Aniqroq ayting.'
-                            : 'Ovoz aniqlanmadi. Balandroq gapiring.');
+            if (reason === SpeechSDK.ResultReason.RecognizedSpeech) {
+                var data = extractPronData(e.result);
+                if (data) {
+                    console.debug('[PRON] score:', data.pronunciationScore);
+                    finishSafe(function () { resolve(data); });
+                } else if (gotInterim) {
+                    console.warn('[PRON] RecognizedSpeech but garbage text, gotInterim → zero fallback');
+                    finishSafe(function () { resolve(ZERO_RESULT); });
+                } else {
+                    finishSafe(function () {
+                        var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
                         err.noSpeech = true;
                         reject(err);
                     });
+                }
 
-                /* ---- Canceled ---- */
-                } else if (reason === SpeechSDK.ResultReason.Canceled) {
-                    var cancellation = SpeechSDK.CancellationDetails.fromResult(result);
-                    console.error('[PRON] Canceled:', cancellation.errorDetails);
-                    finish(function () {
+            } else if (reason === SpeechSDK.ResultReason.NoMatch) {
+                if (gotInterim) {
+                    var nmData = extractPronData(e.result);
+                    console.warn('[PRON] NoMatch+gotInterim, recovered:', !!nmData);
+                    finishSafe(function () { resolve(nmData || ZERO_RESULT); });
+                } else {
+                    finishSafe(function () {
+                        var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                        err.noSpeech = true;
+                        reject(err);
+                    });
+                }
+
+            } else {
+                /* Canceled / unexpected reason */
+                console.warn('[PRON] recognized event reason:', reason, 'gotInterim:', gotInterim);
+                if (gotInterim) {
+                    finishSafe(function () { resolve(ZERO_RESULT); });
+                } else {
+                    finishSafe(function () {
                         reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.'));
                     });
+                }
+            }
+        };
 
+        /* ---- canceled event ---- */
+        recognizer.canceled = function (s, e) {
+            console.error('[PRON] CANCELED:', e.reason, e.errorDetails);
+            if (finished) return;
+            if (gotInterim || gotFinal) {
+                console.warn('[PRON] Canceled but speech was detected → zero fallback');
+                finishSafe(function () { resolve(ZERO_RESULT); });
+                return;
+            }
+            /* Error cancellation (network/auth) → reject immediately, don't wait 30s */
+            if (e.reason === SpeechSDK.CancellationReason.Error) {
+                console.error('[PRON] Canceled with Error reason → immediate reject');
+                finishSafe(function () {
+                    reject(new Error(e.errorDetails || 'Xatolik yuz berdi. Qayta urinib ko\'ring.'));
+                });
+            }
+            /* EndOfStream / other non-error → let hard timeout handle it */
+        };
+
+        /* ===========================================================
+         *  SOFT TIMEOUT (15s): warn only, NEVER reject, NEVER cleanup
+         *  Recognizer stays alive — recognized event will still fire.
+         * =========================================================== */
+        softTimeoutId = setTimeout(function () {
+            if (finished) return;
+            timeoutHit = true;
+            console.warn('[PRON] soft timeout (15s) — recognizer still alive, waiting for recognized event...');
+            showStatus('\u23F3 Kutilmoqda...');
+        }, 15000);
+
+        /* ===========================================================
+         *  HARD TIMEOUT (30s): safety net for complete silence only.
+         *  If gotInterim/gotFinal → extend, never reject.
+         * =========================================================== */
+        hardTimeoutId = setTimeout(function () {
+            if (finished) return;
+            if (gotInterim || gotFinal) {
+                console.warn('[PRON] hard timeout (30s) but speech detected — extending 15s...');
+                hardTimeoutId = setTimeout(function () {
+                    if (finished) return;
+                    console.error('[PRON] ultimate timeout (45s) — forcing zero resolve');
+                    finishSafe(function () { resolve(ZERO_RESULT); });
+                }, 15000);
+                return;
+            }
+            console.error('[PRON] hard timeout (30s) — no speech at all');
+            finishSafe(function () {
+                reject(new Error('Audio olinmadi. Mikrofon sozlamalarini tekshiring.'));
+            });
+        }, 30000);
+
+        /* ---- Start recognition ---- */
+        console.debug('[PRON] start recognition (recognizeOnceAsync)');
+        recognizer.recognizeOnceAsync(
+            function (result) {
+                /* BACKUP: only runs if recognized event didn't already handle it */
+                if (finished) {
+                    console.debug('[PRON] recognizeOnceAsync callback — already finished via recognized event');
+                    return;
+                }
+                console.warn('[PRON] recognizeOnceAsync callback — recognized event missed, processing here');
+                gotFinal = true;
+
+                if (!result) {
+                    return finishSafe(function () {
+                        if (gotInterim) { resolve(ZERO_RESULT); }
+                        else { reject(new Error('Natija olinmadi.')); }
+                    });
+                }
+
+                var data = extractPronData(result);
+                if (data) {
+                    finishSafe(function () { resolve(data); });
+                } else if (gotInterim) {
+                    finishSafe(function () { resolve(ZERO_RESULT); });
                 } else {
-                    console.error('[PRON] unexpected reason:', reason);
-                    finish(function () {
-                        reject(new Error(result.errorDetails || 'Recognition failed'));
+                    finishSafe(function () {
+                        var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                        err.noSpeech = true;
+                        reject(err);
                     });
                 }
             },
             function (err) {
+                if (finished) return;
                 console.error('[PRON] recognizeOnceAsync error:', err);
-                finish(function () { reject(err); });
+                if (gotInterim) {
+                    finishSafe(function () { resolve(ZERO_RESULT); });
+                } else {
+                    finishSafe(function () { reject(err); });
+                }
             }
         );
     });
@@ -1389,7 +1493,7 @@ if (typeof document !== 'undefined') {
     document.addEventListener('click', function (e) {
         var pronBtn = e.target.closest('.pron-btn');
         if (pronBtn) {
-            console.log('[PRON] CLICK DETECTED (delegation)');
+            console.debug('[PRON] CLICK DETECTED (delegation)');
             e.stopPropagation();
             checkPronunciation(e);
             return;
