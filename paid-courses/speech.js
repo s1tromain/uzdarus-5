@@ -252,7 +252,7 @@ const _localAudioChecked = new Map();
 
 function playAudio(event) {
     event.stopPropagation();
-    const btn = event.currentTarget;
+    const btn = event.target.closest('.listen-btn') || event.currentTarget;
     const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
     if (!word || !word.ru) return;
 
@@ -401,7 +401,7 @@ function checkPronunciation(event) {
         return;
     }
 
-    const btn = event.currentTarget;
+    const btn = event.target.closest('.pron-btn') || event.currentTarget;
     btn.disabled = true;
     btn.classList.add('loading');
     _isRecording = true;
@@ -1274,16 +1274,7 @@ function _closeLevelUp() {
 
 /* init badge + streak reminder + voice selector on load */
 if (typeof document !== 'undefined') {
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function () {
-            _updateStreakBadge();
-            _showStreakReminder();
-            _initVoiceSelector();
-            _injectMicSelector();
-            _initMicSelector();
-            _injectWordProgressCSS();
-        });
-    } else {
+    function _initUI() {
         _updateStreakBadge();
         _showStreakReminder();
         _initVoiceSelector();
@@ -1291,6 +1282,30 @@ if (typeof document !== 'undefined') {
         _initMicSelector();
         _injectWordProgressCSS();
     }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _initUI);
+    } else {
+        _initUI();
+    }
+
+    /* ---- event delegation: works with dynamic DOM / re-renders ---- */
+    document.addEventListener('click', function (e) {
+        var pronBtn = e.target.closest('.pron-btn');
+        if (pronBtn) {
+            console.log('[PRON] CLICK DETECTED (delegation)');
+            e.stopPropagation();
+            checkPronunciation(e);
+            return;
+        }
+
+        var listenBtn = e.target.closest('.listen-btn');
+        if (listenBtn) {
+            e.stopPropagation();
+            playAudio(e);
+            return;
+        }
+    });
 }
 
 /* ---- word progress CSS (injected once) ---- */
@@ -1898,6 +1913,17 @@ function generatePronunciationFeedback(result) {
 
     return tips;
 }
+
+/* ================================================================== */
+/*  Global exports — make functions accessible from onclick handlers  */
+/* ================================================================== */
+window.checkPronunciation = checkPronunciation;
+window.playAudio = playAudio;
+window.showStatus = showStatus;
+window.initWordProgress = initWordProgress;
+window.updateProgressBar = updateProgressBar;
+window.getNextActiveWordIndex = getNextActiveWordIndex;
+window.isWordCompleted = isWordCompleted;
 
 /* ================================================================== */
 /*  Practice Weak Words mode                                          */
