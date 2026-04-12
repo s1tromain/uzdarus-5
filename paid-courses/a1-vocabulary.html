@@ -1926,10 +1926,32 @@
 
         // ==================== AUDIO (see speech.js) ====================
         window.getCurrentWord = function () {
-            const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
-            if (!topic) return null;
-            var w = topic.words[currentWordIndex];
-            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId, wordIndex: currentWordIndex } : null;
+            var index =
+                typeof currentWordIndex === "number"
+                    ? currentWordIndex
+                    : typeof currentCardIndex === "number"
+                    ? currentCardIndex
+                    : -1;
+
+            if (index < 0) return null;
+
+            var word;
+            if (typeof currentWords !== "undefined" && Array.isArray(currentWords) && currentWords.length > 0) {
+                word = currentWords[index];
+            } else {
+                var topic = vocabularyData.topics.find(function(t) { return t.id === currentTopicId; });
+                if (!topic) return null;
+                word = topic.words[index];
+            }
+
+            if (!word) return null;
+
+            return {
+                ru: String(word.ru || "").trim(),
+                uz: word.uz,
+                topicId: currentTopicId,
+                wordIndex: index
+            };
         };
 
         // ==================== COMPLETION ====================

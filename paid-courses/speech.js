@@ -1,10 +1,5 @@
 console.log("\uD83D\uDE80 SPEECH.JS LOADED");
 
-/* ---- GLOBAL CLICK DEBUG (remove after debugging) ---- */
-document.addEventListener("click", function(e) {
-    console.log("GLOBAL CLICK:", e.target, "tag:", e.target.tagName, "classes:", e.target.className);
-}, true);  // capture phase — fires even if stopPropagation is called later
-
 /**
  * speech.js — Shared TTS & Pronunciation Assessment module for UzdaRus.
  *
@@ -388,32 +383,28 @@ function checkPronunciation(event) {
     }
 
     var word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
-    if (!word || !word.ru) {
-        console.warn('[PRON] BLOCKED: no word or missing .ru', word);
+    var wordIdx = _getWordIndex(word);
+
+    if (!word || wordIdx < 0) {
+        showStatus('\u274C So\u2018z aniqlanmadi');
+        console.error('[PRON] INVALID STATE', word, wordIdx);
+        setTimeout(function () { showStatus(''); }, 2500);
+        return;
+    }
+
+    var referenceText = (word.ru || '').trim();
+
+    if (!referenceText || referenceText.length < 2) {
+        showStatus('\u274C So\u2018z noto\u2018g\u2018ri');
+        console.error('[PRON] BLOCKED: referenceText too short:', JSON.stringify(referenceText));
+        setTimeout(function () { showStatus(''); }, 2500);
         return;
     }
 
     var topicId = word.topicId != null ? word.topicId : null;
-    var wordIdx = _getWordIndex(word);
-    var referenceText = String(word.ru).trim();
 
-    console.log('[PRON] index:', wordIdx, 'referenceText:', JSON.stringify(referenceText), 'topicId:', topicId);
-
-    /* Block if index is invalid */
-    if (wordIdx < 0) {
-        console.error('[PRON] BLOCKED: wordIdx=-1, page did not provide word index');
-        showStatus('\u274C Xatolik: sahifani yangilang');
-        setTimeout(function () { showStatus(''); }, 2500);
-        return;
-    }
-
-    /* Block if referenceText is bad */
-    if (!referenceText || referenceText.length < 1) {
-        console.error('[PRON] BLOCKED: referenceText empty');
-        showStatus('\u274C So\'z noto\'g\'ri');
-        setTimeout(function () { showStatus(''); }, 2500);
-        return;
-    }
+    console.log('[PRON] index:', wordIdx);
+    console.log('[PRON] referenceText:', JSON.stringify(referenceText));
 
     /* check if word is locked */
     if (topicId != null && _isWordLocked(topicId, wordIdx)) {
@@ -788,7 +779,8 @@ async function _runPronunciationAssessment(referenceText) {
                     });
 
                     var score = Math.round(pronResult.pronunciationScore);
-                    console.log('[PRON] pronunciationScore:', score);
+                    console.log('[PRON] recognized:', recognizedText);
+                    console.log('[PRON] score:', score);
 
                     finish(function () {
                         resolve({
@@ -2189,7 +2181,7 @@ function _renderWeakCard(ov) {
     }
     window.getCurrentWord = function () {
         var cw = _weakWords[_weakIdx];
-        return { ru: cw.word, uz: '', topicId: null };
+        return cw ? { ru: String(cw.word || '').trim(), uz: '', topicId: null, wordIndex: _weakIdx } : null;
     };
 }
 
