@@ -383,7 +383,6 @@ async function _getSpeechToken() {
 
 function checkPronunciation(event) {
     console.log('[PRON] CLICK WORKS — checkPronunciation called');
-    // stopPropagation removed — delegation handler already prevents bubbling
 
     if (_isRecording || _pronBusy) {
         console.warn('[PRON] BLOCKED: _isRecording=' + _isRecording + ', _pronBusy=' + _pronBusy);
@@ -399,11 +398,9 @@ function checkPronunciation(event) {
 
     var topicId = word.topicId != null ? word.topicId : null;
     var wordIdx = _getWordIndex(word);
-    console.log('[PRON] topicId=' + topicId + ', wordIdx=' + wordIdx);
 
     /* check if word is locked */
     if (topicId != null && wordIdx >= 0 && _isWordLocked(topicId, wordIdx)) {
-        console.warn('[PRON] BLOCKED: word is locked (topicId=' + topicId + ', wordIdx=' + wordIdx + ')');
         return;
     }
 
@@ -415,95 +412,121 @@ function checkPronunciation(event) {
 
     showStatus('\uD83C\uDFA4 Gapiring...');
 
-    console.log('[PRON] Calling _runPronunciationAssessment for:', word.ru);
     _runPronunciationAssessment(word.ru)
         .then(result => {
-            console.log('[PRON] RESULT FROM _runPronunciationAssessment:', result);
-            showStatus('\u23F3 Tekshirilmoqda...');
+            console.log('[PRON] RESULT:', result);
 
-            /* ---- validation: reject bad/empty results ---- */
-            if (!result || result.accuracyScore < 40) {
-                showStatus('\u274C Qayta urinib ko\'ring');
-                _animateFlashcardError();
-                _playSoundError();
-                _hapticError();
-                setTimeout(function () { showStatus(''); }, 2000);
-                var msg = result
-                    ? 'Talaffuz aniqlanmadi (ball: ' + result.accuracyScore + '). Qayta urinib ko\'ring.'
-                    : 'Natija olinmadi.';
-                alert(msg);
+            if (!result) {
+                _handlePronFail('Natija olinmadi.');
                 return;
             }
 
-            _logPronunciation(word.ru, result);
+            var score = result.pronunciationScore;
 
-            /* ---- retry if score < 80: do NOT unlock next word ---- */
-            if (result.pronunciationScore < 80) {
-                showStatus('\u274C Qayta urinib ko\'ring');
-                _animateFlashcardError();
-                _playSoundError();
-                _hapticError();
+            /* ============ SUCCESS: score >= 80 ============ */
+            if (score >= 80) {
+                showStatus('\uD83D\uDD25 Zo\'r!');
+                _animateFlashcardSuccess();
+                _playSoundSuccess();
+                _hapticSuccess();
                 setTimeout(function () { showStatus(''); }, 2000);
+
+                _logPronunciation(word.ru, result);
                 _showPronResult(word.ru, result);
-                return;
-            }
 
-            /* ---- success: score >= 80 ---- */
-            showStatus('\uD83D\uDD25 Zo\'r!');
-            _animateFlashcardSuccess();
-            _playSoundSuccess();
-            _hapticSuccess();
-            setTimeout(function () { showStatus(''); }, 2000);
-            _showPronResult(word.ru, result);
+                /* word progress: complete + unlock next + auto-advance */
+                if (topicId != null && wordIdx >= 0) {
+                    _completeWord(topicId, wordIdx);
 
-            /* ---- word progress: complete + unlock next + auto-advance ---- */
-            if (topicId != null && wordIdx >= 0) {
-                _completeWord(topicId, wordIdx);
+                    if (_isLessonComplete(topicId)) {
+                        setTimeout(function () {
+                            _showLessonCompleteOverlay();
+                        }, 1200);
+                        return;
+                    }
 
-                /* check if entire lesson is done */
-                if (_isLessonComplete(topicId)) {
                     setTimeout(function () {
-                        _showLessonCompleteOverlay();
+                        if (typeof window.nextCard === 'function') {
+                            window.nextCard();
+                        } else if (typeof window.currentWordIndex === 'number') {
+                            window.currentWordIndex++;
+                            if (typeof window.loadCard === 'function') window.loadCard();
+                        } else if (typeof window.currentCardIndex === 'number') {
+                            window.currentCardIndex++;
+                            if (typeof window.updateCard === 'function') window.updateCard();
+                        }
                     }, 1200);
-                    return; /* don't auto-advance, lesson overlay handles it */
                 }
 
-                /* auto-advance to next word after a short delay */
-                setTimeout(function () {
-                    if (typeof window.nextCard === 'function') {
-                        window.nextCard();
-                    } else if (typeof window.currentWordIndex === 'number') {
-                        window.currentWordIndex++;
-                        if (typeof window.loadCard === 'function') window.loadCard();
-                    } else if (typeof window.currentCardIndex === 'number') {
-                        window.currentCardIndex++;
-                        if (typeof window.updateCard === 'function') window.updateCard();
-                    }
-                }, 1200);
+            /* ============ TRY AGAIN: score 50-79 ============ */
+            } else if (score >= 50) {
+                showStatus('\uD83D\uDCAA Yana urinib ko\'ring');
+                _animateFlashcardError();
+                _haptic(30);
+                setTimeout(function () { showStatus(''); }, 2500);
+
+                _logPronunciation(word.ru, result);
+                _showPronResult(word.ru, result);
+                /* Do NOT unlock the word — user must retry */
+
+            /* ============ FAIL: score < 50 ============ */
+            } else {
+                showStatus('\u274C Qayta urinib ko\'ring');
+                _animateFlashcardError();
+                _playSoundError();
+                _hapticError();
+                setTimeout(function () { showStatus(''); }, 2500);
+
+                _logPronunciation(word.ru, result);
+                _showPronResult(word.ru, result);
+                /* Do NOT unlock the word */
             }
         })
         .catch(err => {
-            console.error('[PRON] CATCH in checkPronunciation:', err);
-            showStatus('\u274C Qayta urinib ko\'ring');
-            _animateFlashcardError();
-            _playSoundError();
-            _hapticError();
-            setTimeout(function () { showStatus(''); }, 2000);
-            if (err.limitExceeded) {
-                _showPaywall();
-            } else if (err.message && err.message.includes('microphone')) {
-                alert('Mikrofonga ruxsat berilmadi. Brauzer sozlamalarini tekshiring.');
-            } else {
-                alert(err.message || 'Talaffuzni tekshirishda xatolik. Qayta urinib ko\'ring.');
+            console.error('[PRON] CATCH:', err);
+
+            /* Do NOT show error to user if it's a soft timeout (got interim) */
+            if (err.softTimeout) {
+                showStatus('\u23F3 Vaqt tugadi. Qayta urinib ko\'ring.');
+                _animateFlashcardError();
+                setTimeout(function () { showStatus(''); }, 2500);
+                return;
             }
+
+            if (err.limitExceeded) {
+                showStatus('');
+                _showPaywall();
+                return;
+            }
+
+            if (err.micError || (err.message && err.message.includes('microphone'))) {
+                showStatus('\u274C Mikrofon xatosi');
+                setTimeout(function () { showStatus(''); }, 2500);
+                alert('Mikrofonga ruxsat berilmadi. Brauzer sozlamalarini tekshiring.');
+                return;
+            }
+
+            /* Generic error — show status only, no alert spam */
+            showStatus('\u274C ' + (err.message || 'Xatolik yuz berdi'));
+            _animateFlashcardError();
+            _hapticError();
+            setTimeout(function () { showStatus(''); }, 2500);
         })
         .finally(() => {
-            console.log('[PRON] FINALLY — resetting flags');
             btn.disabled = false;
             btn.classList.remove('loading');
             _isRecording = false;
             _pronBusy = false;
         });
+}
+
+/** Helper for quick fail display */
+function _handlePronFail(msg) {
+    showStatus('\u274C ' + msg);
+    _animateFlashcardError();
+    _playSoundError();
+    _hapticError();
+    setTimeout(function () { showStatus(''); }, 2500);
 }
 
 async function _runPronunciationAssessment(referenceText) {
@@ -515,82 +538,69 @@ async function _runPronunciationAssessment(referenceText) {
 
     /* ---- detect mobile ---- */
     var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    var micStream = null;   /* only used on desktop */
+    var micStream = null;
     var audioConfig;
 
     console.log('[PRON] audio mode:', isMobile ? 'defaultMic (mobile)' : 'stream (desktop)');
 
     if (isMobile) {
-        /* ---- MOBILE: let SDK manage mic directly ---- */
         try {
-            /* trigger permission prompt first */
             var tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
             tmp.getTracks().forEach(function (t) { t.stop(); });
         } catch (micErr) {
             console.error('[PRON] mic denied:', micErr.name, micErr.message);
-            alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
-            throw new Error('microphone permission denied');
+            var e1 = new Error('microphone permission denied');
+            e1.micError = true;
+            throw e1;
         }
         try {
             audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
         } catch (cfgErr) {
             console.error('[PRON] fromDefaultMicrophoneInput failed:', cfgErr.message);
-            alert('Mikrofon sozlamalari xato. Boshqa brauzer sinab ko\'ring.');
             throw new Error('AudioConfig failed');
         }
-        console.log('[PRON] audioConfig: fromDefaultMicrophoneInput');
     } else {
-        /* ---- DESKTOP: getUserMedia + fromStreamInput ---- */
         var savedMic = _getSavedMicId();
         var audioConstraints = savedMic
             ? { deviceId: { exact: savedMic } }
             : true;
-        console.log('[PRON] mic: requesting getUserMedia, device:', savedMic || 'default');
 
         try {
             micStream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
         } catch (micErr) {
             if (savedMic) {
-                console.warn('[PRON] saved mic failed, retrying default:', micErr.message);
                 try {
                     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 } catch (micErr2) {
-                    console.error('[PRON] mic denied:', micErr2.name, micErr2.message);
-                    alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
-                    throw new Error('microphone permission denied');
+                    var e2 = new Error('microphone permission denied');
+                    e2.micError = true;
+                    throw e2;
                 }
             } else {
-                console.error('[PRON] mic denied:', micErr.name, micErr.message);
-                alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
-                throw new Error('microphone permission denied');
+                var e3 = new Error('microphone permission denied');
+                e3.micError = true;
+                throw e3;
             }
         }
 
         var usedTrack = micStream.getAudioTracks()[0];
-        console.log('[PRON] mic granted, device:', usedTrack ? usedTrack.label : 'unknown',
-                    'active:', micStream.active);
+        console.log('[PRON] mic granted, device:', usedTrack ? usedTrack.label : 'unknown');
 
-        /* volume pre-check */
         var vol = await _checkStreamVolume(micStream);
         console.log('[PRON] volume check:', vol);
         if (vol < 3) {
             showStatus('\u26A0\uFE0F Mikrofon juda past ishlayapti');
-            console.warn('[PRON] WARNING: mic volume very low (' + vol + ')');
         }
 
         try {
             audioConfig = SpeechSDK.AudioConfig.fromStreamInput(micStream);
         } catch (cfgErr) {
             micStream.getTracks().forEach(function (t) { t.stop(); });
-            console.error('[PRON] fromStreamInput failed:', cfgErr.message);
-            alert('Mikrofon sozlamalari xato. Boshqa brauzer sinab ko\'ring.');
             throw new Error('AudioConfig failed');
         }
-        console.log('[PRON] audioConfig: fromStreamInput');
     }
 
-    /* ---- 3. Speech token ---- */
-    console.log('[PRON] fetching speech token');
+    /* ---- Speech token ---- */
     var tokenData;
     try {
         tokenData = await _getSpeechToken();
@@ -598,15 +608,14 @@ async function _runPronunciationAssessment(referenceText) {
         if (micStream) micStream.getTracks().forEach(function (t) { t.stop(); });
         throw tokErr;
     }
-    console.log('[PRON] token OK, region:', tokenData.region);
 
-    /* ---- 4. Speech config ---- */
+    /* ---- Speech config ---- */
     var speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(
         tokenData.token, tokenData.region
     );
     speechConfig.speechRecognitionLanguage = 'ru-RU';
 
-    /* ---- 5. Pronunciation assessment config ---- */
+    /* ---- Pronunciation assessment config ---- */
     var pronConfig = new SpeechSDK.PronunciationAssessmentConfig(
         referenceText,
         SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
@@ -614,54 +623,76 @@ async function _runPronunciationAssessment(referenceText) {
         true
     );
 
-    /* ---- 6. Recognizer ---- */
+    /* ---- Recognizer ---- */
     var recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
     pronConfig.applyTo(recognizer);
     console.log('[PRON] recognizer created for "' + referenceText + '"');
 
-    /* ---- 7. Diagnostic events ---- */
+    /* ---- Diagnostic events ---- */
     var gotInterim = false;
+    var gotFinal = false;
+
     recognizer.recognizing = function (s, e) {
         gotInterim = true;
         console.log('[PRON] INTERIM:', e.result.text);
     };
     recognizer.recognized = function (s, e) {
+        gotFinal = true;
         console.log('[PRON] FINAL:', e.result.reason, e.result.text);
     };
     recognizer.canceled = function (s, e) {
-        console.error('[PRON] ERROR:', e.reason, e.errorDetails);
+        console.error('[PRON] CANCELED:', e.reason, e.errorDetails);
     };
     recognizer.sessionStarted = function () {
         console.log('[PRON] session started');
     };
     recognizer.sessionStopped = function () {
-        console.log('[PRON] session stopped, gotInterim:', gotInterim);
+        console.log('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
     };
 
     _showPronListening();
 
-    /* ---- 8. Recognition with timeout guard ---- */
+    /* ---- Recognition with race-safe timeout ---- */
     return new Promise(function (resolve, reject) {
-        var settled = false;
+        var finished = false;
+        var timeoutId;
         var TIMEOUT_MS = 15000;
 
-        function finish(fn) {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
+        function cleanup() {
             try { recognizer.close(); } catch {}
             if (micStream) {
                 try { micStream.getTracks().forEach(function (t) { t.stop(); }); } catch {}
             }
+        }
+
+        function finish(fn) {
+            if (finished) return;
+            finished = true;
+            clearTimeout(timeoutId);
+            cleanup();
             fn();
         }
 
-        var timer = setTimeout(function () {
+        timeoutId = setTimeout(function () {
+            /* If we already got a FINAL result, the callback will handle it — skip timeout */
+            if (gotFinal) {
+                console.log('[PRON] timeout fired but gotFinal=true, ignoring');
+                return;
+            }
             console.error('[PRON] TIMEOUT after', TIMEOUT_MS, 'ms, gotInterim:', gotInterim);
-            var msg = gotInterim
-                ? 'Vaqt tugadi. Qayta urinib ko\'ring.'
-                : 'Audio olinmadi. Mikrofon sozlamalarini tekshiring.';
-            finish(function () { reject(new Error(msg)); });
+
+            /* If we got interim speech, this isn't a mic error — just slow */
+            if (gotInterim) {
+                finish(function () {
+                    var err = new Error('Vaqt tugadi. Qayta urinib ko\'ring.');
+                    err.softTimeout = true;
+                    reject(err);
+                });
+            } else {
+                finish(function () {
+                    reject(new Error('Audio olinmadi. Mikrofon sozlamalarini tekshiring.'));
+                });
+            }
         }, TIMEOUT_MS);
 
         console.log('[PRON] start recognition (recognizeOnceAsync)');
@@ -676,12 +707,16 @@ async function _runPronunciationAssessment(referenceText) {
 
                 var reason = result.reason;
 
+                /* ---- SUCCESS: RecognizedSpeech ---- */
                 if (reason === SpeechSDK.ResultReason.RecognizedSpeech) {
                     var text = (result.text || '').trim();
                     console.log('[PRON] recognized text:', text);
+
                     if (!text || text.length < 2) {
                         return finish(function () {
-                            reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.'));
+                            var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                            err.noSpeech = true;
+                            reject(err);
                         });
                     }
 
@@ -697,29 +732,35 @@ async function _runPronunciationAssessment(referenceText) {
                         };
                     });
 
-                    console.log('[PRON] score:', pronResult.pronunciationScore);
+                    var score = Math.round(pronResult.pronunciationScore);
+                    console.log('[PRON] score:', score);
+
                     finish(function () {
                         resolve({
                             accuracyScore:      Math.round(pronResult.accuracyScore),
                             fluencyScore:       Math.round(pronResult.fluencyScore),
                             completenessScore:  Math.round(pronResult.completenessScore),
-                            pronunciationScore: Math.round(pronResult.pronunciationScore),
+                            pronunciationScore: score,
                             words: words
                         });
                     });
 
+                /* ---- NoMatch ---- */
                 } else if (reason === SpeechSDK.ResultReason.NoMatch) {
                     console.warn('[PRON] NoMatch, gotInterim:', gotInterim);
+                    /* If we got interim text but final is NoMatch — don't show harsh error */
                     finish(function () {
-                        reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.'));
+                        var err = new Error(gotInterim
+                            ? 'So\'z aniqlanmadi. Aniqroq ayting.'
+                            : 'Ovoz aniqlanmadi. Balandroq gapiring.');
+                        err.noSpeech = true;
+                        reject(err);
                     });
 
+                /* ---- Canceled ---- */
                 } else if (reason === SpeechSDK.ResultReason.Canceled) {
                     var cancellation = SpeechSDK.CancellationDetails.fromResult(result);
-                    var errMsg = cancellation.reason === SpeechSDK.CancellationReason.Error
-                        ? (cancellation.errorDetails || 'Recognition cancelled')
-                        : 'Recognition cancelled';
-                    console.error('[PRON] Canceled:', errMsg);
+                    console.error('[PRON] Canceled:', cancellation.errorDetails);
                     finish(function () {
                         reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.'));
                     });
