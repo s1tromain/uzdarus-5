@@ -1,3 +1,4 @@
+console.log("\uD83D\uDE80 SPEECH.JS LOADED");
 /**
  * speech.js — Shared TTS & Pronunciation Assessment module for UzdaRus.
  *
@@ -125,8 +126,10 @@ function showStatus(text) {
 /* ================================================================== */
 function _playSound(src) {
     try {
-        var a = new Audio(src);
+        var a = new Audio();
         a.volume = 0.5;
+        a.onerror = function () { /* 404 or unsupported — silently ignore */ };
+        a.src = src;
         a.play().catch(function () { /* autoplay blocked — ignore */ });
     } catch { /* Audio constructor unavailable — ignore */ }
 }
@@ -400,156 +403,180 @@ function checkPronunciation(event) {
 }
 
 async function _runPronunciationAssessment(referenceText) {
-    console.log('[PRON] STEP 1: requesting microphone');
-
-    /* ---- 1. Microphone with fallback ---- */
-    let micStream = null;
-    let audioConfig;
-
-    try {
-        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log('[PRON] STEP 2: stream obtained, tracks:', micStream.getAudioTracks().length);
-        const SpeechSDK = window.SpeechSDK;
-        if (!SpeechSDK) throw new Error('Speech SDK not loaded');
-        audioConfig = SpeechSDK.AudioConfig.fromStreamInput(micStream);
-        console.log('[PRON] STEP 3: audioConfig created via fromStreamInput');
-    } catch (streamErr) {
-        console.warn('[PRON] fromStreamInput failed, falling back to fromDefaultMicrophoneInput:', streamErr.message);
-        try {
-            const SpeechSDK = window.SpeechSDK;
-            if (!SpeechSDK) throw new Error('Speech SDK not loaded');
-            audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
-            console.log('[PRON] STEP 3: audioConfig created via fromDefaultMicrophoneInput (fallback)');
-        } catch {
-            alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
-            throw new Error('microphone permission denied');
-        }
+    var SpeechSDK = window.SpeechSDK;
+    if (!SpeechSDK) {
+        alert('Speech SDK yuklanmadi. Sahifani yangilang.');
+        throw new Error('Speech SDK not loaded');
     }
 
-    /* ---- 2. Speech token ---- */
-    console.log('[PRON] STEP 4: fetching speech token');
-    let tokenData;
+    /* ---- 1. Microphone — getUserMedia is the ONLY source ---- */
+    console.log('[PRON] mic: requesting getUserMedia');
+    var micStream;
+    try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (micErr) {
+        console.error('[PRON] mic denied:', micErr.name, micErr.message);
+        alert('Mikrofon ruxsati kerak. Brauzer sozlamalarini tekshiring.');
+        throw new Error('microphone permission denied');
+    }
+    console.log('[PRON] mic granted, tracks:', micStream.getAudioTracks().length,
+                'active:', micStream.active);
+
+    /* ---- 2. AudioConfig from live stream ---- */
+    var audioConfig;
+    try {
+        audioConfig = SpeechSDK.AudioConfig.fromStreamInput(micStream);
+    } catch (cfgErr) {
+        micStream.getTracks().forEach(function (t) { t.stop(); });
+        console.error('[PRON] AudioConfig.fromStreamInput failed:', cfgErr.message);
+        alert('Mikrofon sozlamalari xato. Boshqa brauzer sinab ko\'ring.');
+        throw new Error('AudioConfig failed');
+    }
+    console.log('[PRON] audioConfig created via fromStreamInput');
+
+    /* ---- 3. Speech token ---- */
+    console.log('[PRON] fetching speech token');
+    var tokenData;
     try {
         tokenData = await _getSpeechToken();
     } catch (tokErr) {
-        if (micStream) micStream.getTracks().forEach(t => t.stop());
+        micStream.getTracks().forEach(function (t) { t.stop(); });
         throw tokErr;
     }
-    const { token, region } = tokenData;
-    console.log('[PRON] STEP 5: token OK, region:', region);
+    console.log('[PRON] token OK, region:', tokenData.region);
 
-    const SpeechSDK = window.SpeechSDK;
-
-    /* ---- 3. Config ---- */
-    const speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+    /* ---- 4. Speech config ---- */
+    var speechConfig = SpeechSDK.SpeechConfig.fromAuthorizationToken(
+        tokenData.token, tokenData.region
+    );
     speechConfig.speechRecognitionLanguage = 'ru-RU';
 
-    /* ---- 4. Pronunciation assessment config ---- */
-    const pronConfig = new SpeechSDK.PronunciationAssessmentConfig(
+    /* ---- 5. Pronunciation assessment config ---- */
+    var pronConfig = new SpeechSDK.PronunciationAssessmentConfig(
         referenceText,
         SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
         SpeechSDK.PronunciationAssessmentGranularity.Word,
         true
     );
 
-    /* ---- 5. Recognizer ---- */
-    const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+    /* ---- 6. Recognizer ---- */
+    var recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
     pronConfig.applyTo(recognizer);
-    console.log('[PRON] STEP 6: recognizer created for "' + referenceText + '"');
+    console.log('[PRON] recognizer created for "' + referenceText + '"');
 
-    /* ---- 6. Diagnostic event handlers ---- */
+    /* ---- 7. Diagnostic events ---- */
+    var gotInterim = false;
     recognizer.recognizing = function (s, e) {
+        gotInterim = true;
         console.log('[PRON] INTERIM:', e.result.text);
     };
     recognizer.recognized = function (s, e) {
-        console.log('[PRON] FINAL reason:', e.result.reason, 'text:', e.result.text);
+        console.log('[PRON] FINAL:', e.result.reason, e.result.text);
     };
     recognizer.canceled = function (s, e) {
-        console.warn('[PRON] CANCELED reason:', e.reason, 'errorDetails:', e.errorDetails);
+        console.error('[PRON] ERROR:', e.reason, e.errorDetails);
     };
     recognizer.sessionStarted = function () {
         console.log('[PRON] session started');
     };
     recognizer.sessionStopped = function () {
-        console.log('[PRON] session stopped');
+        console.log('[PRON] session stopped, gotInterim:', gotInterim);
     };
 
     _showPronListening();
 
-    /* ---- 7. Promise with timeout guard ---- */
-    return new Promise((resolve, reject) => {
-        let settled = false;
-        const TIMEOUT_MS = 12000;
+    /* ---- 8. Recognition with timeout guard ---- */
+    return new Promise(function (resolve, reject) {
+        var settled = false;
+        var TIMEOUT_MS = 15000;
 
         function finish(fn) {
             if (settled) return;
             settled = true;
             clearTimeout(timer);
-            try { recognizer.close(); } catch { /* ignore */ }
-            if (micStream) {
-                try { micStream.getTracks().forEach(t => t.stop()); } catch { /* ignore */ }
-            }
+            try { recognizer.close(); } catch {}
+            try { micStream.getTracks().forEach(function (t) { t.stop(); }); } catch {}
             fn();
         }
 
-        const timer = setTimeout(() => {
-            console.error('[PRON] TIMEOUT after', TIMEOUT_MS, 'ms');
-            finish(() => reject(new Error('Vaqt tugadi. Qayta urinib ko\'ring.')));
+        var timer = setTimeout(function () {
+            console.error('[PRON] TIMEOUT after', TIMEOUT_MS, 'ms, gotInterim:', gotInterim);
+            var msg = gotInterim
+                ? 'Vaqt tugadi. Qayta urinib ko\'ring.'
+                : 'Audio olinmadi. Mikrofon sozlamalarini tekshiring.';
+            finish(function () { reject(new Error(msg)); });
         }, TIMEOUT_MS);
 
-        console.log('[PRON] STEP 7: calling recognizeOnceAsync');
+        console.log('[PRON] start recognition (recognizeOnceAsync)');
         recognizer.recognizeOnceAsync(
-            result => {
-                console.log('[PRON] STEP 8: result received, reason:', result ? result.reason : 'null');
+            function (result) {
+                console.log('[PRON] result received, reason:',
+                    result ? result.reason : 'null', 'gotInterim:', gotInterim);
 
                 if (!result) {
-                    return finish(() => reject(new Error('Natija olinmadi.')));
+                    return finish(function () { reject(new Error('Natija olinmadi.')); });
                 }
 
-                const reason = result.reason;
+                var reason = result.reason;
 
                 if (reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-                    const text = (result.text || '').trim();
+                    var text = (result.text || '').trim();
                     console.log('[PRON] recognized text:', text);
                     if (!text || text.length < 2) {
-                        return finish(() => reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.')));
+                        return finish(function () {
+                            reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.'));
+                        });
                     }
 
-                    const pronResult = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
-                    const nb = pronResult.detailResult;
+                    var pronResult = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
+                    var nb = pronResult.detailResult;
 
-                    const words = (nb.Words || []).map(w => ({
-                        word: w.Word,
-                        accuracy: Math.round(w.PronunciationAssessment?.AccuracyScore ?? 0),
-                        error: w.PronunciationAssessment?.ErrorType || 'None',
-                    }));
+                    var words = (nb.Words || []).map(function (w) {
+                        var pa = w.PronunciationAssessment;
+                        return {
+                            word: w.Word,
+                            accuracy: Math.round(pa ? (pa.AccuracyScore || 0) : 0),
+                            error: (pa && pa.ErrorType) || 'None'
+                        };
+                    });
 
-                    console.log('[PRON] pronunciation score:', pronResult.pronunciationScore);
-                    finish(() => resolve({
-                        accuracyScore:      Math.round(pronResult.accuracyScore),
-                        fluencyScore:       Math.round(pronResult.fluencyScore),
-                        completenessScore:  Math.round(pronResult.completenessScore),
-                        pronunciationScore: Math.round(pronResult.pronunciationScore),
-                        words,
-                    }));
+                    console.log('[PRON] score:', pronResult.pronunciationScore);
+                    finish(function () {
+                        resolve({
+                            accuracyScore:      Math.round(pronResult.accuracyScore),
+                            fluencyScore:       Math.round(pronResult.fluencyScore),
+                            completenessScore:  Math.round(pronResult.completenessScore),
+                            pronunciationScore: Math.round(pronResult.pronunciationScore),
+                            words: words
+                        });
+                    });
+
                 } else if (reason === SpeechSDK.ResultReason.NoMatch) {
-                    console.warn('[PRON] NoMatch — no speech recognized');
-                    finish(() => reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.')));
+                    console.warn('[PRON] NoMatch, gotInterim:', gotInterim);
+                    finish(function () {
+                        reject(new Error('Ovoz aniqlanmadi. Balandroq gapiring.'));
+                    });
+
                 } else if (reason === SpeechSDK.ResultReason.Canceled) {
-                    const cancellation = SpeechSDK.CancellationDetails.fromResult(result);
-                    const msg = cancellation.reason === SpeechSDK.CancellationReason.Error
+                    var cancellation = SpeechSDK.CancellationDetails.fromResult(result);
+                    var errMsg = cancellation.reason === SpeechSDK.CancellationReason.Error
                         ? (cancellation.errorDetails || 'Recognition cancelled')
                         : 'Recognition cancelled';
-                    console.error('[PRON] Canceled:', msg);
-                    finish(() => reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.')));
+                    console.error('[PRON] Canceled:', errMsg);
+                    finish(function () {
+                        reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.'));
+                    });
+
                 } else {
                     console.error('[PRON] unexpected reason:', reason);
-                    finish(() => reject(new Error(result.errorDetails || 'Recognition failed')));
+                    finish(function () {
+                        reject(new Error(result.errorDetails || 'Recognition failed'));
+                    });
                 }
             },
-            err => {
+            function (err) {
                 console.error('[PRON] recognizeOnceAsync error:', err);
-                finish(() => reject(err));
+                finish(function () { reject(err); });
             }
         );
     });
