@@ -365,6 +365,28 @@ let _pronBusy = false;
 let _speechToken = null;
 let _speechTokenExpiry = 0;
 
+/**
+ * Normalize recognized text: lowercase, strip punctuation, remove
+ * consecutive duplicate words (Azure often doubles phrases).
+ * Optionally trim to the same word count as the reference.
+ */
+function _normalizeText(text, refWordCount) {
+    var s = (text || '')
+        .toLowerCase()
+        .replace(/[.,!?;:"'\u00AB\u00BB\u2018\u2019\u201C\u201D]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    /* deduplicate consecutive identical words */
+    var words = s.split(' ').filter(function (w, i, arr) {
+        return i === 0 || w !== arr[i - 1];
+    });
+    /* trim to reference length if recognized is longer */
+    if (refWordCount && refWordCount > 0 && words.length > refWordCount) {
+        words = words.slice(0, refWordCount);
+    }
+    return words.join(' ');
+}
+
 async function _getSpeechToken() {
     if (_speechToken && Date.now() < _speechTokenExpiry) return _speechToken;
     const res = await fetch('/api/speech-token', { headers: _getAuthHeaders() });
@@ -676,6 +698,15 @@ async function _runPronunciationAssessment(referenceText) {
         words: []
     };
 
+    /* Fallback when gotInterim=true but Azure gave NoMatch/garbage.
+     * Score 50 = "Yana urinib ko'ring" tier (not fail, not success). */
+    var INTERIM_FALLBACK = {
+        recognizedText: referenceText,
+        accuracyScore: 50, fluencyScore: 50,
+        completenessScore: 50, pronunciationScore: 50,
+        words: []
+    };
+
     /* ---- INTERIM: proves mic + audio work ---- */
     recognizer.recognizing = function (s, e) {
         if (e.result && e.result.text) {
@@ -737,13 +768,23 @@ async function _runPronunciationAssessment(referenceText) {
             if (!recognizedText) {
                 recognizedText = (result.text || '').trim();
             }
-            /* Remove Azure duplicates (e.g. "У меня есть, У меня есть меня есть") */
-            recognizedText = recognizedText.split(',')[0].trim();
+
+            /* Normalize: lowercase, strip punctuation, deduplicate, trim to ref length */
+            var refWordCount = referenceText.trim().split(/\s+/).length;
+            recognizedText = _normalizeText(recognizedText, refWordCount);
+
+            console.debug('[PRON] normalized text:', recognizedText);
 
             /* Garbage check */
             if (!recognizedText || recognizedText.length < 2 || /^[0.\s]+$/.test(recognizedText)) {
                 return null;
             }
+
+            /* Soft reference match: does recognized text contain the target? */
+            var normalizedRef = _normalizeText(referenceText, 0);
+            var textMatchesRef = recognizedText === normalizedRef
+                || recognizedText.includes(normalizedRef)
+                || normalizedRef.includes(recognizedText);
 
             /* Extract scores */
             try {
@@ -757,20 +798,35 @@ async function _runPronunciationAssessment(referenceText) {
                         error: (pa && pa.ErrorType) || 'None'
                     };
                 });
+                var pScore = Math.round(pronResult.pronunciationScore);
+                var aScore = Math.round(pronResult.accuracyScore);
+                var fScore = Math.round(pronResult.fluencyScore);
+                var cScore = Math.round(pronResult.completenessScore);
+
+                /* Boost: if text clearly matches reference but Azure scored low */
+                if (textMatchesRef) {
+                    pScore = Math.max(pScore, 70);
+                    aScore = Math.max(aScore, 70);
+                    fScore = Math.max(fScore, 70);
+                    cScore = Math.max(cScore, 70);
+                }
+
                 return {
                     recognizedText:     recognizedText,
-                    accuracyScore:      Math.round(pronResult.accuracyScore),
-                    fluencyScore:       Math.round(pronResult.fluencyScore),
-                    completenessScore:  Math.round(pronResult.completenessScore),
-                    pronunciationScore: Math.round(pronResult.pronunciationScore),
+                    accuracyScore:      aScore,
+                    fluencyScore:       fScore,
+                    completenessScore:  cScore,
+                    pronunciationScore: pScore,
                     words: words
                 };
             } catch (scoreErr) {
                 console.warn('[PRON] score extraction failed:', scoreErr);
+                /* Text matched reference → give fair score, not zero */
+                var fallbackScore = textMatchesRef ? 70 : 0;
                 return {
                     recognizedText: recognizedText,
-                    accuracyScore: 0, fluencyScore: 0,
-                    completenessScore: 0, pronunciationScore: 0,
+                    accuracyScore: fallbackScore, fluencyScore: fallbackScore,
+                    completenessScore: fallbackScore, pronunciationScore: fallbackScore,
                     words: []
                 };
             }
@@ -789,7 +845,7 @@ async function _runPronunciationAssessment(referenceText) {
             if (finished) return;
 
             if (!e.result) {
-                return finishSafe(function () { resolve(ZERO_RESULT); });
+                return finishSafe(function () { resolve(gotInterim ? INTERIM_FALLBACK : ZERO_RESULT); });
             }
 
             var reason = e.result.reason;
@@ -800,8 +856,8 @@ async function _runPronunciationAssessment(referenceText) {
                     console.debug('[PRON] score:', data.pronunciationScore);
                     finishSafe(function () { resolve(data); });
                 } else if (gotInterim) {
-                    console.warn('[PRON] RecognizedSpeech but garbage text, gotInterim → zero fallback');
-                    finishSafe(function () { resolve(ZERO_RESULT); });
+                    console.warn('[PRON] RecognizedSpeech but garbage text, gotInterim → interim fallback');
+                    finishSafe(function () { resolve(INTERIM_FALLBACK); });
                 } else {
                     finishSafe(function () {
                         var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
@@ -814,7 +870,7 @@ async function _runPronunciationAssessment(referenceText) {
                 if (gotInterim) {
                     var nmData = extractPronData(e.result);
                     console.warn('[PRON] NoMatch+gotInterim, recovered:', !!nmData);
-                    finishSafe(function () { resolve(nmData || ZERO_RESULT); });
+                    finishSafe(function () { resolve(nmData || INTERIM_FALLBACK); });
                 } else {
                     finishSafe(function () {
                         var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
@@ -827,7 +883,7 @@ async function _runPronunciationAssessment(referenceText) {
                 /* Canceled / unexpected reason */
                 console.warn('[PRON] recognized event reason:', reason, 'gotInterim:', gotInterim);
                 if (gotInterim) {
-                    finishSafe(function () { resolve(ZERO_RESULT); });
+                    finishSafe(function () { resolve(INTERIM_FALLBACK); });
                 } else {
                     finishSafe(function () {
                         reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.'));
@@ -841,8 +897,8 @@ async function _runPronunciationAssessment(referenceText) {
             console.error('[PRON] CANCELED:', e.reason, e.errorDetails);
             if (finished) return;
             if (gotInterim || gotFinal) {
-                console.warn('[PRON] Canceled but speech was detected → zero fallback');
-                finishSafe(function () { resolve(ZERO_RESULT); });
+                console.warn('[PRON] Canceled but speech was detected → interim fallback');
+                finishSafe(function () { resolve(INTERIM_FALLBACK); });
                 return;
             }
             /* Error cancellation (network/auth) → reject immediately, don't wait 30s */
@@ -877,7 +933,7 @@ async function _runPronunciationAssessment(referenceText) {
                 hardTimeoutId = setTimeout(function () {
                     if (finished) return;
                     console.error('[PRON] ultimate timeout (45s) — forcing zero resolve');
-                    finishSafe(function () { resolve(ZERO_RESULT); });
+                    finishSafe(function () { resolve(INTERIM_FALLBACK); });
                 }, 15000);
                 return;
             }
@@ -901,7 +957,7 @@ async function _runPronunciationAssessment(referenceText) {
 
                 if (!result) {
                     return finishSafe(function () {
-                        if (gotInterim) { resolve(ZERO_RESULT); }
+                        if (gotInterim) { resolve(INTERIM_FALLBACK); }
                         else { reject(new Error('Natija olinmadi.')); }
                     });
                 }
@@ -910,7 +966,7 @@ async function _runPronunciationAssessment(referenceText) {
                 if (data) {
                     finishSafe(function () { resolve(data); });
                 } else if (gotInterim) {
-                    finishSafe(function () { resolve(ZERO_RESULT); });
+                    finishSafe(function () { resolve(INTERIM_FALLBACK); });
                 } else {
                     finishSafe(function () {
                         var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
@@ -923,7 +979,7 @@ async function _runPronunciationAssessment(referenceText) {
                 if (finished) return;
                 console.error('[PRON] recognizeOnceAsync error:', err);
                 if (gotInterim) {
-                    finishSafe(function () { resolve(ZERO_RESULT); });
+                    finishSafe(function () { resolve(INTERIM_FALLBACK); });
                 } else {
                     finishSafe(function () { reject(err); });
                 }
