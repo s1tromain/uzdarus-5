@@ -709,12 +709,40 @@ async function _runPronunciationAssessment(referenceText) {
 
                 /* ---- SUCCESS: RecognizedSpeech ---- */
                 if (reason === SpeechSDK.ResultReason.RecognizedSpeech) {
-                    var text = (result.text || '').trim();
-                    console.log('[PRON] recognized text:', text);
+                    /*
+                     * IMPORTANT: result.text is UNRELIABLE with PronunciationAssessment —
+                     * it often returns "0 ." or garbage. Extract the real recognized text
+                     * from the JSON response property (DisplayText).
+                     */
+                    var recognizedText = '';
+                    try {
+                        var jsonStr = result.properties.getProperty(
+                            SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult
+                        );
+                        if (jsonStr) {
+                            var parsed = JSON.parse(jsonStr);
+                            recognizedText = (parsed.DisplayText || '').trim();
+                            console.log('[PRON] JSON DisplayText:', recognizedText);
+                            console.log('[PRON] raw result.text:', result.text, '(ignored)');
+                        }
+                    } catch (jsonErr) {
+                        console.warn('[PRON] JSON parse failed, falling back to result.text:', jsonErr);
+                        recognizedText = (result.text || '').trim();
+                    }
 
-                    if (!text || text.length < 2) {
+                    /* If JSON extraction failed, last-resort fallback */
+                    if (!recognizedText) {
+                        recognizedText = (result.text || '').trim();
+                    }
+
+                    console.log('[PRON] final recognizedText:', recognizedText);
+
+                    /* Treat empty/garbage text as NoMatch */
+                    if (!recognizedText || recognizedText.length < 2 || /^[0.\s]+$/.test(recognizedText)) {
                         return finish(function () {
-                            var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                            var err = new Error(gotInterim
+                                ? 'So\'z aniqlanmadi. Aniqroq ayting.'
+                                : 'Ovoz aniqlanmadi. Balandroq gapiring.');
                             err.noSpeech = true;
                             reject(err);
                         });
@@ -733,10 +761,11 @@ async function _runPronunciationAssessment(referenceText) {
                     });
 
                     var score = Math.round(pronResult.pronunciationScore);
-                    console.log('[PRON] score:', score);
+                    console.log('[PRON] pronunciationScore:', score);
 
                     finish(function () {
                         resolve({
+                            recognizedText:     recognizedText,
                             accuracyScore:      Math.round(pronResult.accuracyScore),
                             fluencyScore:       Math.round(pronResult.fluencyScore),
                             completenessScore:  Math.round(pronResult.completenessScore),
