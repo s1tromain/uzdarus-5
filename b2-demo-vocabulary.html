@@ -1158,6 +1158,7 @@
             currentTopicId = topicId;
             currentWords = [...topic.words];
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             isFlipped = false;
 
             document.getElementById('topicSelection').classList.add('hidden');
@@ -1167,6 +1168,8 @@
         }
 
         function updateCard() {
+            window.currentWordIndex = currentCardIndex;
+
             if (currentCardIndex >= currentWords.length) {
                 showCompletionScreen();
                 return;
@@ -1191,6 +1194,7 @@
 
         function nextCard() {
             currentCardIndex++;
+            window.currentWordIndex = currentCardIndex;
             saveProgress();
             updateCard();
         }
@@ -1198,6 +1202,7 @@
         function previousCard() {
             if (currentCardIndex > 0) {
                 currentCardIndex--;
+                window.currentWordIndex = currentCardIndex;
                 updateCard();
             }
         }
@@ -1205,7 +1210,7 @@
         // ==================== AUDIO (see speech.js) ====================
         window.getCurrentWord = function () {
             var w = currentWords[currentCardIndex];
-            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId } : null;
+            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId, wordIndex: currentCardIndex } : null;
         };
 
         function closeFlashcards() {
@@ -1214,6 +1219,7 @@
             document.getElementById('topicSelection').classList.remove('hidden');
             currentTopicId = null;
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             currentWords = [];
             renderTopics();
         }
@@ -1230,6 +1236,7 @@
 
         function restartTopic() {
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             document.getElementById('completionScreen').classList.remove('active');
             document.getElementById('flashcardScreen').classList.add('active');
             updateCard();
@@ -1241,6 +1248,7 @@
             document.getElementById('topicSelection').classList.remove('hidden');
             currentTopicId = null;
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             currentWords = [];
             renderTopics();
         }

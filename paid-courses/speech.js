@@ -382,14 +382,12 @@ async function _getSpeechToken() {
 }
 
 function checkPronunciation(event) {
-    console.log('[PRON] checkPronunciation called');
-
     if (_isRecording || _pronBusy) {
         console.warn('[PRON] BLOCKED: busy');
         return;
     }
 
-    const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
+    var word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
     if (!word || !word.ru) {
         console.warn('[PRON] BLOCKED: no word or missing .ru', word);
         return;
@@ -397,13 +395,22 @@ function checkPronunciation(event) {
 
     var topicId = word.topicId != null ? word.topicId : null;
     var wordIdx = _getWordIndex(word);
+    var referenceText = String(word.ru).trim();
 
-    console.log('[PRON] index:', wordIdx, 'word:', word.ru, 'topicId:', topicId);
+    console.log('[PRON] index:', wordIdx, 'referenceText:', JSON.stringify(referenceText), 'topicId:', topicId);
 
-    /* Block if index is invalid — means page didn't sync properly */
+    /* Block if index is invalid */
     if (wordIdx < 0) {
-        console.error('[PRON] BLOCKED: wordIdx is -1, page did not provide word index');
+        console.error('[PRON] BLOCKED: wordIdx=-1, page did not provide word index');
         showStatus('\u274C Xatolik: sahifani yangilang');
+        setTimeout(function () { showStatus(''); }, 2500);
+        return;
+    }
+
+    /* Block if referenceText is bad */
+    if (!referenceText || referenceText.length < 1) {
+        console.error('[PRON] BLOCKED: referenceText empty');
+        showStatus('\u274C So\'z noto\'g\'ri');
         setTimeout(function () { showStatus(''); }, 2500);
         return;
     }
@@ -421,7 +428,7 @@ function checkPronunciation(event) {
 
     showStatus('\uD83C\uDFA4 Gapiring...');
 
-    _runPronunciationAssessment(word.ru)
+    _runPronunciationAssessment(referenceText)
         .then(result => {
             console.log('[PRON] RESULT:', result);
 
@@ -898,12 +905,10 @@ function _isWordLocked(topicId, wordIndex) {
 
 /** Get the word index — prefers word.wordIndex from getCurrentWord(). */
 function _getWordIndex(word) {
-    /* 1. From the word object itself (set by getCurrentWord) */
+    /* 1. From the word object itself (set by getCurrentWord) — most reliable */
     if (word && typeof word.wordIndex === 'number') return word.wordIndex;
-    /* 2. Global vars set by vocabulary pages */
+    /* 2. Synced global (set by vocabulary pages on every card change) */
     if (typeof window.currentWordIndex === 'number') return window.currentWordIndex;
-    if (typeof window.currentCardIndex === 'number') return window.currentCardIndex;
-    if (typeof window._currentWordIndex === 'number') return window._currentWordIndex;
     return -1;
 }
 

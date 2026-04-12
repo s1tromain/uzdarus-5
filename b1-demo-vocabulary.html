@@ -1446,6 +1446,7 @@
         function startTopic(topicId) {
             currentTopicId = topicId;
             currentWordIndex = 0;
+            window.currentWordIndex = currentWordIndex;
             
             document.getElementById('topicSelection').classList.add('hidden');
             document.getElementById('flashcardScreen').classList.add('active');
@@ -1457,6 +1458,8 @@
         function loadCard() {
             const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
             if (!topic) return;
+
+            window.currentWordIndex = currentWordIndex;
 
             const word = topic.words[currentWordIndex];
             if (!word) {
@@ -1488,6 +1491,7 @@
             if (!topic) return;
 
             currentWordIndex++;
+            window.currentWordIndex = currentWordIndex;
             
             if (currentWordIndex >= topic.words.length) {
                 showCompletion();
@@ -1499,6 +1503,7 @@
         function previousCard() {
             if (currentWordIndex > 0) {
                 currentWordIndex--;
+                window.currentWordIndex = currentWordIndex;
                 loadCard();
             }
         }
@@ -1508,7 +1513,7 @@
             const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
             if (!topic) return null;
             var w = topic.words[currentWordIndex];
-            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId } : null;
+            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId, wordIndex: currentWordIndex } : null;
         };
 
         // ==================== COMPLETION ====================
@@ -1526,6 +1531,7 @@
 
         function restartTopic() {
             currentWordIndex = 0;
+            window.currentWordIndex = currentWordIndex;
             document.getElementById('completionScreen').classList.remove('active');
             document.getElementById('flashcardScreen').classList.add('active');
             loadCard();
@@ -1536,6 +1542,7 @@
             document.getElementById('topicSelection').classList.remove('hidden');
             currentTopicId = null;
             currentWordIndex = 0;
+            window.currentWordIndex = currentWordIndex;
             loadTopics();
         }
 

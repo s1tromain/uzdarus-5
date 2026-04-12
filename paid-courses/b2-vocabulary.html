@@ -1168,6 +1168,7 @@
             currentTopicId = topicId;
             currentWords = [...topic.words];
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             isFlipped = false;
 
             document.getElementById('topicSelection').classList.add('hidden');
@@ -1182,6 +1183,8 @@
         }
 
         function updateCard() {
+            window.currentWordIndex = currentCardIndex;
+
             if (currentCardIndex >= currentWords.length) {
                 showCompletionScreen();
                 return;
@@ -1216,6 +1219,7 @@
             }
 
             currentCardIndex = nextIdx;
+            window.currentWordIndex = currentCardIndex;
             saveProgress();
             updateCard();
         }
@@ -1223,6 +1227,7 @@
         function previousCard() {
             if (currentCardIndex > 0) {
                 currentCardIndex--;
+                window.currentWordIndex = currentCardIndex;
                 updateCard();
             }
         }
@@ -1239,6 +1244,7 @@
             document.getElementById('topicSelection').classList.remove('hidden');
             currentTopicId = null;
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             currentWords = [];
             renderTopics();
         }
@@ -1255,6 +1261,7 @@
 
         function restartTopic() {
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             document.getElementById('completionScreen').classList.remove('active');
             document.getElementById('flashcardScreen').classList.add('active');
             updateCard();
@@ -1266,6 +1273,7 @@
             document.getElementById('topicSelection').classList.remove('hidden');
             currentTopicId = null;
             currentCardIndex = 0;
+            window.currentWordIndex = currentCardIndex;
             currentWords = [];
             renderTopics();
         }
