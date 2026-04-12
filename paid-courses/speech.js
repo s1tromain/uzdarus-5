@@ -690,6 +690,7 @@ async function _runPronunciationAssessment(referenceText) {
     /* ---- State flags ---- */
     var gotInterim = false;
     var gotFinal = false;
+    var lastInterimText = '';
 
     var ZERO_RESULT = {
         recognizedText: referenceText,
@@ -711,6 +712,7 @@ async function _runPronunciationAssessment(referenceText) {
     recognizer.recognizing = function (s, e) {
         if (e.result && e.result.text) {
             gotInterim = true;
+            lastInterimText = e.result.text;
             console.debug('[PRON] INTERIM:', e.result.text);
         }
     };
@@ -868,9 +870,14 @@ async function _runPronunciationAssessment(referenceText) {
 
             } else if (reason === SpeechSDK.ResultReason.NoMatch) {
                 if (gotInterim) {
-                    var nmData = extractPronData(e.result);
-                    console.warn('[PRON] NoMatch+gotInterim, recovered:', !!nmData);
-                    finishSafe(function () { resolve(nmData || INTERIM_FALLBACK); });
+                    console.warn('[PRON] NoMatch but gotInterim → forcing fallback');
+                    var fb = {
+                        recognizedText: lastInterimText || referenceText,
+                        accuracyScore: 50, fluencyScore: 50,
+                        completenessScore: 50, pronunciationScore: 50,
+                        words: []
+                    };
+                    finishSafe(function () { resolve(fb); });
                 } else {
                     finishSafe(function () {
                         var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
@@ -918,7 +925,20 @@ async function _runPronunciationAssessment(referenceText) {
         softTimeoutId = setTimeout(function () {
             if (finished) return;
             timeoutHit = true;
-            console.warn('[PRON] soft timeout (15s) — recognizer still alive, waiting for recognized event...');
+            console.warn('[PRON] soft timeout (15s), gotInterim:', gotInterim);
+
+            if (gotInterim) {
+                console.warn('[PRON] soft timeout + gotInterim → forcing interim fallback NOW');
+                var fb = {
+                    recognizedText: lastInterimText || referenceText,
+                    accuracyScore: 50, fluencyScore: 50,
+                    completenessScore: 50, pronunciationScore: 50,
+                    words: []
+                };
+                finishSafe(function () { resolve(fb); });
+                return;
+            }
+
             showStatus('\u23F3 Kutilmoqda...');
         }, 15000);
 
