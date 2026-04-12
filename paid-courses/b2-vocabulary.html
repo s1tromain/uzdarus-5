@@ -1230,7 +1230,7 @@
         // ==================== AUDIO (see speech.js) ====================
         window.getCurrentWord = function () {
             var w = currentWords[currentCardIndex];
-            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId } : null;
+            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId, wordIndex: currentCardIndex } : null;
         };
 
         function closeFlashcards() {

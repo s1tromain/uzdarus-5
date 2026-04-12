@@ -1521,7 +1521,7 @@
             const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
             if (!topic) return null;
             var w = topic.words[currentWordIndex];
-            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId } : null;
+            return w ? { ru: w.ru, uz: w.uz, topicId: currentTopicId, wordIndex: currentWordIndex } : null;
         };
 
         // ==================== COMPLETION ====================

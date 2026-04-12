@@ -382,25 +382,34 @@ async function _getSpeechToken() {
 }
 
 function checkPronunciation(event) {
-    console.log('[PRON] CLICK WORKS — checkPronunciation called');
+    console.log('[PRON] checkPronunciation called');
 
     if (_isRecording || _pronBusy) {
-        console.warn('[PRON] BLOCKED: _isRecording=' + _isRecording + ', _pronBusy=' + _pronBusy);
+        console.warn('[PRON] BLOCKED: busy');
         return;
     }
 
     const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
-    console.log('[PRON] getCurrentWord result:', word);
     if (!word || !word.ru) {
-        console.warn('[PRON] BLOCKED: word is empty or missing .ru', word);
+        console.warn('[PRON] BLOCKED: no word or missing .ru', word);
         return;
     }
 
     var topicId = word.topicId != null ? word.topicId : null;
     var wordIdx = _getWordIndex(word);
 
+    console.log('[PRON] index:', wordIdx, 'word:', word.ru, 'topicId:', topicId);
+
+    /* Block if index is invalid — means page didn't sync properly */
+    if (wordIdx < 0) {
+        console.error('[PRON] BLOCKED: wordIdx is -1, page did not provide word index');
+        showStatus('\u274C Xatolik: sahifani yangilang');
+        setTimeout(function () { showStatus(''); }, 2500);
+        return;
+    }
+
     /* check if word is locked */
-    if (topicId != null && wordIdx >= 0 && _isWordLocked(topicId, wordIdx)) {
+    if (topicId != null && _isWordLocked(topicId, wordIdx)) {
         return;
     }
 
@@ -530,6 +539,13 @@ function _handlePronFail(msg) {
 }
 
 async function _runPronunciationAssessment(referenceText) {
+    /* ---- validate referenceText ---- */
+    if (!referenceText || typeof referenceText !== 'string' || referenceText.trim().length === 0) {
+        console.error('[PRON] referenceText is empty or invalid:', referenceText);
+        throw new Error('So\'z bo\'sh. Iltimos sahifani yangilang.');
+    }
+    referenceText = referenceText.trim();
+
     var SpeechSDK = window.SpeechSDK;
     if (!SpeechSDK) {
         alert('Speech SDK yuklanmadi. Sahifani yangilang.');
@@ -615,18 +631,22 @@ async function _runPronunciationAssessment(referenceText) {
     );
     speechConfig.speechRecognitionLanguage = 'ru-RU';
 
-    /* ---- Pronunciation assessment config ---- */
+    /* ---- Pronunciation assessment config (Phoneme level for accurate scoring) ---- */
     var pronConfig = new SpeechSDK.PronunciationAssessmentConfig(
         referenceText,
         SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
-        SpeechSDK.PronunciationAssessmentGranularity.Word,
-        true
+        SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
+        true  // enableMiscue
     );
+    pronConfig.phonemeAlphabet = 'IPA';
+    pronConfig.enableProsodyAssessment = true;
+
+    console.log('[PRON] PronunciationAssessmentConfig referenceText:', JSON.stringify(referenceText));
 
     /* ---- Recognizer ---- */
     var recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
     pronConfig.applyTo(recognizer);
-    console.log('[PRON] recognizer created for "' + referenceText + '"');
+    console.log('[PRON] recognizer created, config applied for "' + referenceText + '"');
 
     /* ---- Diagnostic events ---- */
     var gotInterim = false;
@@ -876,11 +896,14 @@ function _isWordLocked(topicId, wordIndex) {
     return !progress[key][wordIndex];
 }
 
-/** Try to get the word index from getCurrentWord context. */
+/** Get the word index — prefers word.wordIndex from getCurrentWord(). */
 function _getWordIndex(word) {
-    if (typeof window._currentWordIndex === 'number') return window._currentWordIndex;
+    /* 1. From the word object itself (set by getCurrentWord) */
+    if (word && typeof word.wordIndex === 'number') return word.wordIndex;
+    /* 2. Global vars set by vocabulary pages */
     if (typeof window.currentWordIndex === 'number') return window.currentWordIndex;
     if (typeof window.currentCardIndex === 'number') return window.currentCardIndex;
+    if (typeof window._currentWordIndex === 'number') return window._currentWordIndex;
     return -1;
 }
 
