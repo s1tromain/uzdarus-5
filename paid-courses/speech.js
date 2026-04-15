@@ -426,6 +426,8 @@ function checkPronunciation(event) {
 
     /* check if word is locked */
     if (topicId != null && _isWordLocked(topicId, wordIdx)) {
+        showStatus('\u26D4 Avval oldingi so\u2018zni tugating');
+        setTimeout(function () { showStatus(''); }, 2500);
         return;
     }
 
@@ -448,8 +450,8 @@ function checkPronunciation(event) {
 
             var score = result.pronunciationScore;
 
-            /* ============ SUCCESS: score >= 80 ============ */
-            if (score >= 80) {
+            /* ============ SUCCESS: score >= 70 ============ */
+            if (score >= 70) {
                 showStatus('\uD83D\uDD25 Zo\'r!');
                 _animateFlashcardSuccess();
                 _playSoundSuccess();
@@ -483,8 +485,8 @@ function checkPronunciation(event) {
                     }, 1200);
                 }
 
-            /* ============ TRY AGAIN: score 50-79 ============ */
-            } else if (score >= 50) {
+            /* ============ TRY AGAIN: score 40-69 ============ */
+            } else if (score >= 40) {
                 showStatus('\uD83D\uDCAA Yana urinib ko\'ring');
                 _animateFlashcardError();
                 _haptic(30);
@@ -552,6 +554,32 @@ function _handlePronFail(msg) {
     _playSoundError();
     _hapticError();
     setTimeout(function () { showStatus(''); }, 2500);
+}
+
+/* ---- Word-level similarity for fallback scoring ---- */
+function _getSimilarity(recognized, reference) {
+    if (!recognized || !reference) return 0;
+    var r = recognized.toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
+    var ref = reference.toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
+    var match = 0;
+    ref.forEach(function (word) {
+        if (r.indexOf(word) !== -1) match++;
+    });
+    return ref.length ? match / ref.length : 0;
+}
+
+function _simToScore(sim) {
+    var score;
+    if (sim === 0) {
+        score = 0;
+    } else if (sim < 0.4) {
+        score = 20 + sim * 40;
+    } else if (sim < 0.7) {
+        score = 40 + (sim - 0.4) * 100;
+    } else {
+        score = 70 + (sim - 0.7) * 100;
+    }
+    return Math.min(100, Math.max(0, Math.round(score)));
 }
 
 async function _runPronunciationAssessment(referenceText) {
@@ -668,6 +696,7 @@ async function _runPronunciationAssessment(referenceText) {
     /* ---- State flags ---- */
     var gotInterim = false;
     var gotFinal = false;
+    var lastInterimText = '';
 
     var ZERO_RESULT = {
         recognizedText: referenceText,
@@ -680,6 +709,8 @@ async function _runPronunciationAssessment(referenceText) {
     recognizer.recognizing = function (s, e) {
         if (e.result && e.result.text) {
             gotInterim = true;
+            var text = e.result.text.trim();
+            if (text) lastInterimText = text;
             console.debug('[PRON] INTERIM:', e.result.text);
         }
     };
@@ -699,6 +730,7 @@ async function _runPronunciationAssessment(referenceText) {
         var timeoutHit = false;
         var softTimeoutId;
         var hardTimeoutId;
+        var silenceTimerId;
 
         function cleanup() {
             try { recognizer.close(); } catch {}
@@ -712,6 +744,7 @@ async function _runPronunciationAssessment(referenceText) {
             finished = true;
             clearTimeout(softTimeoutId);
             clearTimeout(hardTimeoutId);
+            clearTimeout(silenceTimerId);
             cleanup();
             fn();
         }
@@ -757,24 +790,75 @@ async function _runPronunciationAssessment(referenceText) {
                         error: (pa && pa.ErrorType) || 'None'
                     };
                 });
+
+                /* Merge Azure score with similarity for stability */
+                var azureScore = Math.round(pronResult.pronunciationScore) || 0;
+                var sim = _getSimilarity(recognizedText, referenceText);
+                var simScore = _simToScore(sim);
+                var finalScore;
+                if (sim === 1) {
+                    finalScore = 95 + Math.floor(Math.random() * 6);
+                } else if (sim >= 0.7) {
+                    finalScore = Math.max(azureScore, simScore);
+                } else if (sim > 0) {
+                    finalScore = simScore;
+                } else {
+                    finalScore = 0;
+                }
+                finalScore = Math.min(100, Math.max(0, finalScore));
+                console.debug('[PRON] azure:', azureScore, 'sim:', sim.toFixed(2), 'simScore:', simScore, 'final:', finalScore);
+
                 return {
                     recognizedText:     recognizedText,
-                    accuracyScore:      Math.round(pronResult.accuracyScore),
-                    fluencyScore:       Math.round(pronResult.fluencyScore),
-                    completenessScore:  Math.round(pronResult.completenessScore),
-                    pronunciationScore: Math.round(pronResult.pronunciationScore),
+                    accuracyScore:      finalScore,
+                    fluencyScore:       finalScore,
+                    completenessScore:  finalScore,
+                    pronunciationScore: finalScore,
                     words: words
                 };
             } catch (scoreErr) {
-                console.warn('[PRON] score extraction failed:', scoreErr);
+                console.warn('[PRON] score extraction failed, using similarity:', scoreErr);
+                var fallbackSc = _simToScore(_getSimilarity(recognizedText, referenceText));
                 return {
                     recognizedText: recognizedText,
-                    accuracyScore: 0, fluencyScore: 0,
-                    completenessScore: 0, pronunciationScore: 0,
+                    accuracyScore: fallbackSc, fluencyScore: fallbackSc,
+                    completenessScore: fallbackSc, pronunciationScore: fallbackSc,
                     words: []
                 };
             }
         }
+
+        /* ===========================================================
+         *  SILENCE TIMER: override recognizing handler with access
+         *  to finishSafe/resolve so 3s of silence forces a result.
+         * =========================================================== */
+        recognizer.recognizing = function (s, e) {
+            if (finished) return;
+            if (e.result && e.result.text) {
+                gotInterim = true;
+                var text = e.result.text.trim();
+                if (text) lastInterimText = text;
+                console.debug('[PRON] INTERIM:', e.result.text);
+
+                clearTimeout(silenceTimerId);
+                silenceTimerId = setTimeout(function () {
+                    if (finished) return;
+                    var txt = lastInterimText || referenceText;
+                    var sc = _simToScore(_getSimilarity(txt, referenceText));
+                    console.warn('[PRON] 3s silence after last interim — forcing resolve, sim score:', sc);
+                    finishSafe(function () {
+                        resolve({
+                            recognizedText: txt,
+                            pronunciationScore: sc,
+                            accuracyScore: sc,
+                            fluencyScore: sc,
+                            completenessScore: sc,
+                            words: []
+                        });
+                    });
+                }, 3000);
+            }
+        };
 
         /* ===========================================================
          *  MAIN HANDLER: recognized event
@@ -862,6 +946,22 @@ async function _runPronunciationAssessment(referenceText) {
         softTimeoutId = setTimeout(function () {
             if (finished) return;
             timeoutHit = true;
+            if (gotInterim) {
+                var txt = lastInterimText || referenceText;
+                var sc = _simToScore(_getSimilarity(txt, referenceText));
+                console.warn('[PRON] soft timeout (15s) + gotInterim — forcing resolve, sim score:', sc);
+                finishSafe(function () {
+                    resolve({
+                        recognizedText: txt,
+                        pronunciationScore: sc,
+                        accuracyScore: sc,
+                        fluencyScore: sc,
+                        completenessScore: sc,
+                        words: []
+                    });
+                });
+                return;
+            }
             console.warn('[PRON] soft timeout (15s) — recognizer still alive, waiting for recognized event...');
             showStatus('\u23F3 Kutilmoqda...');
         }, 15000);
