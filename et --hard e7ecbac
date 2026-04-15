@@ -1,0 +1,68 @@
+[33me395a18[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix: stabilize speech.js + safe UI fallback
+[33me7ecbac[m final: speech engine v3 + scoring + progress + ux
+[33m718f7c9[m final: stable speech recognition (interim matching, fallback, ux fix)
+[33m71f8a43[m fix: stable speech recognition + fallback + early success
+[33m6636071[m fix: stable speech recognition + fallback + race condition fix v2
+[33ma5383cc[m fix: stable speech recognition + fallback + race condition fix
+[33mbc5ec67[m fix: update working microphone
+[33m0928ac0[m fix: added update
+[33mea51dfb[m 🔥 production-ready speech system
+[33m582b734[m feat: production-ready pronunciation system (unified architecture)
+[33m2f4c982[m fix: full sync vocabulary + pronunciation system (demo + paid unified)
+[33mc4bcb8e[m fix: sync wordIndex between pages and speech.js
+[33m4713864[m fix: correct Azure pronunciation result parsing
+[33mb728f37[m FINAL: pronunciation system stable + duolingo UX
+[33m6b1fad7[m FIX: pointer-events blocking pronunciation clicks
+[33m6e41dd0[m fix: event delegation for pronunciation
+[33m51d7aaa[m final fix: mobile/desktop audio split
+[33m759cdc8[m fix: microphone
+[33ma0f3758[m FIX REAL MIC STREAM
+[33mfaa0653[m fix pronunciation trigger
+[33ma9494e0[m pronunciation debug + fallback
+[33m73038a8[m fix: real mic stream for azure speech
+[33m5ed2ead[m voice switch UI + demo integration + speech fix
+[33m83450ed[m fix: mic + speech timeout + stability
+[33m9d0bf03[m final ux + speech improvements
+[33m6b35b63[m fix: reduce serverless functions
+[33m1507552[m add: new voc.panel
+[33m840fb45[m add: audio function
+[33mfdb3b33[m Enhance A2 Topic 3 with grammar block, exercises and full validation audit
+[33m217dcc2[m Remove duplicate check button and unify validation in A2 Topic 2
+[33mf802360[m Enhance A2 Topic 2 with new vocabulary and exercises (paid + demo)
+[33m6685d5f[m Improve A2 Topic 1 Exercise 2 fill-text UI in paid and demo
+[33m164af53[m Enhance A2 Topic 1 in paid and demo with reading and new exercises
+[33m72e05b5[m Fix A1 final exam family exercise language bug and audit exam content
+[33me8534d6[m Redesign premium A1 final exam as full-screen page with 2-hour timer
+[33mc1d04ed[m Fix premium A1 final exam modal UX and add exam check button
+[33mc141e1a[m Add premium A1 final exam block and 100-point scoring
+[33m468848e[m Implement premium A1 Topic 12 lesson and vocabulary
+[33m7e35e98[m Implement premium A1 Topic 11 lesson and vocabulary
+[33m71bb837[m Fix premium A1 Topic 10 explanation panel and Xatoni toping UI
+[33m3c43fe0[m Implement premium A1 Topic 10 lesson and vocabulary
+[33m52e2816[m Improve detailed answer feedback across all courses
+[33mc178ec6[m Add grammar image to premium A1 Topic 10
+[33m318dbdd[m Implement premium A1 Topic 9 lesson and vocabulary
+[33med56497[m add A1 topic 8 full lesson
+[33m48b135b[m fix A1 topic 7 exercise 3 input mode
+[33mbc9609c[m add A1 topic 7 and fix topic 6 check button
+[33mb0ed314[m fix A1 topic 6 check button
+[33mec50a86[m fix: add check button to A1 topic 6
+[33m08bd5a0[m fix missing check button topic 6
+[33m351710d[m add A1 topic 6 vocabulary and exercises
+[33md3ed421[m add A1 topic 6-9 explanation images
+[33m36ce27b[m fix lesson images
+[33m1f09e42[m fix check button placement in topics
+[33m003d9ef[m fix topic-scoped answer checking
+[33m873fe47[m fix: global check button + responsive exercises layout
+[33m4db83c2[m A1 topic 5 full lesson
+[33mcb50979[m A1 topic 4 full lesson + vocabulary + exercises
+[33m3017d45[m fix vocabulary card order
+[33mec7fde9[m fix: A1 topic 2-3 images + package pages
+[33m71b9ead[m update: package pages A1-A2 B1-B2
+[33me7c9f03[m security update: admin gate, staff fixes, subscription controls
+[33ma328870[m fix auth ux + role access + firebase admin init
+[33me366788[m redeploy
+[33m13270ec[m redeploy
+[33mf575d6a[m fix vercel config
+[33m4bfe10e[m fix vercel runtime config
+[33m0eb3a2a[m initial upload
