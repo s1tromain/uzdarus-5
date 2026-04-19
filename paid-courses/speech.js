@@ -825,6 +825,10 @@ async function _runPronunciationAssessment(referenceText) {
     };
     recognizer.sessionStopped = function () {
         console.debug('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
+        if (!finished) {
+            console.warn('[PRON] sessionStopped fallback → ZERO_RESULT');
+            finishSafe(function () { resolve(ZERO_RESULT); });
+        }
     };
 
     try { _showPronListening(); } catch (uiErr) { console.warn('[UI ERROR] _showPronListening:', uiErr); }
@@ -1085,8 +1089,11 @@ async function _runPronunciationAssessment(referenceText) {
                 finishSafe(function () {
                     reject(new Error(e.errorDetails || 'Xatolik yuz berdi. Qayta urinib ko\'ring.'));
                 });
+                return;
             }
-            /* EndOfStream / other non-error → let hard timeout handle it */
+            /* EndOfStream / other non-error → resolve with zero */
+            console.warn('[PRON] Canceled (non-error) → ZERO_RESULT');
+            finishSafe(function () { resolve(ZERO_RESULT); });
         };
 
         /* ===========================================================
@@ -1139,6 +1146,15 @@ async function _runPronunciationAssessment(referenceText) {
 
         /* ---- Start recognition ---- */
         console.debug('[PRON] start recognition (recognizeOnceAsync)');
+
+        /* Final safety net — guarantees a result within 8s no matter what */
+        setTimeout(function () {
+            if (!finished) {
+                console.warn('[PRON] FINAL FALLBACK (8s) → ZERO_RESULT');
+                finishSafe(function () { resolve(ZERO_RESULT); });
+            }
+        }, 8000);
+
         recognizer.recognizeOnceAsync(
             function (result) {
                 /* BACKUP: only runs if recognized event didn't already handle it */
