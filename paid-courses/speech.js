@@ -575,8 +575,8 @@ function _handlePronFail(msg) {
 /* ---- Word-level similarity for fallback scoring ---- */
 function _getSimilarity(recognized, reference) {
     if (!recognized || !reference) return 0;
-    var r = recognized.toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
-    var ref = reference.toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
+    var r = (recognized || '').toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
+    var ref = (reference || '').toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
     var match = 0;
     ref.forEach(function (word) {
         if (r.indexOf(word) !== -1) match++;
@@ -596,6 +596,95 @@ function _simToScore(sim) {
         score = 70 + (sim - 0.7) * 100;
     }
     return Math.min(100, Math.max(0, Math.round(score)));
+}
+
+/* ---- Word-level feedback (correct / missing / wrong_position / extra) ---- */
+function _getWordFeedback(recognized, reference) {
+    if (!recognized || !reference) return [];
+
+    var rec = [...new Set((recognized || '').toLowerCase().split(/\s+/))];
+    var ref = (reference || '').toLowerCase().split(/\s+/);
+
+    var result = [];
+
+    ref.forEach(function (word, index) {
+        if (rec[index] === word) {
+            result.push({ word: word, status: 'correct' });
+        } else if (rec.includes(word)) {
+            result.push({ word: word, status: 'wrong_position' });
+        } else {
+            result.push({ word: word, status: 'missing' });
+        }
+    });
+
+    rec.forEach(function (word) {
+        if (!ref.includes(word)) {
+            result.push({ word: word, status: 'extra' });
+        }
+    });
+
+    return result;
+}
+
+/* ---- Build human-readable feedback message from word feedback ---- */
+
+/* ---- Inline highlight: color each reference word by feedback status ---- */
+function _buildInlineHighlight(referenceText, feedback) {
+    if (!referenceText || !feedback) return '';
+    var refWords = referenceText.split(/\s+/);
+    return refWords.map(function (word, i) {
+        var f = feedback[i];
+        var cls = 'wf-missing';
+        if (f) {
+            if (f.status === 'correct') cls = 'wf-correct';
+            else if (f.status === 'wrong_position') cls = 'wf-wrong-pos';
+            else if (f.status === 'missing') cls = 'wf-missing';
+        }
+        return '<span class="wf-word ' + cls + '">' + word + '</span>';
+    }).join(' ');
+}
+
+/* ---- Smart hint: suggest what to fix ---- */
+function _buildSmartHint(feedback) {
+    if (!feedback || !feedback.length) return '';
+    var missing = feedback.filter(function (f) { return f.status === 'missing'; });
+    var wrongPos = feedback.filter(function (f) { return f.status === 'wrong_position'; });
+    var extra = feedback.filter(function (f) { return f.status === 'extra'; });
+    if (missing.length) {
+        return '\u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439 \u0434\u043E\u0431\u0430\u0432\u0438\u0442\u044C: ' + missing.map(function (w) { return w.word; }).join(', ');
+    }
+    if (wrongPos.length) {
+        return '\u041F\u043E\u043F\u0440\u043E\u0431\u0443\u0439 \u043F\u043E\u043C\u0435\u043D\u044F\u0442\u044C \u043F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043B\u043E\u0432';
+    }
+    if (extra.length) {
+        return '\u0423\u0431\u0435\u0440\u0438 \u043B\u0438\u0448\u043D\u0435\u0435: ' + extra.map(function (w) { return w.word; }).join(', ');
+    }
+    return '';
+}
+
+function _buildFeedbackMessage(feedback) {
+
+    var missing = feedback.filter(function (f) { return f.status === 'missing'; });
+    var wrong = feedback.filter(function (f) { return f.status === 'wrong_position'; });
+    var extra = feedback.filter(function (f) { return f.status === 'extra'; });
+
+    var parts = [];
+
+    if (missing.length > 0) {
+        parts.push('\u274C \u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: ' + missing.map(function (w) { return w.word; }).join(', '));
+    }
+    if (wrong.length > 0) {
+        parts.push('\u26A0\uFE0F \u041F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043B\u043E\u0432');
+    }
+    if (extra.length > 0) {
+        parts.push('\u274C \u041B\u0438\u0448\u043D\u0435\u0435: ' + extra.map(function (w) { return w.word; }).join(', '));
+    }
+
+    if (parts.length === 0) {
+        return '\u2705 \u041E\u0442\u043B\u0438\u0447\u043D\u043E!';
+    }
+
+    return parts.join('\n');
 }
 
 async function _runPronunciationAssessment(referenceText) {
@@ -807,39 +896,64 @@ async function _runPronunciationAssessment(referenceText) {
                     };
                 });
 
-                /* Merge Azure score with similarity for stability */
-                var azureScore = Math.round(pronResult.pronunciationScore) || 0;
+                /* Safe defaults from Azure NBest */
+                var data = null;
+                try {
+                    var jsonStr2 = result.properties.getProperty(
+                        SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult
+                    );
+                    if (jsonStr2) data = JSON.parse(jsonStr2);
+                } catch (_e) { /* ignore */ }
+
+                var accuracy = data?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore ?? 0;
+                var rawFluency = data?.NBest?.[0]?.PronunciationAssessment?.FluencyScore ?? 0;
+                var fluency = rawFluency > 0 ? rawFluency : 70;
+                var completeness = data?.NBest?.[0]?.PronunciationAssessment?.CompletenessScore ?? 0;
+
+                /* Similarity check */
                 var sim = _getSimilarity(recognizedText, referenceText);
-                var simScore = _simToScore(sim);
-                var finalScore;
-                if (sim === 1) {
-                    finalScore = 95 + Math.floor(Math.random() * 6);
-                } else if (sim >= 0.7) {
-                    finalScore = Math.max(azureScore, simScore);
-                } else if (sim > 0) {
-                    finalScore = simScore;
-                } else {
+
+                /* Weighted final score */
+                var finalScore = (
+                    accuracy * 0.45 +
+                    fluency * 0.2 +
+                    completeness * 0.2 +
+                    sim * 100 * 0.15
+                );
+
+                /* Hard rules */
+                if (sim === 0) {
                     finalScore = 0;
                 }
-                finalScore = Math.min(100, Math.max(0, finalScore));
-                console.debug('[PRON] azure:', azureScore, 'sim:', sim.toFixed(2), 'simScore:', simScore, 'final:', finalScore);
+                if (sim === 1 && accuracy > 85) {
+                    finalScore = Math.max(finalScore, 95);
+                }
+
+                /* Clamp */
+                finalScore = Math.round(Math.min(100, Math.max(0, finalScore)));
+
+                console.debug('[PRON] accuracy:', accuracy, 'fluency:', fluency, 'completeness:', completeness, 'sim:', sim.toFixed(2), 'final:', finalScore);
+
+                var wordFeedback = _getWordFeedback(recognizedText, referenceText);
 
                 return {
-                    recognizedText:     recognizedText,
-                    accuracyScore:      finalScore,
-                    fluencyScore:       finalScore,
-                    completenessScore:  finalScore,
+                    recognizedText: recognizedText,
                     pronunciationScore: finalScore,
-                    words: words
+                    accuracyScore: accuracy,
+                    fluencyScore: fluency,
+                    completenessScore: completeness,
+                    wordFeedback: wordFeedback
                 };
             } catch (scoreErr) {
                 console.warn('[PRON] score extraction failed, using similarity:', scoreErr);
-                var fallbackSc = _simToScore(_getSimilarity(recognizedText, referenceText));
+                var fallbackSim = _getSimilarity(recognizedText, referenceText);
+                var fallbackSc = _simToScore(fallbackSim);
                 return {
                     recognizedText: recognizedText,
                     accuracyScore: fallbackSc, fluencyScore: fallbackSc,
                     completenessScore: fallbackSc, pronunciationScore: fallbackSc,
-                    words: []
+                    words: [],
+                    wordFeedback: _getWordFeedback(recognizedText, referenceText)
                 };
             }
         }
@@ -1619,6 +1733,20 @@ function _ensurePronOverlay() {
         '.pron-listening-dots span:nth-child(2){animation-delay:.2s}',
         '.pron-listening-dots span:nth-child(3){animation-delay:.4s}',
         '@keyframes pronDot{0%,80%,100%{opacity:.3}40%{opacity:1}}',
+        /* word feedback highlights */
+        '.wf-inline{margin-top:10px;font-size:18px;font-weight:600;line-height:1.6;text-align:center}',
+        '.wf-word{padding:2px 6px;border-radius:6px;margin-right:4px;display:inline-block}',
+        '.wf-correct{background:#22c55e22;color:#22c55e}',
+        '.wf-wrong-pos{background:#f59e0b22;color:#f59e0b}',
+        '.wf-missing{background:#9ca3af22;color:#9ca3af}',
+        '.wf-hint{margin-top:10px;font-size:14px;color:#facc15;font-weight:500;text-align:center}',
+        /* result animations */
+        '.anim-success{animation:wfPop .4s ease}',
+        '.anim-almost{animation:wfPulse .5s ease}',
+        '.anim-fail{animation:wfShake .4s ease}',
+        '@keyframes wfPop{0%{transform:scale(.9)}100%{transform:scale(1)}}',
+        '@keyframes wfPulse{0%{opacity:.6}100%{opacity:1}}',
+        '@keyframes wfShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}',
     ].join('\n');
     document.head.appendChild(style);
 
@@ -1651,6 +1779,7 @@ function _showPronListening() {
 
 /* ---- result screen ---- */
 function _showPronResult(refText, r) {
+    if (!r) return;
     _ensurePronOverlay();
     _lastPronRef = refText;
 
@@ -1708,8 +1837,25 @@ function _showPronResult(refText, r) {
     }
     html += '</div>';
 
+    /* word-level feedback (correct / missing / wrong_position / extra) */
+    var wfb = r.wordFeedback || [];
+    if (refText && wfb.length > 0) {
+        /* inline highlighted sentence */
+        html += '<div class="wf-inline">' + _buildInlineHighlight(refText, wfb) + '</div>';
+
+        /* smart hint */
+        var hintText = _buildSmartHint(wfb);
+        if (hintText) {
+            html += '<div class="wf-hint">' + hintText + '</div>';
+        }
+
+        /* detailed feedback message */
+        var feedbackMsg = _buildFeedbackMessage(wfb);
+        html += '<div style="margin-top:12px;font-weight:600;text-align:center;white-space:pre-line;line-height:1.5">' + feedbackMsg + '</div>';
+    }
+
     /* verdict */
-    var hasErrors = r.words.some(function (w) { return w.accuracy < 70; });
+    var hasErrors = (r.words || []).some(function (w) { return w.accuracy < 70; });
     if (hasErrors) {
         html += '<div class="pron-verdict bad">Qizil so\u2018zlarni qayta mashq qiling</div>';
     } else if (overall >= 85) {
@@ -1742,6 +1888,17 @@ function _showPronResult(refText, r) {
           + '</div>';
 
     document.getElementById('pronCard').innerHTML = html;
+
+    /* apply animation class based on score */
+    var pronCard = document.getElementById('pronCard');
+    pronCard.classList.remove('anim-success', 'anim-almost', 'anim-fail');
+    if (overall >= 85) {
+        pronCard.classList.add('anim-success');
+    } else if (overall >= 70) {
+        pronCard.classList.add('anim-almost');
+    } else {
+        pronCard.classList.add('anim-fail');
+    }
 
     /* kick animations after paint */
     requestAnimationFrame(function () {
