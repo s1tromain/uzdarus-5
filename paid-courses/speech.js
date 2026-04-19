@@ -1,3 +1,9 @@
+window._awardXP = () => {};
+window._updateStreakBadge = () => {};
+window._showXpToast = () => {};
+window._showLevelUpPopup = () => {};
+window._showStreakReminder = () => {};
+
 console.log("\uD83D\uDE80 SPEECH.JS LOADED");
 
 /*
@@ -1337,16 +1343,6 @@ function _showLessonCompleteOverlay() {
     _playSoundSuccess();
     _hapticSuccess();
 
-    var xpResult = _awardXP(95); // bonus for completing whole lesson
-    _updateStreakBadge();
-
-    if (xpResult.xpGained > 0) {
-        _showXpToast(xpResult.xpGained);
-    }
-    if (xpResult.leveledUp) {
-        setTimeout(function () { _showLevelUpPopup(xpResult.level); }, 1000);
-    }
-
     _injectWordProgressCSS(); // ensure CSS is loaded
 
     var ov = document.getElementById('lessonCompleteOverlay');
@@ -1360,24 +1356,12 @@ function _showLessonCompleteOverlay() {
         document.body.appendChild(ov);
     }
 
-    var streak = _getStreak();
-
-    var xpLine = xpResult.xpGained > 0
-        ? '<div class="lc-xp">+' + xpResult.xpGained + ' XP \u{1F525}</div>'
-        : '';
-
-    var streakLine = streak > 0
-        ? '<div class="lc-streak">\uD83D\uDD25 ' + streak + ' kun ketma-ket!</div>'
-        : '';
-
     ov.innerHTML =
         '<div class="lc-card">'
       +   '<div class="lc-emoji">\uD83C\uDF89</div>'
       +   '<div class="lc-title">Dars tugadi!</div>'
       +   '<div class="lc-subtitle">Barcha so\u2018zlarni muvaffaqiyatli o\u2018rgandingiz</div>'
-      +   xpLine
-      +   streakLine
-      +   '<div class="lc-encourage">\uD83D\uDD25 Zo\u2018r! Ertaga yana qayting!</div>'
+      +   '<div class="lc-encourage">Zo\u2018r! Davom eting!</div>'
       +   '<button class="lc-btn" onclick="_closeLessonComplete()">Davom etish \u2192</button>'
       + '</div>';
 
@@ -1417,232 +1401,29 @@ function _logPronunciation(word, result) {
 }
 
 /* ================================================================== */
-/*  Gamification — XP + daily streak (localStorage)                   */
+/*  Gamification — DISABLED (functions kept as no-ops for safety)      */
 /* ================================================================== */
 const _GAMIFY_KEY = 'uzdarus_gamify';
 
-function _loadGamify() {
-    try {
-        var raw = localStorage.getItem(_GAMIFY_KEY);
-        if (raw) return JSON.parse(raw);
-    } catch { /* corrupted */ }
-    return { xp: 0, streak: 0, lastDate: null, todayXp: 0, todayDate: null };
-}
+function _loadGamify() { return { xp: 0, streak: 0, lastDate: null, todayXp: 0, todayDate: null }; }
+function _saveGamify() { return; }
+function _todayStr() { return new Date().toISOString().slice(0, 10); }
+function _yesterdayStr() { var d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().slice(0, 10); }
+function _calcLevel() { return 0; }
+function _xpInCurrentLevel() { return 0; }
+function _xpForNextLevel() { return 100; }
+function _levelProgress() { return 0; }
+function _awardXP() { return { xpGained: 0, totalXp: 0, streak: 0, todayXp: 0, level: 0, prevLevel: 0, leveledUp: false, progress: 0 }; }
+function _getStreak() { return 0; }
+function _ensureStreakBadge() { return; }
+function _updateStreakBadge() { return; }
+function _showXpToast() { return; }
+function _showLevelUpPopup() { return; }
+function _closeLevelUp() { return; }
 
-function _saveGamify(g) {
-    try { localStorage.setItem(_GAMIFY_KEY, JSON.stringify(g)); } catch {}
-}
-
-function _todayStr() {
-    return new Date().toISOString().slice(0, 10);
-}
-
-function _yesterdayStr() {
-    var d = new Date();
-    d.setDate(d.getDate() - 1);
-    return d.toISOString().slice(0, 10);
-}
-
-/* ---- level helpers ---- */
-function _calcLevel(xp) {
-    return Math.floor(xp / 100);
-}
-
-function _xpInCurrentLevel(xp) {
-    return xp % 100;
-}
-
-function _xpForNextLevel() {
-    return 100;
-}
-
-function _levelProgress(xp) {
-    return _xpInCurrentLevel(xp) / _xpForNextLevel();
-}
-
-/**
- * Award XP for a pronunciation result.
- * Returns { xpGained, totalXp, streak, level, prevLevel, leveledUp, progress } for display.
- */
-function _awardXP(pronunciationScore) {
-    var g = _loadGamify();
-    var prevLevel = _calcLevel(g.xp);
-
-    var xp = 0;
-    if (pronunciationScore >= 85) xp = 10;
-    else if (pronunciationScore >= 70) xp = 5;
-    if (xp === 0) {
-        return { xpGained: 0, totalXp: g.xp, streak: g.streak,
-                 level: prevLevel, prevLevel: prevLevel, leveledUp: false,
-                 progress: _levelProgress(g.xp) };
-    }
-
-    var today = _todayStr();
-
-    /* streak logic */
-    if (g.todayDate !== today) {
-        if (g.lastDate === _yesterdayStr()) {
-            g.streak += 1;
-        } else if (g.lastDate !== today) {
-            g.streak = 1;
-        }
-        g.lastDate = today;
-        g.todayXp = 0;
-        g.todayDate = today;
-    }
-
-    g.xp += xp;
-    g.todayXp += xp;
-    _saveGamify(g);
-
-    var newLevel = _calcLevel(g.xp);
-    return {
-        xpGained: xp, totalXp: g.xp, streak: g.streak, todayXp: g.todayXp,
-        level: newLevel, prevLevel: prevLevel, leveledUp: newLevel > prevLevel,
-        progress: _levelProgress(g.xp)
-    };
-}
-
-function _getStreak() {
-    var g = _loadGamify();
-    var today = _todayStr();
-    /* if the user hasn't practiced today, check if streak is still valid */
-    if (g.lastDate === today || g.lastDate === _yesterdayStr()) return g.streak;
-    return 0;   // streak expired
-}
-
-/* ---- badge + level UI (injected into page) ---- */
-function _ensureStreakBadge() {
-    if (document.getElementById('streakBadge')) return;
-
-    var s = document.createElement('style');
-    s.textContent = [
-        '.streak-badge{position:fixed;top:12px;right:12px;z-index:9000;display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:22px;font-size:.88rem;font-weight:700;color:#333;background:#fff;border:2px solid #e8e8e8;box-shadow:0 4px 20px rgba(0,0,0,.08);animation:streakSlide .5s ease both;cursor:default;font-family:system-ui,-apple-system,sans-serif}',
-        '.streak-badge .sb-level{display:flex;align-items:center;gap:5px;color:#667eea;font-weight:800}',
-        '.streak-badge .sb-level-num{font-size:1.05rem}',
-        '.streak-badge .sb-bar-wrap{width:48px;height:6px;background:#eee;border-radius:3px;overflow:hidden}',
-        '.streak-badge .sb-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#667eea,#764ba2);transition:width .6s ease}',
-        '.streak-badge .sb-fire{font-size:1.05rem;animation:streakFire 1s ease infinite alternate}',
-        '.streak-badge .sb-streak{color:#ff6b00;font-weight:800}',
-        '.streak-badge .sb-xp{color:#667eea;padding-left:6px;border-left:2px solid #e8e8e8}',
-        '.streak-badge .sb-sep{width:1px;height:16px;background:#e0e0e0}',
-        '@keyframes streakSlide{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}',
-        '@keyframes streakFire{0%{transform:scale(1) rotate(-3deg)}100%{transform:scale(1.15) rotate(3deg)}}',
-        '.xp-toast{position:fixed;top:60px;right:16px;z-index:9001;padding:10px 18px;border-radius:14px;font-size:.9rem;font-weight:800;color:#fff;background:linear-gradient(135deg,#667eea,#764ba2);box-shadow:0 6px 20px rgba(102,126,234,.4);animation:xpToastIn .4s ease both;pointer-events:none}',
-        '@keyframes xpToastIn{from{opacity:0;transform:translateY(-12px) scale(.8)}to{opacity:1;transform:translateY(0) scale(1)}}',
-        /* level-up popup */
-        '.lvlup-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10001;justify-content:center;align-items:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}',
-        '.lvlup-overlay.active{display:flex}',
-        '.lvlup-card{background:#fff;border-radius:28px;padding:40px 32px 32px;max-width:360px;width:88%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.25);animation:lvlPop .5s cubic-bezier(.175,.885,.32,1.275)}',
-        '@keyframes lvlPop{from{opacity:0;transform:scale(.7) translateY(60px)}to{opacity:1;transform:scale(1) translateY(0)}}',
-        '.lvlup-stars{font-size:3.5rem;margin-bottom:4px;animation:lvlStars .8s .2s both}',
-        '@keyframes lvlStars{0%{transform:scale(0) rotate(-30deg);opacity:0}60%{transform:scale(1.3) rotate(8deg)}100%{transform:scale(1) rotate(0);opacity:1}}',
-        '.lvlup-title{font-size:1.5rem;font-weight:900;color:#667eea;margin-bottom:4px}',
-        '.lvlup-num{font-size:3rem;font-weight:900;background:linear-gradient(135deg,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.2}',
-        '.lvlup-sub{font-size:.9rem;color:#888;margin:8px 0 20px}',
-        '.lvlup-bar-wrap{width:80%;margin:0 auto 20px;height:10px;background:#eee;border-radius:5px;overflow:hidden}',
-        '.lvlup-bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#667eea,#764ba2);width:0;transition:width .8s ease .3s}',
-        '.lvlup-btn{display:inline-block;padding:14px 40px;border:none;border-radius:16px;font-size:1rem;font-weight:800;color:#fff;background:linear-gradient(135deg,#667eea,#764ba2);box-shadow:0 5px 0 #5a3d8a;cursor:pointer;transition:transform .15s}',
-        '.lvlup-btn:active{transform:translateY(3px);box-shadow:0 2px 0 #5a3d8a}',
-    ].join('\n');
-    document.head.appendChild(s);
-
-    var badge = document.createElement('div');
-    badge.id = 'streakBadge';
-    badge.className = 'streak-badge';
-    document.body.appendChild(badge);
-}
-
-function _updateStreakBadge() {
-    _ensureStreakBadge();
-    var g = _loadGamify();
-    var streak = _getStreak();
-    var level = _calcLevel(g.xp);
-    var pct = Math.round(_levelProgress(g.xp) * 100);
-    var badge = document.getElementById('streakBadge');
-    if (!badge) return;
-
-    if (streak > 0 || g.xp > 0 || level > 0) {
-        badge.style.display = 'flex';
-        var h = '';
-        /* level + mini progress bar */
-        h += '<span class="sb-level">';
-        h += '\u2B50 <span class="sb-level-num">' + level + '</span>';
-        h += '<span class="sb-bar-wrap"><span class="sb-bar-fill" style="width:' + pct + '%"></span></span>';
-        h += '</span>';
-        /* streak */
-        if (streak > 0) {
-            h += '<span class="sb-sep"></span>';
-            h += '<span class="sb-fire">\uD83D\uDD25</span><span class="sb-streak">' + streak + '</span>';
-        }
-        /* xp */
-        h += '<span class="sb-sep"></span>';
-        h += '<span class="sb-xp">' + g.xp + ' XP</span>';
-        badge.innerHTML = h;
-    } else {
-        badge.style.display = 'none';
-    }
-}
-
-function _showXpToast(xp) {
-    _ensureStreakBadge();
-    var t = document.createElement('div');
-    t.className = 'xp-toast';
-    t.textContent = '+' + xp + ' XP';
-    document.body.appendChild(t);
-    setTimeout(function () { t.remove(); }, 1800);
-}
-
-/* ---- level-up popup ---- */
-function _showLevelUpPopup(newLevel) {
-    _ensureStreakBadge();
-    var id = 'lvlUpOverlay';
-    var overlay = document.getElementById(id);
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = id;
-        overlay.className = 'lvlup-overlay';
-        overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) _closeLevelUp();
-        });
-        document.body.appendChild(overlay);
-    }
-
-    var g = _loadGamify();
-    var pct = Math.round(_levelProgress(g.xp) * 100);
-    var remaining = _xpForNextLevel() - _xpInCurrentLevel(g.xp);
-
-    overlay.innerHTML =
-        '<div class="lvlup-card">'
-      +   '<div class="lvlup-stars">\uD83C\uDF1F\u2B50\uD83C\uDF1F</div>'
-      +   '<div class="lvlup-title">Yangi daraja!</div>'
-      +   '<div class="lvlup-num">Level ' + newLevel + '</div>'
-      +   '<div class="lvlup-sub">Keyingi darajagacha ' + remaining + ' XP qoldi</div>'
-      +   '<div class="lvlup-bar-wrap"><div class="lvlup-bar-fill" id="lvlBarFill"></div></div>'
-      +   '<button class="lvlup-btn" onclick="_closeLevelUp()">Davom etish</button>'
-      + '</div>';
-
-    overlay.classList.add('active');
-
-    /* animate bar after paint */
-    requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-            var bar = document.getElementById('lvlBarFill');
-            if (bar) bar.style.width = pct + '%';
-        });
-    });
-}
-
-function _closeLevelUp() {
-    var el = document.getElementById('lvlUpOverlay');
-    if (el) el.classList.remove('active');
-}
-
-/* init badge + streak reminder + voice selector on load */
+/* init voice selector + mic + progress on load */
 if (typeof document !== 'undefined') {
     function _initUI() {
-        _updateStreakBadge();
-        _showStreakReminder();
         _initVoiceSelector();
         _injectMicSelector();
         _initMicSelector();
@@ -1734,62 +1515,8 @@ function _injectWordProgressCSS() {
     document.head.appendChild(s);
 }
 
-/* ---- streak-at-risk reminder ---- */
-function _showStreakReminder() {
-    var g = _loadGamify();
-    if (g.streak < 1) return;                 // no streak to lose
-    if (g.todayDate === _todayStr()) return;   // already practiced today
-
-    var DISMISS_KEY = 'uzdarus_streak_dismiss';
-    var dismissed = localStorage.getItem(DISMISS_KEY);
-    if (dismissed === _todayStr()) return;     // already dismissed today
-
-    _ensureStreakBadge(); // CSS host
-
-    var id = 'streakReminder';
-    if (document.getElementById(id)) return;
-
-    var css = document.createElement('style');
-    css.textContent = [
-        '.sr-bar{position:fixed;bottom:0;left:0;right:0;z-index:9500;display:flex;align-items:center;justify-content:center;gap:12px;padding:14px 20px;background:linear-gradient(135deg,#fff4e6,#ffe8cc);border-top:2px solid #ffcb80;box-shadow:0 -4px 24px rgba(255,152,0,.15);animation:srSlide .45s ease both;font-family:system-ui,-apple-system,sans-serif}',
-        '@keyframes srSlide{from{transform:translateY(100%)}to{transform:translateY(0)}}',
-        '.sr-bar .sr-fire{font-size:1.6rem;animation:streakFire 1s ease infinite alternate}',
-        '.sr-bar .sr-text{font-size:.92rem;font-weight:700;color:#b45309}',
-        '.sr-bar .sr-streak{color:#e65100;font-weight:900}',
-        '.sr-bar .sr-cta{padding:8px 20px;border:none;border-radius:12px;font-size:.85rem;font-weight:800;color:#fff;background:linear-gradient(135deg,#ff9800,#e65100);box-shadow:0 3px 0 #bf360c;cursor:pointer;transition:transform .15s;white-space:nowrap}',
-        '.sr-bar .sr-cta:active{transform:translateY(2px);box-shadow:0 1px 0 #bf360c}',
-        '.sr-bar .sr-close{position:absolute;top:6px;right:10px;border:none;background:none;font-size:1.1rem;color:#c0a060;cursor:pointer;padding:4px;line-height:1}',
-    ].join('\n');
-    document.head.appendChild(css);
-
-    var bar = document.createElement('div');
-    bar.id = id;
-    bar.className = 'sr-bar';
-    bar.innerHTML =
-        '<span class="sr-fire">\uD83D\uDD25</span>'
-      + '<span class="sr-text">Streak yo\u2018qoladi! '
-      + '<span class="sr-streak">' + g.streak + ' kun</span> '
-      + '— bugun mashq qiling</span>'
-      + '<button class="sr-cta" onclick="_dismissStreakReminder(false)">Mashq qilish</button>'
-      + '<button class="sr-close" onclick="_dismissStreakReminder(true)">\u00D7</button>';
-    document.body.appendChild(bar);
-}
-
-function _dismissStreakReminder(justClose) {
-    var el = document.getElementById('streakReminder');
-    if (el) {
-        el.style.animation = 'none';
-        el.style.transition = 'transform .3s ease';
-        el.style.transform = 'translateY(100%)';
-        setTimeout(function () { el.remove(); }, 300);
-    }
-    try { localStorage.setItem('uzdarus_streak_dismiss', _todayStr()); } catch {}
-    if (!justClose) {
-        /* scroll to the first practice button on the page */
-        var btn = document.querySelector('[onclick*="checkPronunciation"], [onclick*="playAudio"], .btn-listen, .btn-speak');
-        if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-}
+function _showStreakReminder() { return; }
+function _dismissStreakReminder() { return; }
 
 /* ================================================================== */
 /*  Pronunciation UI — Duolingo-style (auto-injected)                 */
@@ -1989,24 +1716,7 @@ function _showPronResult(refText, r) {
         html += '<div class="pron-verdict good">\u2714 Zo\u2018r natija!</div>';
     }
 
-    /* XP reward */
-    var xpResult = _awardXP(overall);
-    if (xpResult.xpGained > 0) {
-        var remaining = _xpForNextLevel() - _xpInCurrentLevel(xpResult.totalXp);
-        var barPct = Math.round(xpResult.progress * 100);
-        html += '<div class="pron-xp-row">';
-        html += '<span class="pron-xp-amount">+' + xpResult.xpGained + ' XP</span>';
-        html += '<span class="pron-xp-label">Lvl ' + xpResult.level + ' \u2022 ' + remaining + ' XP qoldi</span>';
-        if (xpResult.streak > 0) {
-            html += '<span class="pron-streak-row">\uD83D\uDD25 ' + xpResult.streak + ' kun</span>';
-        }
-        html += '</div>';
-        setTimeout(function () { _showXpToast(xpResult.xpGained); }, 600);
-        if (xpResult.leveledUp) {
-            setTimeout(function () { _showLevelUpPopup(xpResult.level); }, 1200);
-        }
-    }
-    _updateStreakBadge();
+    /* XP reward — disabled */
 
     /* personalized tips */
     var tips = generatePronunciationFeedback(r);
