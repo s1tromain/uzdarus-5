@@ -775,7 +775,23 @@ function _finalScoreGuard(score, similarity, recognizedText, matchRatio, accurac
         guardedScore = Math.min(60, guardedScore + 10);
     }
 
-    return guardedScore;
+    if (
+        safeSimilarity >= 0.75 &&
+        safeAccuracy >= 70 &&
+        safeMatchRatio >= 0.6
+    ) {
+        guardedScore = Math.max(guardedScore, 70);
+    }
+
+    if (
+        safeSimilarity >= 0.9 &&
+        safeAccuracy >= 85 &&
+        safeMatchRatio >= 0.8
+    ) {
+        guardedScore = Math.max(guardedScore, 85);
+    }
+
+    return Math.max(0, Math.min(100, Math.round(guardedScore)));
 }
 
 function _applyMatchedWordScoreGuard(score, recognized, reference, similarity, accuracy, fluency) {
@@ -1210,10 +1226,13 @@ async function _runPronunciationAssessment(referenceText) {
         var adjustedScore = Number(score) || 0;
         var safeSimilarity = Number(similarity) || 0;
         var safeAccuracy = Number(accuracy) || 0;
+        var penalty = _getSimilarityPenalty(safeSimilarity);
 
-        if (safeSimilarity < 0.7) {
-            adjustedScore = adjustedScore * _getSimilarityPenalty(safeSimilarity);
+        if (safeSimilarity >= 0.7) {
+            penalty = 1;
         }
+
+        adjustedScore = adjustedScore * penalty;
 
         if (safeSimilarity >= 0.9 && safeAccuracy > 85) {
             adjustedScore = Math.max(adjustedScore, 90);
