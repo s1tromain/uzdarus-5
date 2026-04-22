@@ -66,6 +66,47 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 /* ================================================================== */
 let _isRecording = false;
 let _pronClosed = false;
+let _demoPronUiSyncTimer = 0;
+let _demoPaywallClicked = false;
+let _demoPaywallResetTimer = 0;
+let _demoPaywallRedirectTimer = 0;
+let _redirecting = false;
+const DEMO_ALLOWED_TOPICS = [1];
+
+function _isDemoSpeechPage() {
+    var path = (window.location && window.location.pathname || '').toLowerCase();
+    return /-demo-vocabulary\.html$/.test(path);
+}
+
+function _isDemoLocked(topicId) {
+    if (!_isDemoSpeechPage()) return false;
+    if (typeof topicId !== 'number') return false;
+    return DEMO_ALLOWED_TOPICS.indexOf(topicId) === -1;
+}
+
+function _setDemoPronunciationLockState(locked) {
+    var btns = document.querySelectorAll('.audio-button.pron-btn');
+    btns.forEach(function (micBtn) {
+        if (!micBtn) return;
+        micBtn.classList.add('mic-btn');
+        micBtn.classList.toggle('locked', !!locked);
+        micBtn.title = locked ? 'Доступно только в Premium' : '';
+    });
+}
+
+function _syncDemoPronunciationLockState() {
+    var word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
+    var topicId = word && word.topicId != null ? word.topicId : null;
+    _setDemoPronunciationLockState(_isDemoLocked(topicId));
+}
+
+function _scheduleDemoPronunciationLockSync() {
+    clearTimeout(_demoPronUiSyncTimer);
+    _demoPronUiSyncTimer = setTimeout(function () {
+        _demoPronUiSyncTimer = 0;
+        _syncDemoPronunciationLockState();
+    }, 0);
+}
 
 /* ================================================================== */
 /*  Microphone selector                                               */
@@ -124,12 +165,10 @@ function _injectMicSelector() {
     if (!wrap) return;
 
     var container = document.createElement('div');
-    container.style.cssText = 'margin:8px 0;display:flex;align-items:center;gap:8px;justify-content:center';
+    container.className = 'mic-selector-wrap';
     container.innerHTML =
-        '<label for="micSelect" style="font-size:.85rem;font-weight:600;color:#555">' +
-        '\uD83C\uDF99 Mikrofon:</label>' +
-        '<select id="micSelect" style="font-size:.85rem;padding:4px 8px;border-radius:8px;' +
-        'border:1px solid #ccc;max-width:220px"></select>';
+        '<label class="mic-label" for="micSelect">\uD83C\uDFA4 \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043C\u0438\u043A\u0440\u043E\u0444\u043E\u043D</label>' +
+        '<select id="micSelect" class="mic-select"></select>';
     wrap.parentNode.insertBefore(container, wrap.nextSibling);
 }
 
@@ -222,15 +261,115 @@ function showStatus(text) {
     if (!el) {
         el = document.createElement('div');
         el.id = 'speechStatus';
-        el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9600;padding:10px 22px;border-radius:16px;font-size:.9rem;font-weight:700;color:#fff;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none;transition:opacity .3s;font-family:system-ui,-apple-system,sans-serif';
+        el.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9600;padding:10px 22px;border-radius:16px;font-size:.9rem;font-weight:700;color:#fff;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none;transition:opacity .3s;font-family:system-ui,-apple-system,sans-serif;white-space:pre-line;text-align:center';
         document.body.appendChild(el);
     }
     if (!text) {
         el.style.opacity = '0';
         return;
     }
-    el.textContent = text;
+    var safeText = String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    el.innerHTML = safeText.replace(/\n/g, '<br>');
     el.style.opacity = '1';
+}
+
+function _showStatusSafe(text) {
+    try {
+        if (window.showStatus) {
+            window.showStatus(text, 'warn');
+            return;
+        }
+        showStatus(text);
+    } catch (error) {
+        console.debug('[PAYWALL ERROR]', error);
+    }
+}
+
+function _goToDemoPricing() {
+    if (_redirecting) return;
+    _redirecting = true;
+
+    try {
+        var path = (window.location && window.location.pathname || '').toLowerCase();
+        if (!path || path === '/' || /\/index\.html$/.test(path)) {
+            var pricingEl = document.getElementById('pricing');
+            if (pricingEl && pricingEl.scrollIntoView) {
+                pricingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(function () {
+                    _redirecting = false;
+                }, 1000);
+                return;
+            }
+        }
+
+        window.location.href = '/index.html#pricing';
+        setTimeout(function () {
+            _redirecting = false;
+        }, 3000);
+    } catch (error) {
+        _redirecting = false;
+        console.debug('[PAYWALL ERROR]', error);
+    }
+}
+
+function _handleDemoPaywall() {
+    try {
+        if (_redirecting || _demoPaywallRedirectTimer) return;
+
+        if (!_demoPaywallClicked) {
+            _demoPaywallClicked = true;
+
+            _showStatusSafe('\uD83D\uDD12 \u0422\u043E\u043B\u044C\u043A\u043E Premium\n\u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437');
+
+            clearTimeout(_demoPaywallResetTimer);
+            _demoPaywallResetTimer = setTimeout(function () {
+                _demoPaywallClicked = false;
+                _demoPaywallResetTimer = 0;
+            }, 2000);
+
+            return;
+        }
+
+        _demoPaywallClicked = false;
+        clearTimeout(_demoPaywallResetTimer);
+        _redirecting = true;
+
+        _showStatusSafe('\uD83D\uDD12 \u042D\u0442\u043E \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0432 Premium\n\u041F\u0435\u0440\u0435\u0445\u043E\u0434\u0438\u043C \u043A \u043E\u043F\u043B\u0430\u0442\u0435\u2026');
+
+        clearTimeout(_demoPaywallRedirectTimer);
+        _demoPaywallRedirectTimer = setTimeout(function () {
+            _demoPaywallRedirectTimer = 0;
+            try {
+                var path = (window.location && window.location.pathname || '').toLowerCase();
+                if (!path || path === '/' || /\/index\.html$/.test(path)) {
+                    var pricingEl = document.getElementById('pricing');
+                    if (pricingEl && pricingEl.scrollIntoView) {
+                        pricingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        setTimeout(function () {
+                            _redirecting = false;
+                        }, 1000);
+                        return;
+                    }
+                }
+
+                window.location.href = '/index.html#pricing';
+                setTimeout(function () {
+                    _redirecting = false;
+                }, 3000);
+            } catch (error) {
+                _redirecting = false;
+                console.debug('[PAYWALL ERROR]', error);
+            }
+        }, 1200);
+    } catch (error) {
+        _redirecting = false;
+        console.debug('[PAYWALL ERROR]', error);
+    }
 }
 
 /* ================================================================== */
@@ -436,6 +575,11 @@ function checkPronunciation(event) {
     }
 
     var topicId = word.topicId != null ? word.topicId : null;
+
+    if (_isDemoLocked(topicId)) {
+        _handleDemoPaywall();
+        return;
+    }
 
     console.debug('[PRON] index:', wordIdx);
     console.debug('[PRON] referenceText:', JSON.stringify(referenceText));
@@ -1694,6 +1838,7 @@ if (typeof document !== 'undefined') {
         _injectMicSelector();
         _initMicSelector();
         _injectWordProgressCSS();
+        _scheduleDemoPronunciationLockSync();
     }
 
     if (document.readyState === 'loading') {
@@ -1703,6 +1848,10 @@ if (typeof document !== 'undefined') {
     }
 
     /* ---- event delegation: works with dynamic DOM / re-renders ---- */
+    document.addEventListener('click', function () {
+        _scheduleDemoPronunciationLockSync();
+    });
+
     document.addEventListener('click', function (e) {
         if (e.target.closest('#pronOverlay')) return;
 
@@ -1770,6 +1919,15 @@ function _injectWordProgressCSS() {
         /* ---- button polish ---- */
         '.audio-button,.control-btn,.pron-btn{transition:all .15s ease}',
         '.audio-button:active,.control-btn:active{transform:scale(.96)}',
+        '.audio-button.pron-btn.locked,.mic-btn.locked{opacity:.6;pointer-events:auto;cursor:pointer;position:relative}',
+        '.audio-button.pron-btn.locked::after,.mic-btn.locked::after{content:"🔒";margin-left:6px;font-size:14px}',
+
+        /* ---- mic selector ---- */
+        '.mic-selector-wrap{margin:8px auto 0;display:flex;flex-direction:column;align-items:stretch;justify-content:center;width:min(240px,calc(100% - 32px))}',
+        '.mic-label{font-size:12px;color:#aaa;margin-bottom:6px;display:block}',
+        '.mic-select{width:100%;background:#111;color:#fff;border-radius:12px;padding:10px 14px;border:1px solid #333;transition:all .2s ease}',
+        '.mic-select:hover{border-color:#555}',
+        '.mic-select:focus{outline:none;border-color:#888}',
 
         /* ---- voice switch buttons ---- */
         '.voice-switch{display:flex;justify-content:center;gap:8px;margin-bottom:10px}',
