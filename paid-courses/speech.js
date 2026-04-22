@@ -717,15 +717,48 @@ function _handlePronFail(msg) {
 }
 
 /* ---- Word-level similarity for fallback scoring ---- */
-function _getSimilarity(recognized, reference) {
-    if (!recognized || !reference) return 0;
+function _getMatchedWordStats(recognized, reference) {
+    if (!recognized || !reference) {
+        return { matchedWords: 0, totalWords: 0, matchRatio: 0 };
+    }
     var r = (recognized || '').toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
     var ref = (reference || '').toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/);
     var match = 0;
     ref.forEach(function (word) {
         if (r.indexOf(word) !== -1) match++;
     });
-    return ref.length ? match / ref.length : 0;
+    return {
+        matchedWords: match,
+        totalWords: ref.length,
+        matchRatio: ref.length ? match / ref.length : 0
+    };
+}
+
+function _getSimilarity(recognized, reference) {
+    return _getMatchedWordStats(recognized, reference).matchRatio;
+}
+
+function _applyMatchedWordScoreGuard(score, recognized, reference) {
+    var stats = _getMatchedWordStats(recognized, reference);
+    var guardedScore = Number(score) || 0;
+    var matchRatio = stats.matchRatio;
+
+    if (stats.matchedWords === 0) {
+        guardedScore = 0;
+    }
+    if (stats.totalWords > 0 && matchRatio < 0.5) {
+        guardedScore = Math.min(guardedScore, 30);
+    }
+    if (guardedScore >= 60 && stats.totalWords > 0 && matchRatio < 0.7) {
+        guardedScore = 55;
+    }
+
+    return {
+        score: Math.round(Math.max(0, Math.min(100, guardedScore))),
+        matchedWords: stats.matchedWords,
+        totalWords: stats.totalWords,
+        matchRatio: matchRatio
+    };
 }
 
 var _PRON_PASS_SCORE = 60;
@@ -1143,6 +1176,20 @@ async function _runPronunciationAssessment(referenceText) {
          */
         function extractPronData(result) {
             var recognizedText = '';
+            function buildInvalidPronData(text) {
+                return {
+                    recognizedText: text || '',
+                    pronunciationScore: 0,
+                    accuracyScore: 0,
+                    fluencyScore: 0,
+                    completenessScore: 0,
+                    similarity: 0,
+                    reason: 'wrong_word',
+                    words: [],
+                    wordFeedback: [],
+                    error: true
+                };
+            }
             try {
                 var jsonStr = result.properties.getProperty(
                     SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult
@@ -1161,9 +1208,30 @@ async function _runPronunciationAssessment(referenceText) {
             /* Remove Azure duplicates (e.g. "У меня есть, У меня есть меня есть") */
             recognizedText = recognizedText.split(',')[0].trim();
 
+            var initialMatchStats = _getMatchedWordStats(recognizedText, referenceText);
+            var initialSimilarity = initialMatchStats.matchRatio;
+
             /* Garbage check */
             if (!recognizedText || recognizedText.length < 2 || /^[0.\s]+$/.test(recognizedText)) {
-                return null;
+                console.debug('[SCORE DEBUG]', {
+                    recognized: recognizedText,
+                    similarity: initialSimilarity,
+                    accuracy: 0,
+                    fluency: 0,
+                    score: 0
+                });
+                return buildInvalidPronData(recognizedText);
+            }
+
+            if (initialSimilarity === 0) {
+                console.debug('[SCORE DEBUG]', {
+                    recognized: recognizedText,
+                    similarity: initialSimilarity,
+                    accuracy: 0,
+                    fluency: 0,
+                    score: 0
+                });
+                return buildInvalidPronData(recognizedText);
             }
 
             /* Extract scores */
@@ -1188,23 +1256,56 @@ async function _runPronunciationAssessment(referenceText) {
                     if (jsonStr2) data = JSON.parse(jsonStr2);
                 } catch (_e) { /* ignore */ }
 
-                var accuracy = data?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore ?? 0;
-                var rawFluency = data?.NBest?.[0]?.PronunciationAssessment?.FluencyScore ?? 0;
-                var fluency = rawFluency > 0 ? rawFluency : 70;
-                var completeness = data?.NBest?.[0]?.PronunciationAssessment?.CompletenessScore ?? 0;
+                var accuracy = Number(data?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore) || 0;
+                var fluency = Number(data?.NBest?.[0]?.PronunciationAssessment?.FluencyScore) || 0;
+                var completeness = Number(data?.NBest?.[0]?.PronunciationAssessment?.CompletenessScore) || 0;
 
                 /* Similarity check */
-                var sim = _getSimilarity(recognizedText, referenceText);
+                var sim = initialSimilarity;
+
+                if (sim === 0) {
+                    console.debug('[SCORE DEBUG]', {
+                        recognized: recognizedText,
+                        similarity: sim,
+                        accuracy: accuracy,
+                        fluency: fluency,
+                        score: 0
+                    });
+                    return buildInvalidPronData(recognizedText);
+                }
 
                 var scored = _scorePronunciationForReference(referenceText, sim, accuracy, fluency, completeness);
+                var finalScore = Number(scored.pronunciationScore) || 0;
+                var guardedScore = _applyMatchedWordScoreGuard(finalScore, recognizedText, referenceText);
+                finalScore = guardedScore.score;
 
-                console.debug('[PRON] accuracy:', accuracy, 'fluency:', fluency, 'completeness:', completeness, 'sim:', sim.toFixed(2), 'final:', scored.pronunciationScore);
+                if (sim < 0.5) {
+                    finalScore = Math.min(finalScore, 40);
+                }
+                if (fluency < 20 && sim < 0.6) {
+                    finalScore = Math.min(finalScore, 30);
+                }
+                if (sim === 0) {
+                    finalScore = 0;
+                }
+
+                console.debug('[SCORE DEBUG]', {
+                    recognized: recognizedText,
+                    similarity: sim,
+                    matchedWords: guardedScore.matchedWords,
+                    totalWords: guardedScore.totalWords,
+                    accuracy: accuracy,
+                    fluency: fluency,
+                    score: finalScore
+                });
+
+                console.debug('[PRON] accuracy:', accuracy, 'fluency:', fluency, 'completeness:', completeness, 'sim:', sim.toFixed(2), 'final:', finalScore);
 
                 var wordFeedback = _getWordFeedback(recognizedText, referenceText);
 
                 return {
                     recognizedText: recognizedText,
-                    pronunciationScore: scored.pronunciationScore,
+                    pronunciationScore: finalScore,
                     accuracyScore: scored.accuracyScore,
                     fluencyScore: scored.fluencyScore,
                     completenessScore: scored.completenessScore,
@@ -1215,14 +1316,42 @@ async function _runPronunciationAssessment(referenceText) {
                 };
             } catch (scoreErr) {
                 console.warn('[PRON] score extraction failed, using similarity:', scoreErr);
-                var fallbackSim = _getSimilarity(recognizedText, referenceText);
+                var fallbackSim = initialSimilarity;
+                if (!recognizedText || recognizedText.length < 2 || fallbackSim === 0) {
+                    console.debug('[SCORE DEBUG]', {
+                        recognized: recognizedText,
+                        similarity: fallbackSim,
+                        accuracy: 0,
+                        fluency: 0,
+                        score: 0
+                    });
+                    return buildInvalidPronData(recognizedText);
+                }
                 var fallbackScore = _scorePronunciationForReference(referenceText, fallbackSim);
+                var fallbackFinalScore = Number(fallbackScore.pronunciationScore) || 0;
+                var guardedFallbackScore = _applyMatchedWordScoreGuard(fallbackFinalScore, recognizedText, referenceText);
+                fallbackFinalScore = guardedFallbackScore.score;
+                if (fallbackSim < 0.5) {
+                    fallbackFinalScore = Math.min(fallbackFinalScore, 40);
+                }
+                if (fallbackSim === 0) {
+                    fallbackFinalScore = 0;
+                }
+                console.debug('[SCORE DEBUG]', {
+                    recognized: recognizedText,
+                    similarity: fallbackSim,
+                    matchedWords: guardedFallbackScore.matchedWords,
+                    totalWords: guardedFallbackScore.totalWords,
+                    accuracy: fallbackScore.accuracyScore,
+                    fluency: fallbackScore.fluencyScore,
+                    score: fallbackFinalScore
+                });
                 return {
                     recognizedText: recognizedText,
                     accuracyScore: fallbackScore.accuracyScore,
                     fluencyScore: fallbackScore.fluencyScore,
                     completenessScore: fallbackScore.completenessScore,
-                    pronunciationScore: fallbackScore.pronunciationScore,
+                    pronunciationScore: fallbackFinalScore,
                     similarity: fallbackScore.similarity,
                     reason: fallbackScore.reason,
                     words: [],
@@ -1249,10 +1378,11 @@ async function _runPronunciationAssessment(referenceText) {
                 if (sim >= 0.8 && interimWords.length >= refWords.length) {
                     if (finished) return;
                     var interimScore = _scorePronunciationForReference(referenceText, sim, 85, 85, 85);
+                    var guardedInterimScore = _applyMatchedWordScoreGuard(interimScore.pronunciationScore, lastInterimText, referenceText);
                     finishSafe(function () {
                         resolve({
                             recognizedText: lastInterimText,
-                            pronunciationScore: interimScore.pronunciationScore,
+                            pronunciationScore: guardedInterimScore.score,
                             accuracyScore: interimScore.accuracyScore,
                             fluencyScore: interimScore.fluencyScore,
                             completenessScore: interimScore.completenessScore,
@@ -1272,7 +1402,8 @@ async function _runPronunciationAssessment(referenceText) {
                     var txt = lastInterimText || referenceText;
                     var simScore = _getSimilarity(txt, referenceText);
                     var simResult = _scorePronunciationForReference(referenceText, simScore);
-                    var sc = simResult.pronunciationScore;
+                    var guardedSimResult = _applyMatchedWordScoreGuard(simResult.pronunciationScore, txt, referenceText);
+                    var sc = guardedSimResult.score;
                     console.warn('[PRON] 3s silence after last interim — forcing resolve, sim score:', sc);
                     finishSafe(function () {
                         resolve({
@@ -1383,7 +1514,8 @@ async function _runPronunciationAssessment(referenceText) {
                 var txt = lastInterimText || referenceText;
                 var simScore = _getSimilarity(txt, referenceText);
                 var simResult = _scorePronunciationForReference(referenceText, simScore);
-                var sc = simResult.pronunciationScore;
+                var guardedTimeoutResult = _applyMatchedWordScoreGuard(simResult.pronunciationScore, txt, referenceText);
+                var sc = guardedTimeoutResult.score;
                 console.warn('[PRON] soft timeout (15s) + gotInterim — forcing resolve, sim score:', sc);
                 finishSafe(function () {
                     resolve({
