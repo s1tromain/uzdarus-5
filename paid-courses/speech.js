@@ -796,14 +796,14 @@ function _buildZeroScoreResult(recognizedText, referenceText, stats) {
 
 /**
  * Compute final pronunciation score for real recognized speech.
- * NEVER substitutes referenceText for missing recognizedText.
- * Produces a deterministic score based on the 12-step pipeline.
+ * Similarity (word matchRatio) is the PRIMARY signal.
+ * Azure accuracy/fluency are ±10 modifiers only — they can never dominate.
+ * Never substitutes referenceText for missing recognizedText.
  */
 function _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness) {
     /* STEP 1 — clean input */
     var cleanRecognized = (recognizedText || '').trim().toLowerCase();
     if (!cleanRecognized || cleanRecognized.length < 2) {
-        var emptyResult = _buildZeroScoreResult('', referenceText, { matchedWords: 0, totalWords: _tokenizeRefWords(referenceText).length, matchRatio: 0 });
         console.log('[FINAL SCORE]', {
             text: cleanRecognized,
             similarity: 0,
@@ -812,80 +812,100 @@ function _computePronScore(recognizedText, referenceText, accuracy, fluency, com
             fluency: 0,
             score: 0
         });
-        return emptyResult;
+        return _buildZeroScoreResult('', referenceText, {
+            matchedWords: 0,
+            totalWords: _tokenizeRefWords(referenceText).length,
+            matchRatio: 0
+        });
     }
 
-    /* STEP 2 + 3 — tokenize and match analysis */
+    /* STEP 2 — token match */
     var matchStats = _getMatchedWordStats(cleanRecognized, referenceText);
     var matchedWords = matchStats.matchedWords;
     var totalWords = matchStats.totalWords;
     var matchRatio = matchStats.matchRatio;
 
-    /* STEP 4 — similarity (word-overlap ratio) */
-    var similarity = matchRatio;
-    if (similarity === 0) {
+    var accRaw = _clampRange(Number(accuracy) || 0, 0, 100);
+    var fluRaw = _clampRange(Number(fluency) || 0, 0, 100);
+    var compRaw = _clampRange(Number(completeness) || 0, 0, 100);
+
+    /* STEP 3 — hard fail on zero overlap */
+    if (matchRatio === 0) {
         console.log('[FINAL SCORE]', {
             text: cleanRecognized,
             similarity: 0,
             matchRatio: 0,
-            accuracy: Number(accuracy) || 0,
-            fluency: Number(fluency) || 0,
+            accuracy: accRaw,
+            fluency: fluRaw,
             score: 0
         });
         return _buildZeroScoreResult(cleanRecognized, referenceText, matchStats);
     }
 
-    var accRaw = _clampRange(Number(accuracy) || 0, 0, 100);
-    var fluRaw = _clampRange(Number(fluency) || 0, 0, 100);
-    var compRaw = _clampRange(Number(completeness) || 0, 0, 100);
-
-    /* STEP 5 — base score (0–100) */
-    var baseScore = (accRaw * 0.5) + (fluRaw * 0.2) + (compRaw * 0.2) + (similarity * 100 * 0.1);
-
-    /* STEP 6 — quality tiers (linear scale inside tier) */
+    /* STEP 4 + 5 — similarity is KING: linear tier mapping of matchRatio */
     var score;
-    if (similarity < 0.3) {
-        score = 10 + (similarity / 0.3) * 10;               /* 10–20 */
-    } else if (similarity < 0.5) {
-        score = 20 + ((similarity - 0.3) / 0.2) * 20;       /* 20–40 */
-    } else if (similarity < 0.7) {
-        score = 40 + ((similarity - 0.5) / 0.2) * 20;       /* 40–60 */
-    } else {
-        score = baseScore;
-    }
-
-    /* STEP 7 — noise / bad-audio detection */
-    if (fluRaw < 20 && similarity < 0.5) {
-        score = Math.min(score, 20);
-    }
-
-    /* STEP 8 — soft partial penalty */
-    if (matchRatio < 0.7) {
-        var penalty = 0.6 + (matchRatio * 0.5);
-        score = score * penalty;
-    }
-
-    /* STEP 9 — good speech override */
-    if (similarity >= 0.75 && accRaw >= 70) {
-        score = Math.max(score, 70);
-    }
-
-    /* STEP 10 — ideal speech boost */
-    if (similarity >= 0.9 && accRaw >= 85) {
-        score = Math.max(score, 85);
-    }
-
-    /* STEP 11 — hard fail */
     if (matchRatio < 0.3) {
-        score = Math.min(score, 25);
+        score = (matchRatio / 0.3) * 15;                          /* 0–15 */
+    } else if (matchRatio < 0.5) {
+        score = 15 + ((matchRatio - 0.3) / 0.2) * 15;             /* 15–30 */
+    } else if (matchRatio < 0.7) {
+        score = 30 + ((matchRatio - 0.5) / 0.2) * 25;             /* 30–55 */
+    } else if (matchRatio < 0.85) {
+        score = 55 + ((matchRatio - 0.7) / 0.15) * 15;            /* 55–70 */
+    } else {
+        score = 70 + ((matchRatio - 0.85) / 0.15) * 20;           /* 70–90 */
     }
 
-    /* STEP 12 — final clamp */
+    /* STEP 6 — Azure metrics as ±10 modifiers (never dominate).
+       Guard rails:
+         • values <5 are treated as glitched / absent (Azure often reports
+           0/0 on perfectly-said short words)
+         • penalties only fire on WEAK matches (matchRatio < 0.7) — a
+           strong word-level match must not be dragged down by Azure noise
+         • bonus requires both safe values */
+    var safeAcc = accRaw < 5 ? null : accRaw;
+    var safeFlu = fluRaw < 5 ? null : fluRaw;
+    if (matchRatio < 0.7) {
+        if (safeAcc !== null && safeAcc < 50) score -= 10;
+        if (safeFlu !== null && safeFlu < 40) score -= 10;
+    }
+    if (safeAcc !== null && safeFlu !== null && safeAcc > 85 && safeFlu > 80) {
+        score += 5;
+    }
+
+    /* STEP 7 — speech-quality floors.
+       matchRatio is truth; Azure can never push a strong match below these:
+         • ≥0.75 → at least 65 (good speech)
+         • ≥0.80 AND trustworthy Azure acc > 70 → at least 75 (UX boost
+           so solid speech feels "хорошо", not just "минимум прошёл")
+         • ===1  → at least 80 (perfect match)
+         • ===1  AND trustworthy Azure accuracy > 80 → at least 85 */
+    if (matchRatio >= 0.75) {
+        score = Math.max(score, 65);
+    }
+    if (matchRatio >= 0.8 && safeAcc !== null && safeAcc > 70) {
+        /* Smooth gradient: 0.80→75, 0.85→77.5, 0.90→80, 0.95→82.5, 1.0→85 */
+        var goodSpeechFloor = 75 + (matchRatio - 0.8) * 50;
+        score = Math.max(score, goodSpeechFloor);
+    }
+    if (matchRatio === 1) {
+        score = Math.max(score, 80);
+        if (safeAcc !== null && safeAcc > 80) {
+            score = Math.max(score, 85);
+        }
+    }
+
+    /* STEP 8 — noise detection */
+    if (fluRaw < 20 && matchRatio < 0.5) {
+        score = Math.min(score, 15);
+    }
+
+    /* STEP 9 — final clamp */
     score = Math.round(_clampRange(score, 0, 100));
 
     console.log('[FINAL SCORE]', {
         text: cleanRecognized,
-        similarity: similarity,
+        similarity: matchRatio,
         matchRatio: matchRatio,
         accuracy: accRaw,
         fluency: fluRaw,
@@ -897,11 +917,11 @@ function _computePronScore(recognizedText, referenceText, accuracy, fluency, com
         accuracyScore: accRaw,
         fluencyScore: fluRaw,
         completenessScore: compRaw,
-        similarity: similarity,
+        similarity: matchRatio,
         matchRatio: matchRatio,
         matchedWords: matchedWords,
         totalWords: totalWords,
-        reason: _getPronunciationReason(similarity, accRaw, fluRaw)
+        reason: _getPronunciationReason(matchRatio, accRaw, fluRaw)
     };
 }
 
