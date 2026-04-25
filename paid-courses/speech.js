@@ -800,7 +800,6 @@ function _computePronScore(recognizedText, referenceText, accuracy, fluency, com
     var compRaw = _clampRange(Number(completeness) || 0, 0, 100);
 
     var cleanRecognized = (recognizedText || '').trim().toLowerCase();
-    var cleanReference = (referenceText || '').trim().toLowerCase();
     var refWords = _tokenizeRefWords(referenceText);
     var recWords = _tokenizeRefWords(cleanRecognized);
 
@@ -822,7 +821,7 @@ function _computePronScore(recognizedText, referenceText, accuracy, fluency, com
         });
     }
 
-    /* STEP 0 — hard validation */
+    /* hard validation */
     if (!cleanRecognized || cleanRecognized.length < 2 || !refWords.length) {
         return emitZero();
     }
@@ -846,64 +845,61 @@ function _computePronScore(recognizedText, referenceText, accuracy, fluency, com
     var exactRatio = exactMatches / refWords.length;
     var partialRatio = partialMatches / refWords.length;
 
-    /* STEP 0 (cont.) — zero-match hard fail */
+    /* critical rule — zero presence → zero */
     if (partialRatio === 0) {
         return emitZero();
     }
 
-    /* STEP 6 — base similarity (presence-dominant) */
-    var similarity = (0.3 * exactRatio) + (0.7 * partialRatio);
+    /* STEP 6 — base similarity (presence and order weighed equally) */
+    var similarity = (0.5 * exactRatio) + (0.5 * partialRatio);
 
-    /* STEP 7 — word-level penalties */
+    /* STEP 7 — penalties */
     if (partialRatio < 0.5) {
-        similarity *= 0.4;                                   /* wrong word */
+        similarity *= 0.3;                                          /* wrong words */
+    }
+    if (partialRatio < 1) {
+        similarity *= 0.9;                                          /* any missing word */
     }
     if (exactRatio < partialRatio) {
-        similarity *= 0.7;                                   /* wrong order */
+        /* softer order penalty — words matter more than position */
+        var orderFactor = exactRatio / partialRatio;
+        similarity *= 0.75 + 0.25 * orderFactor;                    /* wrong order */
+    }
+    /* full-reorder floor: every word present but none in place → ≥ 0.6 */
+    if (partialRatio === 1 && exactRatio === 0) {
+        similarity = Math.max(similarity, 0.6);
     }
     if (extraWords > 0) {
-        similarity *= Math.max(0, 1 - 0.15 * extraWords);    /* extra words */
+        similarity *= Math.max(0, 1 - 0.15 * extraWords);           /* extra words */
     }
 
-    /* STEP 8 — audio quality validation (single tiered penalty, no stack) */
-    var audioHardCap = 100;
-    if (accRaw < 20 && fluRaw < 20) {
-        audioHardCap = 20;
-    }
-    if (accRaw < 40 || fluRaw < 40) {
-        similarity *= 0.6;
-    } else if (accRaw < 60 || fluRaw < 60) {
-        similarity *= 0.8;
-    }
-    if (accRaw > 80 && fluRaw > 80) {
-        similarity += 0.05;
+    /* STEP 8 — ignore Azure if broken */
+    var accUse = accRaw;
+    var fluUse = fluRaw;
+    if (accRaw < 10 && fluRaw < 10) {
+        accUse = null;
+        fluUse = null;
     }
 
-    /* Perfect-match safety: a fully exact match (every word present and
-       in the right position) has a 3-tier audio-aware floor:
-         • Azure strong (acc & flu > 65)     → ≥ 0.90
-         • Azure moderate (acc & flu > 50)   → ≥ 0.85
-         • Azure weak                        → ≥ 0.75 */
-    if (partialRatio === 1 && exactRatio === 1) {
-        if (accRaw > 65 && fluRaw > 65) {
-            similarity = Math.max(similarity, 0.9);
-        } else if (accRaw > 50 && fluRaw > 50) {
-            similarity = Math.max(similarity, 0.85);
-        } else {
-            similarity = Math.max(similarity, 0.75);
+    /* STEP 9 — audio effect (very weak) */
+    if (accUse !== null && fluUse !== null) {
+        if (accUse < 50 || fluUse < 50) {
+            similarity *= 0.85;
+        }
+        if (accUse > 80 && fluUse > 80) {
+            similarity += 0.03;
         }
     }
 
-    /* STEP 9 — final score (clamp) */
+    /* STEP 10 — final score */
     var score = _clampRange(similarity * 100, 0, 100);
-    score = Math.min(score, audioHardCap);
 
-    /* STEP 10 — hard guards */
-    if (partialRatio === 0) {
-        score = 0;
+    /* STEP 11 — hard rules */
+    if (exactRatio === 1 && partialRatio === 1) {
+        score = Math.max(score, 85);
     }
-    if (cleanRecognized === cleanReference && accRaw === 0) {
-        score = Math.min(score, 40);
+    if (partialRatio < 0.3) {
+        score = Math.min(score, 20);
     }
 
     score = Math.round(_clampRange(score, 0, 100));
@@ -1312,31 +1308,31 @@ async function _runPronunciationAssessment(referenceText) {
                 console.warn('[PRON] Azure score extraction failed, scoring with similarity only:', scoreErr);
             }
 
-            /* 🔥 ANTI-FAKE MATCH GUARD — Azure occasionally echoes the
-               reference text even when the user said the wrong thing.
-               If the transcript equals the reference but ANY audio
-               quality metric is low, we treat it as a hallucination and
-               hard-cap the score at 20. Audio quality is the truth;
-               matching text alone is not enough. */
+            /* 🔥 HARD VALIDATION (CRITICAL) — runs before scoring so that
+               Azure hallucinations or echo'd reference text never reach
+               _computePronScore with fake data. */
+            var stats = _getMatchedWordStats(recognizedText, referenceText);
+
+            /* ❌ no word overlap → zero */
+            if (stats.matchRatio === 0) {
+                return buildInvalidPronData(recognizedText);
+            }
+
+            /* ❌ fake Azure echo — exact text match but audio metrics bad */
             if (
                 recognizedText === referenceText &&
-                (accuracy < 30 || fluency < 30 || completeness < 30)
+                (accuracy < 20 || fluency < 20)
             ) {
-                console.warn('[ANTI FAKE DETECTED]', {
-                    recognizedText: recognizedText,
-                    accuracy: accuracy,
-                    fluency: fluency,
-                    completeness: completeness
-                });
+                console.warn('[FAKE MATCH BLOCKED]');
                 return {
                     recognizedText: recognizedText,
-                    pronunciationScore: 20,
+                    pronunciationScore: 0,
                     accuracyScore: accuracy,
                     fluencyScore: fluency,
                     completenessScore: completeness,
-                    similarity: 1,
-                    reason: 'fake_match_low_audio',
-                    words: words,
+                    similarity: 0,
+                    reason: 'fake_match',
+                    words: [],
                     wordFeedback: []
                 };
             }
