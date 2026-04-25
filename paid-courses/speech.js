@@ -794,28 +794,17 @@ function _buildZeroScoreResult(recognizedText, referenceText, stats) {
     };
 }
 
-/**
- * Compute final pronunciation score for real recognized speech.
- * Similarity is ORDER-SENSITIVE: weighted blend of exact-position match
- * (0.7) and any-position match (0.3), with penalties for wrong-word
- * phrases and extra/noise words. Never substitutes referenceText.
- *
- * Invariants:
- *   • exact words matter (меня ≠ него)
- *   • word order matters (reordering lowers the score)
- *   • extra recognised words chip away at the score
- */
 function _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness) {
     var accRaw = _clampRange(Number(accuracy) || 0, 0, 100);
     var fluRaw = _clampRange(Number(fluency) || 0, 0, 100);
     var compRaw = _clampRange(Number(completeness) || 0, 0, 100);
 
-    /* STEP 1 — clean & tokenize */
     var cleanRecognized = (recognizedText || '').trim().toLowerCase();
+    var cleanReference = (referenceText || '').trim().toLowerCase();
     var refWords = _tokenizeRefWords(referenceText);
     var recWords = _tokenizeRefWords(cleanRecognized);
 
-    if (!cleanRecognized || cleanRecognized.length < 2 || !refWords.length) {
+    function emitZero() {
         console.log('[FINAL SCORE]', {
             text: cleanRecognized,
             similarity: 0,
@@ -826,11 +815,16 @@ function _computePronScore(recognizedText, referenceText, accuracy, fluency, com
             fluency: fluRaw,
             score: 0
         });
-        return _buildZeroScoreResult('', referenceText, {
+        return _buildZeroScoreResult(cleanRecognized, referenceText, {
             matchedWords: 0,
             totalWords: refWords.length,
             matchRatio: 0
         });
+    }
+
+    /* STEP 0 — hard validation */
+    if (!cleanRecognized || cleanRecognized.length < 2 || !refWords.length) {
+        return emitZero();
     }
 
     /* STEP 2 — exact position match */
@@ -852,31 +846,67 @@ function _computePronScore(recognizedText, referenceText, accuracy, fluency, com
     var exactRatio = exactMatches / refWords.length;
     var partialRatio = partialMatches / refWords.length;
 
-    /* STEP 6 — weighted similarity (presence dominates, position is
-       secondary — correct words in wrong order still score well) */
-    var similarity = (exactRatio * 0.2) + (partialRatio * 0.8);
+    /* STEP 0 (cont.) — zero-match hard fail */
+    if (partialRatio === 0) {
+        return emitZero();
+    }
 
-    /* STEP 7 — penalties */
-    /* wrong-word (strong): trigger only when actual words are MISSING,
-       not when they are merely reordered. partialRatio is the presence
-       signal; exactRatio is the order signal. */
+    /* STEP 6 — base similarity (presence-dominant) */
+    var similarity = (0.3 * exactRatio) + (0.7 * partialRatio);
+
+    /* STEP 7 — word-level penalties */
     if (partialRatio < 0.5) {
-        similarity *= 0.5;
+        similarity *= 0.4;                                   /* wrong word */
     }
-    /* wrong-order (soft): words are present but out of place.
-       orderPenalty scales 0.6 → 1.0 as the fraction of in-place words
-       rises — full reorder costs 40%, partial reorder costs less. */
     if (exactRatio < partialRatio) {
-        var orderPenalty = 0.6 + (exactRatio / partialRatio) * 0.4;
-        similarity *= orderPenalty;
+        similarity *= 0.7;                                   /* wrong order */
     }
-    /* extra words dilute the match: −10% per extra word, floor at 0 */
     if (extraWords > 0) {
-        similarity *= Math.max(0, 1 - 0.1 * extraWords);
+        similarity *= Math.max(0, 1 - 0.15 * extraWords);    /* extra words */
     }
 
-    /* STEP 8 — final score */
-    var score = Math.round(_clampRange(similarity * 100, 0, 100));
+    /* STEP 8 — audio quality validation (single tiered penalty, no stack) */
+    var audioHardCap = 100;
+    if (accRaw < 20 && fluRaw < 20) {
+        audioHardCap = 20;
+    }
+    if (accRaw < 40 || fluRaw < 40) {
+        similarity *= 0.6;
+    } else if (accRaw < 60 || fluRaw < 60) {
+        similarity *= 0.8;
+    }
+    if (accRaw > 80 && fluRaw > 80) {
+        similarity += 0.05;
+    }
+
+    /* Perfect-match safety: a fully exact match (every word present and
+       in the right position) has a 3-tier audio-aware floor:
+         • Azure strong (acc & flu > 65)     → ≥ 0.90
+         • Azure moderate (acc & flu > 50)   → ≥ 0.85
+         • Azure weak                        → ≥ 0.75 */
+    if (partialRatio === 1 && exactRatio === 1) {
+        if (accRaw > 65 && fluRaw > 65) {
+            similarity = Math.max(similarity, 0.9);
+        } else if (accRaw > 50 && fluRaw > 50) {
+            similarity = Math.max(similarity, 0.85);
+        } else {
+            similarity = Math.max(similarity, 0.75);
+        }
+    }
+
+    /* STEP 9 — final score (clamp) */
+    var score = _clampRange(similarity * 100, 0, 100);
+    score = Math.min(score, audioHardCap);
+
+    /* STEP 10 — hard guards */
+    if (partialRatio === 0) {
+        score = 0;
+    }
+    if (cleanRecognized === cleanReference && accRaw === 0) {
+        score = Math.min(score, 40);
+    }
+
+    score = Math.round(_clampRange(score, 0, 100));
 
     console.log('[FINAL SCORE]', {
         text: cleanRecognized,
@@ -1239,7 +1269,10 @@ async function _runPronunciationAssessment(referenceText) {
             if (!recognizedText) {
                 recognizedText = (result.text || '').trim();
             }
-            /* Remove Azure duplicates (e.g. "У меня есть, У меня есть меня есть") */
+            /* Remove Azure duplicates (e.g. "У меня есть, У меня есть меня есть").
+               allowExactReferenceMatch=true → keep the text intact; the
+               anti-fake guard below uses audio-quality metrics to decide
+               whether an exact echo is legitimate or a hallucination. */
             recognizedText = _sanitizeRecognizedText(recognizedText.split(',')[0], true);
 
             /* Garbage check — only real recognized speech is scored */
@@ -1279,6 +1312,35 @@ async function _runPronunciationAssessment(referenceText) {
                 console.warn('[PRON] Azure score extraction failed, scoring with similarity only:', scoreErr);
             }
 
+            /* 🔥 ANTI-FAKE MATCH GUARD — Azure occasionally echoes the
+               reference text even when the user said the wrong thing.
+               If the transcript equals the reference but ANY audio
+               quality metric is low, we treat it as a hallucination and
+               hard-cap the score at 20. Audio quality is the truth;
+               matching text alone is not enough. */
+            if (
+                recognizedText === referenceText &&
+                (accuracy < 30 || fluency < 30 || completeness < 30)
+            ) {
+                console.warn('[ANTI FAKE DETECTED]', {
+                    recognizedText: recognizedText,
+                    accuracy: accuracy,
+                    fluency: fluency,
+                    completeness: completeness
+                });
+                return {
+                    recognizedText: recognizedText,
+                    pronunciationScore: 20,
+                    accuracyScore: accuracy,
+                    fluencyScore: fluency,
+                    completenessScore: completeness,
+                    similarity: 1,
+                    reason: 'fake_match_low_audio',
+                    words: words,
+                    wordFeedback: []
+                };
+            }
+
             /* Single deterministic scoring pipeline */
             var scored = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness);
             if (scored.pronunciationScore === 0 && scored.similarity === 0) {
@@ -1310,11 +1372,15 @@ async function _runPronunciationAssessment(referenceText) {
                 if (text) lastInterimText = text;
                 var safeInterimText = _getSafeInterimText();
 
-                /* ---- instant result if interim already matches ---- */
-                var sim = _getSimilarity(safeInterimText, referenceText);
+                /* ---- instant result if interim is a FULL match ----
+                   Strict gate: require every reference word to be present
+                   AND identical word count. The previous 0.8 + ≥-length
+                   gate fired on similar-but-wrong phrases and triggered
+                   premature success. */
+                var stats = _getMatchedWordStats(safeInterimText, referenceText);
                 var interimWords = safeInterimText.trim().split(/\s+/).filter(Boolean);
                 var refWords = referenceText.trim().split(/\s+/).filter(Boolean);
-                if (sim >= 0.8 && interimWords.length >= refWords.length) {
+                if (stats.matchRatio === 1 && interimWords.length === refWords.length) {
                     if (finished) return;
                     var interimScored = _computePronScore(safeInterimText, referenceText, 0, 0, 0);
                     finishSafe(function () {
