@@ -672,6 +672,12 @@ function checkPronunciation(event) {
         .catch(err => {
             console.error('[PRON] CATCH:', err);
 
+            /* User cancelled by clicking outside the listening panel */
+            if (err && err.cancelled) {
+                showStatus('');
+                return;
+            }
+
             /* Do NOT show error to user if it's a soft timeout (got interim) */
             if (err.softTimeout) {
                 showStatus('\u23F3 Vaqt tugadi. Qayta urinib ko\'ring.');
@@ -798,28 +804,42 @@ function _displayMetric(v) {
     return Math.round(n);
 }
 
-/* Score-driven verdict (single source of truth). Azure metrics are
-   advisory; the score is the truth. */
+/* Display-side metrics derived from word stats + Azure fluency.
+   Aniqlik = positional accuracy, To‘liqlik = presence,
+   Ravonlik = Azure fluency when trustworthy, else average. */
+function _computeMetrics(stats, fluency) {
+    var aniqlik = Math.round((stats && stats.exactRatio || 0) * 100);
+    var toliqlik = Math.round((stats && stats.partialRatio || 0) * 100);
+    var ravonlik;
+    if (fluency !== null && fluency !== undefined && Number.isFinite(Number(fluency)) && Number(fluency) > 0) {
+        ravonlik = Math.round(Number(fluency));
+    } else {
+        ravonlik = Math.round((aniqlik + toliqlik) / 2);
+    }
+    return { aniqlik: aniqlik, ravonlik: ravonlik, toliqlik: toliqlik };
+}
+
+/* Score-driven verdict. Azure metrics are advisory; score is truth.
+   Tiers:  ≥90 excellent · 70–89 good · 40–69 almost · <40 bad. */
 function _getPronunciationReason(score) {
     var s = Number(score) || 0;
-    if (s >= 85) return 'excellent';
-    if (s >= 65) return 'good';
-    if (s >= 40) return 'ok';
+    if (s >= 90) return 'excellent';
+    if (s >= 70) return 'good';
+    if (s >= 40) return 'almost';
     return 'bad';
 }
 
 function _getPronunciationReasonUi(reason) {
-    /* score-based verdicts */
-    if (reason === 'excellent') return { message: '✅ Ajoyib!',           verdictClass: 'good' };
-    if (reason === 'good')      return { message: '✅ Yaxshi',            verdictClass: 'good' };
-    if (reason === 'ok')        return { message: '⚠️ Yana mashq qiling', verdictClass: 'ok'  };
-    if (reason === 'bad')       return { message: '❌ Qayta urinib ko‘ring', verdictClass: 'bad' };
-    /* legacy / pipeline-internal codes still understood */
-    if (reason === 'wrong_word')       return { message: '❌ Ты сказал другое слово',   verdictClass: 'bad' };
-    if (reason === 'bad_pronunciation')return { message: '⚠️ Произношение нужно улучшить', verdictClass: 'ok' };
-    if (reason === 'unclear_speech')   return { message: '⚠️ Говори чётче',             verdictClass: 'ok' };
-    if (reason === 'fake_match')       return { message: '❌ Qayta urinib ko‘ring', verdictClass: 'bad' };
-    return { message: '✅ Отлично', verdictClass: 'good' };
+    if (reason === 'excellent')        return { message: '✅ Excellent!',          verdictClass: 'good' };
+    if (reason === 'good')             return { message: '✅ Good',                verdictClass: 'good' };
+    if (reason === 'almost')           return { message: '⚠️ Almost there',       verdictClass: 'ok'  };
+    if (reason === 'ok')               return { message: '⚠️ Keep practicing',    verdictClass: 'ok'  };
+    if (reason === 'bad')              return { message: '❌ Try again',           verdictClass: 'bad' };
+    if (reason === 'wrong_word')       return { message: '❌ You said a different word', verdictClass: 'bad' };
+    if (reason === 'bad_pronunciation')return { message: '⚠️ Pronunciation needs work',  verdictClass: 'ok'  };
+    if (reason === 'unclear_speech')   return { message: '⚠️ Speak more clearly',        verdictClass: 'ok'  };
+    if (reason === 'fake_match')       return { message: '❌ Try again',           verdictClass: 'bad' };
+    return { message: '✅ Excellent', verdictClass: 'good' };
 }
 
 function _buildZeroScoreResult(recognizedText, referenceText, stats) {
@@ -960,13 +980,13 @@ function _buildActionHint(feedback) {
     var parts = [];
 
     if (missing.length) {
-        parts.push('\u0414\u043E\u0431\u0430\u0432\u044C: ' + missing.map(function (w) { return w.word; }).join(', '));
+        parts.push('Add: ' + missing.map(function (w) { return w.word; }).join(', '));
     }
     if (wrongPos.length) {
-        parts.push('\u041F\u043E\u043C\u0435\u043D\u044F\u0439 \u043F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043B\u043E\u0432');
+        parts.push('Fix the word order');
     }
     if (extra.length) {
-        parts.push('\u0423\u0431\u0435\u0440\u0438: ' + extra.map(function (w) { return w.word; }).join(', '));
+        parts.push('Remove: ' + extra.map(function (w) { return w.word; }).join(', '));
     }
     return parts.join('\n\n');
 }
@@ -985,17 +1005,17 @@ function _buildFeedbackMessage(feedback) {
     var parts = [];
 
     if (missing.length > 0) {
-        parts.push('\u274C \u041F\u0440\u043E\u043F\u0443\u0449\u0435\u043D\u043E: ' + missing.map(function (w) { return w.word; }).join(', '));
+        parts.push('\u274C Missing: ' + missing.map(function (w) { return w.word; }).join(', '));
     }
     if (wrong.length > 0) {
-        parts.push('\u26A0\uFE0F \u041F\u043E\u0440\u044F\u0434\u043E\u043A \u0441\u043B\u043E\u0432');
+        parts.push('\u26A0\uFE0F Word order');
     }
     if (extra.length > 0) {
-        parts.push('\u274C \u041B\u0438\u0448\u043D\u0435\u0435: ' + extra.map(function (w) { return w.word; }).join(', '));
+        parts.push('\u274C Extra: ' + extra.map(function (w) { return w.word; }).join(', '));
     }
 
     if (parts.length === 0) {
-        return '\u2705 \u041E\u0442\u043B\u0438\u0447\u043D\u043E!';
+        return '\u2705 Excellent!';
     }
 
     return parts.join('\n');
@@ -1185,9 +1205,17 @@ async function _runPronunciationAssessment(referenceText) {
         var silenceTimerId;
 
         function cleanup() {
-            try { recognizer.close(); } catch {}
+            try {
+                if (recognizer) {
+                    try { recognizer.stopContinuousRecognitionAsync && recognizer.stopContinuousRecognitionAsync(); } catch (e1) {}
+                    try { recognizer.close(); } catch (e2) {}
+                }
+            } finally {
+                recognizer = null;
+            }
             if (micStream) {
                 try { micStream.getTracks().forEach(function (t) { t.stop(); }); } catch {}
+                micStream = null;
             }
         }
 
@@ -1198,8 +1226,18 @@ async function _runPronunciationAssessment(referenceText) {
             clearTimeout(hardTimeoutId);
             clearTimeout(silenceTimerId);
             cleanup();
+            _stopActivePron = null;
             fn();
         }
+
+        _stopActivePron = function () {
+            if (finished) return;
+            finishSafe(function () {
+                var err = new Error('cancelled by user');
+                err.cancelled = true;
+                reject(err);
+            });
+        };
 
         /**
          * Extract text + pronunciation scores from a recognition result.
@@ -2049,6 +2087,8 @@ function _dismissStreakReminder() { return; }
 /* ================================================================== */
 const _PRON_OVERLAY_ID = 'pronOverlay';
 let _lastPronRef = '';
+let _isPronListening = false;
+let _stopActivePron = null;
 
 function _ensurePronOverlay() {
     if (document.getElementById(_PRON_OVERLAY_ID)) return;
@@ -2105,6 +2145,16 @@ function _ensurePronOverlay() {
         '.pron-chip-score{font-size:.7rem;opacity:.7;margin-left:4px}',
 
         /* verdict banner */
+        /* word-stats summary line */
+        '.pron-stats{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;font-size:.78rem;font-weight:700}',
+        '.pron-stat-item{padding:4px 10px;border-radius:10px;background:#f5f5f5;color:#666}',
+        '.pron-stat-item.good{background:#e8f5e1;color:#58a700}',
+        '.pron-stat-item.ok{background:#fff8e1;color:#b7791f}',
+        '.pron-stat-item.bad{background:#ffeaea;color:#ea2b2b}',
+
+        /* smart actionable hint */
+        '.pron-hint{margin:-4px 0 14px;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,#f0edff,#e8f0ff);color:#4f3d8a;font-size:.85rem;font-weight:600;line-height:1.4;text-align:left}',
+
         '.pron-verdict{font-size:.82rem;font-weight:600;padding:8px 16px;border-radius:10px;margin-bottom:16px;display:inline-block;white-space:pre-line;line-height:1.5}',
         '.pron-verdict.good{background:#e8f5e1;color:#58a700}',
         '.pron-verdict.ok{background:#fff4db;color:#b7791f}',
@@ -2168,13 +2218,52 @@ function _ensurePronOverlay() {
     overlay.id = _PRON_OVERLAY_ID;
     overlay.innerHTML = '<div class="pron-card" id="pronCard"></div>';
     overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) closePronResult();
+        if (e.target !== overlay) return;
+        if (_isPronListening) {
+            if (typeof window.confirm === 'function' && !window.confirm('Are you sure you want to exit?')) {
+                return;
+            }
+            try { if (typeof _stopActivePron === 'function') _stopActivePron(); } catch (err) { console.warn('[PRON] stop error', err); }
+        }
+        closePronResult();
     });
     document.body.appendChild(overlay);
 }
 
 /* ---- helpers ---- */
-function _sClass(v) { return v >= _PRON_GOOD_SCORE ? 'good' : v >= _PRON_PASS_SCORE ? 'ok' : 'bad'; }
+/* visual class — aligned with verdict tiers: ≥70 good, ≥40 ok, else bad */
+function _sClass(v) {
+    var n = Number(v) || 0;
+    return n >= 70 ? 'good' : n >= 40 ? 'ok' : 'bad';
+}
+
+/* Single-line actionable hint: pick the most useful thing the user can
+   fix next — missed words > extra words > word order > weakest word. */
+function _buildSmartHint(r) {
+    var fb = (r && r.wordFeedback) || [];
+    var missing = fb.filter(function (f) { return f.status === 'missing'; });
+    var extra = fb.filter(function (f) { return f.status === 'extra'; });
+    var wrongPos = fb.filter(function (f) { return f.status === 'wrong_position'; });
+
+    if (missing.length) {
+        var list = missing.map(function (f) { return '"' + f.word + '"'; }).join(', ');
+        return 'Hint: you missed ' + missing.length + ' word' + (missing.length > 1 ? 's' : '') + ': ' + list;
+    }
+    if (extra.length) {
+        var elist = extra.map(function (f) { return '"' + f.word + '"'; }).join(', ');
+        return 'Hint: drop the extra word' + (extra.length > 1 ? 's' : '') + ': ' + elist;
+    }
+    if (wrongPos.length) {
+        return 'Hint: keep the words in the correct order';
+    }
+    var weakest = ((r && r.words) || [])
+        .filter(function (w) { return w && typeof w.accuracy === 'number' && w.accuracy < 60; })
+        .sort(function (a, b) { return a.accuracy - b.accuracy; })[0];
+    if (weakest) {
+        return 'Hint: try to pronounce "' + weakest.word + '"';
+    }
+    return '';
+}
 
 function _ringCircum() { return 2 * Math.PI * 42; }
 
@@ -2188,6 +2277,7 @@ function _showPronListening() {
       + '  <div style="font-size:.82rem;color:#aaa">So\u2018zni aniq ayting</div>'
       + '</div>';
     document.getElementById(_PRON_OVERLAY_ID).classList.add('active');
+    _isPronListening = true;
 }
 
 /* ---- result screen ---- */
@@ -2195,20 +2285,37 @@ function _showPronResult(refText, r) {
     if (!r) return;
     _ensurePronOverlay();
     _lastPronRef = refText;
+    _isPronListening = false;
 
-    var overall = r.pronunciationScore;
+    var stats = _getWordStats(r.recognizedText || '', refText);
+    var metrics = _computeMetrics(stats, r.fluencyScore);
+    var finalScore = Math.round((metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3);
+
+    /* expose computed values back to the result so downstream feedback
+       and consumers see the same numbers the UI does */
+    r.aniqlik = metrics.aniqlik;
+    r.ravonlik = metrics.ravonlik;
+    r.toliqlik = metrics.toliqlik;
+    r.finalScore = finalScore;
+
+    var overall = finalScore;
     var cls = _sClass(overall);
-    var reasonInfo = _getPronunciationReasonUi(r.reason || 'good');
-    var emoji = cls === 'good' ? '\uD83C\uDF1F' : cls === 'ok' ? '\uD83D\uDCAA' : '\uD83D\uDE15';
-    var title = cls === 'good' ? 'A\u2018lo!' : cls === 'ok' ? 'Yaxshi!' : 'Qayta urinib ko\u2018ring';
+    /* fake_match is preserved; everything else is verdicted from finalScore */
+    var derivedReason = (r.reason === 'fake_match') ? 'fake_match' : _getPronunciationReason(finalScore);
+    var reasonInfo = _getPronunciationReasonUi(derivedReason);
+    var emoji, title;
+    if (overall >= 90)      { emoji = '🌟'; title = 'Excellent!'; }
+    else if (overall >= 70) { emoji = '✨'; title = 'Good';       }
+    else if (overall >= 40) { emoji = '💪'; title = 'Almost';     }
+    else                    { emoji = '😕'; title = 'Try again';  }
 
     var c = _ringCircum();
     var offset = c - (overall / 100) * c;
 
     var bars = [
-        { label: 'Aniqlik',     val: r.accuracyScore },
-        { label: 'Ravonlik',    val: r.fluencyScore },
-        { label: 'To\u2018liqlik', val: r.completenessScore },
+        { label: 'Aniqlik',     val: metrics.aniqlik },
+        { label: 'Ravonlik',    val: metrics.ravonlik },
+        { label: 'To\u2018liqlik', val: metrics.toliqlik },
     ];
 
     var html = '';
@@ -2241,6 +2348,22 @@ function _showPronResult(refText, r) {
               + '</div>';
     }
     html += '</div>';
+
+    /* word stats summary — exact / partial / extra so the user sees
+       why the score is what it is */
+    var exactCount = Math.round(stats.exactRatio * stats.refLength);
+    var partialCount = Math.round(stats.partialRatio * stats.refLength);
+    html += '<div class="pron-stats">'
+          + '<span class="pron-stat-item good">✓ ' + exactCount + '/' + stats.refLength + ' exact</span>'
+          + '<span class="pron-stat-item ok">~ ' + partialCount + '/' + stats.refLength + ' present</span>'
+          + '<span class="pron-stat-item bad">+ ' + stats.extraWords + ' extra</span>'
+          + '</div>';
+
+    /* smart actionable hint (one line) */
+    var hintText = _buildSmartHint(r);
+    if (hintText) {
+        html += '<div class="pron-hint">💡 ' + hintText + '</div>';
+    }
 
     /* word chips */
     html += '<div class="pron-words">';
@@ -2345,6 +2468,7 @@ function _retryPron() {
 /* ---- close ---- */
 function closePronResult() {
     _pronClosed = true;
+    _isPronListening = false;
     var el = document.getElementById(_PRON_OVERLAY_ID);
     if (el) el.classList.remove('active');
 }
@@ -2490,10 +2614,10 @@ function _goToPremium() {
  */
 function generatePronunciationFeedback(result) {
     var tips = [];
-    var __overall = Number(result.pronunciationScore) || 0;
+    /* prefer the UI-visible finalScore; fall back to internal score */
+    var __overall = Number(result.finalScore != null ? result.finalScore : result.pronunciationScore) || 0;
 
-    /* 🔥 FIX 4 — at high scores show only encouragement, hide warnings.
-       Score is the truth; we don't second-guess it with Azure-metric tips. */
+    /* at high scores show only encouragement, hide warnings */
     if (__overall >= 80) {
         if (__overall >= 85) {
             tips.push({
@@ -2530,25 +2654,25 @@ function generatePronunciationFeedback(result) {
         tips.push({ word: w.word, score: w.accuracy, level: level, message: msg, advice: advice });
     }
 
-    /* ---- fluency tip (only when Azure actually reported a value) ---- */
-    if (result.fluencyScore !== null && result.fluencyScore !== undefined && Number(result.fluencyScore) > 0) {
-        if (result.fluencyScore < 70) {
-            tips.push({
-                level: 'bad',
-                message: 'Ravonlik past. So\u2018zlar orasida ko\u2018p pauza bor.',
-                advice: 'Gapni to\u2018xtovsiz, bir nafasda aytishga harakat qiling.',
-            });
-        } else if (result.fluencyScore < 85) {
-            tips.push({
-                level: 'ok',
-                message: 'Ravonlik o\u2018rtacha. Bir oz tezroq va silliqroq ayting.',
-                advice: 'So\u2018zlarni bir-biriga bog\u2018lang, pauza kamroq bo\u2018lsin.',
-            });
-        }
+    /* fluency tip \u2014 based on the UI-visible Ravonlik metric */
+    var ravonlik = result.ravonlik;
+    if (ravonlik !== null && ravonlik !== undefined && ravonlik < 60) {
+        tips.push({
+            level: 'bad',
+            message: 'Ravonlik past. So\u2018zlar orasida ko\u2018p pauza bor.',
+            advice: 'Gapni to\u2018xtovsiz, bir nafasda aytishga harakat qiling.',
+        });
+    } else if (ravonlik !== null && ravonlik !== undefined && ravonlik < 80) {
+        tips.push({
+            level: 'ok',
+            message: 'Ravonlik o\u2018rtacha. Bir oz tezroq va silliqroq ayting.',
+            advice: 'So\u2018zlarni bir-biriga bog\u2018lang, pauza kamroq bo\u2018lsin.',
+        });
     }
 
-    /* ---- completeness tip (token-presence based, always meaningful) ---- */
-    if (result.completenessScore !== null && result.completenessScore !== undefined && result.completenessScore < 70) {
+    /* completeness tip \u2014 based on the UI-visible To\u2018liqlik metric */
+    var toliqlik = result.toliqlik;
+    if (toliqlik !== null && toliqlik !== undefined && toliqlik < 70) {
         tips.push({
             level: 'bad',
             message: 'Ba\u2018zi so\u2018zlar tushib qoldi. Barcha so\u2018zlarni ayting.',
