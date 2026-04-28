@@ -736,6 +736,63 @@ function _handlePronFail(msg) {
 var _PRON_PASS_SCORE = 60;
 var _PRON_GOOD_SCORE = 85;
 
+/* ---- Localisation ----
+   Default language is Uzbek (the app's primary UI language). Override
+   via `window.SPEECH_LANG = "en"` before speech.js loads, or change LANG. */
+var LANG = (typeof window !== 'undefined' && window.SPEECH_LANG) ? window.SPEECH_LANG : 'uz';
+var TEXT = {
+    uz: {
+        excellent:        "A'lo!",
+        good:             "Yaxshi",
+        almost:           "Deyarli",
+        tryAgain:         "Qayta urinib ko'ring",
+        confirmExit:      "Rostdan ham chiqmoqchimisiz?",
+        exact:            "to'g'ri",
+        present:          "topildi",
+        extra:            "ortiqcha",
+        hintMissed:       "Maslahat: bu so'zlar tushib qoldi",
+        hintExtra:        "Maslahat: ortiqcha so'zlar",
+        hintOrder:        "Maslahat: so'zlarni to'g'ri tartibda ayting",
+        hintWeak:         "Maslahat: bu so'zni aniqroq ayting",
+        verdictExcellent: "✅ A'lo!",
+        verdictGood:      "✅ Yaxshi",
+        verdictAlmost:    "⚠️ Deyarli",
+        verdictBad:       "❌ Qayta urinib ko'ring",
+        verdictWrongWord: "❌ Boshqa so'z aytdingiz",
+        verdictBadPron:   "⚠️ Talaffuzni yaxshilash kerak",
+        verdictUnclear:   "⚠️ Aniqroq gapiring",
+        verdictFakeMatch: "❌ Qayta urinib ko'ring"
+    },
+    en: {
+        excellent:        "Excellent!",
+        good:             "Good",
+        almost:           "Almost",
+        tryAgain:         "Try again",
+        confirmExit:      "Are you sure you want to exit?",
+        exact:            "exact",
+        present:          "present",
+        extra:            "extra",
+        hintMissed:       "Hint: missed words",
+        hintExtra:        "Hint: extra words",
+        hintOrder:        "Hint: keep the words in the correct order",
+        hintWeak:         "Hint: try to pronounce",
+        verdictExcellent: "✅ Excellent!",
+        verdictGood:      "✅ Good",
+        verdictAlmost:    "⚠️ Almost there",
+        verdictBad:       "❌ Try again",
+        verdictWrongWord: "❌ You said a different word",
+        verdictBadPron:   "⚠️ Pronunciation needs work",
+        verdictUnclear:   "⚠️ Speak more clearly",
+        verdictFakeMatch: "❌ Try again"
+    }
+};
+function _t(key) {
+    var dict = TEXT[LANG] || TEXT.uz;
+    if (dict[key] !== undefined) return dict[key];
+    if (TEXT.en[key] !== undefined) return TEXT.en[key];
+    return key;
+}
+
 function _clampRange(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
@@ -830,16 +887,16 @@ function _getPronunciationReason(score) {
 }
 
 function _getPronunciationReasonUi(reason) {
-    if (reason === 'excellent')        return { message: '✅ Excellent!',          verdictClass: 'good' };
-    if (reason === 'good')             return { message: '✅ Good',                verdictClass: 'good' };
-    if (reason === 'almost')           return { message: '⚠️ Almost there',       verdictClass: 'ok'  };
-    if (reason === 'ok')               return { message: '⚠️ Keep practicing',    verdictClass: 'ok'  };
-    if (reason === 'bad')              return { message: '❌ Try again',           verdictClass: 'bad' };
-    if (reason === 'wrong_word')       return { message: '❌ You said a different word', verdictClass: 'bad' };
-    if (reason === 'bad_pronunciation')return { message: '⚠️ Pronunciation needs work',  verdictClass: 'ok'  };
-    if (reason === 'unclear_speech')   return { message: '⚠️ Speak more clearly',        verdictClass: 'ok'  };
-    if (reason === 'fake_match')       return { message: '❌ Try again',           verdictClass: 'bad' };
-    return { message: '✅ Excellent', verdictClass: 'good' };
+    if (reason === 'excellent')        return { message: _t('verdictExcellent'),  verdictClass: 'good' };
+    if (reason === 'good')             return { message: _t('verdictGood'),       verdictClass: 'good' };
+    if (reason === 'almost')           return { message: _t('verdictAlmost'),     verdictClass: 'ok'  };
+    if (reason === 'ok')               return { message: _t('verdictAlmost'),     verdictClass: 'ok'  };
+    if (reason === 'bad')              return { message: _t('verdictBad'),        verdictClass: 'bad' };
+    if (reason === 'wrong_word')       return { message: _t('verdictWrongWord'),  verdictClass: 'bad' };
+    if (reason === 'bad_pronunciation')return { message: _t('verdictBadPron'),    verdictClass: 'ok'  };
+    if (reason === 'unclear_speech')   return { message: _t('verdictUnclear'),    verdictClass: 'ok'  };
+    if (reason === 'fake_match')       return { message: _t('verdictFakeMatch'),  verdictClass: 'bad' };
+    return { message: _t('verdictExcellent'), verdictClass: 'good' };
 }
 
 function _buildZeroScoreResult(recognizedText, referenceText, stats) {
@@ -866,9 +923,10 @@ function _computePronScore(rec, ref, accuracy, fluency, completeness) {
 
     var s = _getWordStats(clean, ref);
     if (s.refLength === 0) return 0;
-    if (s.partialRatio === 0) return 0;
 
     var sim = 0.5 * s.exactRatio + 0.5 * s.partialRatio;
+    /* soft floor: no overlap → strong reduction but not a cliff */
+    if (s.partialRatio === 0) sim *= 0.2;
 
     /* word penalties */
     if (s.partialRatio < 1) sim *= 0.9;                                 /* any missing word */
@@ -896,19 +954,13 @@ function _computePronScore(rec, ref, accuracy, fluency, completeness) {
 
     var score = sim * 100;
 
-    /* perfect-match audio-aware floors */
+    /* perfect-match floor (single tier so it doesn't squash gradation) */
     if (s.exactRatio === 1 && s.partialRatio === 1) {
-        if (acc !== null && flu !== null && acc > 65 && flu > 65) {
-            score = Math.max(score, 90);
-        } else if (acc !== null && flu !== null && acc > 50 && flu > 50) {
-            score = Math.max(score, 85);
-        } else {
-            score = Math.max(score, 75);
-        }
+        score = Math.max(score, 80);
     }
 
-    /* garbage cap */
-    if (s.partialRatio < 0.3) score = Math.min(score, 20);
+    /* low-overlap softener — halve, don't cap */
+    if (s.partialRatio < 0.3) score *= 0.5;
 
     score = Math.round(Math.max(0, Math.min(100, score)));
 
@@ -1326,11 +1378,6 @@ async function _runPronunciationAssessment(referenceText) {
             var __stats = _getWordStats(recognizedText, referenceText);
             completeness = Math.round(__stats.partialRatio * 100);
 
-            /* hard validation — no word overlap → zero */
-            if (__stats.partialRatio === 0) {
-                return buildInvalidPronData(recognizedText);
-            }
-
             /* anti-fake Azure echo — exact text match but trustworthy
                audio metrics confirm it's bad. Requires BOTH metrics
                non-null so we don't false-positive on broken Azure. */
@@ -1352,11 +1399,10 @@ async function _runPronunciationAssessment(referenceText) {
                 };
             }
 
-            /* Single deterministic scoring pipeline (returns number 0–100) */
+            /* Single deterministic scoring pipeline (returns number 0–100).
+               Low scores are kept (gradual scale) — only true empty recognition
+               was already short-circuited above by _isRealEmptyRecognizedText. */
             var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness);
-            if (score === 0) {
-                return buildInvalidPronData(recognizedText);
-            }
 
             return {
                 recognizedText: recognizedText,
@@ -2220,7 +2266,7 @@ function _ensurePronOverlay() {
     overlay.addEventListener('click', function (e) {
         if (e.target !== overlay) return;
         if (_isPronListening) {
-            if (typeof window.confirm === 'function' && !window.confirm('Are you sure you want to exit?')) {
+            if (typeof window.confirm === 'function' && !window.confirm(_t('confirmExit'))) {
                 return;
             }
             try { if (typeof _stopActivePron === 'function') _stopActivePron(); } catch (err) { console.warn('[PRON] stop error', err); }
@@ -2246,21 +2292,19 @@ function _buildSmartHint(r) {
     var wrongPos = fb.filter(function (f) { return f.status === 'wrong_position'; });
 
     if (missing.length) {
-        var list = missing.map(function (f) { return '"' + f.word + '"'; }).join(', ');
-        return 'Hint: you missed ' + missing.length + ' word' + (missing.length > 1 ? 's' : '') + ': ' + list;
+        return _t('hintMissed') + ': ' + missing.map(function (f) { return '"' + f.word + '"'; }).join(', ');
     }
     if (extra.length) {
-        var elist = extra.map(function (f) { return '"' + f.word + '"'; }).join(', ');
-        return 'Hint: drop the extra word' + (extra.length > 1 ? 's' : '') + ': ' + elist;
+        return _t('hintExtra') + ': ' + extra.map(function (f) { return '"' + f.word + '"'; }).join(', ');
     }
     if (wrongPos.length) {
-        return 'Hint: keep the words in the correct order';
+        return _t('hintOrder');
     }
     var weakest = ((r && r.words) || [])
         .filter(function (w) { return w && typeof w.accuracy === 'number' && w.accuracy < 60; })
         .sort(function (a, b) { return a.accuracy - b.accuracy; })[0];
     if (weakest) {
-        return 'Hint: try to pronounce "' + weakest.word + '"';
+        return _t('hintWeak') + ' "' + weakest.word + '"';
     }
     return '';
 }
@@ -2304,10 +2348,10 @@ function _showPronResult(refText, r) {
     var derivedReason = (r.reason === 'fake_match') ? 'fake_match' : _getPronunciationReason(finalScore);
     var reasonInfo = _getPronunciationReasonUi(derivedReason);
     var emoji, title;
-    if (overall >= 90)      { emoji = '🌟'; title = 'Excellent!'; }
-    else if (overall >= 70) { emoji = '✨'; title = 'Good';       }
-    else if (overall >= 40) { emoji = '💪'; title = 'Almost';     }
-    else                    { emoji = '😕'; title = 'Try again';  }
+    if (overall >= 90)      { emoji = '🌟'; title = _t('excellent'); }
+    else if (overall >= 70) { emoji = '✨'; title = _t('good');      }
+    else if (overall >= 40) { emoji = '💪'; title = _t('almost');    }
+    else                    { emoji = '😕'; title = _t('tryAgain');  }
 
     var c = _ringCircum();
     var offset = c - (overall / 100) * c;
@@ -2354,9 +2398,9 @@ function _showPronResult(refText, r) {
     var exactCount = Math.round(stats.exactRatio * stats.refLength);
     var partialCount = Math.round(stats.partialRatio * stats.refLength);
     html += '<div class="pron-stats">'
-          + '<span class="pron-stat-item good">✓ ' + exactCount + '/' + stats.refLength + ' exact</span>'
-          + '<span class="pron-stat-item ok">~ ' + partialCount + '/' + stats.refLength + ' present</span>'
-          + '<span class="pron-stat-item bad">+ ' + stats.extraWords + ' extra</span>'
+          + '<span class="pron-stat-item good">✓ ' + exactCount + '/' + stats.refLength + ' ' + _t('exact') + '</span>'
+          + '<span class="pron-stat-item ok">~ ' + partialCount + '/' + stats.refLength + ' ' + _t('present') + '</span>'
+          + '<span class="pron-stat-item bad">+ ' + stats.extraWords + ' ' + _t('extra') + '</span>'
           + '</div>';
 
     /* smart actionable hint (one line) */
