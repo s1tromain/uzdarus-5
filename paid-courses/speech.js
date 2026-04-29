@@ -918,6 +918,8 @@ function _buildZeroScoreResult(recognizedText, referenceText, stats) {
    The caller wraps the score into a result object together with raw
    metrics; this keeps scoring math separate from result shape. */
 function _computePronScore(rec, ref, accuracy, fluency, completeness) {
+    console.log("DEBUG REC VS REF:", rec, "||", ref);
+
     var clean = (rec || '').trim().toLowerCase();
     if (!clean || clean.length < 2) return 0;
 
