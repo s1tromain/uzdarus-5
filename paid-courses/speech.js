@@ -1,3 +1,5 @@
+console.log("🔥 THIS IS MY FILE");
+
 window._awardXP = () => {};
 window._updateStreakBadge = () => {};
 window._showXpToast = () => {};
