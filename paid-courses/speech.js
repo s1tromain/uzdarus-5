@@ -814,17 +814,31 @@ function _tokenizeRefWords(text) {
 function _getWordStats(rec, ref) {
     var recWords = _tokenize(rec);
     var refWords = _tokenize(ref);
-    var exact = 0;
-    var partial = 0;
-    refWords.forEach(function (w, i) {
-        if (recWords[i] === w) exact++;
-        if (recWords.indexOf(w) !== -1) partial++;
-    });
-    var extra = Math.max(0, recWords.length - partial);
+    var exactMatches = 0;
+    var partialMatches = 0;
+    var used = new Set();
+
+    for (var i = 0; i < refWords.length; i++) {
+        if (recWords[i] === refWords[i]) {
+            exactMatches++;
+        }
+    }
+
+    for (var refIndex = 0; refIndex < refWords.length; refIndex++) {
+        for (var recIndex = 0; recIndex < recWords.length; recIndex++) {
+            if (!used.has(recIndex) && refWords[refIndex] === recWords[recIndex]) {
+                partialMatches++;
+                used.add(recIndex);
+                break;
+            }
+        }
+    }
+
+    var extraWords = Math.max(0, recWords.length - partialMatches);
     return {
-        exactRatio: refWords.length ? exact / refWords.length : 0,
-        partialRatio: refWords.length ? partial / refWords.length : 0,
-        extraWords: extra,
+        exactRatio: refWords.length ? exactMatches / refWords.length : 0,
+        partialRatio: refWords.length ? partialMatches / refWords.length : 0,
+        extraWords: extraWords,
         refLength: refWords.length
     };
 }
@@ -873,10 +887,14 @@ function _computeMetrics(stats, fluencyScore) {
     var toliqlik = Math.round(partial * 100);
     var ravonlik;
     if (typeof fluencyScore === 'number' && Number.isFinite(fluencyScore) && fluencyScore > 0) {
-        ravonlik = Math.round(fluencyScore);
+        var fluencyCap = Math.round(fluencyScore);
+        aniqlik = Math.round(aniqlik * 0.7 + fluencyCap * 0.3);
+        toliqlik = Math.round(toliqlik * 0.7 + fluencyCap * 0.3);
+        ravonlik = Math.min(fluencyCap, aniqlik);
     } else {
         ravonlik = Math.round(partial * 70);
     }
+    ravonlik = Math.min(ravonlik, aniqlik);
     return { aniqlik: aniqlik, ravonlik: ravonlik, toliqlik: toliqlik };
 }
 
@@ -922,9 +940,6 @@ function _buildZeroScoreResult(recognizedText, referenceText, stats) {
    The caller wraps the score into a result object together with raw
    metrics; this keeps scoring math separate from result shape. */
 function _computePronScore(rec, ref, accuracy, fluency, completeness) {
-    console.log("🔥 FINAL SCORE PATH WORKING");
-    console.log("DEBUG REC VS REF:", rec, "||", ref);
-
     var clean = (rec || '').trim().toLowerCase();
     if (!clean || clean.length < 2) return 0;
 
@@ -966,20 +981,20 @@ function _computePronScore(rec, ref, accuracy, fluency, completeness) {
         score = Math.max(score, 80);
     }
 
+    /* penalize weak pronunciation even when the words match */
+    if (acc !== null && flu !== null) {
+        if (acc < 60 || flu < 60) {
+            score *= 0.8;
+        }
+        if (acc < 45 || flu < 45) {
+            score *= 0.6;
+        }
+    }
+
     /* low-overlap softener — halve, don't cap */
     if (s.partialRatio < 0.3) score *= 0.5;
 
     score = Math.round(Math.max(0, Math.min(100, score)));
-
-    console.log('[FINAL SCORE]', {
-        text: clean,
-        exactRatio: s.exactRatio,
-        partialRatio: s.partialRatio,
-        extraWords: s.extraWords,
-        accuracy: acc,
-        fluency: flu,
-        score: score
-    });
 
     return score;
 }
@@ -1328,8 +1343,6 @@ async function _runPronunciationAssessment(referenceText) {
          * Returns a result object or null if text is garbage/empty.
          */
         function extractPronData(result) {
-            console.log("ENTER extractPronData");
-
             var recognizedText = '';
             function buildInvalidPronData(text) {
                 var invalidText = _sanitizeRecognizedText(text, true);
@@ -1407,37 +1420,28 @@ async function _runPronunciationAssessment(referenceText) {
             var __stats = _getWordStats(recognizedText, referenceText);
             completeness = Math.round(__stats.partialRatio * 100);
 
-            /* anti-fake Azure echo — exact text match but trustworthy
-               audio metrics confirm it's bad. Requires BOTH metrics
-               non-null so we don't false-positive on broken Azure. */
+            /* anti-fake Azure echo — when Azure hallucinates the reference
+               text but audio quality is clearly poor, block it before scoring. */
             if (
-                recognizedText === referenceText &&
                 accuracy !== null && fluency !== null &&
-                (accuracy < 20 || fluency < 20)
+                recognizedText.trim().toLowerCase() === referenceText.trim().toLowerCase() &&
+                (accuracy < 30 || fluency < 30)
             ) {
-                console.warn('[FAKE MATCH BLOCKED]');
-                return buildScoredResult(recognizedText, accuracy, fluency, completeness, {
-                    pronunciationScore: 0,
+                return {
+                    pronunciationScore: 20,
+                    accuracyScore: accuracy,
+                    fluencyScore: fluency,
+                    completenessScore: 0,
+                    recognizedText: recognizedText,
+                    words: words || [],
+                    wordFeedback: [],
                     reason: 'fake_match',
-                    words: [],
-                    wordFeedback: []
-                });
+                };
             }
-
-            console.log('[STEP extract]', {
-                recognizedText: recognizedText,
-                referenceText: referenceText,
-                accuracy: accuracy,
-                fluency: fluency,
-                completeness: completeness,
-                wordsLen: words.length,
-                wordAvg: words.length ? Math.round(words.reduce(function(a,w){return a+(w.accuracy||0);},0)/words.length) : null
-            });
 
             /* Single deterministic scoring pipeline (returns number 0–100).
                Low scores are kept (gradual scale) — only true empty recognition
                was already short-circuited above by _isRealEmptyRecognizedText. */
-                console.log("CALL _computePronScore FROM extractPronData");
             var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness);
 
             return {
@@ -1473,7 +1477,6 @@ async function _runPronunciationAssessment(referenceText) {
          *  by timeout because timeout never closes recognizer.
          * =========================================================== */
         recognizer.recognized = function (s, e) {
-            console.log("ENTER recognized handler");
             gotFinal = true;
             console.debug('[PRON] FINAL (recognized):', e.result ? e.result.reason : 'null',
                 'text:', e.result ? e.result.text : '', 'timeoutHit:', timeoutHit);
@@ -2313,15 +2316,16 @@ function _showPronResult(refText, r) {
 
     var stats = _getWordStats(r.recognizedText || '', refText);
     var metrics = _computeMetrics(stats, r.fluencyScore);
-    var finalScore = Math.round(
-        (metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3
-    );
+    var metricAvg = (metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3;
+    var finalScore = (r.reason === 'fake_match')
+        ? (Number(r.pronunciationScore) || 20)
+        : Math.round((Number(r.pronunciationScore) || 0) * 0.6 + metricAvg * 0.4);
 
-    console.log("METRICS DEBUG:", {
+    console.log("FINAL SCORE:", {
+        finalScore: finalScore,
         aniqlik: metrics.aniqlik,
         ravonlik: metrics.ravonlik,
-        toliqlik: metrics.toliqlik,
-        finalScore: finalScore
+        toliqlik: metrics.toliqlik
     });
 
     /* expose computed values back to the result so downstream feedback
