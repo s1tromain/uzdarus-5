@@ -1399,6 +1399,16 @@ async function _runPronunciationAssessment(referenceText) {
                 };
             }
 
+            console.log('[STEP extract]', {
+                recognizedText: recognizedText,
+                referenceText: referenceText,
+                accuracy: accuracy,
+                fluency: fluency,
+                completeness: completeness,
+                wordsLen: words.length,
+                wordAvg: words.length ? Math.round(words.reduce(function(a,w){return a+(w.accuracy||0);},0)/words.length) : null
+            });
+
             /* Single deterministic scoring pipeline (returns number 0–100).
                Low scores are kept (gradual scale) — only true empty recognition
                was already short-circuited above by _isRealEmptyRecognizedText. */
