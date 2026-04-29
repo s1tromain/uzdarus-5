@@ -920,6 +920,7 @@ function _buildZeroScoreResult(recognizedText, referenceText, stats) {
    The caller wraps the score into a result object together with raw
    metrics; this keeps scoring math separate from result shape. */
 function _computePronScore(rec, ref, accuracy, fluency, completeness) {
+    console.log("🔥 FINAL SCORE PATH WORKING");
     console.log("DEBUG REC VS REF:", rec, "||", ref);
 
     var clean = (rec || '').trim().toLowerCase();
@@ -1216,17 +1217,41 @@ async function _runPronunciationAssessment(referenceText) {
         return !text || !String(text).trim() || String(text).trim().length < 2;
     }
 
-    function buildZeroResult(text, reason) {
-        var recognizedText = _sanitizeRecognizedText(text, false);
-        return {
+    function buildScoredResult(text, accuracy, fluency, completeness, overrides) {
+        var recognizedText = _sanitizeRecognizedText(text, true);
+        var stats = _getWordStats(recognizedText, referenceText);
+        var normalizedCompleteness = completeness;
+        if (normalizedCompleteness === null || normalizedCompleteness === undefined || !Number.isFinite(Number(normalizedCompleteness))) {
+            normalizedCompleteness = Math.round((stats.partialRatio || 0) * 100);
+        } else {
+            normalizedCompleteness = Math.round(Number(normalizedCompleteness));
+        }
+
+        var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness);
+        var result = {
             recognizedText: recognizedText,
-            accuracyScore: null,
-            fluencyScore: null,
-            completenessScore: 0,
-            pronunciationScore: 0,
-            reason: reason || 'wrong_word',
+            accuracyScore: accuracy === undefined ? null : accuracy,
+            fluencyScore: fluency === undefined ? null : fluency,
+            completenessScore: normalizedCompleteness,
+            pronunciationScore: score,
+            reason: _getPronunciationReason(score),
             words: []
         };
+
+        if (overrides) {
+            Object.keys(overrides).forEach(function (key) {
+                result[key] = overrides[key];
+            });
+        }
+
+        return result;
+    }
+
+    function buildZeroResult(text, reason) {
+        return buildScoredResult(text, null, null, null, {
+            reason: reason || 'wrong_word',
+            words: []
+        });
     }
 
     /* ---- INTERIM: proves mic + audio work ---- */
@@ -1241,13 +1266,6 @@ async function _runPronunciationAssessment(referenceText) {
 
     recognizer.sessionStarted = function () {
         console.debug('[PRON] session started');
-    };
-    recognizer.sessionStopped = function () {
-        console.debug('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
-        if (!finished) {
-            console.warn('[PRON] sessionStopped fallback → ZERO_RESULT');
-            finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
-        }
     };
 
     try { _showPronListening(); } catch (uiErr) { console.warn('[UI ERROR] _showPronListening:', uiErr); }
@@ -1286,6 +1304,14 @@ async function _runPronunciationAssessment(referenceText) {
             fn();
         }
 
+        recognizer.sessionStopped = function () {
+            console.debug('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
+            if (!finished) {
+                console.warn('[PRON] sessionStopped fallback → scored result');
+                finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+            }
+        };
+
         _stopActivePron = function () {
             if (finished) return;
             finishSafe(function () {
@@ -1300,20 +1326,17 @@ async function _runPronunciationAssessment(referenceText) {
          * Returns a result object or null if text is garbage/empty.
          */
         function extractPronData(result) {
+            console.log("ENTER extractPronData");
+
             var recognizedText = '';
             function buildInvalidPronData(text) {
                 var invalidText = _sanitizeRecognizedText(text, true);
-                return {
-                    recognizedText: invalidText,
-                    pronunciationScore: 0,
-                    accuracyScore: null,
-                    fluencyScore: null,
-                    completenessScore: 0,
+                return buildScoredResult(invalidText, null, null, null, {
                     reason: 'bad',
                     words: [],
                     wordFeedback: [],
                     error: true
-                };
+                });
             }
             try {
                 var jsonStr = result.properties.getProperty(
@@ -1391,16 +1414,12 @@ async function _runPronunciationAssessment(referenceText) {
                 (accuracy < 20 || fluency < 20)
             ) {
                 console.warn('[FAKE MATCH BLOCKED]');
-                return {
-                    recognizedText: recognizedText,
+                return buildScoredResult(recognizedText, accuracy, fluency, completeness, {
                     pronunciationScore: 0,
-                    accuracyScore: accuracy,
-                    fluencyScore: fluency,
-                    completenessScore: completeness,
                     reason: 'fake_match',
                     words: [],
                     wordFeedback: []
-                };
+                });
             }
 
             console.log('[STEP extract]', {
@@ -1416,6 +1435,7 @@ async function _runPronunciationAssessment(referenceText) {
             /* Single deterministic scoring pipeline (returns number 0–100).
                Low scores are kept (gradual scale) — only true empty recognition
                was already short-circuited above by _isRealEmptyRecognizedText. */
+                console.log("CALL _computePronScore FROM extractPronData");
             var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness);
 
             return {
@@ -1440,55 +1460,8 @@ async function _runPronunciationAssessment(referenceText) {
                 gotInterim = true;
                 var text = e.result.text.trim();
                 if (text) lastInterimText = text;
-                var safeInterimText = _getSafeInterimText();
-
-                /* ---- instant result if interim is a FULL match ----
-                   Strict gate: require every reference word to be present
-                   AND identical word count. The previous 0.8 + ≥-length
-                   gate fired on similar-but-wrong phrases and triggered
-                   premature success. */
-                var stats = _getMatchedWordStats(safeInterimText, referenceText);
-                var interimWords = safeInterimText.trim().split(/\s+/).filter(Boolean);
-                var refWords = referenceText.trim().split(/\s+/).filter(Boolean);
-                if (stats.matchRatio === 1 && interimWords.length === refWords.length) {
-                    if (finished) return;
-                    var interimScore = _computePronScore(safeInterimText, referenceText, null, null, null);
-                    var interimComp = Math.round(_getWordStats(safeInterimText, referenceText).partialRatio * 100);
-                    finishSafe(function () {
-                        resolve({
-                            recognizedText: safeInterimText,
-                            pronunciationScore: interimScore,
-                            accuracyScore: null,
-                            fluencyScore: null,
-                            completenessScore: interimComp,
-                            reason: _getPronunciationReason(interimScore),
-                            words: []
-                        });
-                    });
-                    return;
-                }
 
                 console.debug('[PRON] INTERIM:', e.result.text);
-
-                clearTimeout(silenceTimerId);
-                silenceTimerId = setTimeout(function () {
-                    if (finished) return;
-                    var txt = _sanitizeRecognizedText(_getSafeInterimText() || '', true);
-                    var silenceScore = _computePronScore(txt, referenceText, null, null, null);
-                    var silenceComp = Math.round(_getWordStats(txt, referenceText).partialRatio * 100);
-                    console.warn('[PRON] 3s silence after last interim — forcing resolve, score:', silenceScore);
-                    finishSafe(function () {
-                        resolve({
-                            recognizedText: txt,
-                            pronunciationScore: silenceScore,
-                            accuracyScore: null,
-                            fluencyScore: null,
-                            completenessScore: silenceComp,
-                            reason: _getPronunciationReason(silenceScore),
-                            words: []
-                        });
-                    });
-                }, 3000);
             }
         };
 
@@ -1498,6 +1471,7 @@ async function _runPronunciationAssessment(referenceText) {
          *  by timeout because timeout never closes recognizer.
          * =========================================================== */
         recognizer.recognized = function (s, e) {
+            console.log("ENTER recognized handler");
             gotFinal = true;
             console.debug('[PRON] FINAL (recognized):', e.result ? e.result.reason : 'null',
                 'text:', e.result ? e.result.text : '', 'timeoutHit:', timeoutHit);
@@ -1583,19 +1557,9 @@ async function _runPronunciationAssessment(referenceText) {
             timeoutHit = true;
             if (gotInterim) {
                 var txt = _sanitizeRecognizedText(_getSafeInterimText() || '', true);
-                var timeoutScore = _computePronScore(txt, referenceText, null, null, null);
-                var timeoutComp = Math.round(_getWordStats(txt, referenceText).partialRatio * 100);
-                console.warn('[PRON] soft timeout (15s) + gotInterim — forcing resolve, score:', timeoutScore);
+                console.warn('[PRON] soft timeout (15s) + gotInterim — forcing scored resolve');
                 finishSafe(function () {
-                    resolve({
-                        recognizedText: txt,
-                        pronunciationScore: timeoutScore,
-                        accuracyScore: null,
-                        fluencyScore: null,
-                        completenessScore: timeoutComp,
-                        reason: _getPronunciationReason(timeoutScore),
-                        words: []
-                    });
+                    resolve(buildScoredResult(txt, null, null, null, { words: [] }));
                 });
                 return;
             }
@@ -1629,9 +1593,9 @@ async function _runPronunciationAssessment(referenceText) {
 
         /* Final safety net — guarantees a result within 8s no matter what */
         setTimeout(function () {
-            if (!finished) {
-                console.warn('[PRON] FINAL FALLBACK (8s) → ZERO_RESULT');
-                finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+            if (!finished && gotInterim) {
+                console.warn('[PRON] FINAL FALLBACK (8s) + gotInterim → scored resolve');
+                finishSafe(function () { resolve(buildScoredResult(_getSafeInterimText(), null, null, null, { words: [] })); });
             }
         }, 8000);
 
