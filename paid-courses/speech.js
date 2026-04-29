@@ -865,15 +865,17 @@ function _displayMetric(v) {
 
 /* Display-side metrics derived from word stats + Azure fluency.
    Aniqlik = positional accuracy, To‘liqlik = presence,
-   Ravonlik = Azure fluency when trustworthy, else average. */
-function _computeMetrics(stats, fluency) {
-    var aniqlik = Math.round((stats && stats.exactRatio || 0) * 100);
-    var toliqlik = Math.round((stats && stats.partialRatio || 0) * 100);
+   Ravonlik = Azure fluency when available, else partial-based fallback. */
+function _computeMetrics(stats, fluencyScore) {
+    var exact = stats && stats.exactRatio || 0;
+    var partial = stats && stats.partialRatio || 0;
+    var aniqlik = Math.round(exact * 100);
+    var toliqlik = Math.round(partial * 100);
     var ravonlik;
-    if (fluency !== null && fluency !== undefined && Number.isFinite(Number(fluency)) && Number(fluency) > 0) {
-        ravonlik = Math.round(Number(fluency));
+    if (typeof fluencyScore === 'number' && Number.isFinite(fluencyScore) && fluencyScore > 0) {
+        ravonlik = Math.round(fluencyScore);
     } else {
-        ravonlik = Math.round((aniqlik + toliqlik) / 2);
+        ravonlik = Math.round(partial * 70);
     }
     return { aniqlik: aniqlik, ravonlik: ravonlik, toliqlik: toliqlik };
 }
@@ -2311,12 +2313,16 @@ function _showPronResult(refText, r) {
 
     var stats = _getWordStats(r.recognizedText || '', refText);
     var metrics = _computeMetrics(stats, r.fluencyScore);
-    /* Anchor the ring to the graded engine score (which already weighs
-       Azure accuracy/fluency + word stats) and add a small influence
-       from the metric average so the bars and ring agree visually. */
-    var metricAvg = Math.round((metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3);
-    var graded = Number(r.pronunciationScore) || 0;
-    var finalScore = Math.round((graded * 0.7) + (metricAvg * 0.3));
+    var finalScore = Math.round(
+        (metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3
+    );
+
+    console.log("METRICS DEBUG:", {
+        aniqlik: metrics.aniqlik,
+        ravonlik: metrics.ravonlik,
+        toliqlik: metrics.toliqlik,
+        finalScore: finalScore
+    });
 
     /* expose computed values back to the result so downstream feedback
        and consumers see the same numbers the UI does */
