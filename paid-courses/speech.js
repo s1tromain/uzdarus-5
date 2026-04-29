@@ -2333,7 +2333,12 @@ function _showPronResult(refText, r) {
 
     var stats = _getWordStats(r.recognizedText || '', refText);
     var metrics = _computeMetrics(stats, r.fluencyScore);
-    var finalScore = Math.round((metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3);
+    /* Anchor the ring to the graded engine score (which already weighs
+       Azure accuracy/fluency + word stats) and add a small influence
+       from the metric average so the bars and ring agree visually. */
+    var metricAvg = Math.round((metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3);
+    var graded = Number(r.pronunciationScore) || 0;
+    var finalScore = Math.round((graded * 0.7) + (metricAvg * 0.3));
 
     /* expose computed values back to the result so downstream feedback
        and consumers see the same numbers the UI does */
