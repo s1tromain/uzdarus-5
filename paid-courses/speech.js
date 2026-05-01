@@ -812,7 +812,7 @@ function _tokenizeRefWords(text) {
 }
 
 /* Order-aware token stats: exactRatio (positional), partialRatio
-   (presence anywhere), extraWords, refLength. */
+    (presence anywhere), overflow extraWords, refLength, recLength. */
 function _getWordStats(rec, ref) {
     var recWords = _tokenize(rec);
     var refWords = _tokenize(ref);
@@ -836,12 +836,13 @@ function _getWordStats(rec, ref) {
         }
     }
 
-    var extraWords = Math.max(0, recWords.length - partialMatches);
+    var extraWords = Math.max(0, recWords.length - refWords.length);
     return {
         exactRatio: refWords.length ? exactMatches / refWords.length : 0,
         partialRatio: refWords.length ? partialMatches / refWords.length : 0,
         extraWords: extraWords,
-        refLength: refWords.length
+        refLength: refWords.length,
+        recLength: recWords.length
     };
 }
 
@@ -881,7 +882,7 @@ function _displayMetric(v) {
 
 function _getWordQuality(words) {
     if (!Array.isArray(words) || words.length === 0) {
-        return { avg: null, weakCount: 0 };
+        return { avg: null, weakCount: 0, veryWeakCount: 0 };
     }
 
     var valid = words.filter(function (word) {
@@ -889,7 +890,7 @@ function _getWordQuality(words) {
     });
 
     if (valid.length === 0) {
-        return { avg: null, weakCount: 0 };
+        return { avg: null, weakCount: 0, veryWeakCount: 0 };
     }
 
     var total = valid.reduce(function (sum, word) {
@@ -898,10 +899,14 @@ function _getWordQuality(words) {
     var weakCount = valid.filter(function (word) {
         return Number(word.accuracy) < 65;
     }).length;
+    var veryWeakCount = valid.filter(function (word) {
+        return Number(word.accuracy) < 50;
+    }).length;
 
     return {
         avg: Math.round(total / valid.length),
-        weakCount: weakCount
+        weakCount: weakCount,
+        veryWeakCount: veryWeakCount
     };
 }
 
@@ -941,8 +946,10 @@ function _getSpeechStability(words) {
 }
 
 function _getSpeechStabilityThreshold(wordCount) {
-    if (!Number.isFinite(wordCount) || wordCount < 2) return 20;
-    return Math.max(16, 32 / Math.sqrt(wordCount));
+    if (!Number.isFinite(wordCount) || wordCount < 2) return 22;
+    if (wordCount <= 2) return 26;
+    if (wordCount === 3) return 22;
+    return Math.max(16, 34 / Math.sqrt(wordCount));
 }
 
 function _getSpeechStabilityPenalty(stability, threshold) {
@@ -963,11 +970,63 @@ function _getSpeechStabilityPenalty(stability, threshold) {
     return 0.6;
 }
 
+function _getAzureQualityPenalty(qualityAvg, suspiciousAccuracy) {
+    if (!Number.isFinite(qualityAvg)) return 1;
+
+    var avg = Number(qualityAvg);
+    var penalty = 1;
+
+    if (avg < 74) {
+        if (avg >= 65) {
+            penalty = 0.68 + (avg - 65) * (0.32 / 9);
+        } else if (avg >= 55) {
+            penalty = 0.5 + (avg - 55) * (0.18 / 10);
+        } else {
+            var clipped = Math.max(avg, 30);
+            penalty = 0.36 + (clipped - 30) * (0.14 / 25);
+        }
+    }
+
+    if (suspiciousAccuracy) {
+        var suspiciousCap = 1;
+        if (avg >= 65) {
+            suspiciousCap = 0.68 + (Math.min(avg, 74) - 65) * (0.12 / 9);
+        } else if (avg >= 55) {
+            suspiciousCap = 0.52 + (avg - 55) * (0.16 / 10);
+        } else {
+            suspiciousCap = 0.42 + (Math.max(avg, 30) - 30) * (0.12 / 25);
+        }
+        penalty = Math.min(penalty, suspiciousCap);
+    }
+
+    return _clampRange(penalty, 0.36, 1);
+}
+
+function _getNearExactPenalty(partialRatio, qualityAvg) {
+    if (!Number.isFinite(partialRatio) || partialRatio < 0.72) return 1;
+    if (!Number.isFinite(qualityAvg) || qualityAvg >= 67) return 1;
+
+    var partialWeight = _clampRange((partialRatio - 0.72) / 0.18, 0, 1);
+    var smoothPartial = partialWeight * partialWeight * (3 - 2 * partialWeight);
+    var clippedQuality = _clampRange(qualityAvg, 50, 67);
+    var qualityWeight = (67 - clippedQuality) / 17;
+    var ceiling = 0.82 - 0.1 * qualityWeight;
+    var floor = 0.58 - 0.16 * qualityWeight;
+
+    return _clampRange(ceiling - (ceiling - floor) * smoothPartial, 0.42, 0.82);
+}
+
 /* Display-side metrics are derived from token match plus fluency.
-   They should reflect quality, but must never override the engine score. */
-function _computeMetrics(stats, accuracyScore, fluencyScore) {
+   ALL penalties (word-level + external like stability) are applied here
+   so the three bars AND finalScore = avg(bars) can never disagree.
+   `extraPenalty` is the hook for caller-supplied multipliers (stability,
+   anti-fake caps, etc.) — keeps the single-source-of-truth invariant. */
+function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
     var exact = stats && stats.exactRatio || 0;
     var partial = stats && stats.partialRatio || 0;
+    var extraWords = stats && stats.extraWords || 0;
+    var refLength = stats && stats.refLength || 0;
+    var recLength = stats && stats.recLength || 0;
 
     var aniqlik = Math.round(exact * 100);
     var toliqlik = Math.round(partial * 100);
@@ -986,6 +1045,68 @@ function _computeMetrics(stats, accuracyScore, fluencyScore) {
 
     ravonlik = Math.min(ravonlik, aniqlik);
 
+    /* Unified penalty — the ONLY place where any score multiplier lives. */
+    var penalty = 1;
+
+    /* Layer 3: short-phrase amplifier. 1 wrong word in a 2-word phrase is
+       a 50% error — the standard penalty curve under-punishes it. */
+    var shortPhrase = refLength > 0 && refLength <= 3;
+    var veryShort = refLength > 0 && refLength <= 2;
+
+    if (exact < 0.5) {
+        penalty *= 0.8;
+    }
+
+    /* Mismatch penalty no longer gated on refLength>=3 — that gate left
+       2-word phrases unpunished (1/2 wrong → 50% but penalty=1.0). */
+    var hasMismatch = partial < 1 && exact === partial;
+    if (hasMismatch || exact < partial) {
+        penalty *= veryShort ? 0.72 : (shortPhrase ? 0.78 : 0.85);
+    }
+
+    /* Same-length substitutions are usually semantic mismatches rather than
+       harmless omissions, so they should land lower than a short transcript. */
+    var sameLengthSubstitution = hasMismatch && recLength === refLength && extraWords === 0;
+    if (sameLengthSubstitution) {
+        penalty *= veryShort ? 0.9 : (shortPhrase ? 0.92 : 0.96);
+    }
+
+    /* Extra words: scaled by ref length so 1 extra in a 1-word phrase
+       hurts more than 1 extra in a 10-word phrase. Floor 0.65 (0.55 for
+       very short — adding a word to a 1-2 word phrase is structurally bad). */
+    if (extraWords > 0) {
+        var extraRatio = extraWords / Math.max(refLength, 1);
+        var extraFloor = veryShort ? 0.5 : (shortPhrase ? 0.58 : 0.65);
+        var extraWordLoss = veryShort ? 0.2 : (shortPhrase ? 0.14 : 0.07);
+        var extraRatioLoss = veryShort ? 0.25 : (shortPhrase ? 0.24 : 0.1);
+        penalty *= Math.max(extraFloor, 1 - extraWordLoss * extraWords - extraRatioLoss * extraRatio);
+    }
+
+    if (partial < 0.3) {
+        penalty *= 0.5;
+    }
+
+    /* External penalty (stability / anti-fake) folded in. Smooth floor:
+       linearly blend extraPenalty toward 0.75 as base avg drops to 0,
+       so a slightly-better base never produces a worse final (the old
+       step function had a discontinuity at avg=60). */
+    if (Number.isFinite(extraPenalty) && extraPenalty < 1) {
+        var preExtAvg = ((aniqlik + ravonlik + toliqlik) / 3) * penalty;
+        var weakWeight = preExtAvg >= 60 ? 0 : (60 - preExtAvg) / 60;
+        var effective = extraPenalty + weakWeight * Math.max(0, 0.75 - extraPenalty);
+        penalty *= effective;
+    }
+
+    aniqlik = Math.round(_clampRange(aniqlik * penalty, 0, 100));
+    toliqlik = Math.round(_clampRange(toliqlik * penalty, 0, 100));
+    ravonlik = Math.round(_clampRange(ravonlik * penalty, 0, 100));
+
+    if (partial < 0.3) {
+        aniqlik = Math.min(aniqlik, 20);
+        toliqlik = Math.min(toliqlik, 20);
+        ravonlik = Math.min(ravonlik, 20);
+    }
+
     return { aniqlik: aniqlik, ravonlik: ravonlik, toliqlik: toliqlik };
 }
 
@@ -997,30 +1118,37 @@ function _computeFinalMetricScore(metrics) {
     return Math.round(_clampRange((aniqlik + ravonlik + toliqlik) / 3, 0, 100));
 }
 
+/* SINGLE source of truth.
+   metrics  =  _computeMetrics(...) — all penalties already inside
+   finalScore = avg(metrics) — no fallback, no override, no score *=
+   pronunciationScore = finalScore (kept for legacy consumers)
+   The only special case is `fake_match`: it wants a hard punitive
+   metric set (anti-fake guard), not a recompute from token stats. */
 function _finalizePronunciationResult(result, referenceText) {
     var finalized = result || {};
 
-    var stats = _getWordStats(finalized.recognizedText || '', referenceText || '');
-    var metrics = _computeMetrics(
-        stats,
-        finalized.accuracyScore,
-        finalized.fluencyScore
-    );
-
-    var score = Number(finalized.finalScore);
-    if (!Number.isFinite(score)) {
-        score = Number(finalized.pronunciationScore);
+    var metrics;
+    if (finalized.reason === 'fake_match') {
+        /* Flat low metrics so the UI tells one story, not three.
+           Old shape (0, fluency, 0) read as conflicting signals. */
+        metrics = { aniqlik: 25, ravonlik: 25, toliqlik: 25 };
+    } else {
+        var stats = _getWordStats(finalized.recognizedText || '', referenceText || '');
+        metrics = _computeMetrics(
+            stats,
+            finalized.accuracyScore,
+            finalized.fluencyScore,
+            finalized.__extraPenalty
+        );
     }
-    if (!Number.isFinite(score)) {
-        score = _computeFinalMetricScore(metrics);
-    }
-    score = Math.round(_clampRange(score, 0, 100));
 
-    finalized.pronunciationScore = score;
-    finalized.finalScore = score;
+    var score = _computeFinalMetricScore(metrics);
+
     finalized.aniqlik = metrics.aniqlik;
     finalized.ravonlik = metrics.ravonlik;
     finalized.toliqlik = metrics.toliqlik;
+    finalized.finalScore = score;
+    finalized.pronunciationScore = score;
 
     if (!finalized.reason) {
         finalized.reason = _getPronunciationReason(score);
@@ -1032,6 +1160,7 @@ function _finalizePronunciationResult(result, referenceText) {
         finalized.wordFeedback = _getWordFeedback(finalized.recognizedText || '', referenceText || '');
     }
 
+    delete finalized.__extraPenalty;
     return finalized;
 }
 
@@ -1076,37 +1205,18 @@ function _buildZeroScoreResult(recognizedText, referenceText, stats) {
 }
 
 /* Single deterministic scoring pipeline. Returns a number 0–100.
-   The caller wraps the score into a result object together with raw
-   metrics; this keeps scoring math separate from result shape. */
-function _computePronScore(rec, ref, accuracy, fluency, completeness) {
+   Pure function of the (already-penalized) metrics — no separate
+   `score *= ...` step. `extraPenalty` is forwarded so callers (e.g.
+   stability check) can apply a multiplier through the unified path. */
+function _computePronScore(rec, ref, accuracy, fluency, completeness, extraPenalty) {
     var clean = (rec || '').trim().toLowerCase();
     if (!clean || clean.length < 2) return 0;
 
     var s = _getWordStats(clean, ref);
     if (s.refLength === 0) return 0;
 
-    var metrics = _computeMetrics(s, accuracy, fluency);
-    var score = _computeFinalMetricScore(metrics);
-
-    if (s.exactRatio < 0.5) {
-        score *= 0.8;
-    }
-
-    var hasMismatch = s.refLength >= 3 && s.partialRatio < 1 && s.exactRatio === s.partialRatio;
-
-    if (hasMismatch || s.exactRatio < s.partialRatio) {
-        score *= 0.85;
-    }
-
-    if (s.extraWords > 0) {
-        score *= Math.max(0.7, 1 - 0.1 * s.extraWords);
-    }
-
-    if (s.partialRatio < 0.3) {
-        score *= 0.5;
-    }
-
-    return Math.round(_clampRange(score, 0, 100));
+    var metrics = _computeMetrics(s, accuracy, fluency, extraPenalty);
+    return _computeFinalMetricScore(metrics);
 }
 
 /* ---- Word-level feedback (correct / missing / wrong_position / extra) ---- */
@@ -1358,17 +1468,23 @@ async function _runPronunciationAssessment(referenceText) {
             normalizedCompleteness = Math.round(Number(normalizedCompleteness));
         }
 
-        var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness);
-        score = Math.min(score, 40);
+        /* Unclear/no-Azure path: cap at 40 (we have no real audio quality
+           evidence). Cap is converted to a proportional extraPenalty so
+           it travels through _computeMetrics — no `score = ...` outside. */
+        var rawScore = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness);
+        var capPenalty = rawScore > 40 ? 40 / Math.max(rawScore, 1) : undefined;
+        var score = capPenalty !== undefined
+            ? _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness, capPenalty)
+            : rawScore;
         var result = {
             recognizedText: recognizedText,
             accuracyScore: accuracy === undefined ? null : accuracy,
             fluencyScore: fluency === undefined ? null : fluency,
             completenessScore: normalizedCompleteness,
-            pronunciationScore: score,
             reason: score > 0 ? 'unclear_speech' : 'wrong_word',
             words: [],
-            wordFeedback: _getWordFeedback(recognizedText, referenceText)
+            wordFeedback: _getWordFeedback(recognizedText, referenceText),
+            __extraPenalty: capPenalty
         };
 
         if (overrides) {
@@ -1553,6 +1669,9 @@ async function _runPronunciationAssessment(referenceText) {
             var stability = _getSpeechStability(words);
             var stabilityPenalty = 1;
             var forcedReason = null;
+            var suspiciousAccuracy = _isSuspiciousAccuracy(rawAccuracy, words);
+            var weakMajorityThreshold = words.length > 0 ? Math.ceil(words.length / 2) : Number.POSITIVE_INFINITY;
+            var hasMajorityVeryWeakWords = quality.veryWeakCount >= weakMajorityThreshold;
             completeness = Math.round(__stats.partialRatio * 100);
 
             if (isExactTranscriptMatch && words.length < referenceWordCount) {
@@ -1567,9 +1686,8 @@ async function _runPronunciationAssessment(referenceText) {
                     !rawFluency ||
                     rawAccuracy < 40 ||
                     rawFluency < 40 ||
-                    (quality.avg !== null && quality.avg < 70) ||
-                    quality.weakCount >= Math.ceil(words.length / 2) ||
-                    _isSuspiciousAccuracy(rawAccuracy, words)
+                    (quality.avg !== null && quality.avg < 55) ||
+                    hasMajorityVeryWeakWords
                 ) {
                     console.log('[PRON] FAKE BLOCK (WORD QUALITY)');
 
@@ -1592,30 +1710,72 @@ async function _runPronunciationAssessment(referenceText) {
                 }
             }
 
+            /* Layer 2 HARD: Near-exact fake guard.
+               Keep a buffer between the soft curve and fake_match so a tiny
+               partial-ratio wobble cannot flip a middling score to 25. */
+            if (!isExactTranscriptMatch
+                && (
+                    (__stats.partialRatio > 0.9 && quality.avg !== null && quality.avg < 55)
+                    || (__stats.partialRatio > 0.85 && (hasMajorityVeryWeakWords || (quality.avg !== null && quality.avg < 50)))
+                )
+            ) {
+                console.log('[PRON] FAKE BLOCK (NEAR-EXACT, WEAK WORDS)');
+                return _finalizePronunciationResult({
+                    recognizedText: recognizedText,
+                    accuracyScore: rawAccuracy,
+                    fluencyScore: rawFluency,
+                    completenessScore: Math.round(__stats.partialRatio * 100),
+                    words: words || [],
+                    wordFeedback: _getWordFeedback(recognizedText, referenceText),
+                    reason: 'fake_match'
+                }, referenceText);
+            }
+
             if (accuracy === null) {
                 accuracy = quality.avg;
             }
 
-            /* Single deterministic scoring pipeline (returns number 0–100).
-               Low scores are kept (gradual scale) — only true empty recognition
-               was already short-circuited above by _isRealEmptyRecognizedText. */
-            var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness);
-            if (stabilityPenalty < 1) {
-                if (score < 60) {
-                    stabilityPenalty = Math.max(stabilityPenalty, 0.75);
-                }
-                score = Math.round(_clampRange(score * stabilityPenalty, 0, 100));
+            /* Layer 1: Word-level quality control (SOFT — not always fake).
+               The 65–70 band is intentionally no longer near-zero penalty:
+               it tapers up to 72 so Azure noise around the boundary does not
+               make 65 sound almost perfect. */
+            var qualityPenalty = 1;
+            if (quality.avg !== null && quality.avg < 70) {
+                qualityPenalty = _getAzureQualityPenalty(quality.avg, suspiciousAccuracy);
+                if (quality.avg < 60 && !forcedReason) forcedReason = 'bad_pronunciation';
             }
+
+            /* Layer 2 SOFT: Near-exact transcripts are graded, not stepped.
+               partial 0.75–0.85 gets progressively harsher; only above 0.85
+               with clearly bad word evidence becomes fake_match. */
+            var azureCapPenalty = 1;
+            if (!isExactTranscriptMatch
+                && __stats.partialRatio >= 0.72
+                && quality.avg !== null
+                && quality.avg < 67) {
+                azureCapPenalty = _getNearExactPenalty(__stats.partialRatio, quality.avg);
+                if (!forcedReason) forcedReason = 'bad_pronunciation';
+            }
+
+            /* Combine external penalties into ONE multiplier. Quality and
+               near-exact-soft are different signals of the same problem
+               (Azure overconfidence) — take the harsher one, not their
+               product, so a single suspicion doesn't double-count.
+               Stability is folded into this same metric penalty path. */
+            var azureSignal = Math.min(qualityPenalty, azureCapPenalty);
+            var combinedPenalty = stabilityPenalty * azureSignal;
+            var extraPenalty = combinedPenalty < 1 ? combinedPenalty : undefined;
+            var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness, extraPenalty);
 
             return _finalizePronunciationResult({
                 recognizedText: recognizedText,
-                pronunciationScore: score,
                 accuracyScore: accuracy,
                 fluencyScore: fluency,
                 completenessScore: completeness,
                 reason: forcedReason || _getPronunciationReason(score),
                 words: words,
-                wordFeedback: _getWordFeedback(recognizedText, referenceText)
+                wordFeedback: _getWordFeedback(recognizedText, referenceText),
+                __extraPenalty: extraPenalty
             }, referenceText);
         }
 
@@ -2495,11 +2655,8 @@ function _showPronResult(refText, r) {
     };
 
     if (r.reason === 'fake_match') {
-        metrics = {
-            aniqlik: 0,
-            ravonlik: _normalizeMetric(r.fluencyScore) || 0,
-            toliqlik: 0
-        };
+        /* keep in sync with _finalizePronunciationResult */
+        metrics = { aniqlik: 25, ravonlik: 25, toliqlik: 25 };
     } else if (metrics.aniqlik === undefined || metrics.ravonlik === undefined || metrics.toliqlik === undefined) {
         metrics = _computeMetrics(stats, r.accuracyScore, r.fluencyScore);
     }
