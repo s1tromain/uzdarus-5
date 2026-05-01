@@ -610,7 +610,7 @@ function checkPronunciation(event) {
                 return;
             }
 
-            var score = result.pronunciationScore;
+            var score = Number(result.finalScore != null ? result.finalScore : result.pronunciationScore) || 0;
 
             /* ============ SUCCESS: score >= pass threshold ============ */
             if (score >= _PRON_PASS_SCORE) {
@@ -763,6 +763,7 @@ var TEXT = {
         verdictWrongWord: "❌ Boshqa so'z aytdingiz",
         verdictBadPron:   "⚠️ Talaffuzni yaxshilash kerak",
         verdictUnclear:   "⚠️ Aniqroq gapiring",
+        verdictUnstable:  "⚠️ Nutq notekis chiqdi",
         verdictFakeMatch: "❌ Qayta urinib ko'ring"
     },
     en: {
@@ -785,6 +786,7 @@ var TEXT = {
         verdictWrongWord: "❌ You said a different word",
         verdictBadPron:   "⚠️ Pronunciation needs work",
         verdictUnclear:   "⚠️ Speak more clearly",
+        verdictUnstable:  "⚠️ Speech was unstable",
         verdictFakeMatch: "❌ Try again"
     }
 };
@@ -877,25 +879,160 @@ function _displayMetric(v) {
     return Math.round(n);
 }
 
-/* Display-side metrics derived from word stats + Azure fluency.
-   Aniqlik = positional accuracy, To‘liqlik = presence,
-   Ravonlik = Azure fluency when available, else partial-based fallback. */
-function _computeMetrics(stats, fluencyScore) {
+function _getWordQuality(words) {
+    if (!Array.isArray(words) || words.length === 0) {
+        return { avg: null, weakCount: 0 };
+    }
+
+    var valid = words.filter(function (word) {
+        return word && Number.isFinite(Number(word.accuracy));
+    });
+
+    if (valid.length === 0) {
+        return { avg: null, weakCount: 0 };
+    }
+
+    var total = valid.reduce(function (sum, word) {
+        return sum + Number(word.accuracy);
+    }, 0);
+    var weakCount = valid.filter(function (word) {
+        return Number(word.accuracy) < 65;
+    }).length;
+
+    return {
+        avg: Math.round(total / valid.length),
+        weakCount: weakCount
+    };
+}
+
+function _isSuspiciousAccuracy(topAccuracy, words) {
+    if (!Array.isArray(words) || words.length === 0) return false;
+
+    var valid = words.filter(function (word) {
+        return word && Number.isFinite(Number(word.accuracy));
+    });
+    if (valid.length === 0) return false;
+
+    var normalizedTopAccuracy = _normalizeMetric(topAccuracy);
+    if (normalizedTopAccuracy === null) return false;
+
+    var avg = valid.reduce(function (sum, word) {
+        return sum + Number(word.accuracy || 0);
+    }, 0) / valid.length;
+
+    return Math.abs(normalizedTopAccuracy - avg) > 20;
+}
+
+function _getSpeechStability(words) {
+    if (!Array.isArray(words) || words.length < 2) return null;
+
+    var values = words
+        .map(function (word) { return Number(word && word.accuracy) || 0; })
+        .filter(function (value) { return Number.isFinite(value); });
+
+    if (values.length < 2) return null;
+
+    var avg = values.reduce(function (sum, value) { return sum + value; }, 0) / values.length;
+    var variance = values.reduce(function (sum, value) {
+        return sum + Math.pow(value - avg, 2);
+    }, 0) / values.length;
+
+    return Math.sqrt(variance);
+}
+
+function _getSpeechStabilityThreshold(wordCount) {
+    if (!Number.isFinite(wordCount) || wordCount < 2) return 20;
+    return Math.max(16, 32 / Math.sqrt(wordCount));
+}
+
+function _getSpeechStabilityPenalty(stability, threshold) {
+    if (!Number.isFinite(stability)) return 1;
+
+    var safeThreshold = Number.isFinite(threshold) && threshold > 0 ? threshold : 20;
+    var ratio = stability / safeThreshold;
+
+    if (ratio <= 1) {
+        return 1;
+    }
+    if (ratio <= 1.5) {
+        return 0.85;
+    }
+    if (ratio <= 2) {
+        return 0.7;
+    }
+    return 0.6;
+}
+
+/* Display-side metrics are derived from token match plus fluency.
+   They should reflect quality, but must never override the engine score. */
+function _computeMetrics(stats, accuracyScore, fluencyScore) {
     var exact = stats && stats.exactRatio || 0;
     var partial = stats && stats.partialRatio || 0;
+
     var aniqlik = Math.round(exact * 100);
     var toliqlik = Math.round(partial * 100);
-    var ravonlik;
-    if (typeof fluencyScore === 'number' && Number.isFinite(fluencyScore) && fluencyScore > 0) {
-        var fluencyCap = Math.round(fluencyScore);
-        aniqlik = Math.round(aniqlik * 0.7 + fluencyCap * 0.3);
-        toliqlik = Math.round(toliqlik * 0.7 + fluencyCap * 0.3);
-        ravonlik = Math.min(fluencyCap, aniqlik);
-    } else {
-        ravonlik = Math.round(partial * 70);
+
+    var normalizedFluency = _normalizeMetric(fluencyScore);
+    var ravonlik = normalizedFluency !== null
+        ? Math.round(normalizedFluency)
+        : Math.round(partial * 70);
+
+    if (normalizedFluency !== null) {
+        aniqlik = Math.round(aniqlik * 0.6 + normalizedFluency * 0.4);
+        toliqlik = Math.round(toliqlik * 0.6 + normalizedFluency * 0.4);
+        aniqlik = Math.min(aniqlik, normalizedFluency + 15);
+        toliqlik = Math.min(toliqlik, normalizedFluency + 15);
     }
+
     ravonlik = Math.min(ravonlik, aniqlik);
+
     return { aniqlik: aniqlik, ravonlik: ravonlik, toliqlik: toliqlik };
+}
+
+function _computeFinalMetricScore(metrics) {
+    var aniqlik = Number(metrics && metrics.aniqlik) || 0;
+    var ravonlik = Number(metrics && metrics.ravonlik) || 0;
+    var toliqlik = Number(metrics && metrics.toliqlik) || 0;
+
+    return Math.round(_clampRange((aniqlik + ravonlik + toliqlik) / 3, 0, 100));
+}
+
+function _finalizePronunciationResult(result, referenceText) {
+    var finalized = result || {};
+
+    var stats = _getWordStats(finalized.recognizedText || '', referenceText || '');
+    var metrics = _computeMetrics(
+        stats,
+        finalized.accuracyScore,
+        finalized.fluencyScore
+    );
+
+    var score = Number(finalized.finalScore);
+    if (!Number.isFinite(score)) {
+        score = Number(finalized.pronunciationScore);
+    }
+    if (!Number.isFinite(score)) {
+        score = _computeFinalMetricScore(metrics);
+    }
+    score = Math.round(_clampRange(score, 0, 100));
+
+    finalized.pronunciationScore = score;
+    finalized.finalScore = score;
+    finalized.aniqlik = metrics.aniqlik;
+    finalized.ravonlik = metrics.ravonlik;
+    finalized.toliqlik = metrics.toliqlik;
+
+    if (!finalized.reason) {
+        finalized.reason = _getPronunciationReason(score);
+    }
+    if (!Array.isArray(finalized.words)) {
+        finalized.words = [];
+    }
+    if (!Array.isArray(finalized.wordFeedback)) {
+        finalized.wordFeedback = _getWordFeedback(finalized.recognizedText || '', referenceText || '');
+    }
+
+    return finalized;
 }
 
 /* Score-driven verdict. Azure metrics are advisory; score is truth.
@@ -917,6 +1054,8 @@ function _getPronunciationReasonUi(reason) {
     if (reason === 'wrong_word')       return { message: _t('verdictWrongWord'),  verdictClass: 'bad' };
     if (reason === 'bad_pronunciation')return { message: _t('verdictBadPron'),    verdictClass: 'ok'  };
     if (reason === 'unclear_speech')   return { message: _t('verdictUnclear'),    verdictClass: 'ok'  };
+    if (reason === 'no_speech')        return { message: _t('verdictUnclear'),    verdictClass: 'bad' };
+    if (reason === 'unstable_speech')  return { message: _t('verdictUnstable'),   verdictClass: 'ok'  };
     if (reason === 'fake_match')       return { message: _t('verdictFakeMatch'),  verdictClass: 'bad' };
     return { message: _t('verdictExcellent'), verdictClass: 'good' };
 }
@@ -946,57 +1085,28 @@ function _computePronScore(rec, ref, accuracy, fluency, completeness) {
     var s = _getWordStats(clean, ref);
     if (s.refLength === 0) return 0;
 
-    var sim = 0.5 * s.exactRatio + 0.5 * s.partialRatio;
-    /* soft floor: no overlap → strong reduction but not a cliff */
-    if (s.partialRatio === 0) sim *= 0.2;
+    var metrics = _computeMetrics(s, accuracy, fluency);
+    var score = _computeFinalMetricScore(metrics);
 
-    /* word penalties */
-    if (s.partialRatio < 1) sim *= 0.9;                                 /* any missing word */
-    if (s.exactRatio < s.partialRatio && s.partialRatio > 0) {
-        var f = s.exactRatio / s.partialRatio;
-        sim *= 0.75 + 0.25 * f;                                         /* soft order */
+    if (s.exactRatio < 0.5) {
+        score *= 0.8;
     }
+
+    var hasMismatch = s.refLength >= 3 && s.partialRatio < 1 && s.exactRatio === s.partialRatio;
+
+    if (hasMismatch || s.exactRatio < s.partialRatio) {
+        score *= 0.85;
+    }
+
     if (s.extraWords > 0) {
-        sim *= Math.max(0, 1 - 0.15 * s.extraWords);                    /* extra words */
+        score *= Math.max(0.7, 1 - 0.1 * s.extraWords);
     }
 
-    /* full-reorder floor */
-    if (s.partialRatio === 1 && s.exactRatio === 0) {
-        sim = Math.max(sim, 0.6);
+    if (s.partialRatio < 0.3) {
+        score *= 0.5;
     }
 
-    /* ignore broken Azure metrics */
-    var acc = (accuracy === null || accuracy === undefined || accuracy < 10) ? null : accuracy;
-    var flu = (fluency  === null || fluency  === undefined || fluency  < 10) ? null : fluency;
-
-    if (acc !== null && flu !== null) {
-        if (acc < 50 || flu < 50) sim *= 0.85;
-        if (acc > 80 && flu > 80) sim += 0.03;
-    }
-
-    var score = sim * 100;
-
-    /* perfect-match floor (single tier so it doesn't squash gradation) */
-    if (s.exactRatio === 1 && s.partialRatio === 1) {
-        score = Math.max(score, 80);
-    }
-
-    /* penalize weak pronunciation even when the words match */
-    if (acc !== null && flu !== null) {
-        if (acc < 60 || flu < 60) {
-            score *= 0.8;
-        }
-        if (acc < 45 || flu < 45) {
-            score *= 0.6;
-        }
-    }
-
-    /* low-overlap softener — halve, don't cap */
-    if (s.partialRatio < 0.3) score *= 0.5;
-
-    score = Math.round(Math.max(0, Math.min(100, score)));
-
-    return score;
+    return Math.round(_clampRange(score, 0, 100));
 }
 
 /* ---- Word-level feedback (correct / missing / wrong_position / extra) ---- */
@@ -1235,7 +1345,11 @@ async function _runPronunciationAssessment(referenceText) {
     }
 
     function buildScoredResult(text, accuracy, fluency, completeness, overrides) {
-        var recognizedText = _sanitizeRecognizedText(text, true);
+        var recognizedText = _sanitizeRecognizedText(text, false);
+        if (!recognizedText || !recognizedText.trim()) {
+            return buildZeroResult('', (overrides && overrides.reason) || 'no_speech');
+        }
+
         var stats = _getWordStats(recognizedText, referenceText);
         var normalizedCompleteness = completeness;
         if (normalizedCompleteness === null || normalizedCompleteness === undefined || !Number.isFinite(Number(normalizedCompleteness))) {
@@ -1245,14 +1359,16 @@ async function _runPronunciationAssessment(referenceText) {
         }
 
         var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness);
+        score = Math.min(score, 40);
         var result = {
             recognizedText: recognizedText,
             accuracyScore: accuracy === undefined ? null : accuracy,
             fluencyScore: fluency === undefined ? null : fluency,
             completenessScore: normalizedCompleteness,
             pronunciationScore: score,
-            reason: _getPronunciationReason(score),
-            words: []
+            reason: score > 0 ? 'unclear_speech' : 'wrong_word',
+            words: [],
+            wordFeedback: _getWordFeedback(recognizedText, referenceText)
         };
 
         if (overrides) {
@@ -1261,14 +1377,24 @@ async function _runPronunciationAssessment(referenceText) {
             });
         }
 
-        return result;
+        return _finalizePronunciationResult(result, referenceText);
     }
 
     function buildZeroResult(text, reason) {
-        return buildScoredResult(text, null, null, null, {
-            reason: reason || 'wrong_word',
-            words: []
-        });
+        return {
+            recognizedText: '',
+            pronunciationScore: 0,
+            finalScore: 0,
+            accuracyScore: null,
+            fluencyScore: null,
+            completenessScore: 0,
+            aniqlik: 0,
+            ravonlik: 0,
+            toliqlik: 0,
+            words: [],
+            wordFeedback: [],
+            reason: reason || 'no_speech'
+        };
     }
 
     /* ---- INTERIM: proves mic + audio work ---- */
@@ -1347,7 +1473,7 @@ async function _runPronunciationAssessment(referenceText) {
             function buildInvalidPronData(text) {
                 var invalidText = _sanitizeRecognizedText(text, true);
                 return buildScoredResult(invalidText, null, null, null, {
-                    reason: 'bad',
+                    reason: 'no_speech',
                     words: [],
                     wordFeedback: [],
                     error: true
@@ -1412,48 +1538,85 @@ async function _runPronunciationAssessment(referenceText) {
             }
 
             /* normalize Azure metrics (0/null/garbage → null) */
-            accuracy = _normalizeMetric(accuracy);
-            fluency = _normalizeMetric(fluency);
+            var rawAccuracy = _normalizeMetric(accuracy);
+            var rawFluency = _normalizeMetric(fluency);
+
+            accuracy = rawAccuracy;
+            fluency = rawFluency;
             completeness = _normalizeMetric(completeness);
 
             /* completeness from token presence (Azure's value is unreliable) */
             var __stats = _getWordStats(recognizedText, referenceText);
+            var isExactTranscriptMatch = recognizedText.trim().toLowerCase() === referenceText.trim().toLowerCase();
+            var referenceWordCount = _tokenize(referenceText).length;
+            var quality = _getWordQuality(words);
+            var stability = _getSpeechStability(words);
+            var stabilityPenalty = 1;
+            var forcedReason = null;
             completeness = Math.round(__stats.partialRatio * 100);
 
-            /* anti-fake Azure echo — when Azure hallucinates the reference
-               text but audio quality is clearly poor, block it before scoring. */
-            if (
-                accuracy !== null && fluency !== null &&
-                recognizedText.trim().toLowerCase() === referenceText.trim().toLowerCase() &&
-                (accuracy < 30 || fluency < 30)
-            ) {
-                return {
-                    pronunciationScore: 20,
-                    accuracyScore: accuracy,
-                    fluencyScore: fluency,
-                    completenessScore: 0,
-                    recognizedText: recognizedText,
-                    words: words || [],
-                    wordFeedback: [],
-                    reason: 'fake_match',
-                };
+            if (isExactTranscriptMatch && words.length < referenceWordCount) {
+                return buildZeroResult(referenceText);
+            }
+
+            /* anti-fake Azure echo — exact transcript without solid quality
+               evidence must never pass as a real perfect pronunciation. */
+            if (isExactTranscriptMatch) {
+                if (
+                    !rawAccuracy ||
+                    !rawFluency ||
+                    rawAccuracy < 40 ||
+                    rawFluency < 40 ||
+                    (quality.avg !== null && quality.avg < 70) ||
+                    quality.weakCount >= Math.ceil(words.length / 2) ||
+                    _isSuspiciousAccuracy(rawAccuracy, words)
+                ) {
+                    console.log('[PRON] FAKE BLOCK (WORD QUALITY)');
+
+                    return _finalizePronunciationResult({
+                        pronunciationScore: 25,
+                        accuracyScore: rawAccuracy,
+                        fluencyScore: rawFluency,
+                        completenessScore: 100,
+                        recognizedText: recognizedText,
+                        words: words || [],
+                        wordFeedback: [],
+                        reason: 'fake_match',
+                    }, referenceText);
+                }
+
+                var stabilityThreshold = _getSpeechStabilityThreshold(words.length);
+                if (stability !== null && stability > stabilityThreshold) {
+                    stabilityPenalty = _getSpeechStabilityPenalty(stability, stabilityThreshold);
+                    forcedReason = 'unstable_speech';
+                }
+            }
+
+            if (accuracy === null) {
+                accuracy = quality.avg;
             }
 
             /* Single deterministic scoring pipeline (returns number 0–100).
                Low scores are kept (gradual scale) — only true empty recognition
                was already short-circuited above by _isRealEmptyRecognizedText. */
             var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness);
+            if (stabilityPenalty < 1) {
+                if (score < 60) {
+                    stabilityPenalty = Math.max(stabilityPenalty, 0.75);
+                }
+                score = Math.round(_clampRange(score * stabilityPenalty, 0, 100));
+            }
 
-            return {
+            return _finalizePronunciationResult({
                 recognizedText: recognizedText,
                 pronunciationScore: score,
                 accuracyScore: accuracy,
                 fluencyScore: fluency,
                 completenessScore: completeness,
-                reason: _getPronunciationReason(score),
+                reason: forcedReason || _getPronunciationReason(score),
                 words: words,
                 wordFeedback: _getWordFeedback(recognizedText, referenceText)
-            };
+            }, referenceText);
         }
 
         /* ===========================================================
@@ -1564,7 +1727,10 @@ async function _runPronunciationAssessment(referenceText) {
                 var txt = _sanitizeRecognizedText(_getSafeInterimText() || '', true);
                 console.warn('[PRON] soft timeout (15s) + gotInterim — forcing scored resolve');
                 finishSafe(function () {
-                    resolve(buildScoredResult(txt, null, null, null, { words: [] }));
+                    resolve(buildScoredResult(txt, null, null, null, {
+                        reason: 'unclear_speech',
+                        words: []
+                    }));
                 });
                 return;
             }
@@ -1600,7 +1766,12 @@ async function _runPronunciationAssessment(referenceText) {
         setTimeout(function () {
             if (!finished && gotInterim) {
                 console.warn('[PRON] FINAL FALLBACK (8s) + gotInterim → scored resolve');
-                finishSafe(function () { resolve(buildScoredResult(_getSafeInterimText(), null, null, null, { words: [] })); });
+                finishSafe(function () {
+                    resolve(buildScoredResult(_getSafeInterimText(), null, null, null, {
+                        reason: 'unclear_speech',
+                        words: []
+                    }));
+                });
             }
         }, 8000);
 
@@ -2314,12 +2485,29 @@ function _showPronResult(refText, r) {
     _lastPronRef = refText;
     _isPronListening = false;
 
-    var stats = _getWordStats(r.recognizedText || '', refText);
-    var metrics = _computeMetrics(stats, r.fluencyScore);
-    var metricAvg = (metrics.aniqlik + metrics.ravonlik + metrics.toliqlik) / 3;
-    var finalScore = (r.reason === 'fake_match')
-        ? (Number(r.pronunciationScore) || 20)
-        : Math.round((Number(r.pronunciationScore) || 0) * 0.6 + metricAvg * 0.4);
+    var stats = (r.reason === 'fake_match')
+        ? { exactRatio: 0, partialRatio: 0, extraWords: 0, refLength: _tokenize(refText).length }
+        : _getWordStats(r.recognizedText || '', refText);
+    var metrics = {
+        aniqlik: r.aniqlik,
+        ravonlik: r.ravonlik,
+        toliqlik: r.toliqlik
+    };
+
+    if (r.reason === 'fake_match') {
+        metrics = {
+            aniqlik: 0,
+            ravonlik: _normalizeMetric(r.fluencyScore) || 0,
+            toliqlik: 0
+        };
+    } else if (metrics.aniqlik === undefined || metrics.ravonlik === undefined || metrics.toliqlik === undefined) {
+        metrics = _computeMetrics(stats, r.accuracyScore, r.fluencyScore);
+    }
+
+    var finalScore = Number(r.finalScore);
+    if (!Number.isFinite(finalScore)) {
+        finalScore = _computeFinalMetricScore(metrics);
+    }
 
     console.log("FINAL SCORE:", {
         finalScore: finalScore,
@@ -2338,7 +2526,9 @@ function _showPronResult(refText, r) {
     var overall = finalScore;
     var cls = _sClass(overall);
     /* fake_match is preserved; everything else is verdicted from finalScore */
-    var derivedReason = (r.reason === 'fake_match') ? 'fake_match' : _getPronunciationReason(finalScore);
+    var derivedReason = (r.reason === 'fake_match' || r.reason === 'unstable_speech' || r.reason === 'no_speech')
+        ? r.reason
+        : _getPronunciationReason(finalScore);
     var reasonInfo = _getPronunciationReasonUi(derivedReason);
     var emoji, title;
     if (overall >= 90)      { emoji = '🌟'; title = _t('excellent'); }
