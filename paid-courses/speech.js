@@ -1588,23 +1588,27 @@ async function _runPronunciationAssessment(referenceText) {
         var recognizedText = (text || '').trim();
         if (!recognizedText) return '';
 
-        /* Collapse Azure hallucinations at the input boundary: phrase-level
-           repeat ("у меня есть у меня есть") and adjacent-token repeat
-           ("есть есть есть"). Original case preserved; comparison is
-           case-insensitive. Done before the fake-match guard so a doubled
-           echo can't sneak past as a "different" string. */
-        var tokens = recognizedText.split(/\s+/);
+        recognizedText = recognizedText
+            .toLowerCase()
+            .replace(/[.,!?;:"'«»()\[\]{}\-—–…]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        if (!recognizedText) return '';
+
+        var tokens = recognizedText.split(' ');
 
         /* N-fold phrase-repeat: smallest chunk size such that the whole
            token array is k≥2 verbatim copies of that chunk → keep one copy.
-           Catches 2x, 3x, … hallucinations (e.g. "X Y X Y X Y" → "X Y"). */
+           Catches 2x, 3x, … hallucinations (e.g. "X Y X Y X Y" → "X Y").
+           For n=1 the loop body never runs, so a single token like "я"
+           passes through untouched. */
         var n = tokens.length;
         for (var size = 1; size <= Math.floor(n / 2); size++) {
             if (n % size !== 0) continue;
-            var chunk = tokens.slice(0, size).join(' ').toLowerCase();
+            var chunk = tokens.slice(0, size).join(' ');
             var isRepeat = true;
             for (var k = size; k < n; k += size) {
-                if (tokens.slice(k, k + size).join(' ').toLowerCase() !== chunk) {
+                if (tokens.slice(k, k + size).join(' ') !== chunk) {
                     isRepeat = false;
                     break;
                 }
@@ -1615,20 +1619,17 @@ async function _runPronunciationAssessment(referenceText) {
             }
         }
 
+        /* Adjacent-duplicate collapse ("я я" → "я", "есть есть есть" →
+           "есть"). Real phrases like "у меня кошка у меня собака"
+           survive because no two adjacent tokens are equal. */
         var dedup = [];
         for (var i = 0; i < tokens.length; i++) {
-            if (i === 0 || tokens[i].toLowerCase() !== tokens[i - 1].toLowerCase()) {
+            if (i === 0 || tokens[i] !== tokens[i - 1]) {
                 dedup.push(tokens[i]);
             }
         }
-        recognizedText = dedup.join(' ');
 
-        if (!allowExactReferenceMatch && recognizedText && recognizedText === referenceText) {
-            console.debug('[BLOCKED FAKE MATCH]');
-            return '';
-        }
-
-        return recognizedText;
+        return dedup.join(' ');
     }
 
     function _getSafeInterimText() {
