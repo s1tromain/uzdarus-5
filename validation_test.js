@@ -33,6 +33,8 @@ const functionNames = [
     "_normalizeMetric",
     "_getWordQuality",
     "_isSuspiciousAccuracy",
+    "_getSpeechStabilityThreshold",
+    "_getSpeechStabilityPenalty",
     "_getAzureQualityPenalty",
     "_getNearExactPenalty",
     "_computeMetrics",
@@ -75,13 +77,24 @@ function scoreScenario(scenario) {
     }
 
     let nearExactPenalty = 1;
-    if (!isExactTranscriptMatch && stats.partialRatio >= 0.72 && quality.avg !== null && quality.avg < 67) {
+    if (!isExactTranscriptMatch && stats.partialRatio >= 0.72 && quality.avg !== null && quality.avg < 70) {
         nearExactPenalty = _getNearExactPenalty(stats.partialRatio, quality.avg);
     }
 
-    const stabilityPenalty = Number.isFinite(scenario.stabilityPenalty) ? scenario.stabilityPenalty : 1;
-    const extraPenalty = Math.min(stabilityPenalty, qualityPenalty, nearExactPenalty);
+    let stabilityPenalty = 1;
+    if (Number.isFinite(scenario.stabilityPenalty)) {
+        stabilityPenalty = scenario.stabilityPenalty;
+    } else if (Number.isFinite(scenario.stability)) {
+        const stabilityWordCount = Number.isFinite(scenario.stabilityWordCount)
+            ? scenario.stabilityWordCount
+            : Math.max(stats.recLength || 0, stats.refLength || 0, words.length || 0);
+        stabilityPenalty = _getSpeechStabilityPenalty(
+            scenario.stability,
+            _getSpeechStabilityThreshold(stabilityWordCount)
+        );
+    }
 
+    const extraPenalty = Math.min(stabilityPenalty, qualityPenalty, nearExactPenalty);
     const metrics = reason === "fake_match"
         ? { aniqlik: 25, ravonlik: 25, toliqlik: 25 }
         : _computeMetrics(stats, accuracy, fluency, extraPenalty < 1 ? extraPenalty : undefined);
@@ -92,6 +105,12 @@ function scoreScenario(scenario) {
         stats,
         qualityAvg: quality.avg,
         suspiciousAccuracy,
+        penalties: {
+            stabilityPenalty,
+            qualityPenalty,
+            nearExactPenalty,
+            extraPenalty
+        },
         reason: reason || "score",
         metrics,
         finalScore: _computeFinalMetricScore(metrics)
@@ -122,6 +141,15 @@ const scenarios = [
         expected: [60, 75]
     },
     {
+        name: "Poor accent upper band",
+        reference: "one two three",
+        recognized: "one two three",
+        rawAccuracy: 90,
+        rawFluency: 90,
+        wordAccuracies: [69, 69, 69],
+        expected: [65, 75]
+    },
+    {
         name: "One error",
         reference: "one two three",
         recognized: "one two noise",
@@ -137,7 +165,7 @@ const scenarios = [
         rawAccuracy: 90,
         rawFluency: 90,
         wordAccuracies: [88, 88, 88],
-        expected: [50, 60]
+        expected: [45, 60]
     },
     {
         name: "Permutation",
@@ -167,6 +195,15 @@ const scenarios = [
         expected: [30, 50]
     },
     {
+        name: "Near exact 69 quality",
+        reference: "one two three four five",
+        recognized: "one two three four noise",
+        rawAccuracy: 82,
+        rawFluency: 88,
+        wordAccuracies: [69, 69, 69, 69, 69],
+        expected: [45, 60]
+    },
+    {
         name: "Fake near exact",
         reference: "one two three four five six seven eight nine ten eleven",
         recognized: "one two three four five six seven eight nine ten noise",
@@ -184,6 +221,16 @@ const scenarios = [
         wordAccuracies: [88, 88, 88],
         stabilityPenalty: 0.6,
         expected: [50, 60]
+    },
+    {
+        name: "Short phrase mild instability",
+        reference: "one two",
+        recognized: "one two",
+        rawAccuracy: 90,
+        rawFluency: 90,
+        wordAccuracies: [88, 88],
+        stability: 34,
+        expected: [82, 92]
     }
 ];
 

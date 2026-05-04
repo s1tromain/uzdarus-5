@@ -68,12 +68,21 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 /* ================================================================== */
 let _isRecording = false;
 let _pronClosed = false;
+let _activeAttemptId = 0;
+let _pronAttemptStartedAt = 0;
+let _pronResultDelayTimer = 0;
+let _lastPronTriggerEl = null;
+let _lastPronRetryAction = null;
 let _demoPronUiSyncTimer = 0;
 let _demoPaywallClicked = false;
 let _demoPaywallResetTimer = 0;
 let _demoPaywallRedirectTimer = 0;
 let _redirecting = false;
 const DEMO_ALLOWED_TOPICS = [1];
+
+if (typeof window !== 'undefined' && typeof window._isPronRunning === 'undefined') {
+    window._isPronRunning = false;
+}
 
 function _isDemoSpeechPage() {
     var path = (window.location && window.location.pathname || '').toLowerCase();
@@ -379,9 +388,15 @@ function _handleDemoPaywall() {
 /* ================================================================== */
 function _playSound(src) {
     try {
+        if (!src) return;
+        if (!_playSound._disabled) _playSound._disabled = new Set();
+        if (_playSound._disabled.has(src)) return;
+
         var a = new Audio();
         a.volume = 0.5;
-        a.onerror = function () { /* 404 or unsupported — silently ignore */ };
+        a.onerror = function () {
+            _playSound._disabled.add(src);
+        };
         a.src = src;
         a.play().catch(function () { /* autoplay blocked — ignore */ });
     } catch { /* Audio constructor unavailable — ignore */ }
@@ -513,6 +528,33 @@ let _pronBusy = false;
 let _speechToken = null;
 let _speechTokenExpiry = 0;
 
+function _getPronTriggerButton(event) {
+    if (event && event.target && typeof event.target.closest === 'function') {
+        var targetBtn = event.target.closest('.pron-btn');
+        if (targetBtn) return targetBtn;
+    }
+    if (event && event.currentTarget) return event.currentTarget;
+    return _lastPronTriggerEl;
+}
+
+function _setPronPendingAdvance(action) {
+    window._pendingNext = typeof action === 'function' ? action : null;
+}
+
+function _runPronPendingAdvance() {
+    var action = window._pendingNext;
+    window._pendingNext = null;
+    if (typeof action !== 'function') return;
+
+    setTimeout(function () {
+        try {
+            action();
+        } catch (err) {
+            console.warn('[PRON] pending advance failed', err);
+        }
+    }, 0);
+}
+
 async function _getSpeechToken() {
     if (_speechToken && Date.now() < _speechTokenExpiry) return _speechToken;
     const res = await fetch('/api/speech-token', { headers: _getAuthHeaders() });
@@ -531,23 +573,33 @@ async function _getSpeechToken() {
 }
 
 function checkPronunciation(event) {
-    if (_pronClosed) {
-        _pronClosed = false;
-        var _savedEvent = event;
-        setTimeout(function () {
-            checkPronunciation(_savedEvent);
-        }, 50);
+    if (window._isPronRunning) {
+        console.warn('[PRON] BLOCKED: already running');
         return;
+    }
+    window._isPronRunning = true;
+
+    function releasePronRunLock() {
+        window._isPronRunning = false;
     }
 
     if (_isRecording || _pronBusy) {
+        releasePronRunLock();
         console.warn('[PRON] BLOCKED: busy');
+        return;
+    }
+
+    var btn = _getPronTriggerButton(event);
+    if (!btn) {
+        releasePronRunLock();
+        console.warn('[PRON] BLOCKED: trigger button missing');
         return;
     }
 
     var word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
 
     if (!word) {
+        releasePronRunLock();
         showStatus('\u274C So\u2018z aniqlanmadi');
         console.error('[PRON] getCurrentWord() returned null/undefined');
         setTimeout(function () { showStatus(''); }, 2500);
@@ -561,6 +613,7 @@ function checkPronunciation(event) {
     }
 
     if (wordIdx < 0) {
+        releasePronRunLock();
         showStatus('\u274C So\u2018z aniqlanmadi');
         console.error('[PRON] wordIndex not found:', word);
         setTimeout(function () { showStatus(''); }, 2500);
@@ -570,6 +623,7 @@ function checkPronunciation(event) {
     var referenceText = (word.ru || '').trim();
 
     if (!referenceText || referenceText.length < 2) {
+        releasePronRunLock();
         showStatus('\u274C So\u2018z noto\u2018g\u2018ri');
         console.error('[PRON] BLOCKED: referenceText too short:', JSON.stringify(referenceText));
         setTimeout(function () { showStatus(''); }, 2500);
@@ -579,6 +633,7 @@ function checkPronunciation(event) {
     var topicId = word.topicId != null ? word.topicId : null;
 
     if (_isDemoLocked(topicId)) {
+        releasePronRunLock();
         _handleDemoPaywall();
         return;
     }
@@ -588,12 +643,24 @@ function checkPronunciation(event) {
 
     /* check if word is locked */
     if (topicId != null && _isWordLocked(topicId, wordIdx)) {
+        releasePronRunLock();
         showStatus('\u26D4 Avval oldingi so\u2018zni tugating');
         setTimeout(function () { showStatus(''); }, 2500);
         return;
     }
 
-    const btn = event.target.closest('.pron-btn') || event.currentTarget;
+    const attemptId = ++_activeAttemptId;
+    _pronAttemptStartedAt = Date.now();
+    clearTimeout(_pronResultDelayTimer);
+    _pronResultDelayTimer = 0;
+    _lastPronTriggerEl = btn;
+    _lastPronRetryAction = function () {
+        var live = (btn && document.body.contains(btn))
+            ? btn
+            : document.querySelector('[data-word-index] .pron-btn');
+        if (live) checkPronunciation({ target: live, currentTarget: live });
+    };
+    window._pendingNext = null;
     btn.disabled = true;
     btn.classList.add('loading');
     _isRecording = true;
@@ -603,6 +670,11 @@ function checkPronunciation(event) {
 
     _runPronunciationAssessment(referenceText)
         .then(result => {
+            if (attemptId !== _activeAttemptId) {
+                console.warn('[PRON] stale result ignored:', attemptId, _activeAttemptId);
+                return;
+            }
+
             console.debug('[PRON] RESULT:', result);
 
             if (!result) {
@@ -610,7 +682,7 @@ function checkPronunciation(event) {
                 return;
             }
 
-            var score = Number(result.finalScore != null ? result.finalScore : result.pronunciationScore) || 0;
+            var score = Number(result.finalScore) || 0;
 
             /* ============ SUCCESS: score >= pass threshold ============ */
             if (score >= _PRON_PASS_SCORE) {
@@ -621,20 +693,17 @@ function checkPronunciation(event) {
                 setTimeout(function () { showStatus(''); }, 2000);
 
                 _logPronunciation(word.ru, result);
-                try { _showPronResult(word.ru, result); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
+                try { _showPronResult(word.ru, result, attemptId); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
 
                 /* word progress: complete + unlock next + auto-advance */
                 if (topicId != null && wordIdx >= 0) {
                     _completeWord(topicId, wordIdx);
-
-                    if (_isLessonComplete(topicId)) {
-                        setTimeout(function () {
+                    window._pendingNext = function () {
+                        if (_isLessonComplete(topicId)) {
                             _showLessonCompleteOverlay();
-                        }, 1200);
-                        return;
-                    }
+                            return;
+                        }
 
-                    setTimeout(function () {
                         if (typeof window.nextCard === 'function') {
                             window.nextCard();
                         } else if (typeof window.currentWordIndex === 'number') {
@@ -644,7 +713,7 @@ function checkPronunciation(event) {
                             window.currentCardIndex++;
                             if (typeof window.updateCard === 'function') window.updateCard();
                         }
-                    }, 1200);
+                    };
                 }
 
             /* ============ TRY AGAIN: score 40-69 ============ */
@@ -655,10 +724,10 @@ function checkPronunciation(event) {
                 setTimeout(function () { showStatus(''); }, 2500);
 
                 _logPronunciation(word.ru, result);
-                try { _showPronResult(word.ru, result); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
+                try { _showPronResult(word.ru, result, attemptId); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
                 /* Do NOT unlock the word — user must retry */
 
-            /* ============ FAIL: score < 50 ============ */
+            /* ============ FAIL: score < 40 ============ */
             } else {
                 showStatus('\u274C Qayta urinib ko\'ring');
                 _animateFlashcardError();
@@ -667,11 +736,16 @@ function checkPronunciation(event) {
                 setTimeout(function () { showStatus(''); }, 2500);
 
                 _logPronunciation(word.ru, result);
-                try { _showPronResult(word.ru, result); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
+                try { _showPronResult(word.ru, result, attemptId); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
                 /* Do NOT unlock the word */
             }
         })
         .catch(err => {
+            if (attemptId !== _activeAttemptId) {
+                console.warn('[PRON] stale error ignored:', attemptId, _activeAttemptId, err);
+                return;
+            }
+
             console.error('[PRON] CATCH:', err);
 
             /* User cancelled by clicking outside the listening panel */
@@ -710,8 +784,11 @@ function checkPronunciation(event) {
         .finally(() => {
             btn.disabled = false;
             btn.classList.remove('loading');
-            _isRecording = false;
-            _pronBusy = false;
+            if (attemptId === _activeAttemptId) {
+                _isRecording = false;
+                _pronBusy = false;
+            }
+            window._isPronRunning = false;
         });
 }
 
@@ -735,7 +812,7 @@ function _handlePronFail(msg) {
  *  previous-score memory, or fallback-to-reference magic.
  * ============================================================ */
 
-var _PRON_PASS_SCORE = 60;
+var _PRON_PASS_SCORE = 65;
 var _PRON_GOOD_SCORE = 85;
 
 /* ---- Localisation ----
@@ -961,13 +1038,16 @@ function _getSpeechStabilityPenalty(stability, threshold) {
     if (ratio <= 1) {
         return 1;
     }
-    if (ratio <= 1.5) {
-        return 0.85;
+    if (ratio <= 1.35) {
+        return _clampRange(1 - (ratio - 1) * (0.08 / 0.35), 0.92, 1);
     }
-    if (ratio <= 2) {
-        return 0.7;
+    if (ratio <= 1.85) {
+        return _clampRange(0.92 - (ratio - 1.35) * (0.14 / 0.5), 0.78, 0.92);
     }
-    return 0.6;
+    if (ratio <= 2.35) {
+        return _clampRange(0.78 - (ratio - 1.85) * (0.1 / 0.5), 0.68, 0.78);
+    }
+    return 0.68;
 }
 
 function _getAzureQualityPenalty(qualityAvg, suspiciousAccuracy) {
@@ -978,23 +1058,36 @@ function _getAzureQualityPenalty(qualityAvg, suspiciousAccuracy) {
 
     if (avg < 74) {
         if (avg >= 65) {
-            penalty = 0.68 + (avg - 65) * (0.32 / 9);
+            var upperWeight = _clampRange((avg - 65) / 9, 0, 1);
+            var upperSmooth = upperWeight * upperWeight * (3 - 2 * upperWeight);
+            penalty = 0.64 + upperSmooth * 0.36;
         } else if (avg >= 55) {
-            penalty = 0.5 + (avg - 55) * (0.18 / 10);
+            var midWeight = _clampRange((avg - 55) / 10, 0, 1);
+            var midSmooth = midWeight * midWeight * (3 - 2 * midWeight);
+            penalty = 0.48 + midSmooth * 0.16;
         } else {
             var clipped = Math.max(avg, 30);
-            penalty = 0.36 + (clipped - 30) * (0.14 / 25);
+            var lowWeight = _clampRange((clipped - 30) / 25, 0, 1);
+            var lowSmooth = lowWeight * lowWeight * (3 - 2 * lowWeight);
+            penalty = 0.36 + lowSmooth * 0.12;
         }
     }
 
     if (suspiciousAccuracy) {
         var suspiciousCap = 1;
         if (avg >= 65) {
-            suspiciousCap = 0.68 + (Math.min(avg, 74) - 65) * (0.12 / 9);
+            var suspiciousUpperWeight = _clampRange((Math.min(avg, 74) - 65) / 9, 0, 1);
+            var suspiciousUpperSmooth = suspiciousUpperWeight * suspiciousUpperWeight * (3 - 2 * suspiciousUpperWeight);
+            suspiciousCap = 0.62 + suspiciousUpperSmooth * 0.22;
         } else if (avg >= 55) {
-            suspiciousCap = 0.52 + (avg - 55) * (0.16 / 10);
+            var suspiciousMidWeight = _clampRange((avg - 55) / 10, 0, 1);
+            var suspiciousMidSmooth = suspiciousMidWeight * suspiciousMidWeight * (3 - 2 * suspiciousMidWeight);
+            suspiciousCap = 0.44 + suspiciousMidSmooth * 0.18;
         } else {
-            suspiciousCap = 0.42 + (Math.max(avg, 30) - 30) * (0.12 / 25);
+            var suspiciousClipped = Math.max(avg, 30);
+            var suspiciousLowWeight = _clampRange((suspiciousClipped - 30) / 25, 0, 1);
+            var suspiciousLowSmooth = suspiciousLowWeight * suspiciousLowWeight * (3 - 2 * suspiciousLowWeight);
+            suspiciousCap = 0.36 + suspiciousLowSmooth * 0.08;
         }
         penalty = Math.min(penalty, suspiciousCap);
     }
@@ -1004,16 +1097,16 @@ function _getAzureQualityPenalty(qualityAvg, suspiciousAccuracy) {
 
 function _getNearExactPenalty(partialRatio, qualityAvg) {
     if (!Number.isFinite(partialRatio) || partialRatio < 0.72) return 1;
-    if (!Number.isFinite(qualityAvg) || qualityAvg >= 67) return 1;
+    if (!Number.isFinite(qualityAvg) || qualityAvg >= 70) return 1;
 
     var partialWeight = _clampRange((partialRatio - 0.72) / 0.18, 0, 1);
     var smoothPartial = partialWeight * partialWeight * (3 - 2 * partialWeight);
-    var clippedQuality = _clampRange(qualityAvg, 50, 67);
-    var qualityWeight = (67 - clippedQuality) / 17;
-    var ceiling = 0.82 - 0.1 * qualityWeight;
-    var floor = 0.58 - 0.16 * qualityWeight;
+    var clippedQuality = _clampRange(qualityAvg, 52, 70);
+    var qualityWeight = (70 - clippedQuality) / 18;
+    var ceiling = 0.86 - 0.1 * qualityWeight;
+    var floor = 0.6 - 0.16 * qualityWeight;
 
-    return _clampRange(ceiling - (ceiling - floor) * smoothPartial, 0.42, 0.82);
+    return _clampRange(ceiling - (ceiling - floor) * smoothPartial, 0.44, 0.86);
 }
 
 /* Display-side metrics are derived from token match plus fluency.
@@ -1043,10 +1136,15 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
         toliqlik = Math.min(toliqlik, normalizedFluency + 15);
     }
 
+    if (exact < partial) {
+        toliqlik = Math.min(toliqlik, aniqlik + (refLength <= 3 ? 18 : 24));
+    }
+
     ravonlik = Math.min(ravonlik, aniqlik);
 
     /* Unified penalty — the ONLY place where any score multiplier lives. */
     var penalty = 1;
+    var perfectExact = exact >= 1;
 
     /* Layer 3: short-phrase amplifier. 1 wrong word in a 2-word phrase is
        a 50% error — the standard penalty curve under-punishes it. */
@@ -1057,29 +1155,16 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
         penalty *= 0.8;
     }
 
-    /* Mismatch penalty no longer gated on refLength>=3 — that gate left
-       2-word phrases unpunished (1/2 wrong → 50% but penalty=1.0). */
-    var hasMismatch = partial < 1 && exact === partial;
-    if (hasMismatch || exact < partial) {
+    /* Skip mismatch penalty entirely when every reference word is in place;
+       extras are handled by the linear deduction below — never double-charge. */
+    var hasMismatch = !perfectExact && partial < 1 && exact === partial;
+    if (!perfectExact && (hasMismatch || exact < partial)) {
         penalty *= veryShort ? 0.72 : (shortPhrase ? 0.78 : 0.85);
     }
 
-    /* Same-length substitutions are usually semantic mismatches rather than
-       harmless omissions, so they should land lower than a short transcript. */
     var sameLengthSubstitution = hasMismatch && recLength === refLength && extraWords === 0;
     if (sameLengthSubstitution) {
-        penalty *= veryShort ? 0.9 : (shortPhrase ? 0.92 : 0.96);
-    }
-
-    /* Extra words: scaled by ref length so 1 extra in a 1-word phrase
-       hurts more than 1 extra in a 10-word phrase. Floor 0.65 (0.55 for
-       very short — adding a word to a 1-2 word phrase is structurally bad). */
-    if (extraWords > 0) {
-        var extraRatio = extraWords / Math.max(refLength, 1);
-        var extraFloor = veryShort ? 0.5 : (shortPhrase ? 0.58 : 0.65);
-        var extraWordLoss = veryShort ? 0.2 : (shortPhrase ? 0.14 : 0.07);
-        var extraRatioLoss = veryShort ? 0.25 : (shortPhrase ? 0.24 : 0.1);
-        penalty *= Math.max(extraFloor, 1 - extraWordLoss * extraWords - extraRatioLoss * extraRatio);
+        penalty *= veryShort ? 0.86 : (shortPhrase ? 0.84 : 0.9);
     }
 
     if (partial < 0.3) {
@@ -1088,8 +1173,7 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
 
     /* External penalty (stability / anti-fake) folded in. Smooth floor:
        linearly blend extraPenalty toward 0.75 as base avg drops to 0,
-       so a slightly-better base never produces a worse final (the old
-       step function had a discontinuity at avg=60). */
+       so a slightly-better base never produces a worse final. */
     if (Number.isFinite(extraPenalty) && extraPenalty < 1) {
         var preExtAvg = ((aniqlik + ravonlik + toliqlik) / 3) * penalty;
         var weakWeight = preExtAvg >= 60 ? 0 : (60 - preExtAvg) / 60;
@@ -1097,9 +1181,26 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
         penalty *= effective;
     }
 
-    aniqlik = Math.round(_clampRange(aniqlik * penalty, 0, 100));
-    toliqlik = Math.round(_clampRange(toliqlik * penalty, 0, 100));
-    ravonlik = Math.round(_clampRange(ravonlik * penalty, 0, 100));
+    /* Floor the combined chain so stacked penalties can't crash to 30–40
+       on partial mistakes. Garbage is still capped to 20 below. */
+    penalty = Math.max(penalty, 0.6);
+
+    aniqlik = _clampRange(aniqlik * penalty, 0, 100);
+    toliqlik = _clampRange(toliqlik * penalty, 0, 100);
+    ravonlik = _clampRange(ravonlik * penalty, 0, 100);
+
+    /* Extras: linear -5 per word, applied after the multiplier — stable
+       per-word cost, no compounding with mismatch penalty. */
+    if (extraWords > 0) {
+        var extraDeduction = extraWords * 5;
+        aniqlik -= extraDeduction;
+        toliqlik -= extraDeduction;
+        ravonlik -= extraDeduction;
+    }
+
+    aniqlik = Math.round(_clampRange(aniqlik, 0, 100));
+    toliqlik = Math.round(_clampRange(toliqlik, 0, 100));
+    ravonlik = Math.round(_clampRange(ravonlik, 0, 100));
 
     if (partial < 0.3) {
         aniqlik = Math.min(aniqlik, 20);
@@ -1127,20 +1228,13 @@ function _computeFinalMetricScore(metrics) {
 function _finalizePronunciationResult(result, referenceText) {
     var finalized = result || {};
 
-    var metrics;
-    if (finalized.reason === 'fake_match') {
-        /* Flat low metrics so the UI tells one story, not three.
-           Old shape (0, fluency, 0) read as conflicting signals. */
-        metrics = { aniqlik: 25, ravonlik: 25, toliqlik: 25 };
-    } else {
-        var stats = _getWordStats(finalized.recognizedText || '', referenceText || '');
-        metrics = _computeMetrics(
-            stats,
-            finalized.accuracyScore,
-            finalized.fluencyScore,
-            finalized.__extraPenalty
-        );
-    }
+    var stats = _getWordStats(finalized.recognizedText || '', referenceText || '');
+    var metrics = _computeMetrics(
+        stats,
+        finalized.accuracyScore,
+        finalized.fluencyScore,
+        finalized.__extraPenalty
+    );
 
     var score = _computeFinalMetricScore(metrics);
 
@@ -1156,9 +1250,7 @@ function _finalizePronunciationResult(result, referenceText) {
     if (!Array.isArray(finalized.words)) {
         finalized.words = [];
     }
-    if (!Array.isArray(finalized.wordFeedback)) {
-        finalized.wordFeedback = _getWordFeedback(finalized.recognizedText || '', referenceText || '');
-    }
+    finalized.wordFeedback = _getWordFeedback(finalized.recognizedText || '', referenceText || '');
 
     delete finalized.__extraPenalty;
     return finalized;
@@ -1187,6 +1279,24 @@ function _getPronunciationReasonUi(reason) {
     if (reason === 'unstable_speech')  return { message: _t('verdictUnstable'),   verdictClass: 'ok'  };
     if (reason === 'fake_match')       return { message: _t('verdictFakeMatch'),  verdictClass: 'bad' };
     return { message: _t('verdictExcellent'), verdictClass: 'good' };
+}
+
+/* 4-tier UX category — single source of truth for the result screen.
+   Score → category → { emoji, text, advice, verdictClass, animClass }.
+   Animation/verdict classes preserved so existing CSS keeps working. */
+var _PRON_CATEGORY = {
+    excellent: { text: 'Ajoyib',      emoji: '🌟', advice: '',                              verdictClass: 'good', animClass: 'anim-success' },
+    good:      { text: 'Yaxshi',      emoji: '✨',       advice: 'Yana biroz ravonroq ayting',    verdictClass: 'good', animClass: 'anim-success' },
+    average:   { text: 'O‘rtacha', emoji: '💪', advice: 'So‘zlarni aniqroq ayting', verdictClass: 'ok',   animClass: 'anim-almost'  },
+    bad:       { text: 'Yaxshi emas', emoji: '😕', advice: 'So‘zni to‘liq ayting', verdictClass: 'bad',  animClass: 'anim-fail'    }
+};
+
+function _getCategory(score) {
+    var s = Number(score) || 0;
+    if (s >= 85) return 'excellent';
+    if (s >= 65) return 'good';
+    if (s >= 40) return 'average';
+    return 'bad';
 }
 
 function _buildZeroScoreResult(recognizedText, referenceText, stats) {
@@ -1219,32 +1329,75 @@ function _computePronScore(rec, ref, accuracy, fluency, completeness, extraPenal
     return _computeFinalMetricScore(metrics);
 }
 
+function _getScoreCapPenalty(recognizedText, referenceText, accuracyScore, fluencyScore, capScore) {
+    var normalizedCap = Number(capScore);
+    if (!Number.isFinite(normalizedCap) || normalizedCap <= 0) return undefined;
+
+    var rawScore = _computePronScore(recognizedText, referenceText, accuracyScore, fluencyScore);
+    if (!Number.isFinite(rawScore) || rawScore <= 0 || rawScore <= normalizedCap) {
+        return undefined;
+    }
+
+    return _clampRange(normalizedCap / rawScore, 0, 1);
+}
+
+function _getFakeMatchCap(accuracyScore, fluencyScore, qualityAvg) {
+    var quality = Number.isFinite(Number(qualityAvg)) ? Number(qualityAvg) : null;
+    var accuracy = _normalizeMetric(accuracyScore);
+    var fluency = _normalizeMetric(fluencyScore);
+    var weakestSignal = Math.min(
+        accuracy === null ? 100 : accuracy,
+        fluency === null ? 100 : fluency,
+        quality === null ? 100 : quality
+    );
+
+    if (weakestSignal < 30) return 25;
+    if (weakestSignal < 45) return 30;
+    return 35;
+}
+
 /* ---- Word-level feedback (correct / missing / wrong_position / extra) ---- */
 function _getWordFeedback(recognized, reference) {
     if (!recognized || !reference) return [];
 
-    var rec = [...new Set((recognized || '').toLowerCase().split(/\s+/))];
-    var ref = (reference || '').toLowerCase().split(/\s+/);
+    var recWords = _tokenize(recognized);
+    var refWords = _tokenize(reference);
+    var feedback = new Array(refWords.length);
+    var usedRecIndexes = new Set();
 
-    var result = [];
+    for (var i = 0; i < refWords.length; i++) {
+        if (recWords[i] === refWords[i]) {
+            feedback[i] = { word: refWords[i], status: 'correct' };
+            usedRecIndexes.add(i);
+        }
+    }
 
-    ref.forEach(function (word, index) {
-        if (rec[index] === word) {
-            result.push({ word: word, status: 'correct' });
-        } else if (rec.includes(word)) {
-            result.push({ word: word, status: 'wrong_position' });
+    for (var refIndex = 0; refIndex < refWords.length; refIndex++) {
+        if (feedback[refIndex]) continue;
+
+        var matchedRecIndex = -1;
+        for (var recIndex = 0; recIndex < recWords.length; recIndex++) {
+            if (!usedRecIndexes.has(recIndex) && refWords[refIndex] === recWords[recIndex]) {
+                matchedRecIndex = recIndex;
+                break;
+            }
+        }
+
+        if (matchedRecIndex >= 0) {
+            feedback[refIndex] = { word: refWords[refIndex], status: 'wrong_position' };
+            usedRecIndexes.add(matchedRecIndex);
         } else {
-            result.push({ word: word, status: 'missing' });
+            feedback[refIndex] = { word: refWords[refIndex], status: 'missing' };
         }
-    });
+    }
 
-    rec.forEach(function (word) {
-        if (!ref.includes(word)) {
-            result.push({ word: word, status: 'extra' });
+    for (var extraIndex = 0; extraIndex < recWords.length; extraIndex++) {
+        if (!usedRecIndexes.has(extraIndex)) {
+            feedback.push({ word: recWords[extraIndex], status: 'extra' });
         }
-    });
+    }
 
-    return result;
+    return feedback;
 }
 
 /* ---- Build human-readable feedback message from word feedback ---- */
@@ -1471,11 +1624,8 @@ async function _runPronunciationAssessment(referenceText) {
         /* Unclear/no-Azure path: cap at 40 (we have no real audio quality
            evidence). Cap is converted to a proportional extraPenalty so
            it travels through _computeMetrics — no `score = ...` outside. */
-        var rawScore = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness);
-        var capPenalty = rawScore > 40 ? 40 / Math.max(rawScore, 1) : undefined;
-        var score = capPenalty !== undefined
-            ? _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness, capPenalty)
-            : rawScore;
+        var capPenalty = _getScoreCapPenalty(recognizedText, referenceText, accuracy, fluency, 40);
+        var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness, capPenalty);
         var result = {
             recognizedText: recognizedText,
             accuracyScore: accuracy === undefined ? null : accuracy,
@@ -1513,16 +1663,6 @@ async function _runPronunciationAssessment(referenceText) {
         };
     }
 
-    /* ---- INTERIM: proves mic + audio work ---- */
-    recognizer.recognizing = function (s, e) {
-        if (e.result && e.result.text) {
-            gotInterim = true;
-            var text = e.result.text.trim();
-            if (text) lastInterimText = text;
-            console.debug('[PRON] INTERIM:', e.result.text);
-        }
-    };
-
     recognizer.sessionStarted = function () {
         console.debug('[PRON] session started');
     };
@@ -1532,10 +1672,12 @@ async function _runPronunciationAssessment(referenceText) {
     /* ---- Recognition: event-driven, timeout-safe ---- */
     return new Promise(function (resolve, reject) {
         var finished = false;
+        var resolved = false;
         var timeoutHit = false;
         var softTimeoutId;
         var hardTimeoutId;
         var silenceTimerId;
+        var sessionStoppedFallbackId;
 
         function cleanup() {
             try {
@@ -1558,26 +1700,65 @@ async function _runPronunciationAssessment(referenceText) {
             clearTimeout(softTimeoutId);
             clearTimeout(hardTimeoutId);
             clearTimeout(silenceTimerId);
+            clearTimeout(sessionStoppedFallbackId);
             cleanup();
             _stopActivePron = null;
             fn();
         }
 
+        function resolveOnce(value) {
+            if (resolved) return;
+            resolved = true;
+            finishSafe(function () { resolve(value); });
+        }
+
+        function rejectOnce(error) {
+            if (resolved) return;
+            resolved = true;
+            finishSafe(function () { reject(error); });
+        }
+
+        function scheduleSilenceFallback() {
+            clearTimeout(silenceTimerId);
+            if (finished || gotFinal || !gotInterim) return;
+
+            silenceTimerId = setTimeout(function () {
+                if (finished || gotFinal || !gotInterim) return;
+
+                console.warn('[PRON] silence fallback → scored result');
+                resolveOnce(buildScoredResult(_getSafeInterimText(), null, null, null, {
+                    reason: 'unclear_speech',
+                    words: []
+                }));
+            }, 1800);
+        }
+
         recognizer.sessionStopped = function () {
             console.debug('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
-            if (!finished) {
-                console.warn('[PRON] sessionStopped fallback → scored result');
-                finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
-            }
+            if (finished || gotFinal) return;
+
+            clearTimeout(sessionStoppedFallbackId);
+            sessionStoppedFallbackId = setTimeout(function () {
+                if (finished || gotFinal) return;
+
+                console.warn('[PRON] sessionStopped fallback → final safety result');
+                if (gotInterim) {
+                    resolveOnce(buildScoredResult(_getSafeInterimText(), null, null, null, {
+                        reason: 'unclear_speech',
+                        words: []
+                    }));
+                    return;
+                }
+
+                resolveOnce(buildZeroResult('', 'no_speech'));
+            }, 250);
         };
 
         _stopActivePron = function () {
             if (finished) return;
-            finishSafe(function () {
-                var err = new Error('cancelled by user');
-                err.cancelled = true;
-                reject(err);
-            });
+            var err = new Error('cancelled by user');
+            err.cancelled = true;
+            rejectOnce(err);
         };
 
         /**
@@ -1691,15 +1872,16 @@ async function _runPronunciationAssessment(referenceText) {
                 ) {
                     console.log('[PRON] FAKE BLOCK (WORD QUALITY)');
 
+                    var fakeCap = _getFakeMatchCap(rawAccuracy, rawFluency, quality.avg);
+
                     return _finalizePronunciationResult({
-                        pronunciationScore: 25,
                         accuracyScore: rawAccuracy,
                         fluencyScore: rawFluency,
                         completenessScore: 100,
                         recognizedText: recognizedText,
                         words: words || [],
-                        wordFeedback: [],
                         reason: 'fake_match',
+                        __extraPenalty: _getScoreCapPenalty(recognizedText, referenceText, rawAccuracy, rawFluency, fakeCap)
                     }, referenceText);
                 }
 
@@ -1720,14 +1902,15 @@ async function _runPronunciationAssessment(referenceText) {
                 )
             ) {
                 console.log('[PRON] FAKE BLOCK (NEAR-EXACT, WEAK WORDS)');
+                var nearExactFakeCap = _getFakeMatchCap(rawAccuracy, rawFluency, quality.avg);
                 return _finalizePronunciationResult({
                     recognizedText: recognizedText,
                     accuracyScore: rawAccuracy,
                     fluencyScore: rawFluency,
                     completenessScore: Math.round(__stats.partialRatio * 100),
                     words: words || [],
-                    wordFeedback: _getWordFeedback(recognizedText, referenceText),
-                    reason: 'fake_match'
+                    reason: 'fake_match',
+                    __extraPenalty: _getScoreCapPenalty(recognizedText, referenceText, rawAccuracy, rawFluency, nearExactFakeCap)
                 }, referenceText);
             }
 
@@ -1789,6 +1972,8 @@ async function _runPronunciationAssessment(referenceText) {
                 gotInterim = true;
                 var text = e.result.text.trim();
                 if (text) lastInterimText = text;
+                clearTimeout(sessionStoppedFallbackId);
+                scheduleSilenceFallback();
 
                 console.debug('[PRON] INTERIM:', e.result.text);
             }
@@ -1807,7 +1992,7 @@ async function _runPronunciationAssessment(referenceText) {
             if (finished) return;
 
             if (!e.result) {
-                return finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+                return resolveOnce(buildZeroResult(_getSafeInterimText()));
             }
 
             var reason = e.result.reason;
@@ -1816,40 +2001,34 @@ async function _runPronunciationAssessment(referenceText) {
                 var data = extractPronData(e.result);
                 if (data) {
                     console.debug('[PRON] score:', data.pronunciationScore);
-                    finishSafe(function () { resolve(data); });
+                    resolveOnce(data);
                 } else if (gotInterim) {
                     console.warn('[PRON] RecognizedSpeech but garbage text, gotInterim → zero fallback');
-                    finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+                    resolveOnce(buildZeroResult(_getSafeInterimText()));
                 } else {
-                    finishSafe(function () {
-                        var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
-                        err.noSpeech = true;
-                        reject(err);
-                    });
+                    var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                    err.noSpeech = true;
+                    rejectOnce(err);
                 }
 
             } else if (reason === SpeechSDK.ResultReason.NoMatch) {
                 if (gotInterim) {
                     var nmData = extractPronData(e.result);
                     console.warn('[PRON] NoMatch+gotInterim, recovered:', !!nmData);
-                    finishSafe(function () { resolve(nmData || buildZeroResult(_getSafeInterimText())); });
+                    resolveOnce(nmData || buildZeroResult(_getSafeInterimText()));
                 } else {
-                    finishSafe(function () {
-                        var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
-                        err.noSpeech = true;
-                        reject(err);
-                    });
+                    var noMatchErr = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                    noMatchErr.noSpeech = true;
+                    rejectOnce(noMatchErr);
                 }
 
             } else {
                 /* Canceled / unexpected reason */
                 console.warn('[PRON] recognized event reason:', reason, 'gotInterim:', gotInterim);
                 if (gotInterim) {
-                    finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+                    resolveOnce(buildZeroResult(_getSafeInterimText()));
                 } else {
-                    finishSafe(function () {
-                        reject(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.'));
-                    });
+                    rejectOnce(new Error('Xatolik yuz berdi. Qayta urinib ko\'ring.'));
                 }
             }
         };
@@ -1860,20 +2039,18 @@ async function _runPronunciationAssessment(referenceText) {
             if (finished) return;
             if (gotInterim || gotFinal) {
                 console.warn('[PRON] Canceled but speech was detected → zero fallback');
-                finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+                resolveOnce(buildZeroResult(_getSafeInterimText()));
                 return;
             }
             /* Error cancellation (network/auth) → reject immediately, don't wait 30s */
             if (e.reason === SpeechSDK.CancellationReason.Error) {
                 console.error('[PRON] Canceled with Error reason → immediate reject');
-                finishSafe(function () {
-                    reject(new Error(e.errorDetails || 'Xatolik yuz berdi. Qayta urinib ko\'ring.'));
-                });
+                rejectOnce(new Error(e.errorDetails || 'Xatolik yuz berdi. Qayta urinib ko\'ring.'));
                 return;
             }
             /* EndOfStream / other non-error → resolve with zero */
             console.warn('[PRON] Canceled (non-error) → ZERO_RESULT');
-            finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+            resolveOnce(buildZeroResult(_getSafeInterimText()));
         };
 
         /* ===========================================================
@@ -1886,12 +2063,10 @@ async function _runPronunciationAssessment(referenceText) {
             if (gotInterim) {
                 var txt = _sanitizeRecognizedText(_getSafeInterimText() || '', true);
                 console.warn('[PRON] soft timeout (15s) + gotInterim — forcing scored resolve');
-                finishSafe(function () {
-                    resolve(buildScoredResult(txt, null, null, null, {
-                        reason: 'unclear_speech',
-                        words: []
-                    }));
-                });
+                resolveOnce(buildScoredResult(txt, null, null, null, {
+                    reason: 'unclear_speech',
+                    words: []
+                }));
                 return;
             }
             console.warn('[PRON] soft timeout (15s) — recognizer still alive, waiting for recognized event...');
@@ -1909,31 +2084,16 @@ async function _runPronunciationAssessment(referenceText) {
                 hardTimeoutId = setTimeout(function () {
                     if (finished) return;
                     console.error('[PRON] ultimate timeout (45s) — forcing zero resolve');
-                    finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+                    resolveOnce(buildZeroResult(_getSafeInterimText()));
                 }, 15000);
                 return;
             }
             console.error('[PRON] hard timeout (30s) — no speech at all');
-            finishSafe(function () {
-                reject(new Error('Audio olinmadi. Mikrofon sozlamalarini tekshiring.'));
-            });
+            rejectOnce(new Error('Audio olinmadi. Mikrofon sozlamalarini tekshiring.'));
         }, 30000);
 
         /* ---- Start recognition ---- */
         console.debug('[PRON] start recognition (recognizeOnceAsync)');
-
-        /* Final safety net — guarantees a result within 8s no matter what */
-        setTimeout(function () {
-            if (!finished && gotInterim) {
-                console.warn('[PRON] FINAL FALLBACK (8s) + gotInterim → scored resolve');
-                finishSafe(function () {
-                    resolve(buildScoredResult(_getSafeInterimText(), null, null, null, {
-                        reason: 'unclear_speech',
-                        words: []
-                    }));
-                });
-            }
-        }, 8000);
 
         recognizer.recognizeOnceAsync(
             function (result) {
@@ -1946,32 +2106,30 @@ async function _runPronunciationAssessment(referenceText) {
                 gotFinal = true;
 
                 if (!result) {
-                    return finishSafe(function () {
-                        if (gotInterim) { resolve(buildZeroResult(_getSafeInterimText())); }
-                        else { reject(new Error('Natija olinmadi.')); }
-                    });
+                    if (gotInterim) {
+                        return resolveOnce(buildZeroResult(_getSafeInterimText()));
+                    }
+                    return rejectOnce(new Error('Natija olinmadi.'));
                 }
 
                 var data = extractPronData(result);
                 if (data) {
-                    finishSafe(function () { resolve(data); });
+                    resolveOnce(data);
                 } else if (gotInterim) {
-                    finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+                    resolveOnce(buildZeroResult(_getSafeInterimText()));
                 } else {
-                    finishSafe(function () {
-                        var err = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
-                        err.noSpeech = true;
-                        reject(err);
-                    });
+                    var callbackErr = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                    callbackErr.noSpeech = true;
+                    rejectOnce(callbackErr);
                 }
             },
             function (err) {
                 if (finished) return;
                 console.error('[PRON] recognizeOnceAsync error:', err);
                 if (gotInterim) {
-                    finishSafe(function () { resolve(buildZeroResult(_getSafeInterimText())); });
+                    resolveOnce(buildZeroResult(_getSafeInterimText()));
                 } else {
-                    finishSafe(function () { reject(err); });
+                    rejectOnce(err);
                 }
             }
         );
@@ -2294,6 +2452,8 @@ function _closeLessonComplete() {
 /*  Log pronunciation result (fire-and-forget)                        */
 /* ================================================================== */
 function _logPronunciation(word, result) {
+    if (_logPronunciation._disabled) return;
+
     try {
         fetch('/api/log-pronunciation', {
             method: 'POST',
@@ -2306,6 +2466,10 @@ function _logPronunciation(word, result) {
                 pronunciationScore: result.pronunciationScore,
                 words:              result.words,
             }),
+        }).then(function (response) {
+            if (response && response.status === 404) {
+                _logPronunciation._disabled = true;
+            }
         }).catch(() => {});   // silent — logging must never break UX
     } catch { /* ignore */ }
 }
@@ -2435,6 +2599,7 @@ function _injectWordProgressCSS() {
         '.voice-switch button:hover{border-color:#667eea;color:#667eea;background:#f8f9ff}',
         '.voice-switch button.active{border-color:#667eea;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 3px 12px rgba(102,126,234,.3)}',
         '.voice-switch button:active{transform:scale(.95)}',
+        '@media (max-width: 640px){.mic-selector-wrap{width:min(100%,calc(100% - 24px))}}',
     ].join('\n');
     document.head.appendChild(s);
 }
@@ -2456,9 +2621,9 @@ function _ensurePronOverlay() {
     const style = document.createElement('style');
     style.textContent = [
         /* overlay + card */
-        '.pron-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;justify-content:center;align-items:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}',
+        '.pron-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;justify-content:center;align-items:center;overflow-y:auto;padding:12px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);overscroll-behavior:contain;-webkit-overflow-scrolling:touch;pointer-events:auto}',
         '.pron-overlay.active{display:flex}',
-        '.pron-card{background:#fff;border-radius:24px;padding:32px 24px 24px;max-width:420px;width:92%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:pronPop .4s cubic-bezier(.175,.885,.32,1.275)}',
+        '.pron-card{background:#fff;border-radius:16px;padding:32px 24px 24px;max-width:420px;width:100%;max-height:90vh;margin:auto;overflow-y:auto;overscroll-behavior:contain;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:pronPop .4s cubic-bezier(.175,.885,.32,1.275);position:relative;pointer-events:auto}',
         '@keyframes pronPop{from{opacity:0;transform:scale(.85) translateY(40px)}to{opacity:1;transform:scale(1) translateY(0)}}',
 
         /* emoji header */
@@ -2539,8 +2704,8 @@ function _ensurePronOverlay() {
         '.pron-streak-row{font-size:.85rem;color:#ff6b00;font-weight:700}',
 
         /* buttons */
-        '.pron-btns{display:flex;gap:10px;justify-content:center}',
-        '.pron-btn{flex:1;padding:14px 0;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s}',
+        '.pron-actions,.pron-btns{display:flex;gap:10px;justify-content:center;position:sticky;bottom:0;padding-top:14px;padding-bottom:max(0px,env(safe-area-inset-bottom));margin-top:14px;background:#fff}',
+        '.pron-btn{flex:1;padding:14px 0;border:none;border-radius:14px;font-size:1rem;font-weight:700;cursor:pointer;transition:transform .15s,box-shadow .15s;touch-action:manipulation}',
         '.pron-btn:active{transform:scale(.96)}',
         '.pron-btn-retry{background:#ff9800;color:#fff;box-shadow:0 4px 0 #e08600}',
         '.pron-btn-retry:hover{background:#ffad33}',
@@ -2570,6 +2735,7 @@ function _ensurePronOverlay() {
         '@keyframes wfPop{0%{transform:scale(.9)}100%{transform:scale(1)}}',
         '@keyframes wfPulse{0%{opacity:.6}100%{opacity:1}}',
         '@keyframes wfShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}',
+        '@media (max-width: 640px){.pron-overlay{padding:12px}.pron-card{padding:20px 16px 16px;border-radius:16px;max-height:90vh}.pron-title{font-size:1.15rem}.pron-subtitle{margin-bottom:14px}.pron-ring-wrap{width:84px;height:84px;margin-bottom:16px}.pron-bar-row{gap:8px}.pron-bar-label{width:68px;font-size:.74rem}.pron-words{max-height:132px}.pron-actions,.pron-btns{flex-direction:column}.pron-btn{width:100%}.wf-inline{font-size:16px}}',
     ].join('\n');
     document.head.appendChild(style);
 
@@ -2639,192 +2805,76 @@ function _showPronListening() {
 }
 
 /* ---- result screen ---- */
-function _showPronResult(refText, r) {
+function _showPronResult(refText, r, attemptId) {
     if (!r) return;
     _ensurePronOverlay();
     _lastPronRef = refText;
     _isPronListening = false;
 
-    var stats = (r.reason === 'fake_match')
-        ? { exactRatio: 0, partialRatio: 0, extraWords: 0, refLength: _tokenize(refText).length }
-        : _getWordStats(r.recognizedText || '', refText);
-    var metrics = {
-        aniqlik: r.aniqlik,
-        ravonlik: r.ravonlik,
-        toliqlik: r.toliqlik
-    };
+    attemptId = Number.isFinite(Number(attemptId)) ? Number(attemptId) : _activeAttemptId;
+    var renderAttemptId = attemptId;
+    var startTime = Number(_pronAttemptStartedAt) || Date.now();
+    var MIN_DELAY = 600;
+    var elapsed = Date.now() - startTime;
 
-    if (r.reason === 'fake_match') {
-        /* keep in sync with _finalizePronunciationResult */
-        metrics = { aniqlik: 25, ravonlik: 25, toliqlik: 25 };
-    } else if (metrics.aniqlik === undefined || metrics.ravonlik === undefined || metrics.toliqlik === undefined) {
-        metrics = _computeMetrics(stats, r.accuracyScore, r.fluencyScore);
-    }
-
-    var finalScore = Number(r.finalScore);
-    if (!Number.isFinite(finalScore)) {
-        finalScore = _computeFinalMetricScore(metrics);
-    }
-
-    console.log("FINAL SCORE:", {
-        finalScore: finalScore,
-        aniqlik: metrics.aniqlik,
-        ravonlik: metrics.ravonlik,
-        toliqlik: metrics.toliqlik
-    });
-
-    /* expose computed values back to the result so downstream feedback
-       and consumers see the same numbers the UI does */
-    r.aniqlik = metrics.aniqlik;
-    r.ravonlik = metrics.ravonlik;
-    r.toliqlik = metrics.toliqlik;
-    r.finalScore = finalScore;
-
-    var overall = finalScore;
-    var cls = _sClass(overall);
-    /* fake_match is preserved; everything else is verdicted from finalScore */
-    var derivedReason = (r.reason === 'fake_match' || r.reason === 'unstable_speech' || r.reason === 'no_speech')
-        ? r.reason
-        : _getPronunciationReason(finalScore);
-    var reasonInfo = _getPronunciationReasonUi(derivedReason);
-    var emoji, title;
-    if (overall >= 90)      { emoji = '🌟'; title = _t('excellent'); }
-    else if (overall >= 70) { emoji = '✨'; title = _t('good');      }
-    else if (overall >= 40) { emoji = '💪'; title = _t('almost');    }
-    else                    { emoji = '😕'; title = _t('tryAgain');  }
-
-    var c = _ringCircum();
-    var offset = c - (overall / 100) * c;
-
-    var bars = [
-        { label: 'Aniqlik',     val: metrics.aniqlik },
-        { label: 'Ravonlik',    val: metrics.ravonlik },
-        { label: 'To\u2018liqlik', val: metrics.toliqlik },
-    ];
-
-    var html = '';
-
-    /* emoji + title */
-    html += '<div class="pron-emoji">' + emoji + '</div>';
-    html += '<div class="pron-title ' + cls + '">' + title + '</div>';
-    html += '<div class="pron-subtitle">\u00AB' + refText + '\u00BB</div>';
-
-    /* ring */
-    html += '<div class="pron-ring-wrap">'
-          + '<svg class="pron-ring-svg" viewBox="0 0 100 100">'
-          + '<circle class="pron-ring-bg" cx="50" cy="50" r="42"/>'
-          + '<circle class="pron-ring-fg ' + cls + '" cx="50" cy="50" r="42"'
-          + ' stroke-dasharray="' + c + '" stroke-dashoffset="' + c + '" id="pronRingFg"/>'
-          + '</svg>'
-          + '<div class="pron-ring-val" id="pronRingVal">0</div>'
-          + '</div>';
-
-    /* progress bars */
-    html += '<div class="pron-bars">';
-    for (var i = 0; i < bars.length; i++) {
-        var b = bars[i];
-        var bc = _sClass(b.val);
-        var barFill = (Number(b.val) > 0 && Number.isFinite(Number(b.val))) ? Math.round(Number(b.val)) : 0;
-        html += '<div class="pron-bar-row">'
-              + '<div class="pron-bar-label">' + b.label + '</div>'
-              + '<div class="pron-bar-track"><div class="pron-bar-fill ' + bc + '" data-w="' + barFill + '"></div></div>'
-              + '<div class="pron-bar-num ' + bc + '">' + _displayMetric(b.val) + '</div>'
-              + '</div>';
-    }
-    html += '</div>';
-
-    /* word stats summary — exact / partial / extra so the user sees
-       why the score is what it is */
-    var exactCount = Math.round(stats.exactRatio * stats.refLength);
-    var partialCount = Math.round(stats.partialRatio * stats.refLength);
-    html += '<div class="pron-stats">'
-          + '<span class="pron-stat-item good">✓ ' + exactCount + '/' + stats.refLength + ' ' + _t('exact') + '</span>'
-          + '<span class="pron-stat-item ok">~ ' + partialCount + '/' + stats.refLength + ' ' + _t('present') + '</span>'
-          + '<span class="pron-stat-item bad">+ ' + stats.extraWords + ' ' + _t('extra') + '</span>'
-          + '</div>';
-
-    /* smart actionable hint (one line) */
-    var hintText = _buildSmartHint(r);
-    if (hintText) {
-        html += '<div class="pron-hint">💡 ' + hintText + '</div>';
-    }
-
-    /* word chips */
-    html += '<div class="pron-words">';
-    for (var j = 0; j < r.words.length; j++) {
-        var w = r.words[j];
-        var wc = _sClass(w.accuracy);
-        html += '<div class="pron-chip ' + wc + '" style="animation-delay:' + (j * 0.08) + 's">'
-              + w.word + '<span class="pron-chip-score">' + w.accuracy + '</span></div>';
-    }
-    html += '</div>';
-
-    /* word-level feedback (correct / missing / wrong_position / extra) */
-    var wfb = r.wordFeedback || [];
-    var verdictMessage = _buildPronunciationVerdictMessage(reasonInfo.message, wfb);
-    if (refText && wfb.length > 0) {
-        /* inline highlighted sentence */
-        html += '<div class="wf-inline">' + _buildInlineHighlight(refText, wfb) + '</div>';
-    }
-
-    /* verdict */
-    html += '<div class="pron-verdict ' + reasonInfo.verdictClass + '">' + verdictMessage + '</div>';
-
-    /* XP reward — disabled */
-
-    /* personalized tips */
-    var tips = generatePronunciationFeedback(r);
-    if (tips.length > 0) {
-        html += '<div class="pron-tips">';
-        for (var t = 0; t < tips.length; t++) {
-            var tip = tips[t];
-            html += '<div class="pron-tip ' + tip.level + '" style="animation-delay:' + (t * 0.1) + 's">';
-            if (tip.word) {
-                html += '<div class="pron-tip-word">' + tip.word + '<span class="score">' + tip.score + '/100</span></div>';
-            }
-            html += '<div class="pron-tip-text">' + tip.message + '</div>';
-            if (tip.advice) html += '<div class="pron-tip-advice">\uD83D\uDCA1 ' + tip.advice + '</div>';
-            html += '</div>';
+    function renderResult() {
+        if (renderAttemptId !== _activeAttemptId) {
+            console.warn('[PRON] stale delayed render ignored:', renderAttemptId, _activeAttemptId);
+            return;
         }
-        html += '</div>';
+
+        /* Single source of truth — finalScore is canonical, no fallback. */
+        var finalScore = Number(r.finalScore) || 0;
+        r.finalScore = finalScore;
+
+        var category = _getCategory(finalScore);
+        var ui = _PRON_CATEGORY[category];
+
+        console.log('FINAL SCORE:', { finalScore: finalScore, category: category });
+
+        var html = '';
+
+        /* emoji + category text */
+        html += '<div class="pron-emoji">' + ui.emoji + '</div>';
+        html += '<div class="pron-title ' + ui.verdictClass + '">' + ui.text + '</div>';
+        html += '<div class="pron-subtitle">«' + refText + '»</div>';
+
+        /* word-level highlight (color-coded only — no numbers) */
+        var wfb = r.wordFeedback || [];
+        if (refText && wfb.length > 0) {
+            html += '<div class="wf-inline">' + _buildInlineHighlight(refText, wfb) + '</div>';
+        }
+
+        /* short advice — one line, category-driven */
+        if (ui.advice) {
+            html += '<div class="pron-verdict ' + ui.verdictClass + '">' + ui.advice + '</div>';
+        }
+
+        /* buttons */
+        html += '<div class="pron-actions pron-btns">'
+              + '<button class="pron-btn pron-btn-retry" onclick="_retryPron()">🔁 Qayta aytish</button>'
+              + '<button class="pron-btn pron-btn-close" onclick="closePronResult()">Yopish</button>'
+              + '</div>';
+
+        document.getElementById('pronCard').innerHTML = html;
+
+        var pronCard = document.getElementById('pronCard');
+        pronCard.classList.remove('anim-success', 'anim-almost', 'anim-fail');
+        pronCard.classList.add(ui.animClass);
     }
 
-    /* buttons */
-    html += '<div class="pron-btns">'
-          + '<button class="pron-btn pron-btn-retry" onclick="_retryPron()">\uD83D\uDD01 Qayta aytish</button>'
-          + '<button class="pron-btn pron-btn-close" onclick="closePronResult()">Yopish</button>'
-          + '</div>';
-
-    document.getElementById('pronCard').innerHTML = html;
-
-    /* apply animation class based on score */
-    var pronCard = document.getElementById('pronCard');
-    pronCard.classList.remove('anim-success', 'anim-almost', 'anim-fail');
-    if (overall >= _PRON_GOOD_SCORE) {
-        pronCard.classList.add('anim-success');
-    } else if (overall >= _PRON_PASS_SCORE) {
-        pronCard.classList.add('anim-almost');
-    } else {
-        pronCard.classList.add('anim-fail');
+    clearTimeout(_pronResultDelayTimer);
+    _pronResultDelayTimer = 0;
+    if (elapsed < MIN_DELAY) {
+        _pronResultDelayTimer = setTimeout(function () {
+            _pronResultDelayTimer = 0;
+            if (attemptId !== _activeAttemptId) return;
+            renderResult();
+        }, MIN_DELAY - elapsed);
+        return;
     }
 
-    /* kick animations after paint */
-    requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-            /* ring animation */
-            var fg = document.getElementById('pronRingFg');
-            if (fg) fg.setAttribute('stroke-dashoffset', String(offset));
-
-            /* counter animation */
-            _animateCounter('pronRingVal', 0, overall, 900);
-
-            /* bar fills */
-            var fills = document.querySelectorAll('.pron-bar-fill[data-w]');
-            for (var k = 0; k < fills.length; k++) {
-                fills[k].style.width = fills[k].getAttribute('data-w') + '%';
-            }
-        });
-    });
+    renderResult();
 }
 
 /* ---- animated counter ---- */
@@ -2843,18 +2893,35 @@ function _animateCounter(id, from, to, duration) {
 
 /* ---- retry button ---- */
 function _retryPron() {
-    closePronResult();
-    /* find the pronunciation button and click it */
-    var btn = document.querySelector('.audio-button[onclick*="checkPronunciation"]');
-    if (btn) btn.click();
+    var retry = _lastPronRetryAction;
+    window._pendingNext = null;
+    closePronResult({ skipPendingAdvance: true });
+    if (typeof retry === 'function') {
+        setTimeout(function () {
+            retry();
+        }, 0);
+    }
 }
 
 /* ---- close ---- */
-function closePronResult() {
-    _pronClosed = true;
+function closePronResult(options) {
+    _pronClosed = false;
     _isPronListening = false;
+    clearTimeout(_pronResultDelayTimer);
+    _pronResultDelayTimer = 0;
     var el = document.getElementById(_PRON_OVERLAY_ID);
     if (el) el.classList.remove('active');
+
+    if (options && options.skipPendingAdvance) {
+        window._pendingNext = null;
+        return;
+    }
+
+    if (window._pendingNext) {
+        const fn = window._pendingNext;
+        window._pendingNext = null;
+        fn();
+    }
 }
 
 /* ================================================================== */
@@ -3264,23 +3331,43 @@ function _wwSpeak(btn) {
     _isRecording = true;
     _pronBusy = true;
 
+    const attemptId = ++_activeAttemptId;
+    _pronAttemptStartedAt = Date.now();
+    clearTimeout(_pronResultDelayTimer);
+    _pronResultDelayTimer = 0;
+    _lastPronRetryAction = function () {
+        var speakBtn = document.querySelector('.ww-btn-speak');
+        if (speakBtn) _wwSpeak(speakBtn);
+    };
+    window._pendingNext = null;
+
     var word = _weakWords[_weakIdx].word;
 
     showStatus('\uD83C\uDFA4 Gapiring...');
 
     _runPronunciationAssessment(word)
         .then(function (result) {
+            if (attemptId !== _activeAttemptId) {
+                console.warn('[PRON] stale weak-word result ignored:', attemptId, _activeAttemptId);
+                return;
+            }
+
             showStatus('\u23F3 Tekshirilmoqda...');
-            if (!result || result.accuracyScore < 40) {
+            if (!result || (Number(result.finalScore) || 0) < 40) {
                 showStatus('');
                 alert('Talaffuz aniqlanmadi. Qayta urinib ko\'ring.');
                 return;
             }
             showStatus('');
-            _showPronResult(word, result);
+            _showPronResult(word, result, attemptId);
             _logPronunciation(word, result);
         })
         .catch(function (err) {
+            if (attemptId !== _activeAttemptId) {
+                console.warn('[PRON] stale weak-word error ignored:', attemptId, _activeAttemptId, err);
+                return;
+            }
+
             showStatus('');
             console.error('Pronunciation error:', err);
             if (err.limitExceeded) {
@@ -3293,8 +3380,10 @@ function _wwSpeak(btn) {
         })
         .finally(function () {
             btn.disabled = false;
-            _isRecording = false;
-            _pronBusy = false;
+            if (attemptId === _activeAttemptId) {
+                _isRecording = false;
+                _pronBusy = false;
+            }
         });
 }
 
