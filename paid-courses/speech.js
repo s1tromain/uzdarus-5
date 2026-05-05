@@ -716,8 +716,8 @@ function checkPronunciation(event) {
                     };
                 }
 
-            /* ============ TRY AGAIN: score 40-69 ============ */
-            } else if (score >= 40) {
+            /* ============ TRY AGAIN: score 50-69 (O\u2018rtacha) ============ */
+            } else if (score >= 50) {
                 showStatus('\uD83D\uDCAA Yana urinib ko\'ring');
                 _animateFlashcardError();
                 _haptic(30);
@@ -727,7 +727,7 @@ function checkPronunciation(event) {
                 try { _showPronResult(word.ru, result, attemptId); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
                 /* Do NOT unlock the word — user must retry */
 
-            /* ============ FAIL: score < 40 ============ */
+            /* ============ FAIL: score < 50 (Yaxshi emas) ============ */
             } else {
                 showStatus('\u274C Qayta urinib ko\'ring');
                 _animateFlashcardError();
@@ -747,6 +747,11 @@ function checkPronunciation(event) {
             }
 
             console.error('[PRON] CATCH:', err);
+
+            /* Always tear down the listening overlay on error so the pulsing
+               mic doesn't stay on screen next to an error toast — without this
+               the user can't tell whether the system is still recording. */
+            try { closePronResult({ skipPendingAdvance: true }); } catch (uiErr) {}
 
             /* User cancelled by clicking outside the listening panel */
             if (err && err.cancelled) {
@@ -812,7 +817,7 @@ function _handlePronFail(msg) {
  *  previous-score memory, or fallback-to-reference magic.
  * ============================================================ */
 
-var _PRON_PASS_SCORE = 65;
+var _PRON_PASS_SCORE = 70;
 var _PRON_GOOD_SCORE = 85;
 
 /* ---- Localisation ----
@@ -1136,6 +1141,25 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
         toliqlik = Math.min(toliqlik, normalizedFluency + 15);
     }
 
+    /* Soft metric lift before avg(): add a transitional band so near-exact
+       matches from Azure still get some headroom, while strong matches get a
+       more visible lift before the final average is computed. */
+    if (exact >= 0.85) {
+        aniqlik *= 1.12;
+        toliqlik *= 1.12;
+    } else if (exact >= 0.75) {
+        aniqlik *= 1.05;
+        toliqlik *= 1.05;
+    }
+
+    if (normalizedFluency !== null && normalizedFluency >= 55) {
+        ravonlik *= 1.05;
+    }
+
+    aniqlik = Math.min(aniqlik, 100);
+    toliqlik = Math.min(toliqlik, 100);
+    ravonlik = Math.min(ravonlik, 100);
+
     if (exact < partial) {
         toliqlik = Math.min(toliqlik, aniqlik + (refLength <= 3 ? 18 : 24));
     }
@@ -1155,11 +1179,12 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
         penalty *= 0.8;
     }
 
-    /* Skip mismatch penalty entirely when every reference word is in place;
-       extras are handled by the linear deduction below — never double-charge. */
-    var hasMismatch = !perfectExact && partial < 1 && exact === partial;
-    if (!perfectExact && (hasMismatch || exact < partial)) {
-        penalty *= veryShort ? 0.72 : (shortPhrase ? 0.78 : 0.85);
+    /* Mismatch penalty only kicks in when token coverage is meaningfully
+       low (partial < 0.7). Above that we trust the metric averaging — a
+       single missed word in a 4-word phrase shouldn't get a hard multiplier. */
+    var hasMismatch = !perfectExact && partial < 0.7 && exact === partial;
+    if (!perfectExact && (hasMismatch || (exact < partial && partial < 0.7))) {
+        penalty *= veryShort ? 0.85 : (shortPhrase ? 0.88 : 0.9);
     }
 
     var sameLengthSubstitution = hasMismatch && recLength === refLength && extraWords === 0;
@@ -1189,13 +1214,14 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
     toliqlik = _clampRange(toliqlik * penalty, 0, 100);
     ravonlik = _clampRange(ravonlik * penalty, 0, 100);
 
-    /* Extras: linear -5 per word, applied after the multiplier — stable
-       per-word cost, no compounding with mismatch penalty. */
+    /* Extras: soft multiplier — 5% per extra word, floored at 0.8. A
+       couple of repeated/extra words shouldn't tank an otherwise-correct
+       attempt. Applied after the main penalty multiplier. */
     if (extraWords > 0) {
-        var extraDeduction = extraWords * 5;
-        aniqlik -= extraDeduction;
-        toliqlik -= extraDeduction;
-        ravonlik -= extraDeduction;
+        var extraMul = Math.max(0.8, 1 - 0.05 * extraWords);
+        aniqlik *= extraMul;
+        toliqlik *= extraMul;
+        ravonlik *= extraMul;
     }
 
     aniqlik = Math.round(_clampRange(aniqlik, 0, 100));
@@ -1237,6 +1263,14 @@ function _finalizePronunciationResult(result, referenceText) {
     );
 
     var score = _computeFinalMetricScore(metrics);
+
+    /* Score is the pure average of metrics — all soft boosts now live
+       inside _computeMetrics so the lift happens BEFORE averaging.
+       Boosting after avg only nudged the result by a few points; lifting
+       each metric raises the avg itself, which is what actually moves
+       attempts from O‘rtacha into Yaxshi/Ajoyib. */
+    score = Math.min(score, 100);
+    score = Math.round(score);
 
     finalized.aniqlik = metrics.aniqlik;
     finalized.ravonlik = metrics.ravonlik;
@@ -1293,8 +1327,8 @@ var _PRON_CATEGORY = {
 
 function _getCategory(score) {
     var s = Number(score) || 0;
-    if (s >= 85) return 'excellent';
-    if (s >= 65) return 'good';
+    if (s >= 75) return 'excellent';
+    if (s >= 60) return 'good';
     if (s >= 40) return 'average';
     return 'bad';
 }
@@ -1402,20 +1436,62 @@ function _getWordFeedback(recognized, reference) {
 
 /* ---- Build human-readable feedback message from word feedback ---- */
 
-/* ---- Inline highlight: color each reference word by feedback status ---- */
-function _buildInlineHighlight(referenceText, feedback) {
+/* ---- Inline highlight: color each reference word by feedback status ----
+   When Azure word-level accuracy is available, prefer it over the bare
+   token-presence status: ≥80 → correct (green), ≥60 → ok (yellow),
+   <60 → wrong (red). Missing/extra still fall back to neutral/red. */
+function _buildInlineHighlight(referenceText, feedback, words) {
     if (!referenceText || !feedback) return '';
     var refWords = referenceText.split(/\s+/);
+
+    var accByWord = Object.create(null);
+    if (Array.isArray(words)) {
+        words.forEach(function (w) {
+            if (w && w.word != null) {
+                var key = String(w.word).toLowerCase().replace(/[.,!?;:"'«»()\[\]{}\-—–…]/g, '');
+                var n = Number(w.accuracy);
+                if (Number.isFinite(n)) accByWord[key] = n;
+            }
+        });
+    }
+
     return refWords.map(function (word, i) {
         var f = feedback[i];
         var cls = 'wf-missing';
         if (f) {
-            if (f.status === 'correct') cls = 'wf-correct';
-            else if (f.status === 'wrong_position') cls = 'wf-wrong-pos';
-            else if (f.status === 'missing') cls = 'wf-missing';
+            if (f.status === 'correct' || f.status === 'wrong_position') {
+                var key = String(word).toLowerCase().replace(/[.,!?;:"'«»()\[\]{}\-—–…]/g, '');
+                var acc = accByWord[key];
+                if (Number.isFinite(acc)) {
+                    if (acc >= 80)      cls = 'wf-correct';
+                    else if (acc >= 60) cls = 'wf-ok';
+                    else                cls = 'wf-bad';
+                } else {
+                    cls = (f.status === 'correct') ? 'wf-correct' : 'wf-ok';
+                }
+            } else if (f.status === 'missing') {
+                cls = 'wf-bad';
+            }
         }
         return '<span class="wf-word ' + cls + '">' + word + '</span>';
     }).join(' ');
+}
+
+/* Build a one-line hint based on the per-word accuracy buckets.
+   Returns '' when every word is solidly "correct" (≥80). */
+function _buildWordAccuracyHint(words) {
+    if (!Array.isArray(words) || words.length === 0) return '';
+    var anyWrong = false;
+    var anyOk = false;
+    for (var i = 0; i < words.length; i++) {
+        var n = Number(words[i] && words[i].accuracy);
+        if (!Number.isFinite(n)) continue;
+        if (n < 60) anyWrong = true;
+        else if (n < 80) anyOk = true;
+    }
+    if (anyWrong) return 'Siz ba’zi so‘zlarni noto‘g‘ri aytdingiz';
+    if (anyOk)    return 'Yaxshi, lekin yaxshiroq aytish mumkin';
+    return '';
 }
 
 /* ---- Smart hint: suggest what to fix ---- */
@@ -1977,6 +2053,14 @@ async function _runPronunciationAssessment(referenceText) {
                 if (!forcedReason) forcedReason = 'bad_pronunciation';
             }
 
+            /* Wrong-word classification: if the recognised text barely
+               overlaps with the reference (and we did get speech), the
+               user clearly said something else — surface that explicitly
+               instead of letting it fall into the generic "bad" bucket. */
+            if (!forcedReason && __stats.refLength > 0 && __stats.partialRatio < 0.3) {
+                forcedReason = 'wrong_word';
+            }
+
             /* Combine external penalties into ONE multiplier. Quality and
                near-exact-soft are different signals of the same problem
                (Azure overconfidence) — take the harsher one, not their
@@ -2050,9 +2134,18 @@ async function _runPronunciationAssessment(referenceText) {
 
             } else if (reason === SpeechSDK.ResultReason.NoMatch) {
                 if (gotInterim) {
-                    var nmData = extractPronData(e.result);
-                    console.warn('[PRON] NoMatch+gotInterim, recovered:', !!nmData);
-                    resolveOnce(nmData || buildZeroResult(_getSafeInterimText()));
+                    /* NoMatch with interim = Azure couldn't lock in a confident
+                       transcript, but we DID hear the user. Score the interim
+                       text directly instead of running it through extractPronData
+                       (which would see an empty Azure payload and classify it as
+                       no_speech). This is what prevents the "speak 2-3 times"
+                       UX bug — we always produce a result from real audio. */
+                    var nmInterim = _getSafeInterimText();
+                    console.warn('[PRON] NoMatch+gotInterim → scored interim:', nmInterim);
+                    resolveOnce(buildScoredResult(nmInterim, null, null, null, {
+                        reason: 'unclear_speech',
+                        words: []
+                    }));
                 } else {
                     var noMatchErr = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
                     noMatchErr.noSpeech = true;
@@ -2132,7 +2225,25 @@ async function _runPronunciationAssessment(referenceText) {
         /* ---- Start recognition ---- */
         console.debug('[PRON] start recognition (recognizeOnceAsync)');
 
-        recognizer.recognizeOnceAsync(
+        /* Mic warmup grace period — let the audio pipeline settle so the
+           user's first syllables are not clipped on slower systems. The
+           listening overlay already shows "Tinglanmoqda..." during this
+           window, then swaps to "Tinglayapman..." when capture is live. */
+        var MIC_WARMUP_MS = 700;
+        setTimeout(function () {
+            if (finished || !recognizer) return;
+            try {
+                var listenText = document.getElementById('pronListeningText');
+                if (listenText) {
+                    listenText.innerHTML = 'Tinglayapman<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span>';
+                }
+                var listenSub = document.getElementById('pronListeningSub');
+                if (listenSub) {
+                    listenSub.textContent = 'So‘zni aniq ayting';
+                }
+            } catch (uiErr) { /* UI optional */ }
+
+            recognizer.recognizeOnceAsync(
             function (result) {
                 /* BACKUP: only runs if recognized event didn't already handle it */
                 if (finished) {
@@ -2169,7 +2280,8 @@ async function _runPronunciationAssessment(referenceText) {
                     rejectOnce(err);
                 }
             }
-        );
+            );
+        }, MIC_WARMUP_MS);
     });
 }
 
@@ -2762,7 +2874,9 @@ function _ensurePronOverlay() {
         '.wf-inline{margin-top:10px;font-size:18px;font-weight:600;line-height:1.6;text-align:center}',
         '.wf-word{padding:2px 6px;border-radius:6px;margin-right:4px;display:inline-block}',
         '.wf-correct{background:#22c55e22;color:#22c55e}',
+        '.wf-ok{background:#f59e0b22;color:#f59e0b}',
         '.wf-wrong-pos{background:#f59e0b22;color:#f59e0b}',
+        '.wf-bad{background:#ef444422;color:#ef4444}',
         '.wf-missing{background:#9ca3af22;color:#9ca3af}',
         '.wf-hint{margin-top:10px;font-size:14px;color:#facc15;font-weight:500;text-align:center}',
         /* result animations */
@@ -2831,11 +2945,14 @@ function _ringCircum() { return 2 * Math.PI * 42; }
 /* ---- listening state ---- */
 function _showPronListening() {
     _ensurePronOverlay();
+    /* Initial state shows "Tayyorlanmoqda\u2026" / "Gapirishni boshlang" during the
+       mic warmup grace period; _runPronunciationAssessment swaps these to
+       "Tinglayapman\u2026" / "So\u2018zni aniq ayting" once capture is live. */
     document.getElementById('pronCard').innerHTML =
         '<div class="pron-listening">'
       + '  <div class="pron-mic">\uD83C\uDFA4</div>'
-      + '  <div class="pron-listening-text">Tinglayapman<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span></div>'
-      + '  <div style="font-size:.82rem;color:#aaa">So\u2018zni aniq ayting</div>'
+      + '  <div class="pron-listening-text" id="pronListeningText">Tinglanmoqda<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span></div>'
+      + '  <div id="pronListeningSub" style="font-size:.82rem;color:#aaa">Gapirishni boshlang</div>'
       + '</div>';
     document.getElementById(_PRON_OVERLAY_ID).classList.add('active');
     _isPronListening = true;
@@ -2867,7 +2984,39 @@ function _showPronResult(refText, r, attemptId) {
         var category = _getCategory(finalScore);
         var ui = _PRON_CATEGORY[category];
 
-        console.log('FINAL SCORE:', { finalScore: finalScore, category: category });
+        /* Reason-driven overrides — when the result clearly isn't about
+           pronunciation quality (silence / wrong word entirely), show a
+           direct explanation instead of a misleading numeric tier. */
+        if (r.reason === 'no_speech') {
+            ui = {
+                text: 'Siz hech narsa aytmadingiz',
+                emoji: '🤐',
+                advice: 'Mikrofonga aniq gapiring',
+                verdictClass: 'bad',
+                animClass: 'anim-fail'
+            };
+        } else if (r.reason === 'wrong_word') {
+            ui = {
+                text: 'Siz boshqa so‘z aytdingiz',
+                emoji: '❌',
+                advice: 'Aynan ko‘rsatilgan so‘zni ayting',
+                verdictClass: 'bad',
+                animClass: 'anim-fail'
+            };
+        } else if (r.reason === 'unclear_speech') {
+            /* We heard speech but couldn't lock a confident transcript —
+               surface this as "speak more clearly" instead of pretending
+               the user got a low pronunciation grade. */
+            ui = {
+                text: 'Aniqroq gapiring',
+                emoji: '⚠️',
+                advice: 'Mikrofonga yaqinroq, sekinroq ayting',
+                verdictClass: 'ok',
+                animClass: 'anim-almost'
+            };
+        }
+
+        console.log('FINAL SCORE:', { finalScore: finalScore, category: category, reason: r.reason });
 
         var html = '';
 
@@ -2876,10 +3025,20 @@ function _showPronResult(refText, r, attemptId) {
         html += '<div class="pron-title ' + ui.verdictClass + '">' + ui.text + '</div>';
         html += '<div class="pron-subtitle">«' + refText + '»</div>';
 
-        /* word-level highlight (color-coded only — no numbers) */
+        /* word-level highlight (color-coded by Azure accuracy when present) */
         var wfb = r.wordFeedback || [];
         if (refText && wfb.length > 0) {
-            html += '<div class="wf-inline">' + _buildInlineHighlight(refText, wfb) + '</div>';
+            html += '<div class="wf-inline">' + _buildInlineHighlight(refText, wfb, r.words) + '</div>';
+        }
+
+        /* per-word accuracy hint — only shown when there is something to fix
+           and the result isn't already a hard reason override (no_speech /
+           wrong_word) where this hint would be noise. */
+        if (r.reason !== 'no_speech' && r.reason !== 'wrong_word') {
+            var accHint = _buildWordAccuracyHint(r.words);
+            if (accHint) {
+                html += '<div class="wf-hint">' + accHint + '</div>';
+            }
         }
 
         /* short advice — one line, category-driven */
@@ -3390,7 +3549,7 @@ function _wwSpeak(btn) {
             }
 
             showStatus('\u23F3 Tekshirilmoqda...');
-            if (!result || (Number(result.finalScore) || 0) < 40) {
+            if (!result || (Number(result.finalScore) || 0) < 50) {
                 showStatus('');
                 alert('Talaffuz aniqlanmadi. Qayta urinib ko\'ring.');
                 return;

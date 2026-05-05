@@ -192,7 +192,7 @@ const scenarios = [
         rawAccuracy: 90,
         rawFluency: 90,
         wordAccuracies: [60, 60, 60, 60, 60],
-        expected: [30, 50]
+        expected: [50, 60]
     },
     {
         name: "Near exact 69 quality",
@@ -201,7 +201,7 @@ const scenarios = [
         rawAccuracy: 82,
         rawFluency: 88,
         wordAccuracies: [69, 69, 69, 69, 69],
-        expected: [45, 60]
+        expected: [60, 70]
     },
     {
         name: "Fake near exact",
