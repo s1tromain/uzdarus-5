@@ -666,7 +666,11 @@ function checkPronunciation(event) {
     _isRecording = true;
     _pronBusy = true;
 
-    showStatus('\uD83C\uDFA4 Gapiring...');
+    /* Patch A: do NOT promise "Gapiring..." before the recognizer is
+       actually capturing audio \u2014 that is what made users speak into a
+       dead pipeline and lose the first word. The swap to "Gapiring..."
+       happens inside recognizer.sessionStarted (Azure's real ready signal). */
+    showStatus('\uD83C\uDFA4 Mikrofon tayyorlanmoqda...');
 
     _runPronunciationAssessment(referenceText)
         .then(result => {
@@ -1734,17 +1738,34 @@ async function _runPronunciationAssessment(referenceText) {
             normalizedCompleteness = Math.round(Number(normalizedCompleteness));
         }
 
+        /* Patch C: when the interim/timeout text already strongly matches
+           the reference, the user really did say it — we should NOT cap
+           the score at 40 and we should NOT force "unclear_speech".
+           That is the exact failure shape behind problem #2: green words
+           but verdict "Aniqroq gapiring". */
+        var isStrongMatch = stats.partialRatio >= 0.9 && stats.exactRatio >= 0.75;
+
         /* Unclear/no-Azure path: cap at 40 (we have no real audio quality
            evidence). Cap is converted to a proportional extraPenalty so
            it travels through _computeMetrics — no `score = ...` outside. */
-        var capPenalty = _getScoreCapPenalty(recognizedText, referenceText, accuracy, fluency, 40);
+        var capPenalty = isStrongMatch
+            ? undefined
+            : _getScoreCapPenalty(recognizedText, referenceText, accuracy, fluency, 40);
         var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness, capPenalty);
+        var defaultReason;
+        if (score <= 0) {
+            defaultReason = 'wrong_word';
+        } else if (isStrongMatch) {
+            defaultReason = _getPronunciationReason(score);
+        } else {
+            defaultReason = 'unclear_speech';
+        }
         var result = {
             recognizedText: recognizedText,
             accuracyScore: accuracy === undefined ? null : accuracy,
             fluencyScore: fluency === undefined ? null : fluency,
             completenessScore: normalizedCompleteness,
-            reason: score > 0 ? 'unclear_speech' : 'wrong_word',
+            reason: defaultReason,
             words: [],
             wordFeedback: _getWordFeedback(recognizedText, referenceText),
             __extraPenalty: capPenalty
@@ -1754,9 +1775,21 @@ async function _runPronunciationAssessment(referenceText) {
             Object.keys(overrides).forEach(function (key) {
                 result[key] = overrides[key];
             });
+            /* Patch C: if a fallback caller forced reason='unclear_speech'
+               but the text in fact matches strongly, drop that override. */
+            if (isStrongMatch && (result.reason === 'unclear_speech' || result.reason === 'bad_pronunciation')) {
+                result.reason = _getPronunciationReason(score);
+            }
         }
 
-        return _finalizePronunciationResult(result, referenceText);
+        var finalized = _finalizePronunciationResult(result, referenceText);
+        if (isStrongMatch && finalized.reason !== 'fake_match' && finalized.reason !== 'wrong_word'
+            && (Number(finalized.finalScore) || 0) < 40) {
+            finalized.finalScore = 40;
+            finalized.pronunciationScore = 40;
+            if (finalized.reason === 'bad') finalized.reason = 'almost';
+        }
+        return finalized;
     }
 
     function buildZeroResult(text, reason) {
@@ -1778,6 +1811,19 @@ async function _runPronunciationAssessment(referenceText) {
 
     recognizer.sessionStarted = function () {
         console.debug('[PRON] session started');
+        /* Patch A: Azure has confirmed the session is live and audio is
+           flowing — only now is it safe to invite the user to speak. */
+        try { showStatus('🎤 Gapiring...'); } catch (_e1) {}
+        try {
+            var listenText = document.getElementById('pronListeningText');
+            if (listenText) {
+                listenText.innerHTML = 'Tinglayapman<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span>';
+            }
+            var listenSub = document.getElementById('pronListeningSub');
+            if (listenSub) {
+                listenSub.textContent = 'So‘zni aniq ayting';
+            }
+        } catch (_e2) { /* UI optional */ }
     };
 
     try { _showPronListening(); } catch (uiErr) { console.warn('[UI ERROR] _showPronListening:', uiErr); }
@@ -1835,24 +1881,37 @@ async function _runPronunciationAssessment(referenceText) {
             clearTimeout(silenceTimerId);
             if (finished || gotFinal || !gotInterim) return;
 
+            /* Patch F: 1800ms was firing BEFORE Azure's recognized event,
+               pre-empting the real final result with the (worse) interim
+               transcript and a forced reason='unclear_speech'. That is the
+               root cause behind problem #3 ("user must repeat 2–3 times")
+               and a major contributor to problem #2 ("Aniqroq gapiring
+               even when green"). 2500ms gives Azure enough headroom to
+               deliver recognized first; if real silence persists past
+               that, the fallback still kicks in. */
             silenceTimerId = setTimeout(function () {
-                if (finished || gotFinal || !gotInterim) return;
+                /* Re-check: gotFinal may have flipped between scheduling
+                   and firing — never resolve on top of a finalised run. */
+                if (finished || gotFinal || resolved || !gotInterim) return;
 
                 console.warn('[PRON] silence fallback → scored result');
                 resolveOnce(buildScoredResult(_getSafeInterimText(), null, null, null, {
                     reason: 'unclear_speech',
                     words: []
                 }));
-            }, 1800);
+            }, 2500);
         }
 
         recognizer.sessionStopped = function () {
             console.debug('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
-            if (finished || gotFinal) return;
+            if (finished || gotFinal || resolved) return;
 
             clearTimeout(sessionStoppedFallbackId);
             sessionStoppedFallbackId = setTimeout(function () {
-                if (finished || gotFinal) return;
+                /* Patch F: gotFinal/resolved may flip while the 250ms
+                   grace timer is queued — bail rather than overwriting
+                   a real final result. */
+                if (finished || gotFinal || resolved) return;
 
                 console.warn('[PRON] sessionStopped fallback → final safety result');
                 if (gotInterim) {
@@ -1958,6 +2017,11 @@ async function _runPronunciationAssessment(referenceText) {
             /* completeness from token presence (Azure's value is unreliable) */
             var __stats = _getWordStats(recognizedText, referenceText);
             var isExactTranscriptMatch = recognizedText.trim().toLowerCase() === referenceText.trim().toLowerCase();
+            /* Patch C: strong real-token match — never downgrade to
+               unclear_speech / bad_pronunciation / fake_match. The user
+               clearly said the right words; the worst we may show is
+               "O‘rtacha" (score floor 40), never "Aniqroq gapiring". */
+            var isStrongMatch = __stats.partialRatio >= 0.9 && __stats.exactRatio >= 0.75;
             var referenceWordCount = _tokenize(referenceText).length;
             var quality = _getWordQuality(words);
             var stability = _getSpeechStability(words);
@@ -2038,7 +2102,10 @@ async function _runPronunciationAssessment(referenceText) {
             var qualityPenalty = 1;
             if (quality.avg !== null && quality.avg < 70) {
                 qualityPenalty = _getAzureQualityPenalty(quality.avg, suspiciousAccuracy);
-                if (quality.avg < 60 && !forcedReason) forcedReason = 'bad_pronunciation';
+                /* Patch C: do NOT label a strong-token-match attempt as
+                   bad_pronunciation — the words ARE there, scoring may dip
+                   but the verdict text must not say "Talaffuzni yaxshilash". */
+                if (quality.avg < 60 && !forcedReason && !isStrongMatch) forcedReason = 'bad_pronunciation';
             }
 
             /* Layer 2 SOFT: Near-exact transcripts are graded, not stepped.
@@ -2050,7 +2117,9 @@ async function _runPronunciationAssessment(referenceText) {
                 && quality.avg !== null
                 && quality.avg < 67) {
                 azureCapPenalty = _getNearExactPenalty(__stats.partialRatio, quality.avg);
-                if (!forcedReason) forcedReason = 'bad_pronunciation';
+                /* Patch C: same as above — strong match must not surface
+                   as "Talaffuzni yaxshilash". Penalty still applies. */
+                if (!forcedReason && !isStrongMatch) forcedReason = 'bad_pronunciation';
             }
 
             /* Wrong-word classification: if the recognised text barely
@@ -2071,7 +2140,7 @@ async function _runPronunciationAssessment(referenceText) {
             var extraPenalty = combinedPenalty < 1 ? combinedPenalty : undefined;
             var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness, extraPenalty);
 
-            return _finalizePronunciationResult({
+            var finalized = _finalizePronunciationResult({
                 recognizedText: recognizedText,
                 accuracyScore: accuracy,
                 fluencyScore: fluency,
@@ -2081,6 +2150,26 @@ async function _runPronunciationAssessment(referenceText) {
                 wordFeedback: _getWordFeedback(recognizedText, referenceText),
                 __extraPenalty: extraPenalty
             }, referenceText);
+
+            /* Patch C: enforce the "O‘rtacha minimum" contract for strong
+               matches. fake_match is intentionally excluded — it represents
+               an Azure echo of the reference text without supporting audio
+               quality, which the dedicated guards above already validated. */
+            if (isStrongMatch && finalized.reason !== 'fake_match') {
+                if (finalized.reason === 'bad_pronunciation' || finalized.reason === 'unclear_speech') {
+                    /* Drop the misleading override so verdict text uses the
+                       score-derived reason ('almost'/'good'/'excellent') and
+                       the result screen falls through to the category UI
+                       (O‘rtacha / Yaxshi / Ajoyib) instead of "Aniqroq gapiring". */
+                    finalized.reason = _getPronunciationReason(Number(finalized.finalScore) || 0);
+                }
+                if ((Number(finalized.finalScore) || 0) < 40) {
+                    finalized.finalScore = 40;
+                    finalized.pronunciationScore = 40;
+                    if (finalized.reason === 'bad') finalized.reason = 'almost';
+                }
+            }
+            return finalized;
         }
 
         /* ===========================================================
@@ -2184,11 +2273,26 @@ async function _runPronunciationAssessment(referenceText) {
         };
 
         /* ===========================================================
+         *  Listening timers (Patch B): armed AFTER a 400ms warmup
+         *  grace, NOT from t=0. The recognizer is started below
+         *  this block; this grace prevents premature soft-timeout
+         *  fires while the audio pipeline is still settling, so the
+         *  user always gets a full 15s listening window measured
+         *  from a stable start.
+         * =========================================================== */
+        var WARMUP_GRACE_MS = 400;
+        setTimeout(function _armListeningTimers() {
+            if (finished) return;
+
+        /* ===========================================================
          *  SOFT TIMEOUT (15s): warn only, NEVER reject, NEVER cleanup
          *  Recognizer stays alive — recognized event will still fire.
          * =========================================================== */
         softTimeoutId = setTimeout(function () {
-            if (finished) return;
+            /* Patch F: bail if recognition resolved between scheduling
+               and firing — never overwrite a real final with a forced
+               unclear_speech fallback. */
+            if (finished || gotFinal || resolved) return;
             timeoutHit = true;
             if (gotInterim) {
                 var txt = _sanitizeRecognizedText(_getSafeInterimText() || '', true);
@@ -2208,11 +2312,13 @@ async function _runPronunciationAssessment(referenceText) {
          *  If gotInterim/gotFinal → extend, never reject.
          * =========================================================== */
         hardTimeoutId = setTimeout(function () {
-            if (finished) return;
+            /* Patch F: stale-timeout guard — recognized may have resolved
+               while this 30s callback sat in the queue. */
+            if (finished || resolved) return;
             if (gotInterim || gotFinal) {
                 console.warn('[PRON] hard timeout (30s) but speech detected — extending 15s...');
                 hardTimeoutId = setTimeout(function () {
-                    if (finished) return;
+                    if (finished || resolved) return;
                     console.error('[PRON] ultimate timeout (45s) — forcing zero resolve');
                     resolveOnce(buildZeroResult(_getSafeInterimText()));
                 }, 15000);
@@ -2221,29 +2327,18 @@ async function _runPronunciationAssessment(referenceText) {
             console.error('[PRON] hard timeout (30s) — no speech at all');
             rejectOnce(new Error('Audio olinmadi. Mikrofon sozlamalarini tekshiring.'));
         }, 30000);
+        }, WARMUP_GRACE_MS); /* close warmup-grace wrapper (Patch B) */
 
         /* ---- Start recognition ---- */
         console.debug('[PRON] start recognition (recognizeOnceAsync)');
 
-        /* Mic warmup grace period — let the audio pipeline settle so the
-           user's first syllables are not clipped on slower systems. The
-           listening overlay already shows "Tinglanmoqda..." during this
-           window, then swaps to "Tinglayapman..." when capture is live. */
-        var MIC_WARMUP_MS = 700;
-        setTimeout(function () {
-            if (finished || !recognizer) return;
-            try {
-                var listenText = document.getElementById('pronListeningText');
-                if (listenText) {
-                    listenText.innerHTML = 'Tinglayapman<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span>';
-                }
-                var listenSub = document.getElementById('pronListeningSub');
-                if (listenSub) {
-                    listenSub.textContent = 'So‘zni aniq ayting';
-                }
-            } catch (uiErr) { /* UI optional */ }
-
-            recognizer.recognizeOnceAsync(
+        /* Patch B: start the recognizer NOW. The previous 700ms wrapper
+           around recognizeOnceAsync silently dropped the user's first
+           syllables — by the time the recognizer was actually capturing,
+           early speech (spoken in response to "Gapiring...") was already
+           lost. The listening-overlay swap happens in sessionStarted
+           (recognizer's real ready signal) instead of via a blind timer. */
+        recognizer.recognizeOnceAsync(
             function (result) {
                 /* BACKUP: only runs if recognized event didn't already handle it */
                 if (finished) {
@@ -2280,8 +2375,7 @@ async function _runPronunciationAssessment(referenceText) {
                     rejectOnce(err);
                 }
             }
-            );
-        }, MIC_WARMUP_MS);
+        );
     });
 }
 
@@ -2945,14 +3039,14 @@ function _ringCircum() { return 2 * Math.PI * 42; }
 /* ---- listening state ---- */
 function _showPronListening() {
     _ensurePronOverlay();
-    /* Initial state shows "Tayyorlanmoqda\u2026" / "Gapirishni boshlang" during the
-       mic warmup grace period; _runPronunciationAssessment swaps these to
-       "Tinglayapman\u2026" / "So\u2018zni aniq ayting" once capture is live. */
+    /* Patch A: panel starts in "Mikrofon tayyorlanmoqda\u2026" until Azure's
+       sessionStarted callback flips it to "Tinglayapman\u2026" \u2014 that is the
+       only moment the audio pipeline is verified live. */
     document.getElementById('pronCard').innerHTML =
         '<div class="pron-listening">'
       + '  <div class="pron-mic">\uD83C\uDFA4</div>'
-      + '  <div class="pron-listening-text" id="pronListeningText">Tinglanmoqda<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span></div>'
-      + '  <div id="pronListeningSub" style="font-size:.82rem;color:#aaa">Gapirishni boshlang</div>'
+      + '  <div class="pron-listening-text" id="pronListeningText">Mikrofon tayyorlanmoqda<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span></div>'
+      + '  <div id="pronListeningSub" style="font-size:.82rem;color:#aaa">Bir soniya kuting</div>'
       + '</div>';
     document.getElementById(_PRON_OVERLAY_ID).classList.add('active');
     _isPronListening = true;
@@ -2988,16 +3082,18 @@ function _showPronResult(refText, r, attemptId) {
            pronunciation quality (silence / wrong word entirely), show a
            direct explanation instead of a misleading numeric tier. */
         if (r.reason === 'no_speech') {
+            /* Patch D: dedicated "no audio captured" verdict text. */
             ui = {
-                text: 'Siz hech narsa aytmadingiz',
+                text: 'Hech narsa eshitilmadi',
                 emoji: '🤐',
                 advice: 'Mikrofonga aniq gapiring',
                 verdictClass: 'bad',
                 animClass: 'anim-fail'
             };
         } else if (r.reason === 'wrong_word') {
+            /* Patch E: user said something else — short direct verdict. */
             ui = {
-                text: 'Siz boshqa so‘z aytdingiz',
+                text: 'Boshqa so‘z aytdingiz',
                 emoji: '❌',
                 advice: 'Aynan ko‘rsatilgan so‘zni ayting',
                 verdictClass: 'bad',
@@ -3539,7 +3635,9 @@ function _wwSpeak(btn) {
 
     var word = _weakWords[_weakIdx].word;
 
-    showStatus('\uD83C\uDFA4 Gapiring...');
+    /* Patch A: see checkPronunciation \u2014 wait for sessionStarted before
+       cueing the user to speak. */
+    showStatus('\uD83C\uDFA4 Mikrofon tayyorlanmoqda...');
 
     _runPronunciationAssessment(word)
         .then(function (result) {
