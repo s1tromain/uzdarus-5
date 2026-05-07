@@ -556,8 +556,21 @@ function _runPronPendingAdvance() {
 }
 
 async function _getSpeechToken() {
-    if (_speechToken && Date.now() < _speechTokenExpiry) return _speechToken;
-    const res = await fetch('/api/speech-token', { headers: _getAuthHeaders() });
+    if (_speechToken && Date.now() < _speechTokenExpiry) {
+        console.log('[PRON][TOKEN] using cached token, region:', _speechToken.region,
+                    'expires in', Math.round((_speechTokenExpiry - Date.now()) / 1000), 's');
+        return _speechToken;
+    }
+    console.log('[PRON][TOKEN] fetching /api/speech-token …');
+    var res;
+    try {
+        res = await fetch('/api/speech-token', { headers: _getAuthHeaders() });
+    } catch (netErr) {
+        console.error('[PRON][TOKEN] network error:', netErr && netErr.message);
+        var ne = new Error("Speech server bilan aloqa yo‘q");
+        ne.connectionFailed = true;
+        throw ne;
+    }
     if (res.status === 403) {
         const body = await res.json().catch(() => ({}));
         const e = new Error(body.message || 'Kunlik limit tugadi');
@@ -565,10 +578,29 @@ async function _getSpeechToken() {
         e.tier = body.tier || 'demo';
         throw e;
     }
-    if (!res.ok) throw new Error('Token request failed');
-    const data = await res.json();
+    if (!res.ok) {
+        console.error('[PRON][TOKEN] HTTP', res.status, res.statusText);
+        var he = new Error("Speech server bilan aloqa yo‘q");
+        he.connectionFailed = true;
+        he.httpStatus = res.status;
+        throw he;
+    }
+    const data = await res.json().catch(() => null);
+    /* Region/token consistency check (G6): both must be non-empty strings.
+       A blank region silently produces a malformed wss:// URL that fails
+       the websocket handshake — we catch it here instead. */
+    if (!data || typeof data.token !== 'string' || !data.token
+        || typeof data.region !== 'string' || !data.region) {
+        console.error('[PRON][TOKEN] invalid /api/speech-token payload:', data);
+        var ie = new Error("Speech server bilan aloqa yo‘q");
+        ie.connectionFailed = true;
+        ie.invalidToken = true;
+        throw ie;
+    }
     _speechToken = { token: data.token, region: data.region };
     _speechTokenExpiry = Date.now() + 8 * 60 * 1000;
+    console.log('[PRON][TOKEN] received, region:', data.region,
+                'tokenLen:', data.token.length, 'cached for 8 min');
     return _speechToken;
 }
 
@@ -774,6 +806,19 @@ function checkPronunciation(event) {
             if (err.limitExceeded) {
                 showStatus('');
                 _showPaywall();
+                return;
+            }
+
+            /* G2 / G7: dedicated server-down verdict. The Promise was
+               rejected by the connection watchdog (5s) or the canceled
+               handler \u2014 closePronResult() above already tore down the
+               listening overlay; here we just surface the right toast
+               so the user knows it's the server, not their mic. */
+            if (err.connectionFailed) {
+                showStatus("\u26A0\uFE0F Speech server bilan aloqa yo\u2018q");
+                _animateFlashcardError();
+                _hapticError();
+                setTimeout(function () { showStatus(''); }, 3500);
                 return;
             }
 
@@ -1655,9 +1700,12 @@ async function _runPronunciationAssessment(referenceText) {
     console.debug('[PRON] PronunciationAssessmentConfig referenceText:', JSON.stringify(referenceText));
 
     /* ---- Recognizer ---- */
+    var recognizerCreatedAt = Date.now();
     var recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
     pronConfig.applyTo(recognizer);
-    console.debug('[PRON] recognizer created, config applied for "' + referenceText + '"');
+    console.log('[PRON][RECOG] created, region:', tokenData.region,
+                'lang:', speechConfig.speechRecognitionLanguage,
+                'ref:', JSON.stringify(referenceText));
 
     /* ---- State flags ---- */
     var gotInterim = false;
@@ -1809,22 +1857,9 @@ async function _runPronunciationAssessment(referenceText) {
         };
     }
 
-    recognizer.sessionStarted = function () {
-        console.debug('[PRON] session started');
-        /* Patch A: Azure has confirmed the session is live and audio is
-           flowing — only now is it safe to invite the user to speak. */
-        try { showStatus('🎤 Gapiring...'); } catch (_e1) {}
-        try {
-            var listenText = document.getElementById('pronListeningText');
-            if (listenText) {
-                listenText.innerHTML = 'Tinglayapman<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span>';
-            }
-            var listenSub = document.getElementById('pronListeningSub');
-            if (listenSub) {
-                listenSub.textContent = 'So‘zni aniq ayting';
-            }
-        } catch (_e2) { /* UI optional */ }
-    };
+    /* sessionStarted is bound INSIDE the Promise body below (G1) so it
+       can clear the connection-watchdog timer that fires when Azure's
+       websocket fails before the session ever opens. */
 
     try { _showPronListening(); } catch (uiErr) { console.warn('[UI ERROR] _showPronListening:', uiErr); }
 
@@ -1837,6 +1872,12 @@ async function _runPronunciationAssessment(referenceText) {
         var hardTimeoutId;
         var silenceTimerId;
         var sessionStoppedFallbackId;
+        /* G1: connection watchdog. If sessionStarted does not fire within
+           5s of recognizeOnceAsync the websocket has failed (no token /
+           wrong region / ICE / upstream outage) and we reject fast
+           instead of waiting for the 30s hard timeout. */
+        var connectionTimeoutId;
+        var sessionStartedAt = null;
 
         function cleanup() {
             try {
@@ -1860,6 +1901,7 @@ async function _runPronunciationAssessment(referenceText) {
             clearTimeout(hardTimeoutId);
             clearTimeout(silenceTimerId);
             clearTimeout(sessionStoppedFallbackId);
+            clearTimeout(connectionTimeoutId);
             cleanup();
             _stopActivePron = null;
             fn();
@@ -1901,6 +1943,28 @@ async function _runPronunciationAssessment(referenceText) {
                 }));
             }, 2500);
         }
+
+        recognizer.sessionStarted = function () {
+            sessionStartedAt = Date.now();
+            console.log('[PRON][WS] sessionStarted — websocket open after',
+                        (sessionStartedAt - recognizerCreatedAt) + 'ms');
+            /* G1: cancel the 5s connection watchdog — Azure is alive. */
+            clearTimeout(connectionTimeoutId);
+            connectionTimeoutId = null;
+            /* Patch A: Azure has confirmed the session is live and audio is
+               flowing — only now is it safe to invite the user to speak. */
+            try { showStatus('🎤 Gapiring...'); } catch (_e1) {}
+            try {
+                var listenText = document.getElementById('pronListeningText');
+                if (listenText) {
+                    listenText.innerHTML = 'Tinglayapman<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span>';
+                }
+                var listenSub = document.getElementById('pronListeningSub');
+                if (listenSub) {
+                    listenSub.textContent = 'So‘zni aniq ayting';
+                }
+            } catch (_e2) { /* UI optional */ }
+        };
 
         recognizer.sessionStopped = function () {
             console.debug('[PRON] session stopped, gotInterim:', gotInterim, 'gotFinal:', gotFinal);
@@ -2254,17 +2318,40 @@ async function _runPronunciationAssessment(referenceText) {
 
         /* ---- canceled event ---- */
         recognizer.canceled = function (s, e) {
-            console.error('[PRON] CANCELED:', e.reason, e.errorDetails);
+            /* G5: full diagnostic — errorCode is the #1 clue when the
+               websocket fails (1006 = abnormal close, 1007 = bad payload,
+               4001 = auth). Without this we cannot tell key/region issues
+               apart from server outages. */
+            console.error('[PRON][WS] CANCELED — reason:', e && e.reason,
+                          'errorCode:', e && e.errorCode,
+                          'errorDetails:', e && e.errorDetails,
+                          'sessionStartedAt:', sessionStartedAt,
+                          'wsOpenMs:', sessionStartedAt ? (sessionStartedAt - recognizerCreatedAt) : 'NEVER');
             if (finished) return;
             if (gotInterim || gotFinal) {
                 console.warn('[PRON] Canceled but speech was detected → zero fallback');
                 resolveOnce(buildZeroResult(_getSafeInterimText()));
                 return;
             }
-            /* Error cancellation (network/auth) → reject immediately, don't wait 30s */
-            if (e.reason === SpeechSDK.CancellationReason.Error) {
-                console.error('[PRON] Canceled with Error reason → immediate reject');
-                rejectOnce(new Error(e.errorDetails || 'Xatolik yuz berdi. Qayta urinib ko\'ring.'));
+            /* G3: Error cancellation = network / auth / bad token / wrong
+               region. Reject IMMEDIATELY (no waiting 30s for hard timeout)
+               and tag the error with connectionFailed=true so the UI shows
+               the dedicated server-down verdict instead of a generic
+               "Xatolik" toast. */
+            if (e && e.reason === SpeechSDK.CancellationReason.Error) {
+                console.error('[PRON][WS] error cancellation → immediate reject (connectionFailed)');
+                var ce = new Error("Speech server bilan aloqa yo‘q");
+                ce.connectionFailed = true;
+                ce.errorCode = e.errorCode;
+                ce.errorDetails = e.errorDetails;
+                /* Only treat as websocket failure if the session never opened.
+                   If sessionStarted already fired and the error is mid-stream,
+                   surface the original Azure message instead. */
+                if (sessionStartedAt) {
+                    ce.message = e.errorDetails || 'Xatolik yuz berdi. Qayta urinib ko\'ring.';
+                    ce.connectionFailed = false;
+                }
+                rejectOnce(ce);
                 return;
             }
             /* EndOfStream / other non-error → resolve with zero */
@@ -2330,7 +2417,8 @@ async function _runPronunciationAssessment(referenceText) {
         }, WARMUP_GRACE_MS); /* close warmup-grace wrapper (Patch B) */
 
         /* ---- Start recognition ---- */
-        console.debug('[PRON] start recognition (recognizeOnceAsync)');
+        console.log('[PRON][WS] opening websocket via recognizeOnceAsync(), region:',
+                    tokenData.region);
 
         /* Patch B: start the recognizer NOW. The previous 700ms wrapper
            around recognizeOnceAsync silently dropped the user's first
@@ -2338,44 +2426,83 @@ async function _runPronunciationAssessment(referenceText) {
            early speech (spoken in response to "Gapiring...") was already
            lost. The listening-overlay swap happens in sessionStarted
            (recognizer's real ready signal) instead of via a blind timer. */
-        recognizer.recognizeOnceAsync(
-            function (result) {
-                /* BACKUP: only runs if recognized event didn't already handle it */
-                if (finished) {
-                    console.debug('[PRON] recognizeOnceAsync callback — already finished via recognized event');
-                    return;
-                }
-                console.warn('[PRON] recognizeOnceAsync callback — recognized event missed, processing here');
-                gotFinal = true;
-
-                if (!result) {
-                    if (gotInterim) {
-                        return resolveOnce(buildZeroResult(_getSafeInterimText()));
+        try {
+            recognizer.recognizeOnceAsync(
+                function (result) {
+                    /* BACKUP: only runs if recognized event didn't already handle it */
+                    if (finished) {
+                        console.debug('[PRON] recognizeOnceAsync callback — already finished via recognized event');
+                        return;
                     }
-                    return rejectOnce(new Error('Natija olinmadi.'));
-                }
+                    console.warn('[PRON] recognizeOnceAsync callback — recognized event missed, processing here');
+                    gotFinal = true;
 
-                var data = extractPronData(result);
-                if (data) {
-                    resolveOnce(data);
-                } else if (gotInterim) {
-                    resolveOnce(buildZeroResult(_getSafeInterimText()));
-                } else {
-                    var callbackErr = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
-                    callbackErr.noSpeech = true;
-                    rejectOnce(callbackErr);
-                }
-            },
-            function (err) {
-                if (finished) return;
-                console.error('[PRON] recognizeOnceAsync error:', err);
-                if (gotInterim) {
-                    resolveOnce(buildZeroResult(_getSafeInterimText()));
-                } else {
+                    if (!result) {
+                        if (gotInterim) {
+                            return resolveOnce(buildZeroResult(_getSafeInterimText()));
+                        }
+                        return rejectOnce(new Error('Natija olinmadi.'));
+                    }
+
+                    var data = extractPronData(result);
+                    if (data) {
+                        resolveOnce(data);
+                    } else if (gotInterim) {
+                        resolveOnce(buildZeroResult(_getSafeInterimText()));
+                    } else {
+                        var callbackErr = new Error('Ovoz aniqlanmadi. Balandroq gapiring.');
+                        callbackErr.noSpeech = true;
+                        rejectOnce(callbackErr);
+                    }
+                },
+                function (err) {
+                    if (finished) return;
+                    /* G4 / G5: full visibility on the SDK error path. If
+                       this fires before sessionStarted, the websocket
+                       handshake itself failed — surface it as the
+                       dedicated server-down verdict instead of a generic
+                       error toast or silent 30s wait. */
+                    console.error('[PRON][WS] recognizeOnceAsync error callback:', err,
+                                  'sessionStartedAt:', sessionStartedAt);
+                    if (gotInterim) {
+                        resolveOnce(buildZeroResult(_getSafeInterimText()));
+                        return;
+                    }
+                    if (!sessionStartedAt) {
+                        var ce = new Error("Speech server bilan aloqa yo‘q");
+                        ce.connectionFailed = true;
+                        ce.errorDetails = String(err);
+                        rejectOnce(ce);
+                        return;
+                    }
                     rejectOnce(err);
                 }
-            }
-        );
+            );
+        } catch (startErr) {
+            /* G4: synchronous SDK throw (rare — typically invalid config).
+               Reject immediately rather than letting the 30s hard timeout
+               swallow it. */
+            console.error('[PRON][WS] recognizeOnceAsync threw synchronously:', startErr);
+            var sce = new Error("Speech server bilan aloqa yo‘q");
+            sce.connectionFailed = true;
+            sce.errorDetails = String(startErr && startErr.message || startErr);
+            rejectOnce(sce);
+        }
+
+        /* G1: connection watchdog — 5s after recognizer start, if
+           sessionStarted never arrives the websocket is dead (bad token,
+           wrong region, ICE blocked, upstream outage). Reject cleanly with
+           connectionFailed=true so the catch handler shows
+           "Speech server bilan aloqa yo‘q" instead of waiting 30s for the
+           hard timeout. */
+        connectionTimeoutId = setTimeout(function () {
+            if (finished || sessionStartedAt) return;
+            console.error('[PRON][WS] connection watchdog (5s) — sessionStarted never arrived');
+            var ct = new Error("Speech server bilan aloqa yo‘q");
+            ct.connectionFailed = true;
+            ct.connectionTimeout = true;
+            rejectOnce(ct);
+        }, 5000);
     });
 }
 
@@ -3666,6 +3793,10 @@ function _wwSpeak(btn) {
             console.error('Pronunciation error:', err);
             if (err.limitExceeded) {
                 _showPaywall();
+            } else if (err.connectionFailed) {
+                /* G2: server-down verdict, same wording as the main flow. */
+                showStatus("\u26a0\ufe0f Speech server bilan aloqa yo\u2018q");
+                setTimeout(function () { showStatus(''); }, 3500);
             } else if (err.message && err.message.includes('microphone')) {
                 alert('Mikrofonga ruxsat berilmadi. Brauzer sozlamalarini tekshiring.');
             } else {
