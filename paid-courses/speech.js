@@ -1872,11 +1872,18 @@ async function _runPronunciationAssessment(referenceText) {
         var hardTimeoutId;
         var silenceTimerId;
         var sessionStoppedFallbackId;
-        /* G1: connection watchdog. If sessionStarted does not fire within
-           5s of recognizeOnceAsync the websocket has failed (no token /
-           wrong region / ICE / upstream outage) and we reject fast
-           instead of waiting for the 30s hard timeout. */
-        var connectionTimeoutId;
+        /* Connection watchdog (adaptive — see also the schedule below):
+             - connectionWarnTimeoutId fires at 5s and ONLY changes the UI
+               to "Server bilan aloqa o‘rnatilmoqda…". It does NOT reject
+               and does NOT touch the recognizer; the websocket may still
+               open later (we have observed real opens at 11s).
+             - connectionFailTimeoutId fires at 13s and DOES reject with
+               connectionFailed=true if sessionStarted still has not
+               arrived. This replaces the single-shot 5s reject that was
+               wrongly classifying slow-but-eventually-good websockets
+               as "Speech server bilan aloqa yo‘q". */
+        var connectionWarnTimeoutId;
+        var connectionFailTimeoutId;
         var sessionStartedAt = null;
 
         function cleanup() {
@@ -1901,7 +1908,8 @@ async function _runPronunciationAssessment(referenceText) {
             clearTimeout(hardTimeoutId);
             clearTimeout(silenceTimerId);
             clearTimeout(sessionStoppedFallbackId);
-            clearTimeout(connectionTimeoutId);
+            clearTimeout(connectionWarnTimeoutId);
+            clearTimeout(connectionFailTimeoutId);
             cleanup();
             _stopActivePron = null;
             fn();
@@ -1948,13 +1956,38 @@ async function _runPronunciationAssessment(referenceText) {
             sessionStartedAt = Date.now();
             console.log('[PRON][WS] sessionStarted — websocket open after',
                         (sessionStartedAt - recognizerCreatedAt) + 'ms');
-            /* G1: cancel the 5s connection watchdog — Azure is alive. */
-            clearTimeout(connectionTimeoutId);
-            connectionTimeoutId = null;
+            /* Adaptive watchdog: cancel BOTH the 5s warn and the 13s fail
+               timers — Azure is alive, neither should run anymore. Setting
+               the IDs to null defends against the rare case where a
+               late-queued timer body still gets a chance to execute; it
+               also re-checks `sessionStartedAt` and bails. */
+            clearTimeout(connectionWarnTimeoutId);
+            clearTimeout(connectionFailTimeoutId);
+            connectionWarnTimeoutId = null;
+            connectionFailTimeoutId = null;
             /* Patch A: Azure has confirmed the session is live and audio is
                flowing — only now is it safe to invite the user to speak. */
             try { showStatus('🎤 Gapiring...'); } catch (_e1) {}
             try {
+                /* Fade the preparation loader out smoothly (350ms opacity
+                   transition via .is-hiding) so it doesn't snap to
+                   display:none under the "Tinglayapman…" text. After the
+                   fade we collapse it to display:none so it stops
+                   consuming layout / animation frames. The listening
+                   dots in the text continue to convey activity. */
+                var loaderEl = document.querySelector('#pronCard .pron-loader');
+                if (loaderEl) {
+                    loaderEl.classList.add('is-hiding');
+                    setTimeout(function () {
+                        try {
+                            /* Verify the element is still the same loader
+                               (overlay may have been swapped to results) */
+                            if (loaderEl && loaderEl.classList.contains('is-hiding')) {
+                                loaderEl.style.display = 'none';
+                            }
+                        } catch (_hideErr) { /* DOM gone — fine */ }
+                    }, 400);
+                }
                 var listenText = document.getElementById('pronListeningText');
                 if (listenText) {
                     listenText.innerHTML = 'Tinglayapman<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span>';
@@ -2489,20 +2522,44 @@ async function _runPronunciationAssessment(referenceText) {
             rejectOnce(sce);
         }
 
-        /* G1: connection watchdog — 5s after recognizer start, if
-           sessionStarted never arrives the websocket is dead (bad token,
-           wrong region, ICE blocked, upstream outage). Reject cleanly with
-           connectionFailed=true so the catch handler shows
-           "Speech server bilan aloqa yo‘q" instead of waiting 30s for the
-           hard timeout. */
-        connectionTimeoutId = setTimeout(function () {
+        /* G1: ADAPTIVE connection watchdog.
+           Two staged timers replace the original single 5s reject:
+             - 5s WARN: ONLY swaps preparation copy to
+               "Server bilan aloqa o‘rnatilmoqda…". Does NOT reject and
+               does NOT touch the recognizer. The websocket may still
+               open later (real opens at ~11s have been observed).
+             - 13s FAIL: rejects with connectionFailed=true so the catch
+               handler shows "Speech server bilan aloqa yo‘q".
+           Both IDs are cleared in cleanup() and in sessionStarted so a
+           late-firing timer cannot overwrite the listening UI or trigger
+           a false error after Azure connected. */
+        connectionWarnTimeoutId = setTimeout(function () {
             if (finished || sessionStartedAt) return;
-            console.error('[PRON][WS] connection watchdog (5s) — sessionStarted never arrived');
+            console.warn('[PRON][WS] connection slow (5s) — switching UI to "connecting" state');
+            try {
+                var warnText = document.getElementById('pronListeningText');
+                if (warnText) {
+                    warnText.innerHTML = 'Server bilan aloqa o‘rnatilmoqda<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span>';
+                }
+                var warnSub = document.getElementById('pronListeningSub');
+                if (warnSub) {
+                    warnSub.textContent = 'Biroz kuting, ulanmoqda...';
+                }
+                /* Phase color: green → orange so the user sees the loader
+                   ACK the slow connection ("not frozen — still connecting"). */
+                var warnLoader = document.querySelector('#pronCard .pron-loader');
+                if (warnLoader) warnLoader.classList.add('is-connecting');
+            } catch (_warnUiErr) { /* UI-only, ignore */ }
+        }, 5000);
+
+        connectionFailTimeoutId = setTimeout(function () {
+            if (finished || sessionStartedAt) return;
+            console.error('[PRON][WS] connection watchdog (13s) — sessionStarted never arrived');
             var ct = new Error("Speech server bilan aloqa yo‘q");
             ct.connectionFailed = true;
             ct.connectionTimeout = true;
             rejectOnce(ct);
-        }, 5000);
+        }, 13000);
     });
 }
 
@@ -3091,6 +3148,22 @@ function _ensurePronOverlay() {
         '.pron-listening-dots span:nth-child(2){animation-delay:.2s}',
         '.pron-listening-dots span:nth-child(3){animation-delay:.4s}',
         '@keyframes pronDot{0%,80%,100%{opacity:.3}40%{opacity:1}}',
+        /* preparation loader (3 pulsing dots) — shown during the
+           Mikrofon-tayyorlanmoqda / aloqa-o‘rnatilmoqda phases and
+           faded out by sessionStarted via #pronCard .pron-loader.
+           Phase colors:
+             - default (preparing)    → green   #58cc02
+             - .is-connecting (5s+)   → orange  #ffc800
+           Fade-out is opacity-only via .is-hiding so the dots melt
+           away instead of snapping. */
+        '.pron-loader{display:flex;justify-content:center;align-items:center;gap:8px;min-height:18px;margin:2px 0 4px;opacity:1;transition:opacity .35s ease}',
+        '.pron-loader.is-hiding{opacity:0;pointer-events:none}',
+        '.pron-loader span{width:9px;height:9px;border-radius:50%;background:#58cc02;opacity:.4;animation:pronLoaderPulse 1.2s ease-in-out infinite;will-change:transform,opacity;transition:background .25s ease}',
+        '.pron-loader.is-connecting span{background:#ffc800}',
+        '.pron-loader span:nth-child(2){animation-delay:.15s}',
+        '.pron-loader span:nth-child(3){animation-delay:.3s}',
+        '@keyframes pronLoaderPulse{0%,100%{transform:scale(.7);opacity:.35}50%{transform:scale(1);opacity:1}}',
+        '@media (prefers-reduced-motion: reduce){.pron-loader span{animation-duration:2.4s}.pron-loader{transition:opacity .2s linear}}',
         /* word feedback highlights */
         '.wf-inline{margin-top:10px;font-size:18px;font-weight:600;line-height:1.6;text-align:center}',
         '.wf-word{padding:2px 6px;border-radius:6px;margin-right:4px;display:inline-block}',
@@ -3173,6 +3246,7 @@ function _showPronListening() {
         '<div class="pron-listening">'
       + '  <div class="pron-mic">\uD83C\uDFA4</div>'
       + '  <div class="pron-listening-text" id="pronListeningText">Mikrofon tayyorlanmoqda<span class="pron-listening-dots"><span>.</span><span>.</span><span>.</span></span></div>'
+      + '  <div class="pron-loader" aria-hidden="true"><span></span><span></span><span></span></div>'
       + '  <div id="pronListeningSub" style="font-size:.82rem;color:#aaa">Bir soniya kuting</div>'
       + '</div>';
     document.getElementById(_PRON_OVERLAY_ID).classList.add('active');
