@@ -1334,22 +1334,22 @@
 
         // ==================== INITIALIZATION ====================
         window.addEventListener('DOMContentLoaded', function() {
-            // Create animated background
-            createAnimatedBackground();
-
             // Load user progress (async, but don't wait)
             loadUserProgress().catch(err => console.log('Progress load failed:', err));
 
-            // Always show topic selection
+            // Always show topic selection (rendered synchronously)
             loadTopics();
 
-            // Hide loading screen
+            // Hide the loading screen quickly — topic content is already on
+            // screen. The decorative background is built afterwards so its
+            // 15 nodes + image loads stay off the startup critical path.
             setTimeout(() => {
                 const loadingScreen = document.getElementById('loadingScreen');
                 if (loadingScreen) {
                     loadingScreen.classList.add('hidden');
                 }
-            }, 800);
+                createAnimatedBackground();
+            }, 200);
         });
 
         // Create animated background like in index.html

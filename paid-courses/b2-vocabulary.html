@@ -1042,13 +1042,17 @@
 
         // ==================== INITIALIZATION ====================
         window.addEventListener('DOMContentLoaded', () => {
-            createBackgroundParticles();
             loadProgress();
             renderTopics();
-            
+
+            // Hide the loading screen quickly — topic content is already
+            // rendered. The decorative background is built afterwards so it
+            // stays off the startup critical path.
             setTimeout(() => {
-                document.getElementById('loadingScreen').classList.add('hidden');
-            }, 1000);
+                const ls = document.getElementById('loadingScreen');
+                if (ls) ls.classList.add('hidden');
+                createBackgroundParticles();
+            }, 200);
         });
 
         function createBackgroundParticles() {

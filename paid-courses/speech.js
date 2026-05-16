@@ -1364,12 +1364,12 @@ function _finalizePronunciationResult(result, referenceText) {
 
 /* Score-driven verdict. Azure metrics are advisory; score is truth.
    Tiers kept in sync with _getCategory:
-   ≥94 excellent · 65–93 good · 45–64 almost · <45 bad. */
+   ≥92 excellent · 76–91 good · 56–75 almost · <56 bad. */
 function _getPronunciationReason(score) {
     var s = Number(score) || 0;
-    if (s >= 94) return 'excellent';
-    if (s >= 65) return 'good';
-    if (s >= 45) return 'almost';
+    if (s >= 92) return 'excellent';
+    if (s >= 76) return 'good';
+    if (s >= 56) return 'almost';
     return 'bad';
 }
 
@@ -1399,19 +1399,19 @@ var _PRON_CATEGORY = {
 };
 
 /* Thresholds aligned with the progression gate so the verdict the user
-   SEES always matches whether they advance. RECALIBRATED for a realistic
-   distribution (Ajoyib ~10-20% · Yaxshi ~50-70% · O‘rtacha ~15-30%):
-     excellent (Ajoyib)  ≥ 94  — rare; near-perfect, high fluency
-     good      (Yaxshi)  ≥ 65  — common; understandable, minor accent — PASS
-     average   (O‘rtacha)≥ 45  — noticeable issues — does NOT pass
-     bad                 < 45  — wrong / silence — does NOT pass
-   The Ajoyib floor was raised (88→94) and the lift trimmed so "Ajoyib" is
-   genuinely earned instead of being the default for any decent attempt. */
+   SEES always matches whether they advance. REBALANCED — the 94 floor made
+   "Ajoyib" almost unreachable and collapsed everything into "Yaxshi". The
+   bands are now spread across the realistic score range a correct word
+   produces (~56-100) for a natural distribution:
+     excellent (Ajoyib)  ≥ 92  — clean, high-fluency pronunciation  (~20-35%)
+     good      (Yaxshi)  ≥ 76  — understandable but imperfect — PASS (~40-55%)
+     average   (O‘rtacha)≥ 56  — noticeable issues — does NOT pass  (~10-25%)
+     bad                 < 56  — wrong / silence — does NOT pass */
 function _getCategory(score) {
     var s = Number(score) || 0;
-    if (s >= 94) return 'excellent';
-    if (s >= 65) return 'good';
-    if (s >= 45) return 'average';
+    if (s >= 92) return 'excellent';
+    if (s >= 76) return 'good';
+    if (s >= 56) return 'average';
     return 'bad';
 }
 
@@ -1864,12 +1864,13 @@ async function _runPronunciationAssessment(referenceText) {
         }
 
         var finalized = _finalizePronunciationResult(result, referenceText);
-        /* Strong token match → never graded below the O‘rtacha floor (45,
-           kept in sync with _getCategory's 'average' boundary). */
+        /* Strong token match → never graded below the O‘rtacha floor (56,
+           kept in sync with _getCategory's 'average' boundary). A correctly
+           recognised word is at worst O‘rtacha, never a "bad" fail. */
         if (isStrongMatch && finalized.reason !== 'fake_match' && finalized.reason !== 'wrong_word'
-            && (Number(finalized.finalScore) || 0) < 45) {
-            finalized.finalScore = 45;
-            finalized.pronunciationScore = 45;
+            && (Number(finalized.finalScore) || 0) < 56) {
+            finalized.finalScore = 56;
+            finalized.pronunciationScore = 56;
             if (finalized.reason === 'bad') finalized.reason = 'almost';
         }
         return finalized;
@@ -1907,6 +1908,7 @@ async function _runPronunciationAssessment(referenceText) {
         var hardTimeoutId;
         var silenceTimerId;
         var sessionStoppedFallbackId;
+        var processingTimerId;
         /* Connection watchdog (adaptive — see also the schedule below):
              - connectionWarnTimeoutId fires at 5s and ONLY changes the UI
                to "Server bilan aloqa o‘rnatilmoqda…". It does NOT reject
@@ -1945,6 +1947,8 @@ async function _runPronunciationAssessment(referenceText) {
             clearTimeout(sessionStoppedFallbackId);
             clearTimeout(connectionWarnTimeoutId);
             clearTimeout(connectionFailTimeoutId);
+            clearTimeout(processingTimerId);
+            try { _hideProcessingLoader(); } catch (e) { /* ignore */ }
             cleanup();
             _stopActivePron = null;
             fn();
@@ -2295,9 +2299,9 @@ async function _runPronunciationAssessment(referenceText) {
                        (O‘rtacha / Yaxshi / Ajoyib) instead of "Aniqroq gapiring". */
                     finalized.reason = _getPronunciationReason(Number(finalized.finalScore) || 0);
                 }
-                if ((Number(finalized.finalScore) || 0) < 45) {
-                    finalized.finalScore = 45;
-                    finalized.pronunciationScore = 45;
+                if ((Number(finalized.finalScore) || 0) < 56) {
+                    finalized.finalScore = 56;
+                    finalized.pronunciationScore = 56;
                     if (finalized.reason === 'bad') finalized.reason = 'almost';
                 }
             }
@@ -2316,6 +2320,17 @@ async function _runPronunciationAssessment(referenceText) {
                 if (text) lastInterimText = text;
                 clearTimeout(sessionStoppedFallbackId);
                 scheduleSilenceFallback();
+
+                /* Show the processing pill ~2s after the LAST interim — i.e.
+                   once the user has stopped talking and we are waiting on
+                   Azure's score. Reset on every interim so it never shows
+                   while the user is still speaking. */
+                clearTimeout(processingTimerId);
+                processingTimerId = setTimeout(function () {
+                    if (!finished) {
+                        try { _showProcessingLoader(); } catch (uiErr) { /* ignore */ }
+                    }
+                }, 2000);
 
                 console.debug('[PRON] INTERIM:', e.result.text);
             }
@@ -3717,7 +3732,24 @@ function _ensureNextLockStyles() {
         '._next-warn-toast::before{content:"\\26A0\\FE0F";font-size:1.05rem;flex:0 0 auto;}',
         '@media(max-width:480px){._next-warn-toast{bottom:16px;font-size:.86rem;',
         'padding:11px 15px;left:8px;right:8px;max-width:none;transform:translateY(18px);}',
-        '._next-warn-toast.show{transform:translateY(0);}}'
+        '._next-warn-toast.show{transform:translateY(0);}}',
+        /* lightweight "processing" pill shown while waiting for the score */
+        '._pron-processing{position:fixed;left:50%;bottom:90px;',
+        'transform:translateX(-50%) translateY(10px);z-index:9999;',
+        'display:flex;align-items:center;gap:10px;padding:11px 18px;border-radius:30px;',
+        'background:rgba(28,30,38,.97);color:#fff;',
+        'font:600 .9rem system-ui,-apple-system,sans-serif;',
+        'box-shadow:0 6px 24px rgba(0,0,0,.3);opacity:0;pointer-events:none;',
+        'transition:opacity .25s ease,transform .25s ease;}',
+        '._pron-processing.show{opacity:1;transform:translateX(-50%) translateY(0);}',
+        '._pron-processing-dots{display:inline-flex;gap:4px;}',
+        '._pron-processing-dots i{width:6px;height:6px;border-radius:50%;',
+        'background:#7c9cff;display:block;animation:_pronDot 1s infinite ease-in-out;}',
+        '._pron-processing-dots i:nth-child(2){animation-delay:.15s;}',
+        '._pron-processing-dots i:nth-child(3){animation-delay:.3s;}',
+        '@keyframes _pronDot{0%,60%,100%{transform:scale(.6);opacity:.4;}',
+        '30%{transform:scale(1);opacity:1;}}',
+        '@media(max-width:480px){._pron-processing{bottom:78px;font-size:.84rem;padding:10px 15px;}}'
     ].join('');
     document.head.appendChild(s);
 }
@@ -3761,6 +3793,31 @@ function _showNextWarning() {
     _nextWarnTimer = setTimeout(function () {
         t.classList.remove('show');
     }, 7000);
+}
+
+/* ---- Speech "processing" loader ----
+   Small, non-blocking pill shown ~2s after the user stops speaking, while
+   we wait for Azure to return the pronunciation score. Removes the
+   "spoke, then nothing for 3-5s" dead air. Hidden the moment a result
+   (or error) resolves. */
+function _showProcessingLoader() {
+    _ensureNextLockStyles();
+    var l = document.getElementById('_pronProcessing');
+    if (!l) {
+        l = document.createElement('div');
+        l.id = '_pronProcessing';
+        l.className = '_pron-processing';
+        l.innerHTML = '<span class="_pron-processing-dots"><i></i><i></i><i></i></span>'
+                    + '<span>Tekshirilmoqda...</span>';
+        document.body.appendChild(l);
+    }
+    void l.offsetWidth;            /* reflow so the fade-in always replays */
+    l.classList.add('show');
+}
+
+function _hideProcessingLoader() {
+    var l = document.getElementById('_pronProcessing');
+    if (l) l.classList.remove('show');
 }
 
 /* One-time wiring: inject styles + delegate clicks for the next button. */
