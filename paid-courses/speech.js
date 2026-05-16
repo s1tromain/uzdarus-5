@@ -731,6 +731,22 @@ function checkPronunciation(event) {
             var didPass = !hardFailReason
                 && (passCategory === 'excellent' || passCategory === 'good');
 
+            /* Optional grading diagnostics — set window.SPEECH_DEBUG = true
+               in the console to inspect transcript / similarity / score. */
+            if (typeof window !== 'undefined' && window.SPEECH_DEBUG) {
+                console.log('[GRADE]', {
+                    reference: word && word.ru,
+                    transcript: result.recognizedText || '',
+                    similarity: result.matchRatio,
+                    accuracy: result.accuracyScore,
+                    fluency: result.fluencyScore,
+                    finalScore: score,
+                    category: passCategory,
+                    reason: result.reason,
+                    didPass: didPass
+                });
+            }
+
             /* ============ SUCCESS: Ajoyib / Yaxshi ============ */
             if (didPass) {
                 showStatus('\uD83D\uDD25 Zo\'r!');
@@ -1201,19 +1217,15 @@ function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
         toliqlik = Math.min(toliqlik, normalizedFluency + 15);
     }
 
-    /* Soft metric lift before avg(): add a transitional band so near-exact
-       matches from Azure still get some headroom, while strong matches get a
-       more visible lift before the final average is computed. */
+    /* Soft metric lift before avg(). RECALIBRATED — was 1.12 / 1.05 plus a
+       separate 1.05 fluency lift. That stacked inflation pushed almost every
+       acceptable attempt into the Ajoyib band and Yaxshi/O‘rtacha almost
+       never appeared. A single small 1.03 nudge for near-exact matches keeps
+       genuinely strong attempts rewarded while leaving real headroom between
+       the Yaxshi and Ajoyib tiers. */
     if (exact >= 0.85) {
-        aniqlik *= 1.12;
-        toliqlik *= 1.12;
-    } else if (exact >= 0.75) {
-        aniqlik *= 1.05;
-        toliqlik *= 1.05;
-    }
-
-    if (normalizedFluency !== null && normalizedFluency >= 55) {
-        ravonlik *= 1.05;
+        aniqlik *= 1.03;
+        toliqlik *= 1.03;
     }
 
     aniqlik = Math.min(aniqlik, 100);
@@ -1351,12 +1363,13 @@ function _finalizePronunciationResult(result, referenceText) {
 }
 
 /* Score-driven verdict. Azure metrics are advisory; score is truth.
-   Tiers:  ≥90 excellent · 70–89 good · 40–69 almost · <40 bad. */
+   Tiers kept in sync with _getCategory:
+   ≥94 excellent · 65–93 good · 45–64 almost · <45 bad. */
 function _getPronunciationReason(score) {
     var s = Number(score) || 0;
-    if (s >= 90) return 'excellent';
-    if (s >= 70) return 'good';
-    if (s >= 40) return 'almost';
+    if (s >= 94) return 'excellent';
+    if (s >= 65) return 'good';
+    if (s >= 45) return 'almost';
     return 'bad';
 }
 
@@ -1385,19 +1398,20 @@ var _PRON_CATEGORY = {
     bad:       { text: 'Yaxshi emas', emoji: '😕', advice: 'So‘zni to‘liq ayting', verdictClass: 'bad',  animClass: 'anim-fail'    }
 };
 
-/* Thresholds are aligned with the progression gate so the verdict the
-   user SEES always matches whether they advance:
-     excellent (Ajoyib)  ≥ 88  — genuinely accurate pronunciation
-     good      (Yaxshi)  ≥ 70  — understandable, minimum PASSING tier
-     average   (O‘rtacha)≥ 50  — obvious issues, does NOT pass
-     bad                 < 50  — wrong / silence, does NOT pass
-   Previously 'good' started at 60 while the gate required 70, so a
-   65-point attempt showed "Yaxshi" yet refused to advance. */
+/* Thresholds aligned with the progression gate so the verdict the user
+   SEES always matches whether they advance. RECALIBRATED for a realistic
+   distribution (Ajoyib ~10-20% · Yaxshi ~50-70% · O‘rtacha ~15-30%):
+     excellent (Ajoyib)  ≥ 94  — rare; near-perfect, high fluency
+     good      (Yaxshi)  ≥ 65  — common; understandable, minor accent — PASS
+     average   (O‘rtacha)≥ 45  — noticeable issues — does NOT pass
+     bad                 < 45  — wrong / silence — does NOT pass
+   The Ajoyib floor was raised (88→94) and the lift trimmed so "Ajoyib" is
+   genuinely earned instead of being the default for any decent attempt. */
 function _getCategory(score) {
     var s = Number(score) || 0;
-    if (s >= 88) return 'excellent';
-    if (s >= 70) return 'good';
-    if (s >= 50) return 'average';
+    if (s >= 94) return 'excellent';
+    if (s >= 65) return 'good';
+    if (s >= 45) return 'average';
     return 'bad';
 }
 
@@ -1850,10 +1864,12 @@ async function _runPronunciationAssessment(referenceText) {
         }
 
         var finalized = _finalizePronunciationResult(result, referenceText);
+        /* Strong token match → never graded below the O‘rtacha floor (45,
+           kept in sync with _getCategory's 'average' boundary). */
         if (isStrongMatch && finalized.reason !== 'fake_match' && finalized.reason !== 'wrong_word'
-            && (Number(finalized.finalScore) || 0) < 40) {
-            finalized.finalScore = 40;
-            finalized.pronunciationScore = 40;
+            && (Number(finalized.finalScore) || 0) < 45) {
+            finalized.finalScore = 45;
+            finalized.pronunciationScore = 45;
             if (finalized.reason === 'bad') finalized.reason = 'almost';
         }
         return finalized;
@@ -2279,9 +2295,9 @@ async function _runPronunciationAssessment(referenceText) {
                        (O‘rtacha / Yaxshi / Ajoyib) instead of "Aniqroq gapiring". */
                     finalized.reason = _getPronunciationReason(Number(finalized.finalScore) || 0);
                 }
-                if ((Number(finalized.finalScore) || 0) < 40) {
-                    finalized.finalScore = 40;
-                    finalized.pronunciationScore = 40;
+                if ((Number(finalized.finalScore) || 0) < 45) {
+                    finalized.finalScore = 45;
+                    finalized.pronunciationScore = 45;
                     if (finalized.reason === 'bad') finalized.reason = 'almost';
                 }
             }
@@ -2756,6 +2772,9 @@ function _applyWordProgressUI(topicId) {
 
     /* Also update audio/pronunciation buttons for the current card */
     _updateCardButtonStates(topicId);
+
+    /* Keep the "Keyingi" button locked/unlocked in sync with progress */
+    if (typeof _refreshNextLock === 'function') _refreshNextLock();
 }
 
 /** Disable audio buttons if current word is locked. */
@@ -3350,7 +3369,9 @@ function _showPronResult(refText, r, attemptId) {
             };
         }
 
-        console.log('FINAL SCORE:', { finalScore: finalScore, category: category, reason: r.reason });
+        if (typeof window !== 'undefined' && window.SPEECH_DEBUG) {
+            console.log('[GRADE] render:', { finalScore: finalScore, category: category, reason: r.reason });
+        }
 
         var html = '';
 
@@ -3665,9 +3686,113 @@ function generatePronunciationFeedback(result) {
 }
 
 /* ================================================================== */
+/*  "Keyingi" (next word) lock + warning toast                        */
+/* ================================================================== */
+
+/** Inject CSS for the locked next-button state and the warning toast. */
+function _ensureNextLockStyles() {
+    if (document.getElementById('nextLockCSS')) return;
+    var s = document.createElement('style');
+    s.id = 'nextLockCSS';
+    s.textContent = [
+        /* locked "Keyingi" button — grey, low opacity, no hover glow */
+        '.control-btn.next-locked,.control-btn.primary.next-locked{',
+        'background:#c9ccd6 !important;background-image:none !important;',
+        'color:#71757f !important;box-shadow:none !important;',
+        'cursor:not-allowed !important;opacity:.55 !important;',
+        'filter:grayscale(1) !important;transform:none !important;}',
+        '.control-btn.next-locked:hover,.control-btn.primary.next-locked:hover{',
+        'background:#c9ccd6 !important;background-image:none !important;',
+        'box-shadow:none !important;transform:none !important;}',
+        /* floating, non-blocking warning toast */
+        '._next-warn-toast{position:fixed;left:50%;bottom:24px;',
+        'transform:translateX(-50%) translateY(18px);z-index:10000;',
+        'max-width:90vw;box-sizing:border-box;padding:13px 20px;border-radius:14px;',
+        'background:rgba(28,30,38,.97);color:#fff;font-size:.93rem;font-weight:600;',
+        'font-family:system-ui,-apple-system,sans-serif;line-height:1.3;',
+        'box-shadow:0 8px 30px rgba(0,0,0,.34);display:flex;align-items:center;',
+        'gap:9px;pointer-events:none;opacity:0;',
+        'transition:opacity .3s ease,transform .3s ease;}',
+        '._next-warn-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}',
+        '._next-warn-toast::before{content:"\\26A0\\FE0F";font-size:1.05rem;flex:0 0 auto;}',
+        '@media(max-width:480px){._next-warn-toast{bottom:16px;font-size:.86rem;',
+        'padding:11px 15px;left:8px;right:8px;max-width:none;transform:translateY(18px);}',
+        '._next-warn-toast.show{transform:translateY(0);}}'
+    ].join('');
+    document.head.appendChild(s);
+}
+
+/** True when the word AFTER the current card is still locked
+    (i.e. the current word has not been passed yet). */
+function _isNextWordLocked() {
+    var w = (typeof window.getCurrentWord === 'function') ? window.getCurrentWord() : null;
+    if (!w || w.topicId == null) return false;
+    var idx = (typeof w.wordIndex === 'number') ? w.wordIndex
+            : (typeof window.currentWordIndex === 'number') ? window.currentWordIndex : -1;
+    if (idx < 0) return false;
+    return _isWordLocked(w.topicId, idx + 1);
+}
+
+/** Grey-out / re-enable the "Keyingi" button to match the lock state. */
+function _refreshNextLock() {
+    var btn = document.getElementById('nextWordBtn');
+    if (!btn) return;
+    var locked = _isNextWordLocked();
+    btn.classList.toggle('next-locked', locked);
+    btn.setAttribute('aria-disabled', locked ? 'true' : 'false');
+}
+
+var _nextWarnTimer = null;
+/** Floating, non-blocking toast shown when a locked "Keyingi" is clicked.
+    Smooth fade in/out, auto-hides after ~7s. */
+function _showNextWarning() {
+    _ensureNextLockStyles();
+    var t = document.getElementById('_nextWarnToast');
+    if (!t) {
+        t = document.createElement('div');
+        t.id = '_nextWarnToast';
+        t.className = '_next-warn-toast';
+        document.body.appendChild(t);
+    }
+    t.textContent = 'Avval so‘zni to‘g‘ri ayting';
+    void t.offsetWidth;            /* reflow so the fade-in always replays */
+    t.classList.add('show');
+    if (_nextWarnTimer) clearTimeout(_nextWarnTimer);
+    _nextWarnTimer = setTimeout(function () {
+        t.classList.remove('show');
+    }, 7000);
+}
+
+/* One-time wiring: inject styles + delegate clicks for the next button. */
+(function _initNextLock() {
+    function setup() {
+        _ensureNextLockStyles();
+        document.addEventListener('click', function (e) {
+            var tgt = e.target;
+            if (!tgt || !tgt.closest) return;
+            /* clicked a locked "Keyingi" → show the floating warning */
+            if (tgt.closest('#nextWordBtn') && _isNextWordLocked()) {
+                _showNextWarning();
+            }
+            /* any flashcard nav click may change the active card */
+            if (tgt.closest('.control-btn')) {
+                setTimeout(_refreshNextLock, 0);
+            }
+        }, true);
+        _refreshNextLock();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setup);
+    } else {
+        setup();
+    }
+})();
+
+/* ================================================================== */
 /*  Global exports — make functions accessible from onclick handlers  */
 /* ================================================================== */
 window.checkPronunciation = checkPronunciation;
+window.refreshNextLock = _refreshNextLock;
 window.playAudio = playAudio;
 window.showStatus = showStatus;
 window.initWordProgress = initWordProgress;
