@@ -2481,8 +2481,8 @@
         </div>
     </section>
 
-    <!-- ====== FINAL EXAM ENTRY BLOCK ====== -->
-    <section class="content-section" id="finalExamEntry">
+    <!-- ====== FINAL EXAM ENTRY BLOCK (shown ONCE, only after ALL topics completed) ====== -->
+    <section class="content-section" id="finalExamEntry" style="display:none;">
         <div class="final-exam-entry">
             <span class="final-exam-badge"><i class="fas fa-crown"></i> YAKUNIY IMTIHON</span>
             <span class="final-exam-trophy">🏆</span>
@@ -10595,6 +10595,16 @@
                 completedFreeCount: completedFreeTopics.length,
                 progressPercent: Math.round(progress) + '%'
             });
+
+            // Final exam entry: render exactly ONCE, ONLY after ALL topics are completed.
+            // Previously the block was always visible, so it appeared under every topic.
+            const finalExamEntry = document.getElementById('finalExamEntry');
+            if (finalExamEntry) {
+                const allTopicIds = courseData.topics.map(t => t.id);
+                const allCompleted = allTopicIds.length > 0 &&
+                    allTopicIds.every(id => completedTopics.includes(id));
+                finalExamEntry.style.display = allCompleted ? '' : 'none';
+            }
         }
 
         // Subscription function

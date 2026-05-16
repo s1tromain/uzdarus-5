@@ -881,6 +881,7 @@
         }
     </style>
     <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+    <script>window.VOCAB_COURSE = 'b1';</script>
     <script src="/paid-courses/speech.js"></script>
 </head>
 
@@ -918,7 +919,7 @@
             <div class="speech-progress-bar" id="speechProgressBar">
                 <div class="speech-progress-fill" id="speechProgressFill"></div>
             </div>
-            <div id="progressText" style="font-size:.78rem;font-weight:700;color:rgba(255,255,255,.7);min-width:44px;text-align:center"></div>
+            <!-- progressText removed: duplicated the counter shown by #progressIndicator -->
             <div class="progress-indicator" id="progressIndicator">1 / 35</div>
         </div>
         <div class="flashcard-container">

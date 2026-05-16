@@ -720,8 +720,19 @@ function checkPronunciation(event) {
 
             var score = Number(result.finalScore) || 0;
 
-            /* ============ SUCCESS: score >= pass threshold ============ */
-            if (score >= _PRON_PASS_SCORE) {
+            /* PASSING RULE — single source of truth shared with the result
+               UI (_getCategory). Only "Ajoyib" (excellent) or "Yaxshi"
+               (good) advance to the next word. "O‘rtacha" (average) and any
+               bad / silence / wrong-word / fake-echo result must NOT pass. */
+            var passCategory = _getCategory(score);
+            var hardFailReason = result.reason === 'no_speech'
+                || result.reason === 'wrong_word'
+                || result.reason === 'fake_match';
+            var didPass = !hardFailReason
+                && (passCategory === 'excellent' || passCategory === 'good');
+
+            /* ============ SUCCESS: Ajoyib / Yaxshi ============ */
+            if (didPass) {
                 showStatus('\uD83D\uDD25 Zo\'r!');
                 _animateFlashcardSuccess();
                 _playSoundSuccess();
@@ -752,8 +763,8 @@ function checkPronunciation(event) {
                     };
                 }
 
-            /* ============ TRY AGAIN: score 50-69 (O\u2018rtacha) ============ */
-            } else if (score >= 50) {
+            /* ============ TRY AGAIN: O\u2018rtacha (average) \u2014 does NOT pass ============ */
+            } else if (!hardFailReason && passCategory === 'average') {
                 showStatus('\uD83D\uDCAA Yana urinib ko\'ring');
                 _animateFlashcardError();
                 _haptic(30);
@@ -763,7 +774,7 @@ function checkPronunciation(event) {
                 try { _showPronResult(word.ru, result, attemptId); } catch (uiErr) { console.warn('[UI ERROR]', uiErr); }
                 /* Do NOT unlock the word — user must retry */
 
-            /* ============ FAIL: score < 50 (Yaxshi emas) ============ */
+            /* ====== FAIL: bad pronunciation / silence / wrong word ====== */
             } else {
                 showStatus('\u274C Qayta urinib ko\'ring');
                 _animateFlashcardError();
@@ -1374,11 +1385,19 @@ var _PRON_CATEGORY = {
     bad:       { text: 'Yaxshi emas', emoji: '😕', advice: 'So‘zni to‘liq ayting', verdictClass: 'bad',  animClass: 'anim-fail'    }
 };
 
+/* Thresholds are aligned with the progression gate so the verdict the
+   user SEES always matches whether they advance:
+     excellent (Ajoyib)  ≥ 88  — genuinely accurate pronunciation
+     good      (Yaxshi)  ≥ 70  — understandable, minimum PASSING tier
+     average   (O‘rtacha)≥ 50  — obvious issues, does NOT pass
+     bad                 < 50  — wrong / silence, does NOT pass
+   Previously 'good' started at 60 while the gate required 70, so a
+   65-point attempt showed "Yaxshi" yet refused to advance. */
 function _getCategory(score) {
     var s = Number(score) || 0;
-    if (s >= 75) return 'excellent';
-    if (s >= 60) return 'good';
-    if (s >= 40) return 'average';
+    if (s >= 88) return 'excellent';
+    if (s >= 70) return 'good';
+    if (s >= 50) return 'average';
     return 'bad';
 }
 
@@ -2568,16 +2587,34 @@ async function _runPronunciationAssessment(referenceText) {
 /* ================================================================== */
 const _PROGRESS_KEY = 'uzdarus_word_progress';
 
+/* Per-account, per-course storage key.
+   - Per-account: a single global key used to leak pronunciation progress
+     between accounts on a shared device.
+   - Per-course: the inner object is keyed by topicId only, so without a
+     course namespace "A1 topic 1" and "A2 topic 1" collided whenever their
+     word counts matched. Each vocabulary page declares window.VOCAB_COURSE
+     (e.g. 'a1', 'a2', 'a1-demo'); unknown pages fall back gracefully. */
+function _progressKey() {
+    var uid = '';
+    try {
+        var cu = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        if (cu) uid = String(cu.id || cu.uid || cu.email || '');
+    } catch (e) { /* ignore */ }
+    var course = String((typeof window !== 'undefined' && window.VOCAB_COURSE) || 'unknown')
+        .toLowerCase().replace(/[^a-z0-9-]/g, '') || 'unknown';
+    return _PROGRESS_KEY + '_' + course + '_' + (uid || 'guest');
+}
+
 function _loadProgress() {
     try {
-        var raw = localStorage.getItem(_PROGRESS_KEY);
+        var raw = localStorage.getItem(_progressKey());
         if (raw) return JSON.parse(raw);
     } catch { /* corrupted */ }
     return {};
 }
 
 function _saveProgress(progress) {
-    try { localStorage.setItem(_PROGRESS_KEY, JSON.stringify(progress)); } catch {}
+    try { localStorage.setItem(_progressKey(), JSON.stringify(progress)); } catch {}
 }
 
 /**

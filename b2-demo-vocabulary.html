@@ -715,6 +715,7 @@
         }
     </style>
     <script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+    <script>window.VOCAB_COURSE = 'b2-demo';</script>
     <script src="/paid-courses/speech.js"></script>
 </head>
 
@@ -1163,7 +1164,13 @@
 
             document.getElementById('topicSelection').classList.add('hidden');
             document.getElementById('flashcardScreen').classList.add('active');
-            
+
+            /* Gated progression — same as paid: the next word stays locked
+               until the current word's pronunciation passes (Ajoyib/Yaxshi). */
+            if (typeof initWordProgress === 'function') {
+                initWordProgress(topicId, topic.words.length);
+            }
+
             updateCard();
         }
 
@@ -1193,7 +1200,14 @@
         }
 
         function nextCard() {
-            currentCardIndex++;
+            var nextIdx = currentCardIndex + 1;
+
+            /* enforce locked-word check: can't skip ahead without passing */
+            if (typeof _isWordLocked === 'function' && _isWordLocked(currentTopicId, nextIdx)) {
+                return;
+            }
+
+            currentCardIndex = nextIdx;
             window.currentWordIndex = currentCardIndex;
             saveProgress();
             updateCard();
