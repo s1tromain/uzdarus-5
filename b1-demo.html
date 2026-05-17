@@ -2288,6 +2288,7 @@
                             },
                             {
                                 id: "audio", type: "choice", style: "tf", icon: "fa-circle-question",
+                                audioSrc: "audios/ElevenLabs_2026_05_17T14_28_06_Brian_Deep%2C_Resonant_and_Comforting.mp3",
                                 title: "Matndagi savollarga javob bering (Правда yoki Ложь)",
                                 intro: "Audio matnni tinglab, har bir gap to'g'ri (Правда) yoki noto'g'ri (Ложь) ekanini belgilang.",
                                 items: [
@@ -2310,132 +2311,260 @@
                 {
                     id: 2,
                     title: "Bolalik va xotiralar",
-                    description: "Grammatika: раньше, когда, пока. Fe'llar: ходить/ездить. Muloqot: bolalik xotiralari",
+                    description: "Grammatika: ходить/ездить, раньше/когда/пока. Mavzu: bolalik va o'tmish xotiralari",
                     isLocked: false,
                     isSubscriptionLocked: false,
                     grammar: `
-                        <h4>1. Vaqt bog'lovchilari</h4>
-                        <table style="width:100%; border-collapse: collapse; margin:15px 0;">
-                            <tr style="background:#e8f5e9;">
-                                <th style="padding:10px; border:1px solid #81c784;">So'z</th>
-                                <th style="padding:10px; border:1px solid #81c784;">Ma'nosi</th>
-                                <th style="padding:10px; border:1px solid #81c784;">Misol</th>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>раньше</strong></td>
-                                <td style="padding:8px; border:1px solid #ddd;">ilgari, oldin</td>
-                                <td style="padding:8px; border:1px solid #ddd;">Раньше я жил в деревне</td>
-                            </tr>
-                            <tr style="background:#f5f5f5;">
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>когда</strong></td>
-                                <td style="padding:8px; border:1px solid #ddd;">qachon (savol/bog'lovchi)</td>
-                                <td style="padding:8px; border:1px solid #ddd;">Когда я был маленький...</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>пока</strong></td>
-                                <td style="padding:8px; border:1px solid #ddd;">toki, hali</td>
-                                <td style="padding:8px; border:1px solid #ddd;">Пока мы гуляли...</td>
-                            </tr>
-                        </table>
-                        
-                        <h4>2. Harakatlanish fe'llari</h4>
-                        <table style="width:100%; border-collapse: collapse; margin:15px 0;">
-                            <tr style="background:#e3f2fd;">
-                                <th style="padding:10px; border:1px solid #90caf9;">Bir yo'nalishli</th>
-                                <th style="padding:10px; border:1px solid #90caf9;">Ko'p yo'nalishli</th>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>идти</strong> (piyoda ketmoq)</td>
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>ходить</strong> (piyoda yurish)</td>
-                            </tr>
-                            <tr style="background:#f5f5f5;">
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>ехать</strong> (transport bilan ketmoq)</td>
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>ездить</strong> (transport bilan yurish)</td>
-                            </tr>
-                        </table>
-                        
-                        <h4>3. Bolalik xotiralari haqida gapirish</h4>
-                        <ul>
-                            <li><strong>Когда я был маленьким...</strong> - Men kichik bo'lganimda...</li>
-                            <li><strong>Раньше мы часто ходили...</strong> - Ilgari biz tez-tez borardik...</li>
-                            <li><strong>В детстве я любил...</strong> - Bolalikda men yaxshi ko'rardim...</li>
-                        </ul>
-                    `,
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-route"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">Ходить / Ездить + Раньше / Когда / Пока</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda <b>harakat fe'llari</b> (ходить, ездить) va
+                            <b>vaqt bog'lovchilari</b> (раньше, когда, пока) o'rganiladi — bolalik va
+                            o'tmish xotiralari haqida gapirish uchun.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">ХОДИТЬ</span>
+                              <h4>Ходить</h4>
+                              <p class="t1g-card-uz">Piyoda &middot; takroriy harakat</p>
+                              <ul>
+                                <li><b>Piyoda</b> yuriladigan harakat</li>
+                                <li><b>Takroriy:</b> bir necha marta, doimiy</li>
+                                <li>«часто, обычно, каждый день» bilan</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я ходил в школу пешком.</span>
+                                <span class="t1g-uz">Men maktabga piyoda borardim.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">ЕЗДИТЬ</span>
+                              <h4>Ездить</h4>
+                              <p class="t1g-card-uz">Transportda &middot; takroriy harakat</p>
+                              <ul>
+                                <li><b>Transportda:</b> avtobus, mashina, poyezd</li>
+                                <li><b>Takroriy:</b> qatnab yurish, qaytalanuvchi</li>
+                                <li>Uzoq joylarga: dengiz, qishloq, shahar</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Мы ездили на море летом.</span>
+                                <span class="t1g-uz">Biz yozda dengizga borardik.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-code-compare"></i> Ходить yoki ездить?</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">ХОДИТЬ</span>
+                                <b>Я ходил в парк пешком.</b>
+                                <small>piyoda — yaqin masofa</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">ЕЗДИТЬ</span>
+                                <b>Я ездил в город на автобусе.</b>
+                                <small>transportda — uzoq masofa</small>
+                              </div>
+                            </div>
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">ХОДИТЬ</span>
+                                <b>Мы часто ходили в кино.</b>
+                                <small>takroriy, piyoda</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">ЕЗДИТЬ</span>
+                                <b>Мы часто ездили в деревню.</b>
+                                <small>takroriy, transportda</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-clock"></i> Раньше / Когда / Пока</h4>
+                          <table class="t1g-table">
+                            <thead>
+                              <tr><th>So'z</th><th>Ma'nosi</th><th>Qachon ishlatiladi</th><th>Misol</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td><b>Раньше</b></td>
+                                <td>ilgari, oldin</td>
+                                <td>O'tmishdagi odat — «before / in the past»</td>
+                                <td>Раньше я часто гулял во дворе.</td>
+                              </tr>
+                              <tr>
+                                <td><b>Когда</b></td>
+                                <td>qachon, ... paytda</td>
+                                <td>O'tmishdagi bir holat / vaqt — «when»</td>
+                                <td>Когда я был маленьким, я любил мультфильмы.</td>
+                              </tr>
+                              <tr>
+                                <td><b>Пока</b></td>
+                                <td>... paytda, ... ekan</td>
+                                <td>Bir vaqtda sodir bo'lgan ikki harakat — «while»</td>
+                                <td>Пока мама готовила, я читал книгу.</td>
+                              </tr>
+                            </tbody>
+                          </table>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li><b>Ходить</b> — piyoda, takroriy harakat: <i>ходил, ходила, ходили</i></li>
+                              <li><b>Ездить</b> — transportda, takroriy harakat: <i>ездил, ездила, ездили</i></li>
+                              <li><b>Раньше</b> — o'tmishdagi odatni bildiradi (yakka so'z)</li>
+                              <li><b>Когда</b> va <b>пока</b> — ergash gap bog'lovchisi; «пока» — bir vaqtda</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Bolalik xotiralari haqida gapirishda 'раньше', 'когда' va ходить/ездить fe'llaridan foydalaniladi."
+                        uz: "Ходить — piyoda, takroriy harakat; ездить — transportda, takroriy harakat. Раньше — o'tmishdagi odat, когда — ... paytda, пока — bir vaqtda sodir bo'lgan harakatlar."
                     },
                     content: `
-                        <div style="background: linear-gradient(135deg, #4CAF50, #388E3C); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);">
-                            <div style="font-size: 4rem; margin-bottom: 15px;">👶</div>
+                        <div style="background: linear-gradient(135deg, #4CAF50, #2E7D32); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🏡</div>
                             <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
                             <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
-                                Ushbu mavzuda <strong>50 ta so'z</strong> o'rganasiz
+                                «Моё детство» mavzusiga oid <strong>69 ta so'z</strong>
                             </p>
-                            <button onclick="window.location.href='b1-demo-vocabulary.html'" 
-                                    style="background: white; color: #4CAF50; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                            <button onclick="window.location.href='b1-demo-vocabulary.html'"
+                                    style="background: white; color: #2E7D32; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
                                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
                                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
                                 <i class="fas fa-book-open"></i> Lug'atni ochish
                             </button>
                             <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
-                                <i class="fas fa-graduation-cap"></i> Bolalik va xotiralar lug'ati
+                                <i class="fas fa-graduation-cap"></i> Harakat fe'llari va bolalik xotiralari lug'ati
                             </p>
                         </div>
-                        
-                        <h3>Muhim qoidalar:</h3>
-                        <p>• <strong>раньше</strong> - "ilgari" ma'nosida: Раньше я жил в деревне</p>
-                        <p>• <strong>ходить/ездить</strong> - takrorlanuvchi harakat (har doim, tez-tez)</p>
-                        <p>• <strong>идти/ехать</strong> - bir martalik harakat (hozir, bir marta)</p>
-                    `,
-                    quiz: {
-                        mcQuestions: [
-                            "'Ilgari men kichik shaharda yashardim' - qaysi so'z kerak?",
-                            "Qaysi fe'l takrorlanuvchi harakatni bildiradi?",
-                            "'Men kichik bo'lganimda...' - rus tilida qanday?",
-                            "Qaysi gap to'g'ri?",
-                            "'Men har kuni maktabga piyoda borardim' - qaysi fe'l kerak?",
-                            "Qaysi gap bir martalik harakatni ko'rsatadi?",
-                            "'Biz tez-tez dengizga sayohat qilardik' - qaysi fe'l?",
-                            "'Men hozir do'konimga ketyapman' - qaysi fe'l to'g'ri?"
-                        ],
-                        mcOptions: [
-                            ["раньше", "сейчас", "потом", "сегодня"],
-                            ["идти", "ходить", "пойти", "прийти"],
-                            ["Раньше я был маленький", "Когда я был маленьким", "Я маленький", "Был я маленький"],
-                            ["Я иду в школу каждый день", "Я хожу в школу каждый день", "Я пойду в школу", "Я шёл в школу"],
-                            ["идти", "ходить", "пойти", "прийти"],
-                            ["Я хожу в магазин", "Я иду в магазин сейчас", "Я ходил в магазин каждый день", "Я всегда хожу"],
-                            ["ехать", "ездить", "поехать", "приехать"],
-                            ["хожу", "иду", "ходить", "ходил"]
-                        ],
-                        mcAnswers: [0, 1, 1, 1, 1, 1, 1, 1],
-                        blankQuestions: [
-                            "___ (ilgari) я жил в маленьком городе.",
-                            "___ (qachon) я был маленьким, я любил играть.",
-                            "Я каждый день ___ (yurardim - piyoda) в школу.",
-                            "Мы часто ___ (sayohat qilardik) на море.",
-                            "Сейчас я ___ (ketyapman - piyoda) в магазин.",
-                            "___ (toki) мы гуляли, начался дождь.",
-                            "В детстве я ___ (borardim - piyoda) в парк каждый день.",
-                            "Завтра я ___ (boraman - transport) в Москву.",
-                            "___ (ilgari) здесь был лес.",
-                            "Я ___ (yurayapman - piyoda) домой."
-                        ],
-                        blankAnswers: ["Раньше", "Когда", "ходил", "ездили", "иду", "Пока", "ходил", "поеду", "Раньше", "иду"],
-                        matchingGame: {
-                            title: "So'zlarni to'g'ri juftlang (Harakatlanish va vaqt)",
-                            instruction: "Chapdan bir so'zni, keyin o'ngdan uning juftini tanlang",
-                            pairs: [
-                                { left: "идти", right: "ходить", translation: "ketmoq - yurish (piyoda)" },
-                                { left: "ехать", right: "ездить", translation: "ketmoq - yurish (transport)" },
-                                { left: "когда", right: "пока", translation: "qachon - toki" },
-                                { left: "раньше", right: "теперь", translation: "ilgari - hozir" },
-                                { left: "детство", right: "взрослый", translation: "bolalik - kattalar" },
-                                { left: "играть", right: "игра", translation: "o'ynamoq - o'yin" },
-                                { left: "школа", right: "ученик", translation: "maktab - o'quvchi" },
-                                { left: "помнить", right: "память", translation: "eslamoq - xotira" }
-                            ]
-                        }
+`,
+                    topic2Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "input", icon: "fa-pen",
+                                title: "1-mashq. Qavs ichidagi fe'lni to'g'ri qo'ying",
+                                intro: "Qavs ichidagi fe'lni o'tgan zamonda to'g'ri shaklda yozing.",
+                                items: [
+                                { q: "Раньше я часто ___ в парк. (ходить)", answer: ["ходил", "ходила"] },
+                                { q: "Когда я был маленьким, мы ___ в деревню. (ездить)", answer: ["ездили"] },
+                                { q: "Пока мама готовила, я ___ в магазин. (ходить)", answer: ["ходил", "ходила"] },
+                                { q: "Раньше папа ___ на работу на автобусе. (ездить)", answer: ["ездил"] },
+                                { q: "Когда мы жили в Ташкенте, мы часто ___ в кино. (ходить)", answer: ["ходили"] },
+                                { q: "В детстве бабушка часто ___ на рынок. (ездить)", answer: ["ездила"] },
+                                { q: "Пока родители отдыхали, дети ___ гулять. (ходить)", answer: ["ходили"] },
+                                { q: "Когда я учился в школе, я ___ туда пешком. (ходить)", answer: ["ходил", "ходила"] },
+                                { q: "Раньше мы часто ___ на дачу летом. (ездить)", answer: ["ездили"] },
+                                { q: "Пока мама разговаривала, я ___ в аптеку. (ходить)", answer: ["ходил", "ходила"] }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-route",
+                                title: "2-mashq. Ходить yoki ездить?",
+                                intro: "Har bir gapga ходить yoki ездить fe'lining to'g'ri shaklini yozing.",
+                                items: [
+                                { q: "Мы часто ___ к бабушке на машине.", answer: ["ездили"] },
+                                { q: "В детстве я ___ в школу пешком.", answer: ["ходил", "ходила"] },
+                                { q: "Раньше они ___ на море летом.", answer: ["ездили"] },
+                                { q: "Каждый вечер дедушка ___ в парк.", answer: ["ходил"] },
+                                { q: "Когда я был студентом, я ___ на метро.", answer: ["ездил", "ездила"] },
+                                { q: "Летом мы часто ___ в горы.", answer: ["ездили"] },
+                                { q: "Моя сестра каждый день ___ в университет пешком.", answer: ["ходила"] },
+                                { q: "В детстве мы ___ в лагерь на автобусе.", answer: ["ездили"] },
+                                { q: "Папа часто ___ в магазин вечером.", answer: ["ходил"] },
+                                { q: "Когда я жил в деревне, я редко ___ на машине.", answer: ["ездил", "ездила"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-clock",
+                                title: "3-mashq. Раньше, когда yoki пока?",
+                                intro: "Bo'sh joyga раньше, когда yoki пока so'zini qo'ying.",
+                                items: [
+                                { q: "___ я был маленьким, я любил мультики.", answer: ["Когда"] },
+                                { q: "___ мама работала, бабушка сидела со мной.", answer: ["Пока", "Когда"] },
+                                { q: "___ мы часто ездили в деревню.", answer: ["Раньше"] },
+                                { q: "___ папа читал газету, я играл.", answer: ["Пока", "Когда"] },
+                                { q: "___ я учился в школе, у меня было много друзей.", answer: ["Когда"] },
+                                { q: "___ брат спал, мама готовила ужин.", answer: ["Пока", "Когда"] },
+                                { q: "___ мы были детьми, мы часто гуляли во дворе.", answer: ["Когда"] },
+                                { q: "___ дедушка был молодым, он много путешествовал.", answer: ["Когда"] },
+                                { q: "___ родители смотрели телевизор, я читал книгу.", answer: ["Пока", "Когда"] },
+                                { q: "___ мы жили в Самарканде, мы часто ходили в парк.", answer: ["Когда", "Пока"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-language",
+                                title: "4-mashq. Gaplarni rus tiliga tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Bolaligimda men ko'p parkka borardim.", answer: ["В детстве я часто ходил в парк", "В детстве я часто ходила в парк", "В детстве я много ходил в парк", "В детстве я часто ходил в парк пешком"] },
+                                { q: "Ilgari biz qishloqqa tez-tez borardik.", answer: ["Раньше мы часто ездили в деревню", "Раньше мы часто ездили в село"] },
+                                { q: "Onam ovqat qilayotganida men magazinga bordim.", answer: ["Пока мама готовила я ходил в магазин", "Когда мама готовила я ходил в магазин", "Пока мама готовила я сходил в магазин", "Пока мама готовила я ходила в магазин"] },
+                                { q: "Men kichikligimda maktabga piyoda borardim.", answer: ["В детстве я ходил в школу пешком", "В детстве я ходила в школу пешком", "Когда я был маленьким я ходил в школу пешком"] },
+                                { q: "Ilgari dadam ishga avtobusda borardilar.", answer: ["Раньше папа ездил на работу на автобусе", "Раньше папа ездил на автобусе на работу"] },
+                                { q: "Biz yozda dengizga borardik.", answer: ["Летом мы ездили на море", "Мы ездили на море летом", "Летом мы ездили к морю"] },
+                                { q: "Men kichikligimda bobomnikiga tez-tez borardim.", answer: ["В детстве я часто ездил к дедушке", "В детстве я часто ходил к дедушке", "В детстве я часто ездила к дедушке", "Когда я был маленьким я часто ездил к дедушке"] },
+                                { q: "Onam ishlayotganida men kitob o'qirdim.", answer: ["Пока мама работала я читал книгу", "Когда мама работала я читал книгу", "Пока мама работала я читала книгу", "Пока мама работала я читал книги"] },
+                                { q: "Ilgari biz kinoga ko'p borardik.", answer: ["Раньше мы часто ходили в кино", "Раньше мы много ходили в кино"] },
+                                { q: "Men talabalik paytimda metroda yurardim.", answer: ["Когда я был студентом я ездил на метро", "Когда я была студенткой я ездила на метро", "В студенчестве я ездил на метро"] }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "5-mashq. To'g'ri variantni tanlang",
+                                intro: "Har bir gap uchun to'g'ri variantni belgilang.",
+                                items: [
+                                { q: "Раньше я часто ___ в парк пешком.", options: ["ездил", "ходил"], answer: "ходил" },
+                                { q: "Когда я был маленьким, мы ___ в Самарканд на машине.", options: ["ходили", "ездили"], answer: "ездили" },
+                                { q: "Пока мама готовила, я ___ в магазин.", options: ["ходил", "ездил"], answer: "ходил" },
+                                { q: "Раньше папа ___ на работу на автобусе.", options: ["ходил", "ездил"], answer: "ездил" },
+                                { q: "Когда мы жили в деревне, мы часто ___ на речку.", options: ["ходили", "ездили"], answer: "ходили" },
+                                { q: "В детстве я каждый день ___ в школу пешком.", options: ["ходил", "ездил"], answer: "ходил" },
+                                { q: "Летом мы часто ___ на море.", options: ["ходили", "ездили"], answer: "ездили" },
+                                { q: "Пока бабушка готовила, дедушка ___ в аптеку.", options: ["ходил", "ездил"], answer: "ходил" },
+                                { q: "Раньше мои родители ___ на работу на метро.", options: ["ходили", "ездили"], answer: "ездили" },
+                                { q: "Когда я был ребёнком, я часто ___ к друзьям пешком.", options: ["ходил", "ездил"], answer: "ходил" }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "input", icon: "fa-eraser",
+                                title: "6-mashq. Xatolarni to'g'rilang",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Раньше мы ходили на море на машине.", answer: ["Раньше мы ездили на море на машине"] },
+                                { q: "Когда я был маленьким, я ездил в школу пешком.", answer: ["Когда я был маленьким я ходил в школу пешком"] },
+                                { q: "Пока мама готовила, я ездил в магазин пешком.", answer: ["Пока мама готовила я ходил в магазин пешком"] },
+                                { q: "Раньше папа ходил на работу на автобусе.", answer: ["Раньше папа ездил на работу на автобусе"] },
+                                { q: "Мы часто ходили в Самарканд на поезде.", answer: ["Мы часто ездили в Самарканд на поезде"] },
+                                { q: "В детстве я ездил гулять в парк пешком.", answer: ["В детстве я ходил гулять в парк пешком"] },
+                                { q: "Пока бабушка читала, дедушка ездил в аптеку пешком.", answer: ["Пока бабушка читала дедушка ходил в аптеку пешком"] },
+                                { q: "Когда мы были маленькими, мы ездили во дворе.", answer: ["Когда мы были маленькими мы ходили во дворе", "Когда мы были маленькими мы гуляли во дворе"] },
+                                { q: "Раньше мама ходила на работу на машине.", answer: ["Раньше мама ездила на работу на машине"] },
+                                { q: "Я часто ездил к друзьям пешком.", answer: ["Я часто ходил к друзьям пешком", "Я часто ходила к друзьям пешком"] }
+                                ]
+                            },
+                            {
+                                id: "audio", type: "choice", style: "tf", icon: "fa-circle-question",
+                                audioSrc: "audios/ElevenLabs_2026_05_17T14_30_41_Brian_Deep%2C_Resonant_and_Comforting.mp3",
+                                title: "Matndagi savollarga javob bering (Правда yoki Ложь)",
+                                intro: "Audio matnni tinglab, har bir gap to'g'ri (Правда) yoki noto'g'ri (Ложь) ekanini belgilang.",
+                                items: [
+                                { q: "В детстве автор жил в большом городе.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Раньше он часто ходил в парк с друзьями.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Летом семья никогда не ездила к бабушке в деревню.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Они ездили в деревню на поезде.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Пока мама готовила ужин, автор помогал дедушке в саду.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Во время каникул автор редко гулял во дворе.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Раньше у автора было много друзей.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "В детстве автор ездил в школу на автобусе.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Вечером автор читал книги или смотрел мультфильмы.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "У автора остались грустные воспоминания о детстве.", options: ["Правда", "Ложь"], answer: "Ложь" }
+                                ]
+                            }
+                        ]
                     }
                 },
 
@@ -2443,135 +2572,249 @@
                 {
                     id: 3,
                     title: "Ta'lim va shaxsiy rivojlanish",
-                    description: "Grammatika: что/чтобы murakkab gaplar. Muloqot: ta'lim, maqsadlar, rivojlanish",
+                    description: "Grammatika: что/чтобы, СВ/НСВ, harakat maqsadi va natijasi. Mavzu: ta'lim va rivojlanish",
                     isLocked: false,
                     isSubscriptionLocked: false,
                     grammar: `
-                        <h4>1. что vs чтобы</h4>
-                        <table style="width:100%; border-collapse: collapse; margin:15px 0;">
-                            <tr style="background:#fff3e0;">
-                                <th style="padding:10px; border:1px solid #ffb74d;">Bog'lovchi</th>
-                                <th style="padding:10px; border:1px solid #ffb74d;">Qachon ishlatiladi</th>
-                                <th style="padding:10px; border:1px solid #ffb74d;">Misol</th>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>что</strong></td>
-                                <td style="padding:8px; border:1px solid #ddd;">Fakt, axborot</td>
-                                <td style="padding:8px; border:1px solid #ddd;">Я знаю, <strong>что</strong> это трудно</td>
-                            </tr>
-                            <tr style="background:#f5f5f5;">
-                                <td style="padding:8px; border:1px solid #ddd;"><strong>чтобы</strong></td>
-                                <td style="padding:8px; border:1px solid #ddd;">Maqsad, istak</td>
-                                <td style="padding:8px; border:1px solid #ddd;">Я учусь, <strong>чтобы</strong> получить диплом</td>
-                            </tr>
-                        </table>
-                        
-                        <h4>2. Ta'lim bilan bog'liq fe'llar</h4>
-                        <table style="width:100%; border-collapse: collapse; margin:15px 0;">
-                            <tr style="background:#e1f5fe;">
-                                <th style="padding:10px; border:1px solid #81d4fa;">НСВ</th>
-                                <th style="padding:10px; border:1px solid #81d4fa;">СВ</th>
-                                <th style="padding:10px; border:1px solid #81d4fa;">Ma'nosi</th>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;">учиться</td>
-                                <td style="padding:8px; border:1px solid #ddd;">научиться</td>
-                                <td style="padding:8px; border:1px solid #ddd;">o'rganmoq / o'rganib olish</td>
-                            </tr>
-                            <tr style="background:#f5f5f5;">
-                                <td style="padding:8px; border:1px solid #ddd;">поступать</td>
-                                <td style="padding:8px; border:1px solid #ddd;">поступить</td>
-                                <td style="padding:8px; border:1px solid #ddd;">kirmoq (universitet, kollej)</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;">заканчивать</td>
-                                <td style="padding:8px; border:1px solid #ddd;">закончить</td>
-                                <td style="padding:8px; border:1px solid #ddd;">tugatmoq</td>
-                            </tr>
-                        </table>
-                        
-                        <h4>3. Maqsad ifodalash</h4>
-                        <ul>
-                            <li><strong>Я учу русский, чтобы работать в России</strong> - Men rus tilini o'rganyapman, Rossiyada ishlash uchun</li>
-                            <li><strong>Я хочу, чтобы ты был успешным</strong> - Men sening muvaffaqiyatli bo'lishingni xohlayman</li>
-                            <li><strong>Я думаю, что это важно</strong> - Men bu muhim deb o'ylayman</li>
-                        </ul>
-                    `,
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-bullseye"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">Что / Чтобы — maqsad va natija</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda <b>что</b> va <b>чтобы</b> bog'lovchilari,
+                            shuningdek <b>чтобы</b>dan keyin <b>СВ/НСВ</b> fe'l turini tanlash o'rganiladi —
+                            harakatning <b>maqsadi</b> va <b>natijasi</b>ni ifodalash uchun.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">ЧТО</span>
+                              <h4>Что — fakt</h4>
+                              <p class="t1g-card-uz">Ma'lumot &middot; fakt &middot; hodisa</p>
+                              <ul>
+                                <li>Bir <b>fakt</b> yoki ma'lumotni bog'laydi</li>
+                                <li>знать, думать, понимать, говорить, <b>что</b>...</li>
+                                <li>Ergash gapda — <b>shaxsli fe'l</b></li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я знаю, что практика важна.</span>
+                                <span class="t1g-uz">Men bilamanki, amaliyot muhim.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">ЧТОБЫ</span>
+                              <h4>Чтобы — maqsad</h4>
+                              <p class="t1g-card-uz">Maqsad &middot; harakatning sababi</p>
+                              <ul>
+                                <li>Harakatning <b>maqsadi</b>ni bildiradi («... uchun»)</li>
+                                <li>чтобы + <b>infinitiv</b> (noaniq shakl)</li>
+                                <li>Savol: <b>nima maqsadda?</b> зачем?</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я учусь, чтобы сдать экзамен.</span>
+                                <span class="t1g-uz">Men imtihon topshirish uchun o'qiyman.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-code-compare"></i> Что yoki чтобы?</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">ЧТО</span>
+                                <b>Я думаю, что это правильно.</b>
+                                <small>fakt — «...ligini»</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">ЧТОБЫ</span>
+                                <b>Я пришёл, чтобы помочь.</b>
+                                <small>maqsad — «...uchun»</small>
+                              </div>
+                            </div>
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">ЧТО</span>
+                                <b>Учитель сказал, что нужно читать.</b>
+                                <small>ma'lumot beradi</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">ЧТОБЫ</span>
+                                <b>Я повторяю слова, чтобы запомнить их.</b>
+                                <small>maqsadni ko'rsatadi</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-arrows-split-up-and-left"></i> Чтобы dan keyin: СВ yoki НСВ?</h4>
+                          <table class="t1g-table">
+                            <thead>
+                              <tr><th>Fe'l turi</th><th>Ma'nosi</th><th>Misol</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td><b>СВ</b><br>(natija)</td>
+                                <td>Bir martalik tugallangan natija — maqsadga erishish</td>
+                                <td>Я учусь, чтобы <b>сдать</b> экзамен.<br>Я повторяю, чтобы <b>запомнить</b> слова.</td>
+                              </tr>
+                              <tr>
+                                <td><b>НСВ</b><br>(jarayon)</td>
+                                <td>Davomiy jarayon, qobiliyat yoki takroriy harakat</td>
+                                <td>Я занимаюсь, чтобы хорошо <b>говорить</b>.<br>Мы слушаем, чтобы <b>понимать</b> речь.</td>
+                              </tr>
+                            </tbody>
+                          </table>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li><b>Что</b> — faktni bog'laydi: <i>Я знаю, что...</i></li>
+                              <li><b>Чтобы</b> — maqsadni bildiradi: <i>Я учусь, чтобы...</i></li>
+                              <li><b>Чтобы</b>dan keyin doimo <b>infinitiv</b> keladi</li>
+                              <li>Natija uchun — <b>СВ</b> (сдать, понять), jarayon uchun — <b>НСВ</b> (говорить, понимать)</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "'что' faktni, 'чтобы' maqsadni bildiradi. Ta'lim haqida gapirishda bu farq muhim."
+                        uz: "Что — faktni bog'laydi (Я знаю, что...). Чтобы — maqsadni bildiradi va undan keyin infinitiv keladi (Я учусь, чтобы...). Natija uchun СВ, jarayon uchun НСВ ishlatiladi."
                     },
                     content: `
                         <div style="background: linear-gradient(135deg, #FF9800, #F57C00); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);">
                             <div style="font-size: 4rem; margin-bottom: 15px;">🎓</div>
                             <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
                             <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
-                                Ushbu mavzuda <strong>50 ta so'z</strong> o'rganasiz
+                                «Ta'lim va shaxsiy rivojlanish» mavzusiga oid lug'at
                             </p>
-                            <button onclick="window.location.href='b1-demo-vocabulary.html'" 
-                                    style="background: white; color: #FF9800; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                            <button onclick="window.location.href='b1-demo-vocabulary.html'"
+                                    style="background: white; color: #F57C00; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
                                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
                                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
                                 <i class="fas fa-book-open"></i> Lug'atni ochish
                             </button>
                             <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
-                                <i class="fas fa-graduation-cap"></i> Ta'lim va rivojlanish lug'ati
+                                <i class="fas fa-graduation-cap"></i> Ta'lim, maqsad va rivojlanish lug'ati
                             </p>
                         </div>
-                        
-                        <h3>Muhim qoidalar:</h3>
-                        <p>• <strong>что</strong> - fakt: Я знаю, что это важно (Men bu muhimligini bilaman)</p>
-                        <p>• <strong>чтобы</strong> - maqsad: Я учусь, чтобы стать врачом (Men shifokor bo'lish uchun o'qiyapman)</p>
-                        <p>• <strong>поступить в университет</strong> - universitetga kirish</p>
-                    `,
+`,
                     quiz: {
-                        mcQuestions: [
-                            "'Men bu muhim deb o'ylayman' - qaysi bog'lovchi kerak?",
-                            "'Men rus tilini o'rganyapman, Rossiyada ishlash uchun' - qaysi bog'lovchi?",
-                            "Qaysi gapda maqsad ko'rsatilgan?",
-                            "'Men universitetga kirdim' - qaysi fe'l to'g'ri (СВ)?",
-                            "Qaysi gapda fakt bildirilgan?",
-                            "'Men shifokor bo'lish uchun o'qiyapman' - qaysi bog'lovchi?",
-                            "'Men maktabni tugatdim' - qaysi fe'l (СВ)?",
-                            "Qaysi gap to'g'ri qurilgan?"
-                        ],
-                        mcOptions: [
-                            ["Я думаю, что это важно", "Я думаю, чтобы это важно", "Я думаю это важно", "Я думаю, для это важно"],
-                            ["Я учу русский язык, что работать", "Я учу русский язык, чтобы работать", "Я учу русский язык для работать", "Я учу русский язык, работать"],
-                            ["Я знаю, что ты студент", "Я хочу, чтобы ты учился", "Я вижу, что ты читаешь", "Я слышал, что ты приехал"],
-                            ["поступать", "поступил", "поступить", "поступаю"],
-                            ["Я хочу, чтобы ты был здоров", "Я учусь, чтобы стать врачом", "Я знаю, что это правда", "Я мечтаю, чтобы быть успешным"],
-                            ["что", "чтобы", "потому что", "когда"],
-                            ["заканчивать", "закончить", "закончил", "заканчиваю"],
-                            ["Я хочу, что ты был счастлив", "Я хочу, чтобы ты был счастлив", "Я хочу ты был счастлив", "Я хочу для ты был счастлив"]
-                        ],
-                        mcAnswers: [0, 1, 1, 1, 2, 1, 2, 1],
-                        blankQuestions: [
-                            "Я думаю, ___ (fakt) это правильно.",
-                            "Я учусь, ___ (maqsad) получить диплом.",
-                            "Я ___ (kirdim - СВ) в университет.",
-                            "Я хочу, ___ (maqsad) ты был счастлив.",
-                            "Я знаю, ___ (fakt) ты хороший студент.",
-                            "Я ___ (tugatdim - СВ) школу в прошлом году.",
-                            "Я учу английский, ___ (maqsad) путешествовать.",
-                            "Я вижу, ___ (fakt) ты устал.",
-                            "Я мечтаю ___ (o'rganib olish - СВ) русский язык.",
-                            "Он сказал, ___ (fakt) приедет завтра."
-                        ],
-                        blankAnswers: ["что", "чтобы", "поступил", "чтобы", "что", "закончил", "чтобы", "что", "научиться", "что"],
                         matchingGame: {
-                            title: "So'zlarni to'g'ri juftlang (Ta'lim va maqsadlar)",
-                            instruction: "Chapdan bir so'zni, keyin o'ngdan uning juftini tanlang",
+                            title: "6-mashq. So'zlarni juftlang (НСВ - СВ)",
+                            instruction: "Chapdan НСВ fe'lni, keyin o'ngdan uning СВ juftini tanlang",
                             pairs: [
-                                { left: "учиться", right: "научиться", translation: "o'rganmoq - o'rganib olish" },
-                                { left: "поступать", right: "поступить", translation: "kirmoq - kirib olish" },
-                                { left: "заканчивать", right: "закончить", translation: "tugatmoq - tugatib bo'lish" },
-                                { left: "что", right: "чтобы", translation: "fakt - maqsad" },
-                                { left: "знать", right: "узнать", translation: "bilmoq - bilib olish" },
-                                { left: "учитель", right: "ученик", translation: "o'qituvchi - o'quvchi" },
-                                { left: "университет", right: "диплом", translation: "universitet - diplom" },
-                                { left: "успех", right: "успешный", translation: "muvaffaqiyat - muvaffaqiyatli" }
+                                { left: "учить", right: "выучить", translation: "o'rganmoq - o'rganib olmoq" },
+                                { left: "читать", right: "прочитать", translation: "o'qimoq - o'qib tugatmoq" },
+                                { left: "поступать", right: "поступить", translation: "kirmoq - kirib olmoq" },
+                                { left: "понимать", right: "понять", translation: "tushunmoq - tushunib olmoq" },
+                                { left: "писать", right: "написать", translation: "yozmoq - yozib tugatmoq" },
+                                { left: "делать", right: "сделать", translation: "qilmoq - qilib bo'lmoq" }
                             ]
                         }
+                    },
+                    topic3Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "chips", icon: "fa-hand-pointer",
+                                title: "1-mashq. Что yoki Чтобы ni qo'ying",
+                                intro: "Har bir gapda mazmunga mos bog'lovchini tanlang.",
+                                items: [
+                                { q: "Я учу русский язык, ___ работать за границей.", options: ["что", "чтобы"], answer: "чтобы" },
+                                { q: "Мы понимаем, ___ практика очень важна.", options: ["что", "чтобы"], answer: "что" },
+                                { q: "Она читает книги, ___ развивать мышление.", options: ["что", "чтобы"], answer: "чтобы" },
+                                { q: "Учитель сказал, ___ нужно больше говорить.", options: ["что", "чтобы"], answer: "что" },
+                                { q: "Я повторяю слова, ___ запомнить их.", options: ["что", "чтобы"], answer: "чтобы" },
+                                { q: "Они знают, ___ образование меняет жизнь.", options: ["что", "чтобы"], answer: "что" },
+                                { q: "Мы занимаемся каждый день, ___ улучшить речь.", options: ["что", "чтобы"], answer: "чтобы" },
+                                { q: "Она сказала, ___ хочет стать переводчиком.", options: ["что", "чтобы"], answer: "что" },
+                                { q: "Я смотрю лекции, ___ понять грамматику.", options: ["что", "чтобы"], answer: "чтобы" },
+                                { q: "Мы уверены, ___ знания помогают человеку.", options: ["что", "чтобы"], answer: "что" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-pen",
+                                title: "2-mashq. СВ yoki НСВ fe'lini tanlang",
+                                intro: "Bo'sh joyga mos fe'lni to'g'ri shaklda yozing.",
+                                items: [
+                                { q: "Я читаю статьи, чтобы ___ словарный запас.", answer: ["расширить"] },
+                                { q: "Мы учимся, чтобы ___ экзамен.", answer: ["сдать"] },
+                                { q: "Она ходит на курсы, чтобы ___ русский язык.", answer: ["изучить"] },
+                                { q: "Я повторяю правила, чтобы ___ их.", answer: ["понять"] },
+                                { q: "Студенты много тренируются, чтобы хорошо ___ по-русски.", answer: ["говорить"] },
+                                { q: "Он читает каждый день, чтобы ___ память.", answer: ["развить"] },
+                                { q: "Я делаю упражнения, чтобы ___ грамматику.", answer: ["закрепить"] },
+                                { q: "Мы слушаем аудио, чтобы лучше ___ речь.", answer: ["понимать", "понять"] },
+                                { q: "Она занимается каждый день, чтобы ___ в университет.", answer: ["поступить"] },
+                                { q: "Я учу слова, чтобы быстро их ___.", answer: ["запомнить"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-language",
+                                title: "3-mashq. Gaplarni tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Men grammatikani tushunish uchun video ko'ryapman.", answer: ["Я смотрю видео чтобы понять грамматику", "Я смотрю видео чтобы понимать грамматику"] },
+                                { q: "Biz bilamizki, amaliyot juda muhim.", answer: ["Мы знаем что практика очень важна"] },
+                                { q: "U universitetga kirish uchun ko'p o'qiydi.", answer: ["Он много учится чтобы поступить в университет", "Она много учится чтобы поступить в университет"] },
+                                { q: "Men rus tilida yaxshi gapirish uchun har kuni shug'ullanaman.", answer: ["Я занимаюсь каждый день чтобы хорошо говорить по-русски", "Я занимаюсь каждый день чтобы говорить по-русски хорошо"] },
+                                { q: "O'qituvchi ko'proq kitob o'qish kerakligini aytdi.", answer: ["Учитель сказал что нужно больше читать книги", "Учитель сказал что нужно читать больше книг"] },
+                                { q: "Biz yangi mavzuni o'rganib chiqish uchun maqolalar o'qiymiz.", answer: ["Мы читаем статьи чтобы изучить новую тему"] },
+                                { q: "Men so'zlarni eslab qolish uchun takrorlayapman.", answer: ["Я повторяю слова чтобы запомнить их", "Я повторяю слова чтобы их запомнить"] },
+                                { q: "U ta'lim inson hayotini o'zgartirishini tushunadi.", answer: ["Он понимает что образование меняет жизнь человека", "Она понимает что образование меняет жизнь человека"] },
+                                { q: "Biz muvaffaqiyatga erishish uchun ishlaymiz.", answer: ["Мы работаем чтобы добиться успеха"] },
+                                { q: "Men bilamanki, rivojlanish vaqt talab qiladi.", answer: ["Я знаю что развитие требует времени"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-pen-nib",
+                                title: "4-mashq. Gapni davom ettiring",
+                                intro: "Gapni mazmunan mos so'z(lar) bilan davom ettiring.",
+                                items: [
+                                { q: "Я изучаю русский язык, чтобы ...", answer: ["работать", "работать за границей"] },
+                                { q: "Мы читаем книги, чтобы ...", answer: ["развиваться"] },
+                                { q: "Я знаю, что ...", answer: ["нужно помогать", "нужно помогать людям"] },
+                                { q: "Учитель сказал, что ...", answer: ["нужно читать", "нужно больше читать"] },
+                                { q: "Она занимается каждый день, чтобы ...", answer: ["улучшиться", "стать лучше", "улучшить речь"] },
+                                { q: "Мы смотрим фильмы, чтобы ...", answer: ["понимать", "понимать речь", "лучше понимать"] },
+                                { q: "Я повторяю слова, чтобы ...", answer: ["запомнить", "запомнить их", "запомнить слова"] },
+                                { q: "Они понимают, что ...", answer: ["нужно измениться", "нужно меняться", "нужно менять"] },
+                                { q: "Я делаю конспекты, чтобы ...", answer: ["подготовиться", "подготовиться к экзамену"] },
+                                { q: "Мы тренируемся, чтобы ...", answer: ["развиваться"] }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "input", icon: "fa-eraser",
+                                title: "5-mashq. Xatolarni toping va to'g'rilang",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Я учусь, чтобы учить экзамен.", answer: ["Я учусь чтобы сдать экзамен"] },
+                                { q: "Мы знаем, чтобы практика важна.", answer: ["Мы знаем что практика важна"] },
+                                { q: "Она читает книгу, чтобы понимать её вчера.", answer: ["Она читает книгу чтобы понять её"] },
+                                { q: "Я повторяю слова, что запомнить их.", answer: ["Я повторяю слова чтобы запомнить их"] },
+                                { q: "Мы тренируемся, что хорошо говорить.", answer: ["Мы тренируемся чтобы хорошо говорить"] },
+                                { q: "Учитель сказал, чтобы нужно больше читать.", answer: ["Учитель сказал что нужно больше читать"] },
+                                { q: "Я изучаю тему, что понять грамматику.", answer: ["Я изучаю тему чтобы понять грамматику"] },
+                                { q: "Она занимается каждый день, чтобы стать лучше говорить.", answer: ["Она занимается каждый день чтобы лучше говорить"] },
+                                { q: "Мы понимаем, чтобы образование важно.", answer: ["Мы понимаем что образование важно"] },
+                                { q: "Я читаю статьи, что расширить словарный запас.", answer: ["Я читаю статьи чтобы расширить словарный запас"] }
+                                ]
+                            },
+                            {
+                                id: "audio", type: "choice", style: "tf", icon: "fa-circle-question",
+                                audioSrc: "audios/ElevenLabs_2026_05_17T14_33_33_Brian_Deep%2C_Resonant_and_Comforting.mp3",
+                                title: "Matndagi savollarga javob bering (Правда yoki Ложь)",
+                                intro: "Audio matnni tinglab, har bir gap to'g'ri (Правда) yoki noto'g'ri (Ложь) ekanini belgilang.",
+                                items: [
+                                { q: "Автор изучает русский язык, чтобы стать врачом.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Автор понимает, что иностранные языки очень важны.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Автор никогда не читает книги и не смотрит видео.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Учитель говорит, что практика помогает развиваться.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Автор повторяет новые слова, чтобы запомнить их.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Автор пишет конспекты, чтобы забыть грамматику.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Друзья автора хотят поступить в хороший университет.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Они вместе делают упражнения.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Автор считает, что успех приходит к ленивым людям.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Образование помогает людям получать новые возможности.", options: ["Правда", "Ложь"], answer: "Правда" }
+                                ]
+                            }
+                        ]
                     }
                 },
 
@@ -3456,7 +3699,7 @@
         function loadQuiz(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic || topic.isSubscriptionLocked) return;
-            if (topic.topic1Exercises) { renderTopic1Exercises(topicId); return; }
+            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises) { renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
             const topicResults = userQuizResults[`topic_${topicId}`];
@@ -4481,6 +4724,15 @@
                 display:flex; align-items:center; gap:8px; margin-bottom:8px; }
             .t1g-remember ul { margin:0; padding-left:20px; }
             .t1g-remember ul li { margin:5px 0; font-size:.93rem; color:#5d4037; }
+            .t1g-table { width:100%; max-width:100%; border-collapse:collapse; table-layout:fixed;
+                margin:6px 0 4px; font-size:.86rem; border-radius:12px; overflow:hidden;
+                box-shadow:0 4px 14px rgba(0,0,0,.07); }
+            .t1g-table th { background:#1976D2; color:#fff; padding:10px 11px; text-align:left;
+                font-size:.82rem; }
+            .t1g-table td { padding:10px 11px; border-bottom:1px solid #e8e8e8; color:#333;
+                vertical-align:top; background:#fff; word-break:break-word; }
+            .t1g-table tr:last-child td { border-bottom:none; }
+            .t1g-table td:first-child { color:#1976D2; font-weight:600; }
 
             /* ===== Topic 1 exercises ===== */
             .t1-wrap { margin:10px 0 20px; }
@@ -4529,22 +4781,17 @@
             .t1-input.incorrect { border-color:#F44336; background:#FFEBEE; }
 
             /* ===== Audio lesson block ===== */
-            .t1-audio-card { background:linear-gradient(135deg,#3949AB,#5C6BC0); border-radius:16px;
-                padding:22px; margin:18px 0; color:#fff; box-shadow:0 8px 26px rgba(57,73,171,.32); }
-            .t1-audio-head { display:flex; align-items:center; gap:14px; }
+            .t1-audio-card { background:linear-gradient(135deg,#3949AB,#5C6BC0); border-radius:18px;
+                padding:22px; margin:18px 0; color:#fff; box-shadow:0 10px 30px rgba(57,73,171,.32);
+                max-width:100%; box-sizing:border-box; overflow:hidden; }
+            .t1-audio-header { display:flex; align-items:center; gap:14px; }
             .t1-audio-icon { width:54px; height:54px; flex:none; border-radius:14px;
                 background:rgba(255,255,255,.2); display:flex; align-items:center;
-                justify-content:center; font-size:1.5rem; }
-            .t1-audio-head h4 { margin:0; font-size:1.2rem; color:#fff; }
-            .t1-audio-head p { margin:3px 0 0; font-size:.86rem; color:rgba(255,255,255,.85); }
-            .t1-audio-player { display:flex; align-items:center; gap:12px; margin-top:16px;
-                background:rgba(255,255,255,.13); border-radius:12px; padding:12px 14px; }
-            .t1-audio-play { width:44px; height:44px; flex:none; border-radius:50%; border:none;
-                background:#fff; color:#3949AB; font-size:1rem; cursor:not-allowed; opacity:.85;
-                display:flex; align-items:center; justify-content:center; }
-            .t1-audio-track { flex:1; height:6px; border-radius:6px; background:rgba(255,255,255,.25); overflow:hidden; }
-            .t1-audio-progress { width:0; height:100%; background:#fff; }
-            .t1-audio-time { font-size:.82rem; font-variant-numeric:tabular-nums; color:rgba(255,255,255,.9); }
+                justify-content:center; font-size:1.6rem; line-height:1; }
+            .t1-audio-header h4 { margin:0; font-size:1.2rem; color:#fff; }
+            .t1-audio-header p { margin:3px 0 0; font-size:.86rem; color:rgba(255,255,255,.85); }
+            .t1-audio-player { display:block; width:100%; max-width:100%; box-sizing:border-box;
+                margin-top:16px; border-radius:10px; outline:none; }
             .t1-audio-note { margin:12px 0 0; font-size:.84rem; color:rgba(255,255,255,.8);
                 display:flex; align-items:center; gap:7px; }
 
@@ -4568,24 +4815,25 @@
             (document.head || document.documentElement).appendChild(st);
         }
 
-        function renderT1AudioBlock() {
+        function renderT1AudioBlock(group) {
+            var src = (group && group.audioSrc) ? String(group.audioSrc) : "";
+            if (src && src.indexOf("http") !== 0 && src.indexOf("../") !== 0
+                && location.pathname.indexOf("/paid-courses/") !== -1) {
+                src = "../" + src;
+            }
             return `
                 <div class="t1-audio-card">
-                    <div class="t1-audio-head">
-                        <div class="t1-audio-icon"><i class="fas fa-headphones"></i></div>
+                    <div class="t1-audio-header">
+                        <div class="t1-audio-icon">🎧</div>
                         <div>
                             <h4>Tinglab tushunish</h4>
-                            <p>Audio matnni tinglang va quyidagi savollarga javob bering.</p>
+                            <p>Audio matnni tinglang va savollarga javob bering.</p>
                         </div>
                     </div>
-                    <div class="t1-audio-player">
-                        <button class="t1-audio-play" type="button" disabled aria-label="play">
-                            <i class="fas fa-play"></i>
-                        </button>
-                        <div class="t1-audio-track"><div class="t1-audio-progress"></div></div>
-                        <span class="t1-audio-time">00:00</span>
-                    </div>
-                    <p class="t1-audio-note"><i class="fas fa-info-circle"></i> Audio fayl tez orada qo'shiladi.</p>
+                    <audio controls preload="metadata" class="t1-audio-player">
+                        <source src="${src}" type="audio/mpeg">
+                        Brauzeringiz audio ijro etishni qo'llab-quvvatlamaydi.
+                    </audio>
                 </div>`;
         }
 
@@ -4628,18 +4876,25 @@
                  + "</div>";
         }
 
+        function getT1ExData(topic) {
+            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises)) || null;
+        }
+
         function renderTopic1Exercises(topicId) {
             var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic1Exercises || !quizSection) return;
+            var exData = getT1ExData(topic);
+            if (!topic || !exData || !quizSection) return;
             injectTopic1Styles();
+            var staleMatch = document.getElementById("matchingGame");
+            if (staleMatch) staleMatch.remove();
             if (typeof resultsSection !== "undefined" && resultsSection) {
                 resultsSection.classList.remove("show");
             }
-            var groups = topic.topic1Exercises.exercises || [];
+            var groups = exData.exercises || [];
             var html = '<div class="t1-wrap">'
                      + '<h3 class="t1-main-title"><i class="fas fa-graduation-cap"></i> Mavzu mashqlari</h3>';
             groups.forEach(function (g) {
-                if (g.id === "audio") html += renderT1AudioBlock();
+                if (g.id === "audio") html += renderT1AudioBlock(g);
                 html += renderT1Group(g);
             });
             html += "</div>";
@@ -4655,16 +4910,21 @@
                     this.classList.add("selected");
                 });
             });
+
+            if (topic.quiz && topic.quiz.matchingGame && typeof loadMatchingGame === "function") {
+                setTimeout(function () { loadMatchingGame(topicId); }, 60);
+            }
         }
 
         // Global feedback hook — validates, marks UI, drives completion.
         window.checkTopic1Exercises = async function (topicId) {
             var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic1Exercises || !quizSection) return;
+            var exData = getT1ExData(topic);
+            if (!topic || !exData || !quizSection) return;
 
             var correct = 0, total = 0;
             var saved = {};
-            (topic.topic1Exercises.exercises || []).forEach(function (g) {
+            (exData.exercises || []).forEach(function (g) {
                 var gAns = [];
                 (g.items || []).forEach(function (item, i) {
                     var key = g.id + "-" + i;
@@ -4754,13 +5014,16 @@
             }
         };
 
+        window.checkTopic2Exercises = window.checkTopic1Exercises;
+        window.checkTopic3Exercises = window.checkTopic1Exercises;
+
         injectTopic1Styles();
 
 
         async function checkAnswers(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic || topic.isSubscriptionLocked) return;
-            if (!topic.quiz) { return; }
+            if (!topic.quiz || getT1ExData(topic)) { return; }
 
             let score = 0;
             const totalQuestions = topic.quiz.mcQuestions.length + topic.quiz.blankQuestions.length;

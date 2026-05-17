@@ -338,10 +338,11 @@
             input cells -> [data-t1-input="<id>-<i>"]                                */
     function collectTopic1ExercisesResults(topic, scope) {
         var results = [];
-        if (!topic || !topic.topic1Exercises || !Array.isArray(topic.topic1Exercises.exercises)) return results;
+        var exObj = topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises);
+        if (!exObj || !Array.isArray(exObj.exercises)) return results;
         var topicTitle = topic.title || '';
 
-        topic.topic1Exercises.exercises.forEach(function (ex) {
+        exObj.exercises.forEach(function (ex) {
             if (!ex || !Array.isArray(ex.items)) return;
             var exTitle = ex.title || 'Mashq';
             ex.items.forEach(function (item, i) {
@@ -721,6 +722,15 @@
             }
             if (topic && topic.topic1Exercises && typeof window.checkTopic1Exercises === 'function') {
                 await window.checkTopic1Exercises(topicId);
+            }
+            if (topic && topic.topic2Exercises && typeof window.checkTopic2Exercises === 'function') {
+                await window.checkTopic2Exercises(topicId);
+            }
+            if (topic && topic.topic3Exercises && typeof window.checkTopic3Exercises === 'function') {
+                await window.checkTopic3Exercises(topicId);
+            }
+            if (topic && topic.topic4Exercises && typeof window.checkTopic4Exercises === 'function') {
+                await window.checkTopic4Exercises(topicId);
             }
             if (topic && topic.topic4FillExercise && typeof window.checkTopic4FillExercise === 'function') {
                 await window.checkTopic4FillExercise(topicId);
