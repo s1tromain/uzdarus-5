@@ -332,88 +332,42 @@
 
     /* ---- Topic 1 Enhanced Exercises ---- */
 
+    /* New B1 Topic 1 schema: topic1Exercises.exercises = [
+         { id, title, type:'choice'|'input', items:[ { q, options?, answer } ] } ]
+       DOM: choice rows -> [data-t1-row="<id>-<i>"] with .t1-opt.selected[data-value]
+            input cells -> [data-t1-input="<id>-<i>"]                                */
     function collectTopic1ExercisesResults(topic, scope) {
         var results = [];
-        if (!topic || !topic.topic1Exercises) return results;
-        var ex = topic.topic1Exercises;
+        if (!topic || !topic.topic1Exercises || !Array.isArray(topic.topic1Exercises.exercises)) return results;
         var topicTitle = topic.title || '';
 
-        // Exercise 1: Pravda / Nepravda
-        if (ex.exercise1 && Array.isArray(ex.exercise1.items)) {
-            var e1Title = ex.exercise1.title || 'Правда / Неправда';
-            ex.exercise1.items.forEach(function (item, i) {
-                var container = queryIn(scope, '[data-t1-pn="' + i + '"]');
-                var sel = container ? container.querySelector('.t1-pn-btn.selected') : null;
-                var uv = sel ? (sel.getAttribute('data-value') || '').trim() : '';
-                var exp = item.answer;
-                var ok = isCorrect(uv, exp);
-                var ed = expectedDisplay(exp);
-                results.push(makeResult(
-                    e1Title + ' \u2014 ' + (i + 1), item.text, uv || '(tanlanmagan)', ed, ok,
-                    generateExplanation(ok, uv, ed, topicTitle, e1Title)
-                ));
-            });
-        }
-
-        // Exercise 2: Fill text
-        if (ex.exercise2 && Array.isArray(ex.exercise2.segments)) {
-            var e2Title = ex.exercise2.title || 'Mashqli matn';
-            ex.exercise2.segments.forEach(function (seg, i) {
-                var inp = queryIn(scope, '[data-t1-fill="' + i + '"]');
-                var uv = inp ? inp.value.trim() : '';
-                var exp = seg.answer;
-                var ok = isCorrect(uv, exp);
-                markInput(inp, ok);
-                var ed = expectedDisplay(exp);
-                results.push(makeResult(
-                    e2Title + ' \u2014 ' + (i + 1), seg.hint, uv, ed, ok,
-                    generateExplanation(ok, uv, ed, topicTitle, e2Title)
-                ));
-            });
-        }
-
-        // Exercise 3: MC sections
-        if (ex.exercise3) {
-            var e3Title = ex.exercise3.title || "To'g'ri variantni tanlang";
-            var allItems = [];
-            if (ex.exercise3.sectionA && Array.isArray(ex.exercise3.sectionA.items)) {
-                allItems = allItems.concat(ex.exercise3.sectionA.items);
-            }
-            if (ex.exercise3.sectionB && Array.isArray(ex.exercise3.sectionB.items)) {
-                allItems = allItems.concat(ex.exercise3.sectionB.items);
-            }
-            allItems.forEach(function (item, i) {
-                var container = queryIn(scope, '[data-t1-mc="' + i + '"]');
-                var sel = container ? container.querySelector('.t1-mc-opt.selected') : null;
-                var uv = sel ? (sel.getAttribute('data-value') || '').trim() : '';
-                var exp = item.answer;
-                var ok = isCorrect(uv, exp);
-                var ed = expectedDisplay(exp);
-                results.push(makeResult(
-                    e3Title + ' \u2014 ' + (i + 1), item.text, uv || '(tanlanmagan)', ed, ok,
-                    generateExplanation(ok, uv, ed, topicTitle, e3Title)
-                ));
-            });
-        }
-
-        // Exercise 4: Builder
-        if (ex.exercise4 && Array.isArray(ex.exercise4.items)) {
-            var e4Title = ex.exercise4.title || 'Gap tuzing';
-            ex.exercise4.items.forEach(function (item, i) {
-                var hidden = queryIn(scope, 'input[data-t1-builder-selected="' + i + '"]');
+        topic.topic1Exercises.exercises.forEach(function (ex) {
+            if (!ex || !Array.isArray(ex.items)) return;
+            var exTitle = ex.title || 'Mashq';
+            ex.items.forEach(function (item, i) {
+                var key = ex.id + '-' + i;
                 var uv = '';
-                if (hidden && hidden.value) {
-                    uv = hidden.value.split('|').map(function(w) { return w.trim(); }).filter(Boolean).join(' ');
+                if (ex.type === 'choice') {
+                    var row = queryIn(scope, '[data-t1-row="' + key + '"]');
+                    var sel = row ? row.querySelector('.t1-opt.selected') : null;
+                    uv = sel ? (sel.getAttribute('data-value') || sel.textContent || '').trim() : '';
+                } else {
+                    var inp = queryIn(scope, '[data-t1-input="' + key + '"]');
+                    uv = inp ? inp.value.trim() : '';
+                    markInput(inp, isCorrect(uv, item.answer));
                 }
                 var exp = item.answer;
                 var ok = isCorrect(uv, exp);
                 var ed = expectedDisplay(exp);
                 results.push(makeResult(
-                    e4Title + ' \u2014 ' + (i + 1), item.words.join(' / '), uv || "(yig'ilmagan)", ed, ok,
-                    generateExplanation(ok, uv, ed, topicTitle, e4Title)
+                    exTitle + ' — ' + (i + 1),
+                    item.q || item.prompt || '',
+                    uv || (ex.type === 'choice' ? '(tanlanmagan)' : '(kiritilmagan)'),
+                    ed, ok,
+                    generateExplanation(ok, uv, ed, topicTitle, exTitle)
                 ));
             });
-        }
+        });
 
         return results;
     }

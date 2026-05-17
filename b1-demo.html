@@ -2061,152 +2061,249 @@
                 {
                     id: 1,
                     title: "Shaxs va hayot tajribasi",
-                    description: "Grammatika: o'tgan zamon (НСВ / СВ farqi). Muloqot: o'tmishdagi voqealar",
+                    description: "Grammatika: СВ va НСВ (mukammal va nomukammal fe'l turi). Muloqot: o'tmishdagi voqealar",
                     isLocked: false,
                     isSubscriptionLocked: false,
                     grammar: `
-                        <h4>1. НСВ (Несовершенный вид) vs СВ (Совершенный вид)</h4>
-                        <p>Rus tilida har bir fe'l ikki aspektda keladi:</p>
-                        <ul>
-                            <li><strong>НСВ (tugallanmagan)</strong> - jarayon, takrorlanish: <em>читать, делать, писать</em></li>
-                            <li><strong>СВ (tugallangan)</strong> - natija, tugallangan harakat: <em>прочитать, сделать, написать</em></li>
-                        </ul>
-                        
-                        <h4>2. Aspekt juftliklari (hayot tajribasida)</h4>
-                        <table style="width:100%; border-collapse: collapse; margin:15px 0;">
-                            <tr style="background:#e3f2fd;">
-                                <th style="padding:10px; border:1px solid #90caf9;">НСВ</th>
-                                <th style="padding:10px; border:1px solid #90caf9;">СВ</th>
-                                <th style="padding:10px; border:1px solid #90caf9;">Ma'nosi</th>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;">жить</td>
-                                <td style="padding:8px; border:1px solid #ddd;">прожить</td>
-                                <td style="padding:8px; border:1px solid #ddd;">yashash / ma'lum muddat yashash</td>
-                            </tr>
-                            <tr style="background:#f5f5f5;">
-                                <td style="padding:8px; border:1px solid #ddd;">работать</td>
-                                <td style="padding:8px; border:1px solid #ddd;">поработать</td>
-                                <td style="padding:8px; border:1px solid #ddd;">ishlash / bir muddat ishlash</td>
-                            </tr>
-                            <tr>
-                                <td style="padding:8px; border:1px solid #ddd;">учиться</td>
-                                <td style="padding:8px; border:1px solid #ddd;">научиться</td>
-                                <td style="padding:8px; border:1px solid #ddd;">o'rganmoq / o'rganib olish</td>
-                            </tr>
-                            <tr style="background:#f5f5f5;">
-                                <td style="padding:8px; border:1px solid #ddd;">переезжать</td>
-                                <td style="padding:8px; border:1px solid #ddd;">переехать</td>
-                                <td style="padding:8px; border:1px solid #ddd;">ko'chib yurish / ko'chib ketish</td>
-                            </tr>
-                        </table>
-                        
-                        <h4>3. O'tmishda ishlatilishi</h4>
-                        <p><strong>НСВ</strong> - jarayonni, davomiylikni ta'riflaydi:</p>
-                        <ul>
-                            <li><strong>Я жил в Москве 5 лет</strong> - Men Moskvada 5 yil yashadim</li>
-                            <li><strong>Я работал учителем</strong> - Men o'qituvchi bo'lib ishladim</li>
-                        </ul>
-                        <p><strong>СВ</strong> - natijani, tugallanganlikni ko'rsatadi:</p>
-                        <ul>
-                            <li><strong>Я переехал в новый город</strong> - Men yangi shaharga ko'chib ketdim</li>
-                            <li><strong>Я закончил университет</strong> - Men universitetni tugatdim</li>
-                        </ul>
-                    `,
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-language"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">СВ va НСВ — fe'lning ikki turi</h3>
+                            <p class="t1g-hero-sub">Rus tilidagi deyarli har bir fe'l ikki ko'rinishda bo'ladi:
+                            <b>Несовершенный вид (НСВ)</b> va <b>Совершенный вид (СВ)</b>. Ularning farqi —
+                            harakat <b>jarayon</b>mi yoki <b>natija</b>mi ekanida.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">НСВ</span>
+                              <h4>Несовершенный вид</h4>
+                              <p class="t1g-card-uz">Jarayon &middot; odat &middot; davomiy harakat</p>
+                              <ul>
+                                <li><b>Jarayon:</b> harakat davom etgan</li>
+                                <li><b>Takror:</b> часто, обычно, всегда, иногда</li>
+                                <li><b>Odat:</b> har kuni qiladigan ish</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я читал книгу.</span>
+                                <span class="t1g-uz">Men kitob o'qidim — <i>jarayon</i></span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">СВ</span>
+                              <h4>Совершенный вид</h4>
+                              <p class="t1g-card-uz">Natija &middot; tugallangan harakat</p>
+                              <ul>
+                                <li><b>Natija:</b> harakat tugadi, natija bor</li>
+                                <li><b>Bir marta:</b> вдруг, сразу, один раз</li>
+                                <li><b>Tugallangan:</b> уже, наконец, до конца</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я прочитал книгу.</span>
+                                <span class="t1g-uz">Men kitobni o'qib tugatdim — <i>natija</i></span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-code-compare"></i> Farqni solishtiring</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">НСВ</span>
+                                <b>Я читал книгу.</b>
+                                <small>jarayon — qancha o'qigani muhim emas</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">СВ</span>
+                                <b>Я прочитал книгу.</b>
+                                <small>natija — kitob o'qib bo'lindi</small>
+                              </div>
+                            </div>
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">НСВ</span>
+                                <b>Мы часто ездили в деревню.</b>
+                                <small>takrorlanuvchi harakat</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">СВ</span>
+                                <b>Я написал письмо за час.</b>
+                                <small>bir soatda to'liq bajarilgan</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-layer-group"></i> 4 ta asosiy holat</h4>
+                          <div class="t1g-usage">
+                            <div class="t1g-use t1g-nsv">
+                              <div class="t1g-use-ico"><i class="fas fa-spinner"></i></div>
+                              <h5>Jarayon <span>НСВ</span></h5>
+                              <p class="t1g-use-ru">Я делал домашнее задание.</p>
+                              <p class="t1g-use-uz">Harakat davom etgan.</p>
+                            </div>
+                            <div class="t1g-use t1g-sv">
+                              <div class="t1g-use-ico"><i class="fas fa-flag-checkered"></i></div>
+                              <h5>Natija <span>СВ</span></h5>
+                              <p class="t1g-use-ru">Я сделал домашнее задание.</p>
+                              <p class="t1g-use-uz">Harakat tugadi, natija bor.</p>
+                            </div>
+                            <div class="t1g-use t1g-nsv">
+                              <div class="t1g-use-ico"><i class="fas fa-repeat"></i></div>
+                              <h5>Takror <span>НСВ</span></h5>
+                              <p class="t1g-use-ru">Мы часто ездили в деревню.</p>
+                              <p class="t1g-use-uz">Harakat ko'p marta takrorlangan.</p>
+                            </div>
+                            <div class="t1g-use t1g-sv">
+                              <div class="t1g-use-ico"><i class="fas fa-check-double"></i></div>
+                              <h5>Tugallangan <span>СВ</span></h5>
+                              <p class="t1g-use-ru">Я написал письмо за час.</p>
+                              <p class="t1g-use-uz">Bir marta to'liq bajarilgan.</p>
+                            </div>
+                          </div>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li><b>НСВ</b> jarayonni bildiradi: <i>читал, делал, писал</i></li>
+                              <li><b>СВ</b> natijani bildiradi: <i>прочитал, сделал, написал</i></li>
+                              <li>«часто, обычно, всегда, иногда» bilan — odatda <b>НСВ</b></li>
+                              <li>«уже, наконец, вдруг, за час, до конца» bilan — odatda <b>СВ</b></li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "O'tmishda НСВ jarayonni, СВ esa natijani ko'rsatadi. Hayotiy tajriba haqida gapirishda ikkalasi ham muhim."
+                        uz: "НСВ jarayonni, takrorlanuvchi va odatdagi harakatni bildiradi. СВ esa natijani va tugallangan harakatni ko'rsatadi."
                     },
                     content: `
                         <div style="background: linear-gradient(135deg, #2196F3, #1976D2); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(33, 150, 243, 0.3);">
-                            <div style="font-size: 4rem; margin-bottom: 15px;">🌍</div>
+                            <div style="font-size: 4rem; margin-bottom: 15px;">📘</div>
                             <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
                             <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
-                                Ushbu mavzuda <strong>50 ta so'z</strong> o'rganasiz
+                                СВ va НСВ mavzusiga oid <strong>72 ta so'z</strong>
                             </p>
-                            <button onclick="window.location.href='b1-demo-vocabulary.html'" 
+                            <button onclick="window.location.href='b1-demo-vocabulary.html'"
                                     style="background: white; color: #2196F3; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
                                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
                                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
                                 <i class="fas fa-book-open"></i> Lug'atni ochish
                             </button>
                             <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
-                                <i class="fas fa-graduation-cap"></i> Hayot tajribasi va o'tmish voqealar lug'ati
+                                <i class="fas fa-graduation-cap"></i> СВ/НСВ fe'llari va mavzuga oid lug'at
                             </p>
                         </div>
-                        
-                        <h3>Muhim qoidalar:</h3>
-                        <p>• НСВ jarayonni bildiradi: <strong>Я жил в Москве</strong> (Men Moskvada yashadim)</p>
-                        <p>• СВ natijani bildiradi: <strong>Я переехал в Москву</strong> (Men Moskvaga ko'chib ketdim)</p>
-                        <p>• Hayot tajribasida ko'pincha НСВ ishlatiladi: <strong>работал, учился, жил</strong></p>
-                    `,
-                    quiz: {
-                        mcQuestions: [
-                            "Qaysi gap jarayonni ko'rsatadi (НСВ)?",
-                            "'Men kitobni o'qib tugadim' rus tilida qanday?",
-                            "Qaysi fe'l СВ aspektida?",
-                            "'Men 5 yil Toshkentda yashadim' - qaysi fe'l to'g'ri?",
-                            "Qaysi gapda natija ko'rsatilgan (СВ)?",
-                            "'Men bu kasb o'rganib oldim' - qaysi fe'l kerak?",
-                            "Qaysi juftlik to'g'ri НСВ/СВ aspekt juftligi?",
-                            "'Men yangi shaharga ko'chib ketdim' - qaysi fe'l to'g'ri?",
-                            "НСВ aspekt qachon ishlatiladi?",
-                            "'Men universitetni tugatdim' - qaysi fe'l (СВ)?",
-                            "Qaysi gap davomiylikni bildiradi?",
-                            "'Я построил дом' gapida qaysi aspekt?",
-                            "'Men 3 soat kitob o'qidim' - qaysi fe'l kerak?",
-                            "СВ aspekt nimani bildiradi?",
-                            "'Я создал компанию' - bu qaysi aspekt?"
-                        ],
-                        mcOptions: [
-                            ["Я прочитал книгу", "Я читал книгу", "Я буду читать", "Я читаю"],
-                            ["Я читал книгу", "Я читаю книгу", "Я прочитал книгу", "Я буду читать"],
-                            ["работать", "жить", "сделать", "учиться"],
-                            ["Я прожил в Ташкенте 5 лет", "Я жил в Ташкенте 5 лет", "Я живу в Ташкенте", "Я буду жить"],
-                            ["Я работал учителем", "Я написал письмо", "Я учился в школе", "Я жил в городе"],
-                            ["учиться", "учить", "научиться", "учился"],
-                            ["работать - работал", "жить - прожить", "делать - делал", "учить - учил"],
-                            ["переезжать", "переезжал", "переехал", "переезжаю"],
-                            ["Jarayon, davomiylik", "Natija, tugallanganlik", "Kelajak", "Hozirgi zamon"],
-                            ["заканчивать", "закончить", "закончил", "заканчиваю"],
-                            ["Я написал письмо", "Я писал письмо 2 часа", "Я напишу письмо", "Я пишу письмо"],
-                            ["НСВ", "СВ", "Infinitiv", "Hozirgi zamon"],
-                            ["читал", "прочитал", "читаю", "прочитаю"],
-                            ["Jarayon", "Natija, tugallangan harakat", "Takrorlash", "Davomiylik"],
-                            ["НСВ (jarayon)", "СВ (natija)", "Infinitiv", "Hozirgi zamon"]
-                        ],
-                        mcAnswers: [1, 2, 2, 1, 1, 2, 1, 2, 0, 2, 1, 1, 0, 1, 1],
-                        blankQuestions: [
-                            "Я ___ (yashadim - jarayon) в Москве 10 лет.",
-                            "Я уже ___ (o'qib tugadim - natija) эту книгу.",
-                            "Она ___ (o'rganib oldi - natija) русский язык за год.",
-                            "Мы ___ (ishladik - jarayon) вместе 5 лет.",
-                            "Он ___ (ko'chib ketdi - natija) в новый город.",
-                            "Я ___ (yaratdim - natija) свою компанию.",
-                            "Они ___ (qarashdi - jarayon) фильм 2 часа.",
-                            "Я ___ (topdim - natija) новую работу.",
-                            "Она ___ (yozdi - jarayon) книгу целый год.",
-                            "Мы ___ (tugatdik - natija) проект вчера.",
-                            "Я ___ (qurdim - natija) дом за год.",
-                            "Он ___ (o'rganardi - jarayon) в университете 5 лет.",
-                            "Я ___ (oldim - natija) диплом в прошлом году.",
-                            "Мы ___ (sayohat qildik - jarayon) по Европе месяц.",
-                            "Она ___ (yozib tugatdi - natija) диссертацию."
-                        ],
-                        blankAnswers: ["жил", "прочитал", "научилась", "работали", "переехал", "создал", "смотрели", "нашёл", "писала", "закончили", "построил", "учился", "получил", "путешествовали", "написала"],
-                        matchingGame: {
-                            title: "So'zlarni to'g'ri juftlang (НСВ - СВ)",
-                            instruction: "Chapdan bir so'zni, keyin o'ngdan uning juftini tanlang",
-                            pairs: [
-                                { left: "читать", right: "прочитать", translation: "o'qimoq - o'qib tugash" },
-                                { left: "писать", right: "написать", translation: "yozmoq - yozib tugash" },
-                                { left: "делать", right: "сделать", translation: "qilmoq - qilib bo'lmoq" },
-                                { left: "учить", right: "выучить", translation: "o'rganmoq - o'rganib olish" },
-                                { left: "строить", right: "построить", translation: "qurmoq - qurib bitirish" },
-                                { left: "решать", right: "решить", translation: "yechmoq - yechib berish" },
-                                { left: "смотреть", right: "посмотреть", translation: "qarash - tomosha qilish" },
-                                { left: "покупать", right: "купить", translation: "sotib olmoq - harid qilish" }
-                            ]
-                        }
+`,
+                    topic1Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "chips", icon: "fa-hand-pointer",
+                                title: "1-mashq. Qavs ichidan to'g'ri fe'lni tanlang",
+                                intro: "Har bir gapda mazmunga mos fe'lni tanlang.",
+                                items: [
+                                { q: "Я долго ___ русский язык.", options: ["учил", "выучил"], answer: "учил" },
+                                { q: "Вчера я ___ эту книгу.", options: ["читал", "прочитал"], answer: "прочитал" },
+                                { q: "В детстве мы часто ___ в деревню.", options: ["ездили", "съездили"], answer: "ездили" },
+                                { q: "Я уже ___ этот фильм.", options: ["смотрел", "посмотрел"], answer: "посмотрел" },
+                                { q: "Он быстро ___ письмо.", options: ["писал", "написал"], answer: "написал" },
+                                { q: "Мы всегда ___ дома.", options: ["готовили", "приготовили"], answer: "готовили" },
+                                { q: "Она наконец ___ домашнее задание.", options: ["делала", "сделала"], answer: "сделала" },
+                                { q: "Я много раз ___ этот сериал.", options: ["смотрел", "посмотрел"], answer: "смотрел" },
+                                { q: "Вчера мама ___ хлеб.", options: ["покупала", "купила"], answer: "купила" },
+                                { q: "Я долго ___ эту информацию.", options: ["искал", "нашёл"], answer: "искал" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-pen",
+                                title: "2-mashq. Gapni СВ yoki НСВ bilan to'ldiring",
+                                intro: "Bo'sh joyga mos fe'l shaklini yozing (СВ yoki НСВ).",
+                                items: [
+                                { q: "Я часто ___ книги вечером.", answer: ["читаю", "читал", "читала"] },
+                                { q: "Вчера я ___ новый фильм.", answer: ["посмотрел", "посмотрела"] },
+                                { q: "Он долго ___ русский язык.", answer: ["учил", "изучал"] },
+                                { q: "Наконец студент ___ упражнение.", answer: ["сделал", "решил", "выполнил"] },
+                                { q: "Мы часто ___ в парк летом.", answer: ["ходили", "ездили"] },
+                                { q: "Я уже ___ этот текст.", answer: ["прочитал", "прочитала"] },
+                                { q: "В детстве она много ___.", answer: ["читала", "играла", "гуляла", "рисовала"] },
+                                { q: "Сегодня я ___ письмо другу.", answer: ["написал", "написала", "пишу"] },
+                                { q: "Раньше дедушка часто ___ газеты.", answer: ["читал", "покупал"] },
+                                { q: "Я быстро ___ домашнее задание.", answer: ["сделал", "сделала"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-language",
+                                title: "3-mashq. Tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Men rus tilini 3 yil o'rgandim.", answer: ["Я учил русский язык три года", "Я учил русский язык 3 года", "Я изучал русский язык три года", "Я изучал русский язык 3 года"] },
+                                { q: "Men bu kitobni o'qib tugatdim.", answer: ["Я прочитал эту книгу", "Я прочитала эту книгу"] },
+                                { q: "Bolaligimda futbol o'ynardim.", answer: ["В детстве я играл в футбол", "В детстве я играла в футбол"] },
+                                { q: "U xat yozib bo'ldi.", answer: ["Он написал письмо", "Она написала письмо"] },
+                                { q: "Biz tez-tez kinoga borardik.", answer: ["Мы часто ходили в кино", "Мы часто ездили в кино"] },
+                                { q: "Men bu filmni ko'rib bo'ldim.", answer: ["Я посмотрел этот фильм", "Я посмотрела этот фильм"] },
+                                { q: "U uzoq vaqt ishladi.", answer: ["Он долго работал", "Она долго работала"] },
+                                { q: "Men universitetni tugatdim.", answer: ["Я закончил университет", "Я закончила университет", "Я окончил университет", "Я окончила университет"] },
+                                { q: "Biz ko'p sayohat qilardik.", answer: ["Мы много путешествовали", "Мы часто путешествовали"] },
+                                { q: "Men vazifani bajarib bo'ldim.", answer: ["Я сделал домашнее задание", "Я сделала домашнее задание", "Я выполнил домашнее задание", "Я выполнила домашнее задание", "Я сделал задание"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-link",
+                                title: "4-mashq. Juft fe'llarni yozing",
+                                intro: "Namuna: читать \u2192 прочитать. НСВ fe'lning СВ juftini yozing.",
+                                items: [
+                                { q: "делать →", answer: "сделать" },
+                                { q: "писать →", answer: "написать" },
+                                { q: "покупать →", answer: "купить" },
+                                { q: "говорить →", answer: "сказать" },
+                                { q: "смотреть →", answer: "посмотреть" },
+                                { q: "учить →", answer: "выучить" },
+                                { q: "готовить →", answer: "приготовить" },
+                                { q: "брать →", answer: "взять" },
+                                { q: "получать →", answer: "получить" },
+                                { q: "решать →", answer: "решить" }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "5-mashq. Test",
+                                intro: "Har bir savol uchun to'g'ri javobni belgilang.",
+                                items: [
+                                { q: "Я уже ___ этот фильм.", options: ["смотрел", "посмотрел"], answer: "посмотрел" },
+                                { q: "В детстве мы часто ___ в деревню.", options: ["ездили", "съездили"], answer: "ездили" },
+                                { q: "Он ___ письмо за 10 минут.", options: ["писал", "написал"], answer: "написал" },
+                                { q: "Я долго ___ русский язык.", options: ["учил", "выучил"], answer: "учил" },
+                                { q: "Мы ___ домашнее задание и пошли гулять.", options: ["делали", "сделали"], answer: "сделали" }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "input", icon: "fa-comments",
+                                title: "6-mashq. Dialogni davom ettiring",
+                                intro: "«Да,» so'zidan keyingi javob qismini yozing.",
+                                items: [
+                                { q: "— Ты уже прочитал эту книгу?\n— Да, ...", answer: ["я прочитал её", "я её прочитал", "я прочитал эту книгу", "я уже прочитал", "я уже прочитал эту книгу", "прочитал", "я прочитал", "да я прочитал", "да я прочитал её", "да я прочитал эту книгу", "я уже её прочитал", "конечно прочитал"] },
+                                { q: "— Ты когда-нибудь был в Москве?\n— Да, ...", answer: ["я был в москве", "я был там", "был", "я там был", "я был в москве один раз", "я был в москве несколько раз", "да я был в москве", "да я был там", "конечно был", "я был"] },
+                                { q: "— Ты сделал домашнее задание?\n— Да, ...", answer: ["я сделал домашнее задание", "я его сделал", "сделал", "я сделал", "я уже сделал", "я уже сделал домашнее задание", "да я сделал", "да я сделал домашнее задание", "конечно сделал"] },
+                                { q: "— В детстве ты играл в футбол?\n— Да, ...", answer: ["я играл в футбол", "я часто играл в футбол", "играл", "я играл", "я много играл в футбол", "да я играл", "да я играл в футбол", "конечно играл"] }
+                                ]
+                            },
+                            {
+                                id: "audio", type: "choice", style: "tf", icon: "fa-circle-question",
+                                title: "Matndagi savollarga javob bering (Правда yoki Ложь)",
+                                intro: "Audio matnni tinglab, har bir gap to'g'ri (Правда) yoki noto'g'ri (Ложь) ekanini belgilang.",
+                                items: [
+                                { q: "Анвар долго изучал английский язык.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "В детстве он часто смотрел русские фильмы.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Он никогда не слушал русскую музыку.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Каждый день Анвар учил новые слова.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Ему всегда было легко говорить по-русски.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "В университете он познакомился с новыми друзьями.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "Они никогда не разговаривали по-русски после уроков.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Недавно Анвар прочитал интересную книгу на русском языке.", options: ["Правда", "Ложь"], answer: "Правда" },
+                                { q: "В прошлом году он поехал в Санкт-Петербург.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                                { q: "Сейчас Анвар продолжает изучать русский язык.", options: ["Правда", "Ложь"], answer: "Правда" }
+                                ]
+                            }
+                        ]
                     }
                 },
 
@@ -3359,6 +3456,7 @@
         function loadQuiz(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic || topic.isSubscriptionLocked) return;
+            if (topic.topic1Exercises) { renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
             const topicResults = userQuizResults[`topic_${topicId}`];
@@ -4282,9 +4380,387 @@
         };
 
         // Check answers and show results
+        // ==================== B1 TOPIC 1 — СВ/НСВ EXERCISES ====================
+        // Self-contained renderer + validator for the rebuilt Topic 1.
+        // Integrates with the global feedback system (course-global-fixes.js):
+        //   data: topic.topic1Exercises.exercises
+        //   hook: window.checkTopic1Exercises(topicId)
+
+        function t1Norm(v) {
+            return String(v == null ? "" : v)
+                .toLowerCase()
+                .replace(/ё/g, "е")
+                .replace(/[.,!?;:()"'«»—–\-]/g, " ")
+                .replace(/\s+/g, " ")
+                .trim();
+        }
+
+        function t1Match(userValue, expected) {
+            var nu = t1Norm(userValue);
+            if (!nu) return false;
+            if (Array.isArray(expected)) {
+                return expected.some(function (e) { return t1Norm(e) === nu; });
+            }
+            return t1Norm(expected) === nu;
+        }
+
+        function t1EscHtml(s) {
+            return String(s == null ? "" : s)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function t1EscAttr(s) {
+            return t1EscHtml(s).replace(/'/g, "&#39;");
+        }
+
+        function t1RenderQ(q) {
+            var s = t1EscHtml(q);
+            s = s.replace(/\n/g, "<br>");
+            s = s.replace(/_{3,}/g, '<span class="t1-blank">______</span>');
+            return s;
+        }
+
+        function injectTopic1Styles() {
+            if (document.getElementById("t1-styles")) return;
+            var st = document.createElement("style");
+            st.id = "t1-styles";
+            st.textContent = `
+            /* ===== Topic 1 grammar explanation ===== */
+            .t1g { margin: 18px 0; }
+            .t1g-hero { background: linear-gradient(135deg,#1976D2,#2196F3); color:#fff;
+                border-radius:16px; padding:24px; box-shadow:0 10px 28px rgba(33,150,243,.28); }
+            .t1g-hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.2);
+                padding:5px 14px; border-radius:30px; font-size:.82rem; font-weight:700; letter-spacing:.3px; }
+            .t1g-hero-title { color:#fff; margin:12px 0 8px; font-size:1.5rem; line-height:1.3; }
+            .t1g-hero-sub { color:rgba(255,255,255,.95); font-size:1rem; line-height:1.6; margin:0; }
+            .t1g-cards { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0; }
+            .t1g-card { border-radius:14px; padding:18px; position:relative; border:2px solid; }
+            .t1g-card-nsv { background:#e8f3ff; border-color:#90caf9; }
+            .t1g-card-sv { background:#e9f8ec; border-color:#a5d6a7; }
+            .t1g-card-tag { position:absolute; top:14px; right:14px; font-weight:800; font-size:.78rem;
+                padding:4px 10px; border-radius:20px; color:#fff; }
+            .t1g-card-nsv .t1g-card-tag { background:#1976D2; }
+            .t1g-card-sv .t1g-card-tag { background:#388E3C; }
+            .t1g-card h4 { margin:0 0 4px; font-size:1.12rem; color:#222; }
+            .t1g-card-uz { font-size:.86rem; color:#555; font-weight:600; margin:0 0 10px; }
+            .t1g-card ul { margin:0 0 12px; padding-left:18px; }
+            .t1g-card ul li { font-size:.92rem; margin:4px 0; color:#333; }
+            .t1g-ex { background:rgba(255,255,255,.75); border-radius:10px; padding:10px 12px; }
+            .t1g-ru { display:block; font-weight:700; color:#111; }
+            .t1g-uz { display:block; font-size:.85rem; color:#555; margin-top:2px; }
+            .t1g-h { margin:22px 0 12px; font-size:1.15rem; color:#1976D2;
+                display:flex; align-items:center; gap:8px; }
+            .t1g-compare { display:flex; flex-direction:column; gap:12px; }
+            .t1g-comp-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+            .t1g-comp-cell { border-radius:12px; padding:14px; border:1.5px solid; }
+            .t1g-comp-cell.t1g-nsv { background:#e8f3ff; border-color:#90caf9; }
+            .t1g-comp-cell.t1g-sv { background:#e9f8ec; border-color:#a5d6a7; }
+            .t1g-comp-cell b { display:block; font-size:1rem; color:#111; margin:6px 0 4px; }
+            .t1g-comp-cell small { color:#555; font-size:.82rem; }
+            .t1g-mini { font-size:.7rem; font-weight:800; color:#fff; padding:3px 9px; border-radius:14px; }
+            .t1g-nsv .t1g-mini { background:#1976D2; }
+            .t1g-sv .t1g-mini { background:#388E3C; }
+            .t1g-usage { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+            .t1g-use { border-radius:12px; padding:14px; text-align:center; border:1.5px solid; }
+            .t1g-use.t1g-nsv { background:#e8f3ff; border-color:#90caf9; }
+            .t1g-use.t1g-sv { background:#e9f8ec; border-color:#a5d6a7; }
+            .t1g-use-ico { width:46px; height:46px; border-radius:50%; margin:0 auto 8px;
+                display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.2rem; }
+            .t1g-use.t1g-nsv .t1g-use-ico { background:#1976D2; }
+            .t1g-use.t1g-sv .t1g-use-ico { background:#388E3C; }
+            .t1g-use h5 { margin:0 0 6px; font-size:.98rem; color:#222; }
+            .t1g-use h5 span { font-size:.66rem; color:#fff; padding:2px 7px; border-radius:12px; vertical-align:middle; }
+            .t1g-use.t1g-nsv h5 span { background:#1976D2; }
+            .t1g-use.t1g-sv h5 span { background:#388E3C; }
+            .t1g-use-ru { font-weight:700; color:#111; font-size:.9rem; margin:0 0 4px; }
+            .t1g-use-uz { font-size:.8rem; color:#555; margin:0; }
+            .t1g-remember { margin-top:20px; background:#FFF8E1; border:2px solid #FFD54F;
+                border-radius:14px; padding:16px 18px; }
+            .t1g-remember-head { font-weight:800; color:#F57C00; font-size:1.05rem;
+                display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+            .t1g-remember ul { margin:0; padding-left:20px; }
+            .t1g-remember ul li { margin:5px 0; font-size:.93rem; color:#5d4037; }
+
+            /* ===== Topic 1 exercises ===== */
+            .t1-wrap { margin:10px 0 20px; }
+            .t1-main-title { font-size:1.4rem; color:#F57C00; text-align:center;
+                margin:6px 0 20px; display:flex; align-items:center; justify-content:center; gap:10px; }
+            .t1-card { background:#fff; border-radius:16px; padding:20px; margin:18px 0;
+                box-shadow:0 6px 22px rgba(0,0,0,.08); border:1px solid #f0e6d2; }
+            .t1-card-head { display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+            .t1-card-icon { width:42px; height:42px; flex:none; border-radius:12px;
+                background:linear-gradient(135deg,#FF9800,#F57C00); color:#fff;
+                display:flex; align-items:center; justify-content:center; font-size:1.05rem; }
+            .t1-card-head h4 { margin:0; font-size:1.1rem; color:#333; line-height:1.35; }
+            .t1-intro { color:#777; font-size:.9rem; margin:4px 0 14px; }
+            .t1-items { display:flex; flex-direction:column; gap:14px; }
+            .t1-item { background:#faf7f0; border-radius:12px; padding:14px; border:1px solid #f0e6d2; }
+            .t1-q { display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+            .t1-num { flex:none; width:26px; height:26px; border-radius:50%;
+                background:#FF9800; color:#fff; font-weight:700; font-size:.82rem;
+                display:flex; align-items:center; justify-content:center; }
+            .t1-q-text { font-size:1rem; color:#333; line-height:1.6; padding-top:1px; }
+            .t1-blank { display:inline-block; min-width:70px; border-bottom:2px dashed #FF9800;
+                color:transparent; margin:0 3px; }
+            .t1-opts { display:flex; gap:10px; flex-wrap:wrap; }
+            .t1-opts-test, .t1-opts-tf { flex-direction:column; }
+            .t1-opt { font-family:inherit; cursor:pointer; border-radius:10px;
+                border:2px solid #e0d6c0; background:#fff; color:#444; font-size:.97rem;
+                padding:10px 16px; transition:all .15s ease; display:flex; align-items:center; gap:8px; }
+            .t1-opts-chips .t1-opt { font-weight:600; }
+            .t1-opts-test .t1-opt, .t1-opts-tf .t1-opt { width:100%; text-align:left; }
+            .t1-opt:hover { border-color:#FF9800; background:#FFF8E1; transform:translateY(-1px); }
+            .t1-opt:active { transform:translateY(0); }
+            .t1-opt.selected { border-color:#FF9800; background:#FFE0B2; color:#E65100; font-weight:700; }
+            .t1-opt-key { width:24px; height:24px; flex:none; border-radius:6px; background:#eee;
+                color:#666; font-weight:800; font-size:.8rem;
+                display:flex; align-items:center; justify-content:center; }
+            .t1-opt.selected .t1-opt-key { background:#FF9800; color:#fff; }
+            .t1-opt.t1-ok { border-color:#4CAF50; background:#E8F5E9; color:#2E7D32; font-weight:700; }
+            .t1-opt.t1-bad { border-color:#F44336; background:#FFEBEE; color:#C62828; font-weight:700; }
+            .t1-opt.t1-reveal:not(.t1-ok) { border-color:#4CAF50; box-shadow:0 0 0 1px #4CAF50 inset; }
+            .t1-opt.t1-reveal::after { content:" ✓"; color:#2E7D32; font-weight:800; }
+            .t1-input { width:100%; box-sizing:border-box; font-family:inherit; font-size:1rem;
+                padding:11px 14px; border:2px solid #e0d6c0; border-radius:10px; background:#fff;
+                color:#333; transition:border-color .15s ease; }
+            .t1-input:focus { outline:none; border-color:#FF9800; background:#FFFDF7; }
+            .t1-input.correct { border-color:#4CAF50; background:#E8F5E9; }
+            .t1-input.incorrect { border-color:#F44336; background:#FFEBEE; }
+
+            /* ===== Audio lesson block ===== */
+            .t1-audio-card { background:linear-gradient(135deg,#3949AB,#5C6BC0); border-radius:16px;
+                padding:22px; margin:18px 0; color:#fff; box-shadow:0 8px 26px rgba(57,73,171,.32); }
+            .t1-audio-head { display:flex; align-items:center; gap:14px; }
+            .t1-audio-icon { width:54px; height:54px; flex:none; border-radius:14px;
+                background:rgba(255,255,255,.2); display:flex; align-items:center;
+                justify-content:center; font-size:1.5rem; }
+            .t1-audio-head h4 { margin:0; font-size:1.2rem; color:#fff; }
+            .t1-audio-head p { margin:3px 0 0; font-size:.86rem; color:rgba(255,255,255,.85); }
+            .t1-audio-player { display:flex; align-items:center; gap:12px; margin-top:16px;
+                background:rgba(255,255,255,.13); border-radius:12px; padding:12px 14px; }
+            .t1-audio-play { width:44px; height:44px; flex:none; border-radius:50%; border:none;
+                background:#fff; color:#3949AB; font-size:1rem; cursor:not-allowed; opacity:.85;
+                display:flex; align-items:center; justify-content:center; }
+            .t1-audio-track { flex:1; height:6px; border-radius:6px; background:rgba(255,255,255,.25); overflow:hidden; }
+            .t1-audio-progress { width:0; height:100%; background:#fff; }
+            .t1-audio-time { font-size:.82rem; font-variant-numeric:tabular-nums; color:rgba(255,255,255,.9); }
+            .t1-audio-note { margin:12px 0 0; font-size:.84rem; color:rgba(255,255,255,.8);
+                display:flex; align-items:center; gap:7px; }
+
+            /* ===== Responsive ===== */
+            @media (max-width:720px) {
+                .t1g-cards, .t1g-comp-row { grid-template-columns:1fr; }
+                .t1g-usage { grid-template-columns:1fr 1fr; }
+                .t1g-hero-title { font-size:1.25rem; }
+            }
+            @media (max-width:480px) {
+                .t1g-hero { padding:18px; }
+                .t1g-usage { grid-template-columns:1fr; }
+                .t1-card { padding:15px; }
+                .t1-card-head h4 { font-size:1rem; }
+                .t1-main-title { font-size:1.18rem; }
+                .t1-opts-chips .t1-opt { flex:1 1 auto; justify-content:center; }
+                .t1-q-text { font-size:.95rem; }
+                .t1-audio-card { padding:17px; }
+            }
+            `;
+            (document.head || document.documentElement).appendChild(st);
+        }
+
+        function renderT1AudioBlock() {
+            return `
+                <div class="t1-audio-card">
+                    <div class="t1-audio-head">
+                        <div class="t1-audio-icon"><i class="fas fa-headphones"></i></div>
+                        <div>
+                            <h4>Tinglab tushunish</h4>
+                            <p>Audio matnni tinglang va quyidagi savollarga javob bering.</p>
+                        </div>
+                    </div>
+                    <div class="t1-audio-player">
+                        <button class="t1-audio-play" type="button" disabled aria-label="play">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <div class="t1-audio-track"><div class="t1-audio-progress"></div></div>
+                        <span class="t1-audio-time">00:00</span>
+                    </div>
+                    <p class="t1-audio-note"><i class="fas fa-info-circle"></i> Audio fayl tez orada qo'shiladi.</p>
+                </div>`;
+        }
+
+        function renderT1Group(g) {
+            var items = g.items || [];
+            var body = "";
+            items.forEach(function (item, i) {
+                var key = g.id + "-" + i;
+                var cell;
+                if (g.type === "choice") {
+                    var stl = g.style || "chips";
+                    var opts = "";
+                    (item.options || []).forEach(function (o, oi) {
+                        var lbl = stl === "test"
+                            ? '<span class="t1-opt-key">' + String.fromCharCode(65 + oi) + "</span>" : "";
+                        var ico = stl === "tf"
+                            ? '<i class="fas ' + (oi === 0 ? "fa-circle-check" : "fa-circle-xmark") + '"></i> ' : "";
+                        opts += '<button type="button" class="t1-opt" data-value="' + t1EscAttr(o) + '">'
+                              + lbl + ico + t1EscHtml(o) + "</button>";
+                    });
+                    cell = '<div class="t1-opts t1-opts-' + stl + '" data-t1-row="' + key + '">' + opts + "</div>";
+                } else {
+                    cell = '<input type="text" class="t1-input" data-t1-input="' + key + '" '
+                         + 'placeholder="' + t1EscAttr(item.placeholder || "Javobingizni yozing...") + '" '
+                         + 'autocomplete="off" spellcheck="false">';
+                }
+                body += '<div class="t1-item">'
+                      +   '<div class="t1-q"><span class="t1-num">' + (i + 1) + "</span>"
+                      +     '<span class="t1-q-text">' + t1RenderQ(item.q) + "</span></div>"
+                      +   cell
+                      + "</div>";
+            });
+            return '<div class="t1-card exercise-block" data-t1-ex="' + g.id + '">'
+                 +   '<div class="t1-card-head">'
+                 +     '<div class="t1-card-icon"><i class="fas ' + (g.icon || "fa-pen") + '"></i></div>'
+                 +     "<h4>" + t1EscHtml(g.title) + "</h4>"
+                 +   "</div>"
+                 +   (g.intro ? '<p class="t1-intro">' + t1EscHtml(g.intro) + "</p>" : "")
+                 +   '<div class="t1-items">' + body + "</div>"
+                 + "</div>";
+        }
+
+        function renderTopic1Exercises(topicId) {
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic || !topic.topic1Exercises || !quizSection) return;
+            injectTopic1Styles();
+            if (typeof resultsSection !== "undefined" && resultsSection) {
+                resultsSection.classList.remove("show");
+            }
+            var groups = topic.topic1Exercises.exercises || [];
+            var html = '<div class="t1-wrap">'
+                     + '<h3 class="t1-main-title"><i class="fas fa-graduation-cap"></i> Mavzu mashqlari</h3>';
+            groups.forEach(function (g) {
+                if (g.id === "audio") html += renderT1AudioBlock();
+                html += renderT1Group(g);
+            });
+            html += "</div>";
+            quizSection.innerHTML = html;
+
+            quizSection.querySelectorAll(".t1-opt").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    var row = this.closest(".t1-opts");
+                    if (!row) return;
+                    row.querySelectorAll(".t1-opt").forEach(function (o) {
+                        o.classList.remove("selected", "t1-ok", "t1-bad", "t1-reveal");
+                    });
+                    this.classList.add("selected");
+                });
+            });
+        }
+
+        // Global feedback hook — validates, marks UI, drives completion.
+        window.checkTopic1Exercises = async function (topicId) {
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic || !topic.topic1Exercises || !quizSection) return;
+
+            var correct = 0, total = 0;
+            var saved = {};
+            (topic.topic1Exercises.exercises || []).forEach(function (g) {
+                var gAns = [];
+                (g.items || []).forEach(function (item, i) {
+                    var key = g.id + "-" + i;
+                    total++;
+                    var uv = "";
+                    if (g.type === "choice") {
+                        var row = quizSection.querySelector('[data-t1-row="' + key + '"]');
+                        var sel = row ? row.querySelector(".t1-opt.selected") : null;
+                        uv = sel ? (sel.getAttribute("data-value") || "") : "";
+                        var okC = t1Match(uv, item.answer);
+                        if (row) {
+                            row.querySelectorAll(".t1-opt").forEach(function (b) {
+                                b.classList.remove("t1-ok", "t1-bad", "t1-reveal");
+                                if (t1Match(b.getAttribute("data-value"), item.answer)) b.classList.add("t1-reveal");
+                                if (b.classList.contains("selected")) b.classList.add(okC ? "t1-ok" : "t1-bad");
+                            });
+                        }
+                        if (okC) correct++;
+                    } else {
+                        var inp = quizSection.querySelector('[data-t1-input="' + key + '"]');
+                        uv = inp ? inp.value.trim() : "";
+                        var okI = t1Match(uv, item.answer);
+                        if (inp) {
+                            inp.classList.remove("correct", "incorrect");
+                            inp.classList.add(okI ? "correct" : "incorrect");
+                        }
+                        if (okI) correct++;
+                    }
+                    gAns.push(uv);
+                });
+                saved[g.id] = gAns;
+            });
+
+            currentScore = correct;
+            var data = { topic1: saved, score: correct, total: total, timestamp: new Date().toISOString() };
+            try { await saveQuizResultToFirebase(topicId, data); } catch (e) { console.error("T1 save error", e); }
+            userQuizResults["topic_" + topicId] = data;
+
+            var passNeeded = Math.max(PASSING_SCORE, Math.ceil(total * 0.6));
+            var pct = total ? Math.round(correct / total * 100) : 0;
+            var passed = correct >= passNeeded;
+
+            var correctAnswersEl = document.getElementById("correctAnswers");
+            if (correctAnswersEl) correctAnswersEl.innerHTML = "";
+            var scoreEl = document.getElementById("scoreDisplay");
+            if (scoreEl) scoreEl.textContent = "Sizning natijangiz: " + correct + "/" + total + " (" + pct + "%)";
+            var msgEl = document.getElementById("resultsMessage");
+            if (msgEl) msgEl.innerHTML = passed
+                ? "Ajoyib! Mavzu mashqlarini muvaffaqiyatli bajardingiz. Endi mavzuni tugatishingiz mumkin."
+                : ("Mavzuni tugatish uchun kamida " + passNeeded
+                   + " ta to'g'ri javob kerak. Javoblaringizni qayta ko'rib chiqing.");
+            if (resultsSection) resultsSection.classList.add("show");
+
+            if (passed) {
+                completeBtn.textContent = "Mavzuni tugatish";
+                completeBtn.className = "complete-btn";
+                completeBtn.style.display = "block";
+                if (retryBtn) retryBtn.style.display = "none";
+                completeBtn.onclick = async function () {
+                    if (!completedTopics.includes(topicId)) {
+                        completedTopics.push(topicId);
+                        try { await saveProgressToFirebase(); } catch (e) { console.error(e); }
+                        updateProgress();
+                        loadTopics();
+                        if (currentUser && window.logActivity) {
+                            window.logActivity(currentUser.email,
+                                currentUser.name + " завершил тему " + topicId + ': "' + topic.title + '" в курсе B1',
+                                "course_visit").catch(function () {});
+                        }
+                        setTimeout(function () {
+                            alert("Tabriklaymiz! " + topicId + "-mavzuni muvaffaqiyatli tugatdingiz. Endi "
+                                + (topicId + 1) + "-mavzuni o'rganishingiz mumkin.");
+                        }, 300);
+                    }
+                    if (resultsSection) resultsSection.classList.remove("show");
+                    var topicsEl = document.getElementById("topics");
+                    if (topicsEl) topicsEl.scrollIntoView({ behavior: "smooth", block: "start" });
+                };
+            } else {
+                completeBtn.textContent = "Mavzu tugatilmadi";
+                completeBtn.className = "complete-btn failed";
+                completeBtn.style.display = "block";
+                if (retryBtn) retryBtn.style.display = "none";
+                completeBtn.onclick = function () {
+                    alert("Mavzuni tugatish uchun kamida " + passNeeded + " ta to'g'ri javob berishingiz kerak.");
+                };
+            }
+        };
+
+        injectTopic1Styles();
+
+
         async function checkAnswers(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic || topic.isSubscriptionLocked) return;
+            if (!topic.quiz) { return; }
 
             let score = 0;
             const totalQuestions = topic.quiz.mcQuestions.length + topic.quiz.blankQuestions.length;
