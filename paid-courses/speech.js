@@ -718,6 +718,12 @@ function checkPronunciation(event) {
                 return;
             }
 
+            /* Long-sentence flexible verdict — re-grade so a missing
+               preposition / weak ending never forces a hard-fail
+               warning on an 80-90%-correct sentence. Single words and
+               short cards are left strict (handled inside the helper). */
+            result = _applyFlexibleVerdict(result, referenceText);
+
             var score = Number(result.finalScore) || 0;
 
             /* PASSING RULE — single source of truth shared with the result
@@ -961,7 +967,11 @@ function _clampRange(value, min, max) {
 
 function _tokenize(text) {
     if (!text) return [];
-    return String(text).toLowerCase().replace(/[.,!?;:]/g, '').split(/\s+/).filter(Boolean);
+    return String(text).toLowerCase()
+        .replace(/ё/g, 'е')               /* ё → е */
+        .replace(/[.,!?;:]/g, '')
+        .split(/\s+/)
+        .filter(Boolean);
 }
 
 /* Backward-compat alias used by older code paths. */
@@ -969,38 +979,109 @@ function _tokenizeRefWords(text) {
     return _tokenize(text);
 }
 
-/* Order-aware token stats: exactRatio (positional), partialRatio
-    (presence anywhere), overflow extraWords, refLength, recLength. */
+/* ---- Service words: lower weight so a missing preposition / particle
+   never fails an otherwise-correct phrase. ---- */
+var _SERVICE_WORDS = ['из', 'за', 'из-за', 'в', 'во', 'на', 'и', 'с', 'со', 'по',
+    'не', 'к', 'ко', 'у', 'о', 'об', 'от', 'до', 'же', 'ли', 'бы', 'а', 'но'];
+var _SERVICE_SET = {};
+_SERVICE_WORDS.forEach(function (w) { _SERVICE_SET[w] = true; });
+function _wordWeight(w) { return _SERVICE_SET[w] ? 0.4 : 1; }
+
+/* Levenshtein edit distance (used for partial / fuzzy word match). */
+function _levenshtein(a, b) {
+    a = String(a); b = String(b);
+    var m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    var prev = [], cur = [], i, j;
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++) {
+        cur[0] = i;
+        for (j = 1; j <= n; j++) {
+            var cost = a.charCodeAt(i - 1) === b.charCodeAt(j - 1) ? 0 : 1;
+            cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        }
+        for (j = 0; j <= n; j++) prev[j] = cur[j];
+    }
+    return prev[n];
+}
+
+/* Word similarity 0..1 — handles endings (работа/работы) and minor slips. */
+function _wordSim(a, b) {
+    if (a === b) return 1;
+    if (!a || !b) return 0;
+    var maxLen = Math.max(a.length, b.length);
+    if (maxLen === 0) return 1;
+    var sim = 1 - _levenshtein(a, b) / maxLen;
+    return sim < 0 ? 0 : sim;
+}
+
+/* Order-aware, WEIGHTED, similarity-based token stats.
+   exactRatio  — in-order full matches / total weight
+   partialRatio — presence anywhere (green=1.0, yellow=0.7) / total weight
+   Single words / 2-word cards (refLength < 3) use STRICT exact matching;
+   sentences (refLength >= 3) use flexible matching + service-word weights. */
 function _getWordStats(rec, ref) {
     var recWords = _tokenize(rec);
     var refWords = _tokenize(ref);
-    var exactMatches = 0;
-    var partialMatches = 0;
-    var used = new Set();
-
-    for (var i = 0; i < refWords.length; i++) {
-        if (recWords[i] === refWords[i]) {
-            exactMatches++;
-        }
+    var refLen = refWords.length;
+    var recLen = recWords.length;
+    if (refLen === 0) {
+        return { exactRatio: 0, partialRatio: 0, extraWords: recLen, refLength: 0, recLength: recLen };
     }
+    var flexible = refLen >= 3;
 
-    for (var refIndex = 0; refIndex < refWords.length; refIndex++) {
-        for (var recIndex = 0; recIndex < recWords.length; recIndex++) {
-            if (!used.has(recIndex) && refWords[refIndex] === recWords[recIndex]) {
-                partialMatches++;
-                used.add(recIndex);
-                break;
+    var weights = [];
+    var totalWeight = 0;
+    var i, k, r;
+    for (i = 0; i < refLen; i++) {
+        var wt = flexible ? _wordWeight(refWords[i]) : 1;
+        weights.push(wt);
+        totalWeight += wt;
+    }
+    if (totalWeight <= 0) totalWeight = refLen;
+
+    var used = [];
+    var matchIdx = [];
+    var credit = [];
+    for (r = 0; r < refLen; r++) {
+        var bestCredit = 0, bestIdx = -1, bestSim = -1;
+        for (k = 0; k < recLen; k++) {
+            if (used[k]) continue;
+            var sim = _wordSim(refWords[r], recWords[k]);
+            var c;
+            if (flexible) {
+                c = sim >= 0.85 ? 1 : (sim >= 0.60 ? 0.7 : 0);
+            } else {
+                c = sim >= 0.999 ? 1 : 0;
+            }
+            if (c > bestCredit || (c === bestCredit && c > 0 && sim > bestSim)) {
+                bestCredit = c; bestIdx = k; bestSim = sim;
             }
         }
+        if (bestIdx >= 0 && bestCredit > 0) used[bestIdx] = true;
+        matchIdx.push(bestIdx);
+        credit.push(bestCredit);
     }
 
-    var extraWords = Math.max(0, recWords.length - refWords.length);
+    var partialWeighted = 0;
+    for (r = 0; r < refLen; r++) partialWeighted += weights[r] * credit[r];
+
+    var exactWeighted = 0;
+    var lastIdx = -1;
+    for (r = 0; r < refLen; r++) {
+        if (credit[r] >= 1 && matchIdx[r] > lastIdx) {
+            exactWeighted += weights[r];
+            lastIdx = matchIdx[r];
+        }
+    }
+
     return {
-        exactRatio: refWords.length ? exactMatches / refWords.length : 0,
-        partialRatio: refWords.length ? partialMatches / refWords.length : 0,
-        extraWords: extraWords,
-        refLength: refWords.length,
-        recLength: recWords.length
+        exactRatio: _clampRange(exactWeighted / totalWeight, 0, 1),
+        partialRatio: _clampRange(partialWeighted / totalWeight, 0, 1),
+        extraWords: Math.max(0, recLen - refLen),
+        refLength: refLen,
+        recLength: recLen
     };
 }
 
@@ -1415,6 +1496,64 @@ function _getCategory(score) {
     return 'bad';
 }
 
+/* ============================================================
+ *  FLEXIBLE SENTENCE VERDICT
+ *  Long sentences (>= 3 reference words) are graded on weighted
+ *  word coverage so a missing preposition / one weak ending can
+ *  never collapse an 80-90%-correct attempt into a hard-fail
+ *  warning ("Aniqroq gapiring", fake_match, bad_pronunciation).
+ *    coverage >= 0.85 -> Ajoyib   (92-100)
+ *    coverage 0.70-84 -> Yaxshi   (78-91)
+ *    coverage 0.55-69 -> O'rtacha (58-74)
+ *    coverage < 0.55  -> Fail     (0-54)
+ *  Single / 2-word vocabulary cards are NOT affected (strict mode).
+ * ============================================================ */
+function _flexCoverageScore(cov) {
+    var c = _clampRange(Number(cov) || 0, 0, 1);
+    if (c >= 0.85) return Math.round(_clampRange(92 + (c - 0.85) / 0.15 * 8, 92, 100));
+    if (c >= 0.70) return Math.round(_clampRange(78 + (c - 0.70) / 0.15 * 13, 78, 91));
+    if (c >= 0.55) return Math.round(_clampRange(58 + (c - 0.55) / 0.15 * 16, 58, 74));
+    return Math.round(_clampRange(c / 0.55 * 54, 0, 54));
+}
+
+/* Strict-fallback reasons that must NOT survive on a long sentence the
+   learner clearly said most of. */
+var _STRICT_FALLBACK_REASONS = ['unclear_speech', 'fake_match', 'bad_pronunciation',
+    'wrong_word', 'no_speech', 'unstable_speech', 'bad'];
+
+/* Re-grades a finished result for long sentences. Returns the (mutated)
+   result. Genuine silence / unrelated speech (coverage < 0.55) is left
+   untouched so real warnings still appear. */
+function _applyFlexibleVerdict(result, referenceText) {
+    if (!result || !referenceText) return result;
+    var stats = _getWordStats(result.recognizedText || '', referenceText);
+    /* STRICT MODE for single words / short cards — never re-graded. */
+    if (stats.refLength < 3) return result;
+
+    var cov = stats.partialRatio;          /* weighted word coverage 0..1 */
+    result.matchRatio = cov;
+    if (cov < 0.55) return result;          /* genuine silence / wrong speech */
+
+    var flexScore = _flexCoverageScore(cov);
+    if (flexScore > (Number(result.finalScore) || 0)) {
+        result.finalScore = flexScore;
+        result.pronunciationScore = flexScore;
+        if (result.aniqlik !== undefined) result.aniqlik = Math.max(Number(result.aniqlik) || 0, flexScore);
+        if (result.toliqlik !== undefined) result.toliqlik = Math.max(Number(result.toliqlik) || 0, flexScore);
+        if (result.ravonlik !== undefined) result.ravonlik = Math.max(Number(result.ravonlik) || 0, flexScore);
+    }
+    /* coverage >= 0.70 → drop EVERY strict-fallback reason; the score-based
+       tier (excellent / good / almost) becomes the verdict. */
+    if (cov >= 0.70 && _STRICT_FALLBACK_REASONS.indexOf(result.reason) !== -1) {
+        result.reason = _getPronunciationReason(Number(result.finalScore) || 0);
+    } else if (cov >= 0.55 &&
+        (result.reason === 'unclear_speech' || result.reason === 'fake_match'
+         || result.reason === 'no_speech')) {
+        result.reason = _getPronunciationReason(Number(result.finalScore) || 0);
+    }
+    return result;
+}
+
 function _buildZeroScoreResult(recognizedText, referenceText, stats) {
     var matchStats = stats || _getMatchedWordStats(recognizedText, referenceText);
     return {
@@ -1481,6 +1620,7 @@ function _getWordFeedback(recognized, reference) {
     var feedback = new Array(refWords.length);
     var usedRecIndexes = new Set();
 
+    /* pass 1 — exact word in the exact position → green */
     for (var i = 0; i < refWords.length; i++) {
         if (recWords[i] === refWords[i]) {
             feedback[i] = { word: refWords[i], status: 'correct' };
@@ -1488,20 +1628,28 @@ function _getWordFeedback(recognized, reference) {
         }
     }
 
+    /* pass 2 — exact word elsewhere → green-ish (wrong_position);
+       similar word (ending slip / minor error) → yellow (partial);
+       nothing → red (missing) */
     for (var refIndex = 0; refIndex < refWords.length; refIndex++) {
         if (feedback[refIndex]) continue;
 
-        var matchedRecIndex = -1;
+        var exactRecIndex = -1;
+        var simRecIndex = -1;
+        var simBest = 0;
         for (var recIndex = 0; recIndex < recWords.length; recIndex++) {
-            if (!usedRecIndexes.has(recIndex) && refWords[refIndex] === recWords[recIndex]) {
-                matchedRecIndex = recIndex;
-                break;
-            }
+            if (usedRecIndexes.has(recIndex)) continue;
+            if (refWords[refIndex] === recWords[recIndex]) { exactRecIndex = recIndex; break; }
+            var sim = _wordSim(refWords[refIndex], recWords[recIndex]);
+            if (sim >= 0.60 && sim > simBest) { simBest = sim; simRecIndex = recIndex; }
         }
 
-        if (matchedRecIndex >= 0) {
+        if (exactRecIndex >= 0) {
             feedback[refIndex] = { word: refWords[refIndex], status: 'wrong_position' };
-            usedRecIndexes.add(matchedRecIndex);
+            usedRecIndexes.add(exactRecIndex);
+        } else if (simRecIndex >= 0) {
+            feedback[refIndex] = { word: refWords[refIndex], status: 'partial' };
+            usedRecIndexes.add(simRecIndex);
         } else {
             feedback[refIndex] = { word: refWords[refIndex], status: 'missing' };
         }
@@ -1551,6 +1699,8 @@ function _buildInlineHighlight(referenceText, feedback, words) {
                 } else {
                     cls = (f.status === 'correct') ? 'wf-correct' : 'wf-ok';
                 }
+            } else if (f.status === 'partial') {
+                cls = 'wf-ok';
             } else if (f.status === 'missing') {
                 cls = 'wf-bad';
             }
