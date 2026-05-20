@@ -718,36 +718,32 @@ function checkPronunciation(event) {
                 return;
             }
 
-            /* Long-sentence flexible verdict — re-grade so a missing
-               preposition / weak ending never forces a hard-fail
-               warning on an 80-90%-correct sentence. Single words and
-               short cards are left strict (handled inside the helper). */
+            /* Deterministic verdict engine — idempotent safety net; the
+               result was already graded inside _finalizePronunciationResult.
+               The verdict depends ONLY on word-level text similarity, so the
+               same speech always produces the same pass/fail outcome. */
             result = _applyFlexibleVerdict(result, referenceText);
 
             var score = Number(result.finalScore) || 0;
 
             /* PASSING RULE — single source of truth shared with the result
-               UI (_getCategory). Only "Ajoyib" (excellent) or "Yaxshi"
-               (good) advance to the next word. "O‘rtacha" (average) and any
-               bad / silence / wrong-word / fake-echo result must NOT pass. */
-            var passCategory = _getCategory(score);
-            var hardFailReason = result.reason === 'no_speech'
-                || result.reason === 'wrong_word'
-                || result.reason === 'fake_match';
-            var didPass = !hardFailReason
-                && (passCategory === 'excellent' || passCategory === 'good');
+               UI. Only "Ajoyib" (excellent) and "Yaxshi" (good) advance to
+               the next word. "O‘rtacha" (average), "Aniqroq gapiring"
+               (unclear) and "Hech narsa eshitilmadi" (empty) do NOT pass. */
+            var verdict = result.verdict || _getCategory(score);
+            var didPass = result.pass === true
+                && (verdict === 'excellent' || verdict === 'good');
 
             /* Optional grading diagnostics — set window.SPEECH_DEBUG = true
-               in the console to inspect transcript / similarity / score. */
+               in the console to inspect transcript / word states / verdict. */
             if (typeof window !== 'undefined' && window.SPEECH_DEBUG) {
                 console.log('[GRADE]', {
                     reference: word && word.ru,
                     transcript: result.recognizedText || '',
-                    similarity: result.matchRatio,
-                    accuracy: result.accuracyScore,
-                    fluency: result.fluencyScore,
+                    wordCounts: result.wordCounts,
+                    coverage: result.coverage,
                     finalScore: score,
-                    category: passCategory,
+                    verdict: verdict,
                     reason: result.reason,
                     didPass: didPass
                 });
@@ -786,7 +782,7 @@ function checkPronunciation(event) {
                 }
 
             /* ============ TRY AGAIN: O\u2018rtacha (average) \u2014 does NOT pass ============ */
-            } else if (!hardFailReason && passCategory === 'average') {
+            } else if (verdict === 'average') {
                 showStatus('\uD83D\uDCAA Yana urinib ko\'ring');
                 _animateFlashcardError();
                 _haptic(30);
@@ -888,20 +884,6 @@ function _handlePronFail(msg) {
     setTimeout(function () { showStatus(''); }, 2500);
 }
 
-/* ============================================================
- *  PRONUNCIATION SCORING — single deterministic pipeline.
- *  Input:  recognizedText (real Azure output only, never ref),
- *          referenceText, accuracy, fluency, completeness.
- *  Output: { pronunciationScore, accuracyScore, fluencyScore,
- *            completenessScore, similarity, matchRatio,
- *            matchedWords, totalWords, reason }.
- *  There is ONLY one scoring path — no hidden guards, overrides,
- *  previous-score memory, or fallback-to-reference magic.
- * ============================================================ */
-
-var _PRON_PASS_SCORE = 70;
-var _PRON_GOOD_SCORE = 85;
-
 /* ---- Localisation ----
    Default language is Uzbek (the app's primary UI language). Override
    via `window.SPEECH_LANG = "en"` before speech.js loads, or change LANG. */
@@ -965,29 +947,75 @@ function _clampRange(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
 
+/* ==================================================================
+ *  SPEECH VERDICT ENGINE  —  deterministic, word-quality based
+ *  (rebuilt May 2026)
+ *
+ *  PIPELINE
+ *    recognizedText + referenceText
+ *      -> _normalizeSpeechText()   lowercase, yo->ye, strip punctuation
+ *      -> _classifyWords()         each reference word: GREEN/YELLOW/RED
+ *      -> _evaluateVerdict()       counts -> one of 5 verdicts
+ *      -> _packageGrade()          verdict -> score / reason / UI data
+ *
+ *  The verdict and the word colors depend ONLY on word-level text
+ *  similarity, so the same speech input ALWAYS yields the same result
+ *  (no Azure-accuracy noise, no random yellow/red, fully deterministic).
+ *
+ *  WORD STATES
+ *    short words (<= 3 letters)  STRICT:
+ *        edit distance 0  -> GREEN
+ *        edit distance 1  -> YELLOW
+ *        else             -> RED
+ *    long words  (> 3 letters):
+ *        similarity >= 0.88 -> GREEN
+ *        similarity >= 0.68 -> YELLOW  (must also share a prefix/suffix)
+ *        else               -> RED
+ *
+ *  VERDICT RULES  (G/Y/R = green/yellow/red counts, T = total ref words)
+ *    HECH NARSA ESHITILMADI  no speech captured
+ *    ANIQROQ GAPIRING        R >= 3   OR   coverage < 60%
+ *    O'RTACHA                R = 1..2   OR   Y > ceil(T/2)   (too many yellow)
+ *    AJOYIB                  R = 0  AND  (Y = 0  OR  (Y <= 1 AND T >= 3))
+ *    YAXSHI                  R = 0  AND  Y <= ceil(T/2)
+ *    coverage = (G + Y) / T
+ * ================================================================== */
+
+var SPEECH_GREEN_THRESHOLD = 0.88;   /* long word similarity -> GREEN  */
+var SPEECH_YELLOW_THRESHOLD = 0.68;  /* long word similarity -> YELLOW */
+var SPEECH_SHORT_WORD_MAX = 3;       /* <= this many letters -> strict mode */
+var SPEECH_MIN_COVERAGE = 0.60;      /* below this coverage -> Aniqroq gapiring */
+
+/* Normalize text for comparison: lowercase, yo->ye, drop punctuation,
+   collapse whitespace. Internal hyphens are KEPT so a hyphenated word
+   ("iz-za") stays a single token for display; _matchForm() strips them
+   for the actual similarity comparison. */
+function _normalizeSpeechText(text) {
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .toLowerCase()
+        .replace(/ё/g, 'е')             /* yo -> ye */
+        .replace(/[̀-ͯ]/g, '')          /* combining accent marks */
+        .replace(/[‐-―−]/g, '-')   /* unicode dashes -> hyphen */
+        .replace(/[.,!?;:"'`()\[\]{}\/\\«»“”„…]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+/* Compare-form of a single token: hyphens removed so "iz-za" -> "izza"
+   and it can match "iz za" (two recognized tokens) or "izza". */
+function _matchForm(token) {
+    return String(token || '').replace(/-/g, '');
+}
+
+/* Split normalized text into word tokens (hyphenated words stay whole). */
 function _tokenize(text) {
-    if (!text) return [];
-    return String(text).toLowerCase()
-        .replace(/ё/g, 'е')               /* ё → е */
-        .replace(/[.,!?;:]/g, '')
-        .split(/\s+/)
-        .filter(Boolean);
+    var norm = _normalizeSpeechText(text);
+    if (!norm) return [];
+    return norm.split(' ').filter(Boolean);
 }
 
-/* Backward-compat alias used by older code paths. */
-function _tokenizeRefWords(text) {
-    return _tokenize(text);
-}
-
-/* ---- Service words: lower weight so a missing preposition / particle
-   never fails an otherwise-correct phrase. ---- */
-var _SERVICE_WORDS = ['из', 'за', 'из-за', 'в', 'во', 'на', 'и', 'с', 'со', 'по',
-    'не', 'к', 'ко', 'у', 'о', 'об', 'от', 'до', 'же', 'ли', 'бы', 'а', 'но'];
-var _SERVICE_SET = {};
-_SERVICE_WORDS.forEach(function (w) { _SERVICE_SET[w] = true; });
-function _wordWeight(w) { return _SERVICE_SET[w] ? 0.4 : 1; }
-
-/* Levenshtein edit distance (used for partial / fuzzy word match). */
+/* Levenshtein edit distance between two strings. */
 function _levenshtein(a, b) {
     a = String(a); b = String(b);
     var m = a.length, n = b.length;
@@ -1006,102 +1034,230 @@ function _levenshtein(a, b) {
     return prev[n];
 }
 
-/* Word similarity 0..1 — handles endings (работа/работы) and minor slips. */
-function _wordSim(a, b) {
-    if (a === b) return 1;
-    if (!a || !b) return 0;
-    var maxLen = Math.max(a.length, b.length);
-    if (maxLen === 0) return 1;
-    var sim = 1 - _levenshtein(a, b) / maxLen;
-    return sim < 0 ? 0 : sim;
+/* A YELLOW (partial) long-word match must share a real prefix OR suffix
+   with the reference word. Guards against coincidental letter overlap
+   being counted as a near-match (anti-random protection). */
+function _sharesAffix(ref, cand) {
+    if (!ref || !cand) return false;
+    if (ref.slice(0, 2) === cand.slice(0, 2)) return true;
+    if (ref.slice(-2) === cand.slice(-2)) return true;
+    return false;
 }
 
-/* Order-aware, WEIGHTED, similarity-based token stats.
-   exactRatio  — in-order full matches / total weight
-   partialRatio — presence anywhere (green=1.0, yellow=0.7) / total weight
-   Single words / 2-word cards (refLength < 3) use STRICT exact matching;
-   sentences (refLength >= 3) use flexible matching + service-word weights. */
+/* Classify one reference word given the best candidate found for it. */
+function _classifyWord(refForm, candForm, sim, dist) {
+    if (!refForm) return 'red';
+
+    /* SHORT WORD STRICT MODE -- <= 3 letters: only exact or 1 edit count.
+       Random noise can never be credited to short words ("ya", "i", "v"). */
+    if (refForm.length <= SPEECH_SHORT_WORD_MAX) {
+        if (dist === 0) return 'green';
+        if (dist <= 1) return 'yellow';
+        return 'red';
+    }
+
+    /* LONG WORD MODE */
+    if (sim >= SPEECH_GREEN_THRESHOLD) return 'green';
+    if (sim >= SPEECH_YELLOW_THRESHOLD && _sharesAffix(refForm, candForm)) return 'yellow';
+    return 'red';
+}
+
+/* Score one candidate string against a reference word; keep the best. */
+function _considerCand(best, refForm, cand, a, b) {
+    if (!cand) return;
+    var dist = _levenshtein(refForm, cand);
+    var maxLen = Math.max(refForm.length, cand.length) || 1;
+    var sim = 1 - dist / maxLen;
+    if (sim < 0) sim = 0;
+    if (sim > best.sim || (sim === best.sim && dist < best.dist)) {
+        best.sim = sim;
+        best.dist = dist;
+        best.cand = cand;
+        best.a = a;
+        best.b = b;
+    }
+}
+
+/* Classify every reference word -> { ref, status, sim }.
+   Order-independent greedy match. A hyphenated reference word can also
+   match two adjacent recognized tokens joined together so the speech
+   recognizer splitting "iz-za" into "iz za" never costs the learner. */
+function _classifyWords(recognized, reference) {
+    var refTokens = _tokenize(reference);
+    var recTokens = _tokenize(recognized);
+    var counts = { green: 0, yellow: 0, red: 0 };
+    var total = refTokens.length;
+
+    if (total === 0) {
+        return {
+            total: 0, states: [], counts: counts, coverage: 0,
+            extraWords: recTokens.length, recCount: recTokens.length
+        };
+    }
+
+    /* Original-case tokens for display; fall back to the normalized
+       tokens if punctuation made the two splits diverge. */
+    var refDisplay = String(reference).trim().split(/\s+/).filter(Boolean);
+    if (refDisplay.length !== total) refDisplay = refTokens;
+
+    var refForms = refTokens.map(_matchForm);
+    var recForms = recTokens.map(_matchForm);
+    var usedRec = [];
+    var states = [];
+    var r, k;
+
+    for (r = 0; r < refForms.length; r++) {
+        var refForm = refForms[r];
+        var best = { sim: -1, dist: Infinity, cand: '', a: -1, b: -1 };
+
+        for (k = 0; k < recForms.length; k++) {
+            if (usedRec[k]) continue;
+            /* candidate 1: a single recognized token */
+            _considerCand(best, refForm, recForms[k], k, -1);
+            /* candidate 2: this token joined with the next one
+               (handles "iz-za" reference vs "iz za" recognized) */
+            if (k + 1 < recForms.length && !usedRec[k + 1]) {
+                _considerCand(best, refForm, recForms[k] + recForms[k + 1], k, k + 1);
+            }
+        }
+
+        var status = (best.a < 0)
+            ? 'red'
+            : _classifyWord(refForm, best.cand, best.sim, best.dist);
+
+        if (status !== 'red' && best.a >= 0) {
+            usedRec[best.a] = true;
+            if (best.b >= 0) usedRec[best.b] = true;
+        }
+        counts[status]++;
+        states.push({
+            ref: refDisplay[r] || refTokens[r],
+            status: status,
+            sim: best.sim < 0 ? 0 : best.sim
+        });
+    }
+
+    var extraWords = 0;
+    for (k = 0; k < recForms.length; k++) {
+        if (!usedRec[k]) extraWords++;
+    }
+
+    return {
+        total: total,
+        states: states,
+        counts: counts,
+        coverage: (counts.green + counts.yellow) / total,
+        extraWords: extraWords,
+        recCount: recTokens.length
+    };
+}
+
+/* Word-state counts -> one of the five verdicts. Pure, deterministic. */
+function _evaluateVerdict(cls) {
+    var total = cls.total;
+    if (total === 0) return 'empty';
+
+    var y = cls.counts.yellow;
+    var r = cls.counts.red;
+
+    /* RED >= 3  OR  coverage too low -> the learner must speak again. */
+    if (r >= 3 || cls.coverage < SPEECH_MIN_COVERAGE) return 'unclear';
+    /* 1-2 RED words -> average. */
+    if (r >= 1) return 'average';
+
+    /* From here RED === 0. */
+    var yellowLimit = Math.ceil(total / 2);
+    if (y > yellowLimit) return 'average';                 /* too many yellow */
+    if (y === 0 || (y <= 1 && total >= 3)) return 'excellent';
+    return 'good';
+}
+
+/* verdict -> display score and verdict -> reason code. */
+var _VERDICT_SCORE = { excellent: 96, good: 82, average: 64, unclear: 32, empty: 0 };
+var _VERDICT_REASON = { excellent: 'excellent', good: 'good', average: 'average', unclear: 'unclear_speech', empty: 'no_speech' };
+
+/* reference-word feedback list (consumed by hint builders). */
+function _statesToFeedback(cls) {
+    var fb = [];
+    var states = (cls && cls.states) || [];
+    for (var i = 0; i < states.length; i++) {
+        var s = states[i].status;
+        fb.push({
+            word: states[i].ref,
+            status: s === 'green' ? 'correct' : (s === 'yellow' ? 'partial' : 'missing')
+        });
+    }
+    return fb;
+}
+
+/* verdict + classification -> a complete result payload. */
+function _packageGrade(verdict, cls, reasonOverride) {
+    var score = _VERDICT_SCORE[verdict] != null ? _VERDICT_SCORE[verdict] : 0;
+    var counts = (cls && cls.counts) || { green: 0, yellow: 0, red: 0 };
+    var coverage = (cls && cls.coverage) || 0;
+    return {
+        verdict: verdict,
+        pass: verdict === 'excellent' || verdict === 'good',
+        finalScore: score,
+        pronunciationScore: score,
+        aniqlik: score,
+        ravonlik: score,
+        toliqlik: score,
+        reason: reasonOverride || _VERDICT_REASON[verdict] || 'bad',
+        wordStates: (cls && cls.states) || [],
+        wordCounts: counts,
+        coverage: coverage,
+        completenessScore: Math.round(coverage * 100),
+        matchRatio: coverage,
+        wordFeedback: _statesToFeedback(cls)
+    };
+}
+
+/* AUTHORITATIVE GRADER -- the single source of truth for the verdict. */
+function _gradeSpeech(recognizedText, referenceText, opts) {
+    opts = opts || {};
+    var ref = referenceText || '';
+
+    /* No speech captured -> Hech narsa eshitilmadi. */
+    if (!_normalizeSpeechText(recognizedText)) {
+        return _packageGrade('empty', _classifyWords('', ref), 'no_speech');
+    }
+
+    var cls = _classifyWords(recognizedText, ref);
+
+    /* Anti-cheat: Azure echoed the reference text without real, clean
+       audio behind it -> never allowed to pass. */
+    if (opts.fakeMatch) {
+        return _packageGrade('unclear', cls, 'fake_match');
+    }
+
+    return _packageGrade(_evaluateVerdict(cls), cls);
+}
+
+/* Back-compat shim -- legacy callers expect token-presence stats. */
 function _getWordStats(rec, ref) {
-    var recWords = _tokenize(rec);
-    var refWords = _tokenize(ref);
-    var refLen = refWords.length;
-    var recLen = recWords.length;
-    if (refLen === 0) {
-        return { exactRatio: 0, partialRatio: 0, extraWords: recLen, refLength: 0, recLength: recLen };
+    var cls = _classifyWords(rec, ref);
+    if (cls.total === 0) {
+        return {
+            exactRatio: 0, partialRatio: 0, extraWords: cls.extraWords,
+            refLength: 0, recLength: cls.recCount
+        };
     }
-    var flexible = refLen >= 3;
-
-    var weights = [];
-    var totalWeight = 0;
-    var i, k, r;
-    for (i = 0; i < refLen; i++) {
-        var wt = flexible ? _wordWeight(refWords[i]) : 1;
-        weights.push(wt);
-        totalWeight += wt;
-    }
-    if (totalWeight <= 0) totalWeight = refLen;
-
-    var used = [];
-    var matchIdx = [];
-    var credit = [];
-    for (r = 0; r < refLen; r++) {
-        var bestCredit = 0, bestIdx = -1, bestSim = -1;
-        for (k = 0; k < recLen; k++) {
-            if (used[k]) continue;
-            var sim = _wordSim(refWords[r], recWords[k]);
-            var c;
-            if (flexible) {
-                c = sim >= 0.85 ? 1 : (sim >= 0.60 ? 0.7 : 0);
-            } else {
-                c = sim >= 0.999 ? 1 : 0;
-            }
-            if (c > bestCredit || (c === bestCredit && c > 0 && sim > bestSim)) {
-                bestCredit = c; bestIdx = k; bestSim = sim;
-            }
-        }
-        if (bestIdx >= 0 && bestCredit > 0) used[bestIdx] = true;
-        matchIdx.push(bestIdx);
-        credit.push(bestCredit);
-    }
-
-    var partialWeighted = 0;
-    for (r = 0; r < refLen; r++) partialWeighted += weights[r] * credit[r];
-
-    var exactWeighted = 0;
-    var lastIdx = -1;
-    for (r = 0; r < refLen; r++) {
-        if (credit[r] >= 1 && matchIdx[r] > lastIdx) {
-            exactWeighted += weights[r];
-            lastIdx = matchIdx[r];
-        }
-    }
-
     return {
-        exactRatio: _clampRange(exactWeighted / totalWeight, 0, 1),
-        partialRatio: _clampRange(partialWeighted / totalWeight, 0, 1),
-        extraWords: Math.max(0, recLen - refLen),
-        refLength: refLen,
-        recLength: recLen
+        exactRatio: cls.counts.green / cls.total,
+        partialRatio: cls.coverage,
+        extraWords: cls.extraWords,
+        refLength: cls.total,
+        recLength: cls.recCount
     };
 }
 
-/* Backward-compat shim — old callers expect { matchedWords, totalWords,
-   matchRatio }. matchRatio === partialRatio (presence-only). */
-function _getMatchedWordStats(recognized, reference) {
-    var s = _getWordStats(recognized, reference);
-    return {
-        matchedWords: Math.round(s.partialRatio * s.refLength),
-        totalWords: s.refLength,
-        matchRatio: s.partialRatio
-    };
+/* Back-compat shim -- word feedback derived from the verdict engine. */
+function _getWordFeedback(recognized, reference) {
+    return _statesToFeedback(_classifyWords(recognized, reference));
 }
 
-function _getSimilarity(recognized, reference) {
-    return _getWordStats(recognized, reference).partialRatio;
-}
-
-/* Normalize an Azure-supplied metric: ≤0 / undefined / NaN → null
-   (so UI can render "—" and scoring can ignore it). */
+/* Normalize an Azure metric: <=0 / undefined / NaN -> null. */
 function _normalizeMetric(v) {
     if (v === undefined || v === null) return null;
     var n = Number(v);
@@ -1111,669 +1267,108 @@ function _normalizeMetric(v) {
     return n;
 }
 
-/* Render an Azure metric for display: null/0 → em-dash, else round. */
-function _displayMetric(v) {
-    if (v === null || v === undefined) return '—';
-    var n = Number(v);
-    if (!Number.isFinite(n) || n <= 0) return '—';
-    return Math.round(n);
-}
-
+/* Average Azure word-level accuracy. Used ONLY by the anti-cheat
+   (fake-echo) guard -- never by the verdict itself. */
 function _getWordQuality(words) {
     if (!Array.isArray(words) || words.length === 0) {
         return { avg: null, weakCount: 0, veryWeakCount: 0 };
     }
-
-    var valid = words.filter(function (word) {
-        return word && Number.isFinite(Number(word.accuracy));
+    var valid = words.filter(function (w) {
+        return w && Number.isFinite(Number(w.accuracy));
     });
-
-    if (valid.length === 0) {
-        return { avg: null, weakCount: 0, veryWeakCount: 0 };
-    }
-
-    var total = valid.reduce(function (sum, word) {
-        return sum + Number(word.accuracy);
-    }, 0);
-    var weakCount = valid.filter(function (word) {
-        return Number(word.accuracy) < 65;
-    }).length;
-    var veryWeakCount = valid.filter(function (word) {
-        return Number(word.accuracy) < 50;
-    }).length;
-
+    if (valid.length === 0) return { avg: null, weakCount: 0, veryWeakCount: 0 };
+    var total = valid.reduce(function (s, w) { return s + Number(w.accuracy); }, 0);
     return {
         avg: Math.round(total / valid.length),
-        weakCount: weakCount,
-        veryWeakCount: veryWeakCount
+        weakCount: valid.filter(function (w) { return Number(w.accuracy) < 65; }).length,
+        veryWeakCount: valid.filter(function (w) { return Number(w.accuracy) < 50; }).length
     };
 }
 
-function _isSuspiciousAccuracy(topAccuracy, words) {
-    if (!Array.isArray(words) || words.length === 0) return false;
-
-    var valid = words.filter(function (word) {
-        return word && Number.isFinite(Number(word.accuracy));
-    });
-    if (valid.length === 0) return false;
-
-    var normalizedTopAccuracy = _normalizeMetric(topAccuracy);
-    if (normalizedTopAccuracy === null) return false;
-
-    var avg = valid.reduce(function (sum, word) {
-        return sum + Number(word.accuracy || 0);
-    }, 0) / valid.length;
-
-    return Math.abs(normalizedTopAccuracy - avg) > 20;
-}
-
-function _getSpeechStability(words) {
-    if (!Array.isArray(words) || words.length < 2) return null;
-
-    var values = words
-        .map(function (word) { return Number(word && word.accuracy) || 0; })
-        .filter(function (value) { return Number.isFinite(value); });
-
-    if (values.length < 2) return null;
-
-    var avg = values.reduce(function (sum, value) { return sum + value; }, 0) / values.length;
-    var variance = values.reduce(function (sum, value) {
-        return sum + Math.pow(value - avg, 2);
-    }, 0) / values.length;
-
-    return Math.sqrt(variance);
-}
-
-function _getSpeechStabilityThreshold(wordCount) {
-    if (!Number.isFinite(wordCount) || wordCount < 2) return 22;
-    if (wordCount <= 2) return 26;
-    if (wordCount === 3) return 22;
-    return Math.max(16, 34 / Math.sqrt(wordCount));
-}
-
-function _getSpeechStabilityPenalty(stability, threshold) {
-    if (!Number.isFinite(stability)) return 1;
-
-    var safeThreshold = Number.isFinite(threshold) && threshold > 0 ? threshold : 20;
-    var ratio = stability / safeThreshold;
-
-    if (ratio <= 1) {
-        return 1;
-    }
-    if (ratio <= 1.35) {
-        return _clampRange(1 - (ratio - 1) * (0.08 / 0.35), 0.92, 1);
-    }
-    if (ratio <= 1.85) {
-        return _clampRange(0.92 - (ratio - 1.35) * (0.14 / 0.5), 0.78, 0.92);
-    }
-    if (ratio <= 2.35) {
-        return _clampRange(0.78 - (ratio - 1.85) * (0.1 / 0.5), 0.68, 0.78);
-    }
-    return 0.68;
-}
-
-function _getAzureQualityPenalty(qualityAvg, suspiciousAccuracy) {
-    if (!Number.isFinite(qualityAvg)) return 1;
-
-    var avg = Number(qualityAvg);
-    var penalty = 1;
-
-    if (avg < 74) {
-        if (avg >= 65) {
-            var upperWeight = _clampRange((avg - 65) / 9, 0, 1);
-            var upperSmooth = upperWeight * upperWeight * (3 - 2 * upperWeight);
-            penalty = 0.64 + upperSmooth * 0.36;
-        } else if (avg >= 55) {
-            var midWeight = _clampRange((avg - 55) / 10, 0, 1);
-            var midSmooth = midWeight * midWeight * (3 - 2 * midWeight);
-            penalty = 0.48 + midSmooth * 0.16;
-        } else {
-            var clipped = Math.max(avg, 30);
-            var lowWeight = _clampRange((clipped - 30) / 25, 0, 1);
-            var lowSmooth = lowWeight * lowWeight * (3 - 2 * lowWeight);
-            penalty = 0.36 + lowSmooth * 0.12;
-        }
-    }
-
-    if (suspiciousAccuracy) {
-        var suspiciousCap = 1;
-        if (avg >= 65) {
-            var suspiciousUpperWeight = _clampRange((Math.min(avg, 74) - 65) / 9, 0, 1);
-            var suspiciousUpperSmooth = suspiciousUpperWeight * suspiciousUpperWeight * (3 - 2 * suspiciousUpperWeight);
-            suspiciousCap = 0.62 + suspiciousUpperSmooth * 0.22;
-        } else if (avg >= 55) {
-            var suspiciousMidWeight = _clampRange((avg - 55) / 10, 0, 1);
-            var suspiciousMidSmooth = suspiciousMidWeight * suspiciousMidWeight * (3 - 2 * suspiciousMidWeight);
-            suspiciousCap = 0.44 + suspiciousMidSmooth * 0.18;
-        } else {
-            var suspiciousClipped = Math.max(avg, 30);
-            var suspiciousLowWeight = _clampRange((suspiciousClipped - 30) / 25, 0, 1);
-            var suspiciousLowSmooth = suspiciousLowWeight * suspiciousLowWeight * (3 - 2 * suspiciousLowWeight);
-            suspiciousCap = 0.36 + suspiciousLowSmooth * 0.08;
-        }
-        penalty = Math.min(penalty, suspiciousCap);
-    }
-
-    return _clampRange(penalty, 0.36, 1);
-}
-
-function _getNearExactPenalty(partialRatio, qualityAvg) {
-    if (!Number.isFinite(partialRatio) || partialRatio < 0.72) return 1;
-    if (!Number.isFinite(qualityAvg) || qualityAvg >= 70) return 1;
-
-    var partialWeight = _clampRange((partialRatio - 0.72) / 0.18, 0, 1);
-    var smoothPartial = partialWeight * partialWeight * (3 - 2 * partialWeight);
-    var clippedQuality = _clampRange(qualityAvg, 52, 70);
-    var qualityWeight = (70 - clippedQuality) / 18;
-    var ceiling = 0.86 - 0.1 * qualityWeight;
-    var floor = 0.6 - 0.16 * qualityWeight;
-
-    return _clampRange(ceiling - (ceiling - floor) * smoothPartial, 0.44, 0.86);
-}
-
-/* Display-side metrics are derived from token match plus fluency.
-   ALL penalties (word-level + external like stability) are applied here
-   so the three bars AND finalScore = avg(bars) can never disagree.
-   `extraPenalty` is the hook for caller-supplied multipliers (stability,
-   anti-fake caps, etc.) — keeps the single-source-of-truth invariant. */
-function _computeMetrics(stats, accuracyScore, fluencyScore, extraPenalty) {
-    var exact = stats && stats.exactRatio || 0;
-    var partial = stats && stats.partialRatio || 0;
-    var extraWords = stats && stats.extraWords || 0;
-    var refLength = stats && stats.refLength || 0;
-    var recLength = stats && stats.recLength || 0;
-
-    var aniqlik = Math.round(exact * 100);
-    var toliqlik = Math.round(partial * 100);
-
-    var normalizedFluency = _normalizeMetric(fluencyScore);
-    var ravonlik = normalizedFluency !== null
-        ? Math.round(normalizedFluency)
-        : Math.round(partial * 70);
-
-    if (normalizedFluency !== null) {
-        aniqlik = Math.round(aniqlik * 0.6 + normalizedFluency * 0.4);
-        toliqlik = Math.round(toliqlik * 0.6 + normalizedFluency * 0.4);
-        aniqlik = Math.min(aniqlik, normalizedFluency + 15);
-        toliqlik = Math.min(toliqlik, normalizedFluency + 15);
-    }
-
-    /* Soft metric lift before avg(). RECALIBRATED — was 1.12 / 1.05 plus a
-       separate 1.05 fluency lift. That stacked inflation pushed almost every
-       acceptable attempt into the Ajoyib band and Yaxshi/O‘rtacha almost
-       never appeared. A single small 1.03 nudge for near-exact matches keeps
-       genuinely strong attempts rewarded while leaving real headroom between
-       the Yaxshi and Ajoyib tiers. */
-    if (exact >= 0.85) {
-        aniqlik *= 1.03;
-        toliqlik *= 1.03;
-    }
-
-    aniqlik = Math.min(aniqlik, 100);
-    toliqlik = Math.min(toliqlik, 100);
-    ravonlik = Math.min(ravonlik, 100);
-
-    if (exact < partial) {
-        toliqlik = Math.min(toliqlik, aniqlik + (refLength <= 3 ? 18 : 24));
-    }
-
-    ravonlik = Math.min(ravonlik, aniqlik);
-
-    /* Unified penalty — the ONLY place where any score multiplier lives. */
-    var penalty = 1;
-    var perfectExact = exact >= 1;
-
-    /* Layer 3: short-phrase amplifier. 1 wrong word in a 2-word phrase is
-       a 50% error — the standard penalty curve under-punishes it. */
-    var shortPhrase = refLength > 0 && refLength <= 3;
-    var veryShort = refLength > 0 && refLength <= 2;
-
-    if (exact < 0.5) {
-        penalty *= 0.8;
-    }
-
-    /* Mismatch penalty only kicks in when token coverage is meaningfully
-       low (partial < 0.7). Above that we trust the metric averaging — a
-       single missed word in a 4-word phrase shouldn't get a hard multiplier. */
-    var hasMismatch = !perfectExact && partial < 0.7 && exact === partial;
-    if (!perfectExact && (hasMismatch || (exact < partial && partial < 0.7))) {
-        penalty *= veryShort ? 0.85 : (shortPhrase ? 0.88 : 0.9);
-    }
-
-    var sameLengthSubstitution = hasMismatch && recLength === refLength && extraWords === 0;
-    if (sameLengthSubstitution) {
-        penalty *= veryShort ? 0.86 : (shortPhrase ? 0.84 : 0.9);
-    }
-
-    if (partial < 0.3) {
-        penalty *= 0.5;
-    }
-
-    /* External penalty (stability / anti-fake) folded in. Smooth floor:
-       linearly blend extraPenalty toward 0.75 as base avg drops to 0,
-       so a slightly-better base never produces a worse final. */
-    if (Number.isFinite(extraPenalty) && extraPenalty < 1) {
-        var preExtAvg = ((aniqlik + ravonlik + toliqlik) / 3) * penalty;
-        var weakWeight = preExtAvg >= 60 ? 0 : (60 - preExtAvg) / 60;
-        var effective = extraPenalty + weakWeight * Math.max(0, 0.75 - extraPenalty);
-        penalty *= effective;
-    }
-
-    /* Floor the combined chain so stacked penalties can't crash to 30–40
-       on partial mistakes. Garbage is still capped to 20 below. */
-    penalty = Math.max(penalty, 0.6);
-
-    aniqlik = _clampRange(aniqlik * penalty, 0, 100);
-    toliqlik = _clampRange(toliqlik * penalty, 0, 100);
-    ravonlik = _clampRange(ravonlik * penalty, 0, 100);
-
-    /* Extras: soft multiplier — 5% per extra word, floored at 0.8. A
-       couple of repeated/extra words shouldn't tank an otherwise-correct
-       attempt. Applied after the main penalty multiplier. */
-    if (extraWords > 0) {
-        var extraMul = Math.max(0.8, 1 - 0.05 * extraWords);
-        aniqlik *= extraMul;
-        toliqlik *= extraMul;
-        ravonlik *= extraMul;
-    }
-
-    aniqlik = Math.round(_clampRange(aniqlik, 0, 100));
-    toliqlik = Math.round(_clampRange(toliqlik, 0, 100));
-    ravonlik = Math.round(_clampRange(ravonlik, 0, 100));
-
-    if (partial < 0.3) {
-        aniqlik = Math.min(aniqlik, 20);
-        toliqlik = Math.min(toliqlik, 20);
-        ravonlik = Math.min(ravonlik, 20);
-    }
-
-    return { aniqlik: aniqlik, ravonlik: ravonlik, toliqlik: toliqlik };
-}
-
-function _computeFinalMetricScore(metrics) {
-    var aniqlik = Number(metrics && metrics.aniqlik) || 0;
-    var ravonlik = Number(metrics && metrics.ravonlik) || 0;
-    var toliqlik = Number(metrics && metrics.toliqlik) || 0;
-
-    return Math.round(_clampRange((aniqlik + ravonlik + toliqlik) / 3, 0, 100));
-}
-
-/* SINGLE source of truth.
-   metrics  =  _computeMetrics(...) — all penalties already inside
-   finalScore = avg(metrics) — no fallback, no override, no score *=
-   pronunciationScore = finalScore (kept for legacy consumers)
-   The only special case is `fake_match`: it wants a hard punitive
-   metric set (anti-fake guard), not a recompute from token stats. */
+/* Merge the authoritative grade into a result object. EVERY real result
+   path funnels through here, so the verdict is always deterministic. */
 function _finalizePronunciationResult(result, referenceText) {
     var finalized = result || {};
-
-    var stats = _getWordStats(finalized.recognizedText || '', referenceText || '');
-    var metrics = _computeMetrics(
-        stats,
-        finalized.accuracyScore,
-        finalized.fluencyScore,
-        finalized.__extraPenalty
+    var grade = _gradeSpeech(
+        finalized.recognizedText || '',
+        referenceText || '',
+        { fakeMatch: finalized.reason === 'fake_match' }
     );
-
-    var score = _computeFinalMetricScore(metrics);
-
-    /* Score is the pure average of metrics — all soft boosts now live
-       inside _computeMetrics so the lift happens BEFORE averaging.
-       Boosting after avg only nudged the result by a few points; lifting
-       each metric raises the avg itself, which is what actually moves
-       attempts from O‘rtacha into Yaxshi/Ajoyib. */
-    score = Math.min(score, 100);
-    score = Math.round(score);
-
-    finalized.aniqlik = metrics.aniqlik;
-    finalized.ravonlik = metrics.ravonlik;
-    finalized.toliqlik = metrics.toliqlik;
-    finalized.finalScore = score;
-    finalized.pronunciationScore = score;
-
-    if (!finalized.reason) {
-        finalized.reason = _getPronunciationReason(score);
-    }
-    if (!Array.isArray(finalized.words)) {
-        finalized.words = [];
-    }
-    finalized.wordFeedback = _getWordFeedback(finalized.recognizedText || '', referenceText || '');
-
+    finalized.verdict = grade.verdict;
+    finalized.pass = grade.pass;
+    finalized.finalScore = grade.finalScore;
+    finalized.pronunciationScore = grade.finalScore;
+    finalized.aniqlik = grade.aniqlik;
+    finalized.ravonlik = grade.ravonlik;
+    finalized.toliqlik = grade.toliqlik;
+    finalized.reason = grade.reason;
+    finalized.wordStates = grade.wordStates;
+    finalized.wordCounts = grade.wordCounts;
+    finalized.coverage = grade.coverage;
+    finalized.matchRatio = grade.matchRatio;
+    finalized.completenessScore = grade.completenessScore;
+    finalized.wordFeedback = grade.wordFeedback;
+    if (!Array.isArray(finalized.words)) finalized.words = [];
     delete finalized.__extraPenalty;
     return finalized;
 }
 
-/* Score-driven verdict. Azure metrics are advisory; score is truth.
-   Tiers kept in sync with _getCategory:
-   ≥92 excellent · 76–91 good · 56–75 almost · <56 bad. */
-function _getPronunciationReason(score) {
-    var s = Number(score) || 0;
-    if (s >= 92) return 'excellent';
-    if (s >= 76) return 'good';
-    if (s >= 56) return 'almost';
-    return 'bad';
+/* Idempotent safety net for the caller in checkPronunciation(). */
+function _applyFlexibleVerdict(result, referenceText) {
+    if (!result) return result;
+    if (result.verdict) return result;          /* already graded */
+    return _finalizePronunciationResult(result, referenceText);
 }
 
-function _getPronunciationReasonUi(reason) {
-    if (reason === 'excellent')        return { message: _t('verdictExcellent'),  verdictClass: 'good' };
-    if (reason === 'good')             return { message: _t('verdictGood'),       verdictClass: 'good' };
-    if (reason === 'almost')           return { message: _t('verdictAlmost'),     verdictClass: 'ok'  };
-    if (reason === 'ok')               return { message: _t('verdictAlmost'),     verdictClass: 'ok'  };
-    if (reason === 'bad')              return { message: _t('verdictBad'),        verdictClass: 'bad' };
-    if (reason === 'wrong_word')       return { message: _t('verdictWrongWord'),  verdictClass: 'bad' };
-    if (reason === 'bad_pronunciation')return { message: _t('verdictBadPron'),    verdictClass: 'ok'  };
-    if (reason === 'unclear_speech')   return { message: _t('verdictUnclear'),    verdictClass: 'ok'  };
-    if (reason === 'no_speech')        return { message: _t('verdictUnclear'),    verdictClass: 'bad' };
-    if (reason === 'unstable_speech')  return { message: _t('verdictUnstable'),   verdictClass: 'ok'  };
-    if (reason === 'fake_match')       return { message: _t('verdictFakeMatch'),  verdictClass: 'bad' };
-    return { message: _t('verdictExcellent'), verdictClass: 'good' };
-}
-
-/* 4-tier UX category — single source of truth for the result screen.
-   Score → category → { emoji, text, advice, verdictClass, animClass }.
-   Animation/verdict classes preserved so existing CSS keeps working. */
-var _PRON_CATEGORY = {
-    excellent: { text: 'Ajoyib',      emoji: '🌟', advice: '',                              verdictClass: 'good', animClass: 'anim-success' },
-    good:      { text: 'Yaxshi',      emoji: '✨',       advice: 'Yana biroz ravonroq ayting',    verdictClass: 'good', animClass: 'anim-success' },
-    average:   { text: 'O‘rtacha', emoji: '💪', advice: 'So‘zlarni aniqroq ayting', verdictClass: 'ok',   animClass: 'anim-almost'  },
-    bad:       { text: 'Yaxshi emas', emoji: '😕', advice: 'So‘zni to‘liq ayting', verdictClass: 'bad',  animClass: 'anim-fail'    }
-};
-
-/* Thresholds aligned with the progression gate so the verdict the user
-   SEES always matches whether they advance. REBALANCED — the 94 floor made
-   "Ajoyib" almost unreachable and collapsed everything into "Yaxshi". The
-   bands are now spread across the realistic score range a correct word
-   produces (~56-100) for a natural distribution:
-     excellent (Ajoyib)  ≥ 92  — clean, high-fluency pronunciation  (~20-35%)
-     good      (Yaxshi)  ≥ 76  — understandable but imperfect — PASS (~40-55%)
-     average   (O‘rtacha)≥ 56  — noticeable issues — does NOT pass  (~10-25%)
-     bad                 < 56  — wrong / silence — does NOT pass */
+/* Numeric score -> category. Kept for legacy callers and as the
+   _showPronResult fallback. Boundaries match _VERDICT_SCORE. */
 function _getCategory(score) {
     var s = Number(score) || 0;
     if (s >= 92) return 'excellent';
     if (s >= 76) return 'good';
     if (s >= 56) return 'average';
-    return 'bad';
+    if (s >= 16) return 'unclear';
+    return 'empty';
 }
 
-/* ============================================================
- *  FLEXIBLE SENTENCE VERDICT
- *  Long sentences (>= 3 reference words) are graded on weighted
- *  word coverage so a missing preposition / one weak ending can
- *  never collapse an 80-90%-correct attempt into a hard-fail
- *  warning ("Aniqroq gapiring", fake_match, bad_pronunciation).
- *    coverage >= 0.85 -> Ajoyib   (92-100)
- *    coverage 0.70-84 -> Yaxshi   (78-91)
- *    coverage 0.55-69 -> O'rtacha (58-74)
- *    coverage < 0.55  -> Fail     (0-54)
- *  Single / 2-word vocabulary cards are NOT affected (strict mode).
- * ============================================================ */
-function _flexCoverageScore(cov) {
-    var c = _clampRange(Number(cov) || 0, 0, 1);
-    if (c >= 0.85) return Math.round(_clampRange(92 + (c - 0.85) / 0.15 * 8, 92, 100));
-    if (c >= 0.70) return Math.round(_clampRange(78 + (c - 0.70) / 0.15 * 13, 78, 91));
-    if (c >= 0.55) return Math.round(_clampRange(58 + (c - 0.55) / 0.15 * 16, 58, 74));
-    return Math.round(_clampRange(c / 0.55 * 54, 0, 54));
-}
+/* verdict -> result-screen presentation. */
+var _PRON_CATEGORY = {
+    excellent: { text: 'Ajoyib',                 emoji: '🌟', advice: '',
+                 verdictClass: 'good', animClass: 'anim-success' },
+    good:      { text: 'Yaxshi',                 emoji: '✨',       advice: 'Yana biroz ravonroq ayting',
+                 verdictClass: 'good', animClass: 'anim-success' },
+    average:   { text: 'O‘rtacha',          emoji: '💪', advice: 'So‘zlarni aniqroq ayting',
+                 verdictClass: 'ok',   animClass: 'anim-almost' },
+    unclear:   { text: 'Aniqroq gapiring',       emoji: '⚠️', advice: 'Mikrofonga yaqinroq, sekinroq ayting',
+                 verdictClass: 'ok',   animClass: 'anim-almost' },
+    empty:     { text: 'Hech narsa eshitilmadi', emoji: '🤐', advice: 'Mikrofonga aniq gapiring',
+                 verdictClass: 'bad',  animClass: 'anim-fail' }
+};
 
-/* Strict-fallback reasons that must NOT survive on a long sentence the
-   learner clearly said most of. */
-var _STRICT_FALLBACK_REASONS = ['unclear_speech', 'fake_match', 'bad_pronunciation',
-    'wrong_word', 'no_speech', 'unstable_speech', 'bad'];
-
-/* Re-grades a finished result for long sentences. Returns the (mutated)
-   result. Genuine silence / unrelated speech (coverage < 0.55) is left
-   untouched so real warnings still appear. */
-function _applyFlexibleVerdict(result, referenceText) {
-    if (!result || !referenceText) return result;
-    var stats = _getWordStats(result.recognizedText || '', referenceText);
-    /* STRICT MODE for single words / short cards — never re-graded. */
-    if (stats.refLength < 3) return result;
-
-    var cov = stats.partialRatio;          /* weighted word coverage 0..1 */
-    result.matchRatio = cov;
-    if (cov < 0.55) return result;          /* genuine silence / wrong speech */
-
-    var flexScore = _flexCoverageScore(cov);
-    if (flexScore > (Number(result.finalScore) || 0)) {
-        result.finalScore = flexScore;
-        result.pronunciationScore = flexScore;
-        if (result.aniqlik !== undefined) result.aniqlik = Math.max(Number(result.aniqlik) || 0, flexScore);
-        if (result.toliqlik !== undefined) result.toliqlik = Math.max(Number(result.toliqlik) || 0, flexScore);
-        if (result.ravonlik !== undefined) result.ravonlik = Math.max(Number(result.ravonlik) || 0, flexScore);
-    }
-    /* coverage >= 0.70 → drop EVERY strict-fallback reason; the score-based
-       tier (excellent / good / almost) becomes the verdict. */
-    if (cov >= 0.70 && _STRICT_FALLBACK_REASONS.indexOf(result.reason) !== -1) {
-        result.reason = _getPronunciationReason(Number(result.finalScore) || 0);
-    } else if (cov >= 0.55 &&
-        (result.reason === 'unclear_speech' || result.reason === 'fake_match'
-         || result.reason === 'no_speech')) {
-        result.reason = _getPronunciationReason(Number(result.finalScore) || 0);
-    }
-    return result;
-}
-
-function _buildZeroScoreResult(recognizedText, referenceText, stats) {
-    var matchStats = stats || _getMatchedWordStats(recognizedText, referenceText);
-    return {
-        pronunciationScore: 0,
-        accuracyScore: 0,
-        fluencyScore: 0,
-        completenessScore: 0,
-        similarity: matchStats.matchRatio,
-        matchRatio: matchStats.matchRatio,
-        matchedWords: matchStats.matchedWords,
-        totalWords: matchStats.totalWords,
-        reason: 'wrong_word'
-    };
-}
-
-/* Single deterministic scoring pipeline. Returns a number 0–100.
-   Pure function of the (already-penalized) metrics — no separate
-   `score *= ...` step. `extraPenalty` is forwarded so callers (e.g.
-   stability check) can apply a multiplier through the unified path. */
-function _computePronScore(rec, ref, accuracy, fluency, completeness, extraPenalty) {
-    var clean = (rec || '').trim().toLowerCase();
-    if (!clean || clean.length < 2) return 0;
-
-    var s = _getWordStats(clean, ref);
-    if (s.refLength === 0) return 0;
-
-    var metrics = _computeMetrics(s, accuracy, fluency, extraPenalty);
-    return _computeFinalMetricScore(metrics);
-}
-
-function _getScoreCapPenalty(recognizedText, referenceText, accuracyScore, fluencyScore, capScore) {
-    var normalizedCap = Number(capScore);
-    if (!Number.isFinite(normalizedCap) || normalizedCap <= 0) return undefined;
-
-    var rawScore = _computePronScore(recognizedText, referenceText, accuracyScore, fluencyScore);
-    if (!Number.isFinite(rawScore) || rawScore <= 0 || rawScore <= normalizedCap) {
-        return undefined;
-    }
-
-    return _clampRange(normalizedCap / rawScore, 0, 1);
-}
-
-function _getFakeMatchCap(accuracyScore, fluencyScore, qualityAvg) {
-    var quality = Number.isFinite(Number(qualityAvg)) ? Number(qualityAvg) : null;
-    var accuracy = _normalizeMetric(accuracyScore);
-    var fluency = _normalizeMetric(fluencyScore);
-    var weakestSignal = Math.min(
-        accuracy === null ? 100 : accuracy,
-        fluency === null ? 100 : fluency,
-        quality === null ? 100 : quality
-    );
-
-    if (weakestSignal < 30) return 25;
-    if (weakestSignal < 45) return 30;
-    return 35;
-}
-
-/* ---- Word-level feedback (correct / missing / wrong_position / extra) ---- */
-function _getWordFeedback(recognized, reference) {
-    if (!recognized || !reference) return [];
-
-    var recWords = _tokenize(recognized);
-    var refWords = _tokenize(reference);
-    var feedback = new Array(refWords.length);
-    var usedRecIndexes = new Set();
-
-    /* pass 1 — exact word in the exact position → green */
-    for (var i = 0; i < refWords.length; i++) {
-        if (recWords[i] === refWords[i]) {
-            feedback[i] = { word: refWords[i], status: 'correct' };
-            usedRecIndexes.add(i);
-        }
-    }
-
-    /* pass 2 — exact word elsewhere → green-ish (wrong_position);
-       similar word (ending slip / minor error) → yellow (partial);
-       nothing → red (missing) */
-    for (var refIndex = 0; refIndex < refWords.length; refIndex++) {
-        if (feedback[refIndex]) continue;
-
-        var exactRecIndex = -1;
-        var simRecIndex = -1;
-        var simBest = 0;
-        for (var recIndex = 0; recIndex < recWords.length; recIndex++) {
-            if (usedRecIndexes.has(recIndex)) continue;
-            if (refWords[refIndex] === recWords[recIndex]) { exactRecIndex = recIndex; break; }
-            var sim = _wordSim(refWords[refIndex], recWords[recIndex]);
-            if (sim >= 0.60 && sim > simBest) { simBest = sim; simRecIndex = recIndex; }
-        }
-
-        if (exactRecIndex >= 0) {
-            feedback[refIndex] = { word: refWords[refIndex], status: 'wrong_position' };
-            usedRecIndexes.add(exactRecIndex);
-        } else if (simRecIndex >= 0) {
-            feedback[refIndex] = { word: refWords[refIndex], status: 'partial' };
-            usedRecIndexes.add(simRecIndex);
-        } else {
-            feedback[refIndex] = { word: refWords[refIndex], status: 'missing' };
-        }
-    }
-
-    for (var extraIndex = 0; extraIndex < recWords.length; extraIndex++) {
-        if (!usedRecIndexes.has(extraIndex)) {
-            feedback.push({ word: recWords[extraIndex], status: 'extra' });
-        }
-    }
-
-    return feedback;
-}
-
-/* ---- Build human-readable feedback message from word feedback ---- */
-
-/* ---- Inline highlight: color each reference word by feedback status ----
-   When Azure word-level accuracy is available, prefer it over the bare
-   token-presence status: ≥80 → correct (green), ≥60 → ok (yellow),
-   <60 → wrong (red). Missing/extra still fall back to neutral/red. */
-function _buildInlineHighlight(referenceText, feedback, words) {
-    if (!referenceText || !feedback) return '';
-    var refWords = referenceText.split(/\s+/);
-
-    var accByWord = Object.create(null);
-    if (Array.isArray(words)) {
-        words.forEach(function (w) {
-            if (w && w.word != null) {
-                var key = String(w.word).toLowerCase().replace(/[.,!?;:"'«»()\[\]{}\-—–…]/g, '');
-                var n = Number(w.accuracy);
-                if (Number.isFinite(n)) accByWord[key] = n;
-            }
-        });
-    }
-
-    return refWords.map(function (word, i) {
-        var f = feedback[i];
-        var cls = 'wf-missing';
-        if (f) {
-            if (f.status === 'correct' || f.status === 'wrong_position') {
-                var key = String(word).toLowerCase().replace(/[.,!?;:"'«»()\[\]{}\-—–…]/g, '');
-                var acc = accByWord[key];
-                if (Number.isFinite(acc)) {
-                    if (acc >= 80)      cls = 'wf-correct';
-                    else if (acc >= 60) cls = 'wf-ok';
-                    else                cls = 'wf-bad';
-                } else {
-                    cls = (f.status === 'correct') ? 'wf-correct' : 'wf-ok';
-                }
-            } else if (f.status === 'partial') {
-                cls = 'wf-ok';
-            } else if (f.status === 'missing') {
-                cls = 'wf-bad';
-            }
-        }
-        return '<span class="wf-word ' + cls + '">' + word + '</span>';
+/* Color each reference word by its deterministic GREEN/YELLOW/RED state. */
+function _buildWordStateHighlight(wordStates) {
+    if (!Array.isArray(wordStates) || wordStates.length === 0) return '';
+    return wordStates.map(function (st) {
+        var cls = st.status === 'green' ? 'wf-correct'
+                : st.status === 'yellow' ? 'wf-ok'
+                : 'wf-bad';
+        return '<span class="wf-word ' + cls + '">' + _escHtml(st.ref) + '</span>';
     }).join(' ');
 }
 
-/* Build a one-line hint based on the per-word accuracy buckets.
-   Returns '' when every word is solidly "correct" (≥80). */
-function _buildWordAccuracyHint(words) {
-    if (!Array.isArray(words) || words.length === 0) return '';
-    var anyWrong = false;
-    var anyOk = false;
-    for (var i = 0; i < words.length; i++) {
-        var n = Number(words[i] && words[i].accuracy);
-        if (!Number.isFinite(n)) continue;
-        if (n < 60) anyWrong = true;
-        else if (n < 80) anyOk = true;
+/* One-line, deterministic hint derived purely from the word states. */
+function _buildVerdictHint(result) {
+    if (!result || result.verdict === 'empty' || result.verdict === 'excellent') return '';
+    var states = result.wordStates || [];
+    var reds = states.filter(function (s) { return s.status === 'red'; })
+                     .map(function (s) { return s.ref; });
+    if (reds.length) {
+        return 'Bu so‘zlarni aniq ayting: ' +
+               reds.map(function (w) { return '«' + w + '»'; }).join(', ');
     }
-    if (anyWrong) return 'Siz ba’zi so‘zlarni noto‘g‘ri aytdingiz';
-    if (anyOk)    return 'Yaxshi, lekin yaxshiroq aytish mumkin';
+    var counts = result.wordCounts || { yellow: 0 };
+    if (counts.yellow > 0) return 'Deyarli! Bu so‘zlarni biroz aniqroq takrorlang';
     return '';
-}
-
-/* ---- Smart hint: suggest what to fix ---- */
-function _buildActionHint(feedback) {
-    if (!feedback || !feedback.length) return '';
-    var missing = feedback.filter(function (f) { return f.status === 'missing'; });
-    var wrongPos = feedback.filter(function (f) { return f.status === 'wrong_position'; });
-    var extra = feedback.filter(function (f) { return f.status === 'extra'; });
-    var parts = [];
-
-    if (missing.length) {
-        parts.push('Add: ' + missing.map(function (w) { return w.word; }).join(', '));
-    }
-    if (wrongPos.length) {
-        parts.push('Fix the word order');
-    }
-    if (extra.length) {
-        parts.push('Remove: ' + extra.map(function (w) { return w.word; }).join(', '));
-    }
-    return parts.join('\n\n');
-}
-
-function _buildPronunciationVerdictMessage(reasonMessage, feedback) {
-    var hint = _buildActionHint(feedback);
-    return hint ? reasonMessage + '\n' + hint : reasonMessage;
-}
-
-function _buildFeedbackMessage(feedback) {
-
-    var missing = feedback.filter(function (f) { return f.status === 'missing'; });
-    var wrong = feedback.filter(function (f) { return f.status === 'wrong_position'; });
-    var extra = feedback.filter(function (f) { return f.status === 'extra'; });
-
-    var parts = [];
-
-    if (missing.length > 0) {
-        parts.push('\u274C Missing: ' + missing.map(function (w) { return w.word; }).join(', '));
-    }
-    if (wrong.length > 0) {
-        parts.push('\u26A0\uFE0F Word order');
-    }
-    if (extra.length > 0) {
-        parts.push('\u274C Extra: ' + extra.map(function (w) { return w.word; }).join(', '));
-    }
-
-    if (parts.length === 0) {
-        return '\u2705 Excellent!';
-    }
-
-    return parts.join('\n');
 }
 
 async function _runPronunciationAssessment(referenceText) {
@@ -1955,75 +1550,21 @@ async function _runPronunciationAssessment(referenceText) {
         return !text || !String(text).trim() || String(text).trim().length < 2;
     }
 
+    /* Score a fallback transcript (interim / timeout / NoMatch path).
+       The transcript is graded by the SAME deterministic engine as the
+       main path, so a fallback never invents a softer or harsher verdict
+       than the words actually warrant. */
     function buildScoredResult(text, accuracy, fluency, completeness, overrides) {
         var recognizedText = _sanitizeRecognizedText(text, false);
         if (!recognizedText || !recognizedText.trim()) {
             return buildZeroResult('', (overrides && overrides.reason) || 'no_speech');
         }
-
-        var stats = _getWordStats(recognizedText, referenceText);
-        var normalizedCompleteness = completeness;
-        if (normalizedCompleteness === null || normalizedCompleteness === undefined || !Number.isFinite(Number(normalizedCompleteness))) {
-            normalizedCompleteness = Math.round((stats.partialRatio || 0) * 100);
-        } else {
-            normalizedCompleteness = Math.round(Number(normalizedCompleteness));
-        }
-
-        /* Patch C: when the interim/timeout text already strongly matches
-           the reference, the user really did say it — we should NOT cap
-           the score at 40 and we should NOT force "unclear_speech".
-           That is the exact failure shape behind problem #2: green words
-           but verdict "Aniqroq gapiring". */
-        var isStrongMatch = stats.partialRatio >= 0.9 && stats.exactRatio >= 0.75;
-
-        /* Unclear/no-Azure path: cap at 40 (we have no real audio quality
-           evidence). Cap is converted to a proportional extraPenalty so
-           it travels through _computeMetrics — no `score = ...` outside. */
-        var capPenalty = isStrongMatch
-            ? undefined
-            : _getScoreCapPenalty(recognizedText, referenceText, accuracy, fluency, 40);
-        var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, normalizedCompleteness, capPenalty);
-        var defaultReason;
-        if (score <= 0) {
-            defaultReason = 'wrong_word';
-        } else if (isStrongMatch) {
-            defaultReason = _getPronunciationReason(score);
-        } else {
-            defaultReason = 'unclear_speech';
-        }
-        var result = {
+        return _finalizePronunciationResult({
             recognizedText: recognizedText,
             accuracyScore: accuracy === undefined ? null : accuracy,
             fluencyScore: fluency === undefined ? null : fluency,
-            completenessScore: normalizedCompleteness,
-            reason: defaultReason,
-            words: [],
-            wordFeedback: _getWordFeedback(recognizedText, referenceText),
-            __extraPenalty: capPenalty
-        };
-
-        if (overrides) {
-            Object.keys(overrides).forEach(function (key) {
-                result[key] = overrides[key];
-            });
-            /* Patch C: if a fallback caller forced reason='unclear_speech'
-               but the text in fact matches strongly, drop that override. */
-            if (isStrongMatch && (result.reason === 'unclear_speech' || result.reason === 'bad_pronunciation')) {
-                result.reason = _getPronunciationReason(score);
-            }
-        }
-
-        var finalized = _finalizePronunciationResult(result, referenceText);
-        /* Strong token match → never graded below the O‘rtacha floor (56,
-           kept in sync with _getCategory's 'average' boundary). A correctly
-           recognised word is at worst O‘rtacha, never a "bad" fail. */
-        if (isStrongMatch && finalized.reason !== 'fake_match' && finalized.reason !== 'wrong_word'
-            && (Number(finalized.finalScore) || 0) < 56) {
-            finalized.finalScore = 56;
-            finalized.pronunciationScore = 56;
-            if (finalized.reason === 'bad') finalized.reason = 'almost';
-        }
-        return finalized;
+            words: (overrides && Array.isArray(overrides.words)) ? overrides.words : []
+        }, referenceText);
     }
 
     function buildZeroResult(text, reason) {
@@ -2031,13 +1572,19 @@ async function _runPronunciationAssessment(referenceText) {
             recognizedText: '',
             pronunciationScore: 0,
             finalScore: 0,
+            verdict: 'empty',
+            pass: false,
             accuracyScore: null,
             fluencyScore: null,
             completenessScore: 0,
             aniqlik: 0,
             ravonlik: 0,
             toliqlik: 0,
+            coverage: 0,
+            matchRatio: 0,
             words: [],
+            wordStates: [],
+            wordCounts: { green: 0, yellow: 0, red: 0 },
             wordFeedback: [],
             reason: reason || 'no_speech'
         };
@@ -2260,11 +1807,10 @@ async function _runPronunciationAssessment(referenceText) {
                 return buildInvalidPronData(recognizedText);
             }
 
-            /* Extract Azure metrics */
+            /* Extract Azure metrics (used only by the anti-cheat guard) */
             var words = [];
             var accuracy = 0;
             var fluency = 0;
-            var completeness = 0;
             try {
                 var pronResult = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
                 var nb = pronResult.detailResult;
@@ -2287,175 +1833,47 @@ async function _runPronunciationAssessment(referenceText) {
 
                 accuracy = Number(data?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore);
                 fluency = Number(data?.NBest?.[0]?.PronunciationAssessment?.FluencyScore);
-                completeness = Number(data?.NBest?.[0]?.PronunciationAssessment?.CompletenessScore);
             } catch (scoreErr) {
-                console.warn('[PRON] Azure score extraction failed, scoring with similarity only:', scoreErr);
+                console.warn('[PRON] Azure score extraction failed, grading by text similarity only:', scoreErr);
             }
 
             /* normalize Azure metrics (0/null/garbage → null) */
             var rawAccuracy = _normalizeMetric(accuracy);
             var rawFluency = _normalizeMetric(fluency);
 
-            accuracy = rawAccuracy;
-            fluency = rawFluency;
-            completeness = _normalizeMetric(completeness);
-
-            /* completeness from token presence (Azure's value is unreliable) */
-            var __stats = _getWordStats(recognizedText, referenceText);
-            var isExactTranscriptMatch = recognizedText.trim().toLowerCase() === referenceText.trim().toLowerCase();
-            /* Patch C: strong real-token match — never downgrade to
-               unclear_speech / bad_pronunciation / fake_match. The user
-               clearly said the right words; the worst we may show is
-               "O‘rtacha" (score floor 40), never "Aniqroq gapiring". */
-            var isStrongMatch = __stats.partialRatio >= 0.9 && __stats.exactRatio >= 0.75;
-            var referenceWordCount = _tokenize(referenceText).length;
+            /* ---- Deterministic verdict (text similarity, see engine) ----
+               The verdict is graded purely from the recognized transcript
+               vs the reference text. Azure's per-word accuracy is used ONLY
+               for the anti-cheat fake-echo guard below — never to colour
+               words or to soften / harden the verdict. */
             var quality = _getWordQuality(words);
-            var stability = _getSpeechStability(words);
-            var stabilityPenalty = 1;
-            var forcedReason = null;
-            var suspiciousAccuracy = _isSuspiciousAccuracy(rawAccuracy, words);
-            var weakMajorityThreshold = words.length > 0 ? Math.ceil(words.length / 2) : Number.POSITIVE_INFINITY;
-            var hasMajorityVeryWeakWords = quality.veryWeakCount >= weakMajorityThreshold;
-            completeness = Math.round(__stats.partialRatio * 100);
+            var echoCheck = _classifyWords(recognizedText, referenceText);
+            var perfectEcho = echoCheck.total > 0
+                && echoCheck.counts.green === echoCheck.total
+                && echoCheck.extraWords === 0;
 
-            if (isExactTranscriptMatch && words.length < referenceWordCount) {
-                return buildZeroResult(referenceText);
+            /* Anti-cheat: Azure occasionally returns a verbatim echo of the
+               reference text without real, clean audio behind it. A genuine
+               perfect attempt has solid accuracy + fluency; a fake echo does
+               not. Only a FULL echo with present-but-clearly-bad audio
+               metrics is rejected — missing metrics are trusted (so a real
+               perfect attempt is never failed by a metric glitch), and every
+               partial attempt is graded normally by text similarity. */
+            var fakeEcho = perfectEcho
+                && rawAccuracy !== null && rawFluency !== null
+                && (rawAccuracy < 45 || rawFluency < 45
+                    || (quality.avg !== null && quality.avg < 45));
+            if (fakeEcho) {
+                console.log('[PRON] FAKE ECHO BLOCKED — accuracy/fluency too low');
             }
 
-            /* anti-fake Azure echo — exact transcript without solid quality
-               evidence must never pass as a real perfect pronunciation. */
-            if (isExactTranscriptMatch) {
-                if (
-                    !rawAccuracy ||
-                    !rawFluency ||
-                    rawAccuracy < 40 ||
-                    rawFluency < 40 ||
-                    (quality.avg !== null && quality.avg < 55) ||
-                    hasMajorityVeryWeakWords
-                ) {
-                    console.log('[PRON] FAKE BLOCK (WORD QUALITY)');
-
-                    var fakeCap = _getFakeMatchCap(rawAccuracy, rawFluency, quality.avg);
-
-                    return _finalizePronunciationResult({
-                        accuracyScore: rawAccuracy,
-                        fluencyScore: rawFluency,
-                        completenessScore: 100,
-                        recognizedText: recognizedText,
-                        words: words || [],
-                        reason: 'fake_match',
-                        __extraPenalty: _getScoreCapPenalty(recognizedText, referenceText, rawAccuracy, rawFluency, fakeCap)
-                    }, referenceText);
-                }
-
-                var stabilityThreshold = _getSpeechStabilityThreshold(words.length);
-                if (stability !== null && stability > stabilityThreshold) {
-                    stabilityPenalty = _getSpeechStabilityPenalty(stability, stabilityThreshold);
-                    forcedReason = 'unstable_speech';
-                }
-            }
-
-            /* Layer 2 HARD: Near-exact fake guard.
-               Keep a buffer between the soft curve and fake_match so a tiny
-               partial-ratio wobble cannot flip a middling score to 25. */
-            if (!isExactTranscriptMatch
-                && (
-                    (__stats.partialRatio > 0.9 && quality.avg !== null && quality.avg < 55)
-                    || (__stats.partialRatio > 0.85 && (hasMajorityVeryWeakWords || (quality.avg !== null && quality.avg < 50)))
-                )
-            ) {
-                console.log('[PRON] FAKE BLOCK (NEAR-EXACT, WEAK WORDS)');
-                var nearExactFakeCap = _getFakeMatchCap(rawAccuracy, rawFluency, quality.avg);
-                return _finalizePronunciationResult({
-                    recognizedText: recognizedText,
-                    accuracyScore: rawAccuracy,
-                    fluencyScore: rawFluency,
-                    completenessScore: Math.round(__stats.partialRatio * 100),
-                    words: words || [],
-                    reason: 'fake_match',
-                    __extraPenalty: _getScoreCapPenalty(recognizedText, referenceText, rawAccuracy, rawFluency, nearExactFakeCap)
-                }, referenceText);
-            }
-
-            if (accuracy === null) {
-                accuracy = quality.avg;
-            }
-
-            /* Layer 1: Word-level quality control (SOFT — not always fake).
-               The 65–70 band is intentionally no longer near-zero penalty:
-               it tapers up to 72 so Azure noise around the boundary does not
-               make 65 sound almost perfect. */
-            var qualityPenalty = 1;
-            if (quality.avg !== null && quality.avg < 70) {
-                qualityPenalty = _getAzureQualityPenalty(quality.avg, suspiciousAccuracy);
-                /* Patch C: do NOT label a strong-token-match attempt as
-                   bad_pronunciation — the words ARE there, scoring may dip
-                   but the verdict text must not say "Talaffuzni yaxshilash". */
-                if (quality.avg < 60 && !forcedReason && !isStrongMatch) forcedReason = 'bad_pronunciation';
-            }
-
-            /* Layer 2 SOFT: Near-exact transcripts are graded, not stepped.
-               partial 0.75–0.85 gets progressively harsher; only above 0.85
-               with clearly bad word evidence becomes fake_match. */
-            var azureCapPenalty = 1;
-            if (!isExactTranscriptMatch
-                && __stats.partialRatio >= 0.72
-                && quality.avg !== null
-                && quality.avg < 67) {
-                azureCapPenalty = _getNearExactPenalty(__stats.partialRatio, quality.avg);
-                /* Patch C: same as above — strong match must not surface
-                   as "Talaffuzni yaxshilash". Penalty still applies. */
-                if (!forcedReason && !isStrongMatch) forcedReason = 'bad_pronunciation';
-            }
-
-            /* Wrong-word classification: if the recognised text barely
-               overlaps with the reference (and we did get speech), the
-               user clearly said something else — surface that explicitly
-               instead of letting it fall into the generic "bad" bucket. */
-            if (!forcedReason && __stats.refLength > 0 && __stats.partialRatio < 0.3) {
-                forcedReason = 'wrong_word';
-            }
-
-            /* Combine external penalties into ONE multiplier. Quality and
-               near-exact-soft are different signals of the same problem
-               (Azure overconfidence) — take the harsher one, not their
-               product, so a single suspicion doesn't double-count.
-               Stability is folded into this same metric penalty path. */
-            var azureSignal = Math.min(qualityPenalty, azureCapPenalty);
-            var combinedPenalty = stabilityPenalty * azureSignal;
-            var extraPenalty = combinedPenalty < 1 ? combinedPenalty : undefined;
-            var score = _computePronScore(recognizedText, referenceText, accuracy, fluency, completeness, extraPenalty);
-
-            var finalized = _finalizePronunciationResult({
+            return _finalizePronunciationResult({
                 recognizedText: recognizedText,
-                accuracyScore: accuracy,
-                fluencyScore: fluency,
-                completenessScore: completeness,
-                reason: forcedReason || _getPronunciationReason(score),
+                accuracyScore: rawAccuracy,
+                fluencyScore: rawFluency,
                 words: words,
-                wordFeedback: _getWordFeedback(recognizedText, referenceText),
-                __extraPenalty: extraPenalty
+                reason: fakeEcho ? 'fake_match' : undefined
             }, referenceText);
-
-            /* Patch C: enforce the "O‘rtacha minimum" contract for strong
-               matches. fake_match is intentionally excluded — it represents
-               an Azure echo of the reference text without supporting audio
-               quality, which the dedicated guards above already validated. */
-            if (isStrongMatch && finalized.reason !== 'fake_match') {
-                if (finalized.reason === 'bad_pronunciation' || finalized.reason === 'unclear_speech') {
-                    /* Drop the misleading override so verdict text uses the
-                       score-derived reason ('almost'/'good'/'excellent') and
-                       the result screen falls through to the category UI
-                       (O‘rtacha / Yaxshi / Ajoyib) instead of "Aniqroq gapiring". */
-                    finalized.reason = _getPronunciationReason(Number(finalized.finalScore) || 0);
-                }
-                if ((Number(finalized.finalScore) || 0) < 56) {
-                    finalized.finalScore = 56;
-                    finalized.pronunciationScore = 56;
-                    if (finalized.reason === 'bad') finalized.reason = 'almost';
-                }
-            }
-            return finalized;
         }
 
         /* ===========================================================
@@ -3493,75 +2911,39 @@ function _showPronResult(refText, r, attemptId) {
             return;
         }
 
-        /* Single source of truth — finalScore is canonical, no fallback. */
+        /* Single source of truth — the verdict set by the engine. */
         var finalScore = Number(r.finalScore) || 0;
         r.finalScore = finalScore;
 
-        var category = _getCategory(finalScore);
-        var ui = _PRON_CATEGORY[category];
-
-        /* Reason-driven overrides — when the result clearly isn't about
-           pronunciation quality (silence / wrong word entirely), show a
-           direct explanation instead of a misleading numeric tier. */
-        if (r.reason === 'no_speech') {
-            /* Patch D: dedicated "no audio captured" verdict text. */
-            ui = {
-                text: 'Hech narsa eshitilmadi',
-                emoji: '🤐',
-                advice: 'Mikrofonga aniq gapiring',
-                verdictClass: 'bad',
-                animClass: 'anim-fail'
-            };
-        } else if (r.reason === 'wrong_word') {
-            /* Patch E: user said something else — short direct verdict. */
-            ui = {
-                text: 'Boshqa so‘z aytdingiz',
-                emoji: '❌',
-                advice: 'Aynan ko‘rsatilgan so‘zni ayting',
-                verdictClass: 'bad',
-                animClass: 'anim-fail'
-            };
-        } else if (r.reason === 'unclear_speech') {
-            /* We heard speech but couldn't lock a confident transcript —
-               surface this as "speak more clearly" instead of pretending
-               the user got a low pronunciation grade. */
-            ui = {
-                text: 'Aniqroq gapiring',
-                emoji: '⚠️',
-                advice: 'Mikrofonga yaqinroq, sekinroq ayting',
-                verdictClass: 'ok',
-                animClass: 'anim-almost'
-            };
-        }
+        var verdict = r.verdict || _getCategory(finalScore);
+        var ui = _PRON_CATEGORY[verdict] || _PRON_CATEGORY.empty;
 
         if (typeof window !== 'undefined' && window.SPEECH_DEBUG) {
-            console.log('[GRADE] render:', { finalScore: finalScore, category: category, reason: r.reason });
+            console.log('[GRADE] render:', { finalScore: finalScore, verdict: verdict,
+                reason: r.reason, wordCounts: r.wordCounts });
         }
 
         var html = '';
 
-        /* emoji + category text */
+        /* emoji + verdict text */
         html += '<div class="pron-emoji">' + ui.emoji + '</div>';
         html += '<div class="pron-title ' + ui.verdictClass + '">' + ui.text + '</div>';
-        html += '<div class="pron-subtitle">«' + refText + '»</div>';
+        html += '<div class="pron-subtitle">«' + _escHtml(refText) + '»</div>';
 
-        /* word-level highlight (color-coded by Azure accuracy when present) */
-        var wfb = r.wordFeedback || [];
-        if (refText && wfb.length > 0) {
-            html += '<div class="wf-inline">' + _buildInlineHighlight(refText, wfb, r.words) + '</div>';
+        /* word-level highlight — deterministic GREEN/YELLOW/RED states,
+           identical every time for the same speech input. */
+        var states = r.wordStates || [];
+        if (states.length > 0) {
+            html += '<div class="wf-inline">' + _buildWordStateHighlight(states) + '</div>';
         }
 
-        /* per-word accuracy hint — only shown when there is something to fix
-           and the result isn't already a hard reason override (no_speech /
-           wrong_word) where this hint would be noise. */
-        if (r.reason !== 'no_speech' && r.reason !== 'wrong_word') {
-            var accHint = _buildWordAccuracyHint(r.words);
-            if (accHint) {
-                html += '<div class="wf-hint">' + accHint + '</div>';
-            }
+        /* one-line, deterministic hint derived from the word states */
+        var hint = _buildVerdictHint(r);
+        if (hint) {
+            html += '<div class="wf-hint">' + _escHtml(hint) + '</div>';
         }
 
-        /* short advice — one line, category-driven */
+        /* short advice — one line, verdict-driven */
         if (ui.advice) {
             html += '<div class="pron-verdict ' + ui.verdictClass + '">' + ui.advice + '</div>';
         }

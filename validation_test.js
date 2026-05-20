@@ -1,256 +1,138 @@
+/* ============================================================
+ *  Speech verdict engine — regression test
+ *  Run:  node validation_test.js
+ *
+ *  Extracts the pure verdict-engine functions out of
+ *  paid-courses/speech.js and asserts the verdict for a set of
+ *  reference scenarios, including the five spec scenarios.
+ * ============================================================ */
 import fs from "fs";
 
 const source = fs.readFileSync("paid-courses/speech.js", "utf8").replace(/\r\n/g, "\n");
 
+/* ---- extract a `function NAME(...) { ... }` block ---- */
 function extractFunction(name) {
     const start = source.indexOf(`function ${name}(`);
-    if (start === -1) {
-        throw new Error(`Function not found: ${name}`);
-    }
-
-    let depth = 0;
-    let sawBrace = false;
-    for (let index = start; index < source.length; index++) {
-        const ch = source[index];
-        if (ch === "{") {
-            depth++;
-            sawBrace = true;
-        } else if (ch === "}") {
+    if (start === -1) throw new Error(`Function not found: ${name}`);
+    let depth = 0, sawBrace = false;
+    for (let i = start; i < source.length; i++) {
+        const ch = source[i];
+        if (ch === "{") { depth++; sawBrace = true; }
+        else if (ch === "}") {
             depth--;
-            if (sawBrace && depth === 0) {
-                return source.slice(start, index + 1);
-            }
+            if (sawBrace && depth === 0) return source.slice(start, i + 1);
         }
     }
-
     throw new Error(`Unclosed function: ${name}`);
 }
 
-const functionNames = [
-    "_clampRange",
-    "_tokenize",
-    "_getWordStats",
-    "_normalizeMetric",
-    "_getWordQuality",
-    "_isSuspiciousAccuracy",
-    "_getSpeechStabilityThreshold",
-    "_getSpeechStabilityPenalty",
-    "_getAzureQualityPenalty",
-    "_getNearExactPenalty",
-    "_computeMetrics",
-    "_computeFinalMetricScore"
+/* ---- extract a single-line `var NAME = ...;` declaration ---- */
+function extractVar(name) {
+    const re = new RegExp(`^var ${name} = [^;]*;`, "m");
+    const m = source.match(re);
+    if (!m) throw new Error(`Var not found: ${name}`);
+    return m[0];
+}
+
+const varNames = [
+    "SPEECH_GREEN_THRESHOLD",
+    "SPEECH_YELLOW_THRESHOLD",
+    "SPEECH_SHORT_WORD_MAX",
+    "SPEECH_MIN_COVERAGE",
+    "_VERDICT_SCORE",
+    "_VERDICT_REASON"
 ];
 
-globalThis.eval(functionNames.map(extractFunction).join("\n\n"));
+const functionNames = [
+    "_normalizeSpeechText",
+    "_matchForm",
+    "_tokenize",
+    "_levenshtein",
+    "_sharesAffix",
+    "_classifyWord",
+    "_considerCand",
+    "_classifyWords",
+    "_evaluateVerdict",
+    "_statesToFeedback",
+    "_packageGrade",
+    "_gradeSpeech"
+];
 
-function scoreScenario(scenario) {
-    const words = scenario.wordAccuracies.map((accuracy, index) => ({
-        word: `w${index + 1}`,
-        accuracy
-    }));
-    const stats = _getWordStats(scenario.recognized, scenario.reference);
-    const quality = _getWordQuality(words);
-    const accuracy = _normalizeMetric(scenario.rawAccuracy);
-    const fluency = _normalizeMetric(scenario.rawFluency);
-    const suspiciousAccuracy = _isSuspiciousAccuracy(accuracy, words);
-    const isExactTranscriptMatch = scenario.recognized.trim().toLowerCase() === scenario.reference.trim().toLowerCase();
-    const weakMajorityThreshold = words.length > 0 ? Math.ceil(words.length / 2) : Number.POSITIVE_INFINITY;
-    const hasMajorityVeryWeakWords = quality.veryWeakCount >= weakMajorityThreshold;
+globalThis.eval(
+    varNames.map(extractVar).join("\n") + "\n\n" +
+    functionNames.map(extractFunction).join("\n\n")
+);
 
-    let reason = null;
-    if (isExactTranscriptMatch) {
-        if (!accuracy || !fluency || accuracy < 40 || fluency < 40 || (quality.avg !== null && quality.avg < 55) || hasMajorityVeryWeakWords) {
-            reason = "fake_match";
-        }
-    }
+/* ================================================================ */
 
-    if (!reason && !isExactTranscriptMatch && (
-        (stats.partialRatio > 0.9 && quality.avg !== null && quality.avg < 55)
-        || (stats.partialRatio > 0.85 && (hasMajorityVeryWeakWords || (quality.avg !== null && quality.avg < 50)))
-    )) {
-        reason = "fake_match";
-    }
-
-    let qualityPenalty = 1;
-    if (quality.avg !== null && quality.avg < 70) {
-        qualityPenalty = _getAzureQualityPenalty(quality.avg, suspiciousAccuracy);
-    }
-
-    let nearExactPenalty = 1;
-    if (!isExactTranscriptMatch && stats.partialRatio >= 0.72 && quality.avg !== null && quality.avg < 70) {
-        nearExactPenalty = _getNearExactPenalty(stats.partialRatio, quality.avg);
-    }
-
-    let stabilityPenalty = 1;
-    if (Number.isFinite(scenario.stabilityPenalty)) {
-        stabilityPenalty = scenario.stabilityPenalty;
-    } else if (Number.isFinite(scenario.stability)) {
-        const stabilityWordCount = Number.isFinite(scenario.stabilityWordCount)
-            ? scenario.stabilityWordCount
-            : Math.max(stats.recLength || 0, stats.refLength || 0, words.length || 0);
-        stabilityPenalty = _getSpeechStabilityPenalty(
-            scenario.stability,
-            _getSpeechStabilityThreshold(stabilityWordCount)
-        );
-    }
-
-    const extraPenalty = Math.min(stabilityPenalty, qualityPenalty, nearExactPenalty);
-    const metrics = reason === "fake_match"
-        ? { aniqlik: 25, ravonlik: 25, toliqlik: 25 }
-        : _computeMetrics(stats, accuracy, fluency, extraPenalty < 1 ? extraPenalty : undefined);
-
-    return {
-        name: scenario.name,
-        expected: scenario.expected,
-        stats,
-        qualityAvg: quality.avg,
-        suspiciousAccuracy,
-        penalties: {
-            stabilityPenalty,
-            qualityPenalty,
-            nearExactPenalty,
-            extraPenalty
-        },
-        reason: reason || "score",
-        metrics,
-        finalScore: _computeFinalMetricScore(metrics)
-    };
-}
-
-function inRange(value, range) {
-    return value >= range[0] && value <= range[1];
-}
+const REF = "Я часто волнуюсь из-за работы";
 
 const scenarios = [
-    {
-        name: "Perfect",
-        reference: "one two three",
-        recognized: "one two three",
-        rawAccuracy: 92,
-        rawFluency: 92,
-        wordAccuracies: [92, 92, 92],
-        expected: [90, 100]
-    },
-    {
-        name: "Poor accent",
-        reference: "one two three",
-        recognized: "one two three",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [67, 67, 67],
-        expected: [60, 75]
-    },
-    {
-        name: "Poor accent upper band",
-        reference: "one two three",
-        recognized: "one two three",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [69, 69, 69],
-        expected: [65, 75]
-    },
-    {
-        name: "One error",
-        reference: "one two three",
-        recognized: "one two noise",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [88, 88, 88],
-        expected: [50, 60]
-    },
-    {
-        name: "Similar words",
-        reference: "i have one",
-        recognized: "i see one",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [88, 88, 88],
-        expected: [45, 60]
-    },
-    {
-        name: "Permutation",
-        reference: "one two three",
-        recognized: "two one three",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [88, 88, 88],
-        expected: [30, 50]
-    },
-    {
-        name: "Garbage",
-        reference: "one two three four",
-        recognized: "noise",
-        rawAccuracy: 95,
-        rawFluency: 95,
-        wordAccuracies: [95],
-        expected: [0, 20]
-    },
-    {
-        name: "Soft near exact",
-        reference: "one two three four five",
-        recognized: "one two three four noise",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [60, 60, 60, 60, 60],
-        expected: [50, 60]
-    },
-    {
-        name: "Near exact 69 quality",
-        reference: "one two three four five",
-        recognized: "one two three four noise",
-        rawAccuracy: 82,
-        rawFluency: 88,
-        wordAccuracies: [69, 69, 69, 69, 69],
-        expected: [60, 70]
-    },
-    {
-        name: "Fake near exact",
-        reference: "one two three four five six seven eight nine ten eleven",
-        recognized: "one two three four five six seven eight nine ten noise",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [54, 54, 54, 54, 54, 54, 54, 54, 54, 54, 54],
-        expected: [20, 30]
-    },
-    {
-        name: "Stability folded",
-        reference: "one two three",
-        recognized: "one two three",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [88, 88, 88],
-        stabilityPenalty: 0.6,
-        expected: [50, 60]
-    },
-    {
-        name: "Short phrase mild instability",
-        reference: "one two",
-        recognized: "one two",
-        rawAccuracy: 90,
-        rawFluency: 90,
-        wordAccuracies: [88, 88],
-        stability: 34,
-        expected: [82, 92]
-    }
+    /* ---- the five spec scenarios ---- */
+    { name: "Spec 1 — perfect",        reference: REF, recognized: "Я часто волнуюсь из-за работы", expect: "excellent" },
+    { name: "Spec 2 — minor slips",    reference: REF, recognized: "Я часто волнуюс иза работы",     expect: "good" },
+    { name: "Spec 3 — missing words",  reference: REF, recognized: "Я волнуюсь работа",              expect: "average" },
+    { name: "Spec 4 — garbage",        reference: REF, recognized: "вавава работа яяя",               expect: "unclear" },
+    { name: "Spec 5 — silence",        reference: REF, recognized: "",                                expect: "empty" },
+
+    /* ---- compound / hyphenated word handling ---- */
+    { name: "Compound split (из за)",  reference: "из-за работы", recognized: "из за работы",  expect: "excellent" },
+    { name: "Compound merged (изза)",  reference: "из-за работы", recognized: "изза работы",   expect: "excellent" },
+    { name: "Compound perfect",        reference: "из-за работы", recognized: "из-за работы",  expect: "excellent" },
+
+    /* ---- normalization (ё, case, punctuation) ---- */
+    { name: "Case insensitive",        reference: "Привет", recognized: "привет",  expect: "excellent" },
+    { name: "Yo / ye equivalence",     reference: "ёлка",   recognized: "елка",    expect: "excellent" },
+    { name: "Punctuation stripped",    reference: "Как дела?", recognized: "как дела", expect: "excellent" },
+
+    /* ---- single-word vocabulary cards ---- */
+    { name: "Single word perfect",     reference: "делать", recognized: "делать",  expect: "excellent" },
+    { name: "Single word wrong",       reference: "делать", recognized: "кошка",   expect: "unclear" },
+    { name: "Single word ending slip", reference: "работать", recognized: "работает", expect: "good" },
+
+    /* ---- anti-random: garbage must never pass ---- */
+    { name: "Pure noise",              reference: REF, recognized: "ааааа ббббб ввввв ггггг", expect: "unclear" },
+    { name: "One real word in noise",  reference: REF, recognized: "часто бла бла бла",       expect: "unclear" },
+
+    /* ---- short-word strict mode ---- */
+    { name: "Short word strict",       reference: "он не там", recognized: "он не там", expect: "excellent" },
+    { name: "Two-word card perfect",   reference: "Доброе утро", recognized: "доброе утро", expect: "excellent" }
 ];
 
-const results = scenarios.map(scoreScenario);
-let hasFailure = false;
-
-console.log("Scenario | Score | Expected | Reason | Metrics | Status");
+let failures = 0;
+console.log("Scenario | Recognized | Verdict | Expected | G/Y/R | Status");
 console.log("--- | --- | --- | --- | --- | ---");
 
-results.forEach(result => {
-    const status = inRange(result.finalScore, result.expected) ? "PASS" : "FAIL";
-    if (status === "FAIL") {
-        hasFailure = true;
-    }
-
-    const metrics = `${result.metrics.aniqlik}/${result.metrics.ravonlik}/${result.metrics.toliqlik}`;
-    const expected = `${result.expected[0]}-${result.expected[1]}`;
-    console.log(`${result.name} | ${result.finalScore} | ${expected} | ${result.reason} | ${metrics} | ${status}`);
+scenarios.forEach(s => {
+    const g = _gradeSpeech(s.recognized, s.reference);
+    const c = g.wordCounts || { green: 0, yellow: 0, red: 0 };
+    const ok = g.verdict === s.expect;
+    if (!ok) failures++;
+    console.log(
+        `${s.name} | "${s.recognized}" | ${g.verdict} | ${s.expect} | ` +
+        `${c.green}/${c.yellow}/${c.red} | ${ok ? "PASS" : "FAIL"}`
+    );
 });
 
-if (hasFailure) {
-    process.exitCode = 1;
-}
+/* ---- word-state assertions for spec scenario 2 ---- */
+const c2 = _classifyWords("Я часто волнуюс иза работы", REF);
+const greens2 = c2.counts.green, yellows2 = c2.counts.yellow, reds2 = c2.counts.red;
+const spec2WordsOk = greens2 === 3 && yellows2 === 2 && reds2 === 0;
+if (!spec2WordsOk) failures++;
+console.log(
+    `Spec 2 word states | — | ${greens2}G ${yellows2}Y ${reds2}R | 3G 2Y 0R | ` +
+    `${greens2}/${yellows2}/${reds2} | ${spec2WordsOk ? "PASS" : "FAIL"}`
+);
+
+/* ---- determinism: identical input → identical verdict ---- */
+const d1 = _gradeSpeech("Я часто волнуюс иза работы", REF).verdict;
+const d2 = _gradeSpeech("Я часто волнуюс иза работы", REF).verdict;
+const deterministic = d1 === d2;
+if (!deterministic) failures++;
+console.log(`Determinism | — | ${d1} === ${d2} | equal | — | ${deterministic ? "PASS" : "FAIL"}`);
+
+console.log("\n" + (failures === 0
+    ? "ALL TESTS PASSED ✅"
+    : `${failures} TEST(S) FAILED ❌`));
+
+if (failures > 0) process.exitCode = 1;

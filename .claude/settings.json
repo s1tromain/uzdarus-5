@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -oE '\\\\b__TRACKED_VAR__\\\\b' paid-courses/speech.js)",
+      "Bash(grep -nE '\\\\b__TRACKED_VAR__\\\\b' paid-courses/speech.js)",
+      "Bash(grep -nA10 '\"scripts\"' package.json)",
+      "Bash(node --check paid-courses/__engine_block.tmp)",
+      "Bash(copy paid-courses\\\\__engine_block.tmp paid-courses\\\\__engine_block.js)",
+      "Bash(node --check paid-courses\\\\__engine_block.js)",
+      "Bash(del paid-courses\\\\__engine_block.js)",
+      "Bash(node --check paid-courses/__engine_block.js)",
+      "Bash(node __splice.js)",
+      "Bash(node __splice.cjs)"
+    ]
+  }
+}
