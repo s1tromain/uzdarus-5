@@ -3262,58 +3262,707 @@
                 {
                     id: 6,
                     title: "Sog'lom turmush tarzi",
-                    description: "Grammatika: majburiyat (надо, нужно, следует). Muloqot: sog'liq, odatlar haqida fikr bildirish",
+                    description: "Sog'liq, foydali odatlar va sog'lom hayot haqida suhbat",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-heart"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">Majburiyat va tavsiya — надо, нужно, нужен / нужна / нужны, следует</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda sog'liq mavzusida <b>majburiyat</b> va
+                            <b>tavsiya</b>ni ifodalovchi so'zlar — <b>надо, нужно</b> (universal),
+                            <b>нужен / нужна / нужны</b> (predmet bo'yicha mos kelishi) va
+                            <b>следует</b> (tavsiya) o'rganiladi.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">УНИВЕРСАЛ</span>
+                              <h4>Надо / Нужно</h4>
+                              <p class="t1g-card-uz">Kerak (umumiy) + infinitiv</p>
+                              <ul>
+                                <li>Harakat kerakligini bildiradi</li>
+                                <li><b>надо / нужно + infinitiv</b></li>
+                                <li>Birxil ma'no, neutral uslub</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Нужно заниматься спортом.</span>
+                                <span class="t1g-uz">Sport bilan shug'ullanish kerak.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">РОД</span>
+                              <h4>Нужен / Нужна / Нужны</h4>
+                              <p class="t1g-card-uz">Predmet rodi va soni bilan moslashadi</p>
+                              <ul>
+                                <li><b>нужен</b> — mujskoy rod (хороший сон)</li>
+                                <li><b>нужна</b> — jenskiy rod (полезная еда)</li>
+                                <li><b>нужны</b> — ko'plik (витамины, фрукты)</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Детям нужны витамины.</span>
+                                <span class="t1g-uz">Bolalarga vitaminlar kerak.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-table-list"></i> Mosligi: нужен / нужна / нужны</h4>
+                          <table class="t1g-table">
+                            <thead>
+                              <tr><th>Shakl</th><th>Qoida</th><th>Misol</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr><td><b>нужен</b></td><td>mujskoy rod (он)</td><td>Мне нужен <b>хороший отдых</b>.</td></tr>
+                              <tr><td><b>нужна</b></td><td>jenskiy rod (она)</td><td>Нам нужна <b>полезная еда</b>.</td></tr>
+                              <tr><td><b>нужно</b></td><td>srednij rod (оно) / infinitiv</td><td>Нужно <b>пить</b> воду.</td></tr>
+                              <tr><td><b>нужны</b></td><td>ko'plik (они)</td><td>Детям нужны <b>витамины</b>.</td></tr>
+                            </tbody>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-comment-medical"></i> Следует — tavsiya</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">НАДО / НУЖНО</span>
+                                <b>Надо пить воду.</b>
+                                <small>oddiy majburiyat — «kerak»</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">СЛЕДУЕТ</span>
+                                <b>Следует гулять на свежем воздухе.</b>
+                                <small>tavsiya — «lozim / tavsiya etiladi»</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li><b>надо / нужно</b> + infinitiv — universal «kerak»</li>
+                              <li><b>нужен / нужна / нужны</b> — predmet rodi va soni bilan mos</li>
+                              <li><b>следует</b> — yumshoq tavsiya, ko'pincha rasmiy uslubda</li>
+                              <li>Bu so'zlardan keyin shaxs <i>komu</i> (dat. p.): <b>мне, тебе, нам, детям</b></li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Надо va нужно — universal «kerak» + infinitiv. Нужен / нужна / нужны predmet rodi va soni bilan moslashadi. Следует — yumshoq tavsiya. Bu so'zlardan oldin shaxs jo'nalish kelishigida keladi (мне, тебе, нам, детям)."
                     },
-                    content: "",
-                    quiz: {
-                        mcQuestions: [],
-                        mcOptions: [],
-                        mcAnswers: [],
-                        blankQuestions: [],
-                        blankAnswers: []
+                    content: `
+                        <div style="background: linear-gradient(135deg, #00ACC1, #26C6DA); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(0, 172, 193, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🥗</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Sog'lom turmush tarzi» mavzusiga oid <strong>48 ta so'z</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html'"
+                                    style="background: white; color: #00ACC1; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Sog'liq, odat va sog'lom hayot lug'ati
+                            </p>
+                        </div>
+`,
+                    topic6Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "chips", icon: "fa-hand-pointer",
+                                title: "1-mashq. Bo'sh joyga mos so'zni qo'ying",
+                                intro: "Gapdagi bo'sh joyga надо / нужно / нужен / нужна / нужны / следует so'zlaridan mosini tanlang.",
+                                items: [
+                                { q: "Мне _______ больше отдыхать.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "нужно" },
+                                { q: "Нам _______ витамины.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "нужны" },
+                                { q: "Тебе _______ заниматься спортом.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "надо" },
+                                { q: "Для здоровья _______ хороший сон.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "нужен" },
+                                { q: "Детям _______ овощи и фрукты.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "нужны" },
+                                { q: "Вам _______ пить больше воды.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "следует" },
+                                { q: "После работы _______ гулять.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "следует" },
+                                { q: "Ему _______ полезная еда.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "нужна" },
+                                { q: "Нам _______ соблюдать режим дня.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "нужно" },
+                                { q: "Для спортсмена _______ тренировки.", options: ["надо", "нужно", "нужен", "нужна", "нужны", "следует"], answer: "нужны" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-language",
+                                title: "2-mashq. Gaplarni tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Men ko'proq suv ichishim kerak.", answer: ["Мне нужно пить больше воды", "Я должен пить больше воды", "Мне надо пить больше воды"] },
+                                { q: "Bizga sog'lom ovqat kerak.", answer: ["Нам нужна полезная еда", "Нам нужна здоровая еда"] },
+                                { q: "Siz ertaroq uxlashingiz kerak.", answer: ["Вам нужно раньше ложиться спать", "Вам надо раньше ложиться спать"] },
+                                { q: "Bolalarga vitaminlar kerak.", answer: ["Детям нужны витамины"] },
+                                { q: "Sport bilan shug'ullanish kerak.", answer: ["Нужно заниматься спортом", "Надо заниматься спортом"] },
+                                { q: "Senga kamroq asabiylashish kerak.", answer: ["Тебе нужно меньше нервничать", "Тебе надо меньше нервничать"] },
+                                { q: "Bizga yaxshi dam kerak.", answer: ["Нам нужен хороший отдых"] },
+                                { q: "Toza havoda sayr qilish tavsiya etiladi.", answer: ["Следует гулять на свежем воздухе", "Рекомендуется гулять на свежем воздухе"] },
+                                { q: "Menga foydali mahsulotlar kerak.", answer: ["Мне нужны полезные продукты"] },
+                                { q: "Siz kun tartibiga rioya qilishingiz kerak.", answer: ["Вам нужно соблюдать режим дня", "Вам надо соблюдать режим дня"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "3-mashq. To'g'ri variantni tanlang",
+                                intro: "Har bir gap uchun to'g'ri javobni belgilang.",
+                                items: [
+                                { q: "Нам _______ спорт.", options: ["нужно", "нужен", "нужны"], answer: "нужен" },
+                                { q: "Тебе _______ больше спать.", options: ["нужна", "надо", "нужен"], answer: "надо" },
+                                { q: "Детям _______ витамины.", options: ["нужны", "нужна", "нужен"], answer: "нужны" },
+                                { q: "Вам _______ правильно питаться.", options: ["следует", "нужны", "нужна"], answer: "следует" },
+                                { q: "Для здоровья _______ вода.", options: ["нужны", "нужна", "нужно"], answer: "нужна" },
+                                { q: "Нам _______ заниматься спортом.", options: ["надо", "нужен", "нужны"], answer: "надо" },
+                                { q: "Мне _______ полезная еда.", options: ["нужны", "нужна", "нужен"], answer: "нужна" },
+                                { q: "Детям _______ больше спать.", options: ["следует", "нужны", "нужен"], answer: "следует" },
+                                { q: "Для здоровья _______ прогулки.", options: ["нужен", "нужны", "нужно"], answer: "нужны" },
+                                { q: "Тебе _______ режим дня.", options: ["нужен", "нужна", "нужны"], answer: "нужен" }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "builder", icon: "fa-cubes",
+                                title: "4-mashq. Gap tuzing",
+                                intro: "So'zlarni to'g'ri tartibda bosib, gap tuzing.",
+                                items: [
+                                { words: ["надо", "спортом", "заниматься"], q: "надо / спортом / заниматься", answer: "Надо заниматься спортом." },
+                                { words: ["нужны", "витамины", "детям"], q: "нужны / витамины / детям", answer: "Детям нужны витамины." },
+                                { words: ["следует", "раньше", "спать", "ложиться"], q: "следует / раньше / спать / ложиться", answer: "Следует раньше ложиться спать." },
+                                { words: ["нужна", "еда", "полезная"], q: "нужна / еда / полезная", answer: "Нужна полезная еда." },
+                                { words: ["нужно", "воду", "пить"], q: "нужно / воду / пить", answer: "Нужно пить воду." },
+                                { words: ["соблюдать", "режим дня", "надо"], q: "соблюдать / режим дня / надо", answer: "Надо соблюдать режим дня." },
+                                { words: ["гулять", "следует", "вечером"], q: "гулять / следует / вечером", answer: "Следует гулять вечером." },
+                                { words: ["нужен", "хороший", "отдых"], q: "нужен / хороший / отдых", answer: "Нужен хороший отдых." },
+                                { words: ["нужны", "фрукты", "детям"], q: "нужны / фрукты / детям", answer: "Детям нужны фрукты." },
+                                { words: ["заниматься", "нужно", "зарядкой"], q: "заниматься / нужно / зарядкой", answer: "Нужно заниматься зарядкой." }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "input", icon: "fa-pen",
+                                title: "5-mashq. Bo'sh joyga mos fe'l yozing",
+                                intro: "Uzbek izoh asosida mos rus fe'lini yozing.",
+                                items: [
+                                { q: "Нужно ______ спортом.", hint: "shug'ullanmoq", answer: ["заниматься"] },
+                                { q: "Следует больше ______.", hint: "dam olmoq", answer: ["отдыхать"] },
+                                { q: "Нам надо ______ воду.", hint: "ichmoq", answer: ["пить"] },
+                                { q: "Детям нужно ______ овощи.", hint: "bermoq", answer: ["давать"] },
+                                { q: "Вам следует ______ режим дня.", hint: "kuzatmoq / rioya qilmoq", answer: ["соблюдать"] },
+                                { q: "Мне надо раньше ______ спать.", hint: "yotmoq", answer: ["ложиться"] },
+                                { q: "Нужно чаще ______ на свежем воздухе.", hint: "aylanmoq", answer: ["гулять"] },
+                                { q: "Нам нужны витамины, чтобы не ______.", hint: "kasal bo'lmoq", answer: ["болеть"] },
+                                { q: "После работы следует ______.", hint: "dam olmoq", answer: ["отдыхать"] },
+                                { q: "Тебе нужно меньше ______.", hint: "asabiylashmoq", answer: ["нервничать"] }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "choice", style: "tf", icon: "fa-circle-question",
+                                title: "6-mashq. Rost yoki yolg'on",
+                                intro: "Har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                items: [
+                                { q: "Нужно много есть фастфуд.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Следует пить воду каждый день.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Для здоровья нужен хороший сон.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Детям не нужны овощи.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Нужно заниматься спортом.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Следует поздно ложиться спать.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Нам нужны полезные продукты.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Следует гулять на свежем воздухе.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Вода полезна для здоровья.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Нужно мало спать.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" }
+                                ]
+                            },
+                            {
+                                id: "reading", type: "choice", style: "tf", icon: "fa-book-open",
+                                title: "Rost yoki yolg'on",
+                                intro: "Yuqoridagi matnga asoslanib har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                readingTitle: "Matn: Sog'lom turmush tarzi",
+                                readingText: [
+                                    "Меня зовут Алина. Я стараюсь вести здоровый образ жизни. Для здоровья нужно правильно питаться и заниматься спортом. Каждое утро я делаю зарядку и пью воду. Мне надо рано вставать и хорошо спать.",
+                                    "Врач говорит, что человеку нужны витамины, овощи и фрукты. Поэтому я редко ем фастфуд. После работы следует гулять на свежем воздухе. Это полезно для здоровья и хорошего настроения.",
+                                    "Моей семье тоже нравится здоровый образ жизни. Моему брату нужен спорт, потому что он хочет быть сильным. Моей маме нужна полезная еда и отдых. Нам всем нужно соблюдать режим дня.",
+                                    "Я думаю, что здоровые привычки помогают человеку быть активным, сильным и счастливым."
+                                ],
+                                items: [
+                                { q: "Алина не занимается спортом.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Каждое утро Алина делает зарядку.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Для здоровья не нужны витамины.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Алина часто ест фастфуд.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "После работы следует гулять на свежем воздухе.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Брат Алины хочет быть сильным.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Маме Алины нужен только спорт.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Семья Алины соблюдает режим дня.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Здоровые привычки помогают человеку быть счастливым.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Алина поздно ложится спать каждый день.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
                     id: 7,
-                    title: "Sayohat va taassurotlar",
-                    description: "Grammatika: harakat fe'llari + приставкalar. Muloqot: safar taassurotlari, maslahatlar",
+                    title: "Sayohat va harakat",
+                    description: "Sayohat, transport va harakat fe'llari haqida suhbat",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-route"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">Harakat fe'llari va приставкa lar</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda <b>идти / ходить, ехать / ездить</b> hamda
+                            <b>приставкa lar</b> (по-, при-, у-, в-, вы-, под-, пере-) yordamida yangi
+                            ma'no hosil qilish o'rganiladi — sayohat va harakatni aniq ifodalash uchun.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">PIYODA</span>
+                              <h4>Идти / Ходить</h4>
+                              <p class="t1g-card-uz">Piyoda harakat</p>
+                              <ul>
+                                <li><b>идти</b> — bir yo'nalishda, hozir</li>
+                                <li><b>ходить</b> — takroriy harakat, har doim</li>
+                                <li>Piyoda — pешком</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я сейчас иду в парк.</span>
+                                <span class="t1g-uz">Men hozir parkka boryapman.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">TRANSPORT</span>
+                              <h4>Ехать / Ездить</h4>
+                              <p class="t1g-card-uz">Transportda harakat</p>
+                              <ul>
+                                <li><b>ехать</b> — hozir, bir yo'nalishda</li>
+                                <li><b>ездить</b> — takroriy, qatnab yurish</li>
+                                <li>Avtobus, mashina, poyezdda</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я каждый год езжу в Самарканд.</span>
+                                <span class="t1g-uz">Men har yili Samarqandga boraman.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-table-list"></i> Приставкa lar — ma'no o'zgaradi</h4>
+                          <table class="t1g-table">
+                            <thead>
+                              <tr><th>Приставка</th><th>Ma'no</th><th>Misol</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr><td><b>по-</b></td><td>yo'lga tushmoq, boshlamoq</td><td><b>по</b>ехали в Бухару</td></tr>
+                              <tr><td><b>при-</b></td><td>yetib kelmoq</td><td><b>при</b>летел в Ташкент</td></tr>
+                              <tr><td><b>у-</b></td><td>ketib qolmoq, joydan jo'namoq</td><td><b>у</b>ехали домой</td></tr>
+                              <tr><td><b>в-</b></td><td>ichkariga kirmoq</td><td><b>в</b>ошли в гостиницу</td></tr>
+                              <tr><td><b>вы-</b></td><td>tashqariga chiqmoq</td><td><b>вы</b>шли из автобуса</td></tr>
+                              <tr><td><b>под-</b></td><td>yaqinlashmoq</td><td><b>под</b>ъехал к вокзалу</td></tr>
+                              <tr><td><b>пере-</b></td><td>ko'chib o'tmoq, kesib o'tmoq</td><td><b>пере</b>ехали мост</td></tr>
+                            </tbody>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-code-compare"></i> Bir martalik vs takroriy</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">BIR MARTA</span>
+                                <b>Я приехал в Хиву вчера.</b>
+                                <small>natija — keldi va shu yerda</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">TAKROR</span>
+                                <b>Я часто езжу в Хиву.</b>
+                                <small>odat — har gal qatnaydi</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li><b>идти / ехать</b> — bir yo'nalish, <b>ходить / ездить</b> — takror</li>
+                              <li><b>при-</b> = yetib kelmoq, <b>у-</b> = ketib qolmoq, <b>по-</b> = yo'lga tushmoq</li>
+                              <li><b>в- / вы-</b> = ichkariga / tashqariga, <b>пере-</b> = ko'chib o'tmoq</li>
+                              <li>Sayohat haqida gapirganda приставкa lar aniqlik beradi</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Идти / ехать — bir yo'nalishdagi harakat (hozir); ходить / ездить — takroriy harakat. Pristavkalar (по-, при-, у-, в-, вы-, под-, пере-) fe'lga yangi aniq ma'no beradi: yetib kelish, ketib qolish, kirish, chiqish va boshqalar."
                     },
-                    content: "",
-                    quiz: {
-                        mcQuestions: [],
-                        mcOptions: [],
-                        mcAnswers: [],
-                        blankQuestions: [],
-                        blankAnswers: []
+                    content: `
+                        <div style="background: linear-gradient(135deg, #3F51B5, #5C6BC0); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(63, 81, 181, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🧳</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Sayohat va harakat» mavzusiga oid <strong>71 ta so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html'"
+                                    style="background: white; color: #3F51B5; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Harakat fe'llari, transport va sayohat lug'ati
+                            </p>
+                        </div>
+`,
+                    topic7Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "chips", icon: "fa-hand-pointer",
+                                title: "1-mashq. To'g'ri fe'lni tanlang",
+                                intro: "Har bir gapda mazmunga mos harakat fe'lini tanlang.",
+                                items: [
+                                { q: "Я каждый год ______ в Самарканд.", options: ["езжу", "еду"], answer: "езжу" },
+                                { q: "Сейчас мы ______ в аэропорт.", options: ["ходим", "идём"], answer: "идём" },
+                                { q: "Туристы ______ в отель вечером.", options: ["приехали", "приезжали"], answer: "приехали" },
+                                { q: "Он часто ______ на море летом.", options: ["ездит", "едет"], answer: "ездит" },
+                                { q: "Мы уже ______ из автобуса.", options: ["вышли", "выходили"], answer: "вышли" },
+                                { q: "Друзья ______ домой очень поздно.", options: ["ушли", "уходили"], answer: "ушли" },
+                                { q: "Я сейчас ______ по улице.", options: ["хожу", "иду"], answer: "иду" },
+                                { q: "Семья ______ в другой город год назад.", options: ["переехала", "переезжала"], answer: "переехала" },
+                                { q: "Самолёт ______ в Ташкент ночью.", options: ["прилетел", "прилетал"], answer: "прилетел" },
+                                { q: "Мы быстро ______ в музей.", options: ["вошли", "входили"], answer: "вошли" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "choice", style: "chips", icon: "fa-puzzle-piece",
+                                title: "2-mashq. Bo'sh joyga mos pristavka qo'ying",
+                                intro: "Fe'l ildiziga mos pristavka (по-, при-, у-, в-, вы-, под-, пере-) ni tanlang.",
+                                items: [
+                                { q: "Мы ______ехали в Бухару утром.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "по" },
+                                { q: "Туристы ______шли в музей.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "в" },
+                                { q: "Самолёт ______летел из Москвы.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "при" },
+                                { q: "Я ______шёл из дома в 8 часов.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "вы" },
+                                { q: "Автобус ______ехал к вокзалу.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "под" },
+                                { q: "Они ______ехали мост.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "пере" },
+                                { q: "Друзья ______шли из комнаты.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "вы" },
+                                { q: "Мы ______ехали домой после экскурсии.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "по" },
+                                { q: "Туристы ______шли в гостиницу.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "в" },
+                                { q: "Поезд ______ехал на станцию.", options: ["в", "вы", "по", "под", "пере", "при", "у"], answer: "при" }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-language",
+                                title: "3-mashq. O'zbek tilidan rus tiliga tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Biz Toshkentga keldik.", answer: ["Мы приехали в Ташкент"] },
+                                { q: "Men mehmonxonaga kirdim.", answer: ["Я вошёл в гостиницу", "Я вошла в гостиницу"] },
+                                { q: "Ular aeroportga ketishdi.", answer: ["Они уехали в аэропорт"] },
+                                { q: "Men har yili Xivaga boraman.", answer: ["Я каждый год езжу в Хиву"] },
+                                { q: "Sayyohlar avtobusdan tushishdi.", answer: ["Туристы вышли из автобуса"] },
+                                { q: "Biz yo'lga tushdik.", answer: ["Мы пошли в дорогу", "Мы отправились в дорогу", "Мы поехали в дорогу"] },
+                                { q: "U boshqa shaharga ko'chib o'tdi.", answer: ["Он переехал в другой город", "Она переехала в другой город"] },
+                                { q: "Men parkda piyoda yuraman.", answer: ["Я хожу в парке пешком", "Я гуляю в парке пешком"] },
+                                { q: "Biz muzeyga bordik.", answer: ["Мы пошли в музей", "Мы поехали в музей"] },
+                                { q: "Samolyot kechasi uchib keldi.", answer: ["Самолёт прилетел ночью"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-pen",
+                                title: "4-mashq. Nuqtalar o'rniga mos fe'l yozing",
+                                intro: "Bo'sh joyga mos harakat fe'lini to'g'ri shaklda yozing.",
+                                items: [
+                                { q: "Я часто __________ в Самарканд на поезде.", answer: ["езжу"] },
+                                { q: "Сейчас мы __________ в аэропорт.", answer: ["едем"] },
+                                { q: "Туристы __________ в отель и отдохнули.", answer: ["зашли"] },
+                                { q: "После экскурсии друзья __________ домой.", answer: ["поехали"] },
+                                { q: "Мы быстро __________ из автобуса.", answer: ["вышли"] },
+                                { q: "Летом семья __________ на море.", answer: ["поедет"] },
+                                { q: "Я каждый день __________ пешком в университет.", answer: ["хожу"] },
+                                { q: "Самолёт __________ в Ташкент утром.", answer: ["полетит"] },
+                                { q: "Гости __________ в комнату.", answer: ["вошли"] },
+                                { q: "Они __________ в другой город два года назад.", answer: ["переехали"] }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "choice", style: "tf", icon: "fa-circle-question",
+                                title: "5-mashq. To'g'ri yoki noto'g'ri",
+                                intro: "Har bir ta'rif to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                items: [
+                                { q: "\"Идти\" — transportda ketishni bildiradi.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "\"Ехать\" — transport bilan harakat.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "\"Приехать\" — yetib kelmoq.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "\"Уйти\" — kelib qolmoq.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "\"Войти\" — ichkariga kirish.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "\"Выйти\" — tashqariga chiqish.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "\"Поехать\" — yo'lga tushmoq.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "\"Ходить\" — bir martalik harakat.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "\"Ездить\" — takroriy harakat.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "\"Переехать\" — ko'chib o'tmoq.", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            },
+                            {
+                                id: "reading", type: "choice", style: "tf", icon: "fa-book-open",
+                                title: "Rost yoki yolg'on savollar",
+                                intro: "Yuqoridagi matnga asoslanib har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                readingTitle: "Matn: Путешествие в Самарканд",
+                                readingText: [
+                                    "Прошлым летом мы поехали в Самарканд. Мы ехали туда на поезде. Поезд приехал рано утром, и мы быстро вышли на вокзале. Потом мы поехали в гостиницу и вошли в наш номер.",
+                                    "Самарканд произвёл на нас большое впечатление. Каждый день мы ходили на экскурсии, посещали музеи и гуляли по красивым улицам города. Особенно нам понравился Регистан. Там было много туристов из разных стран.",
+                                    "Однажды мы поехали в горы. Дорога была длинной, но очень интересной. Мы фотографировали природу и отдыхали у реки. Вечером мы вернулись в город.",
+                                    "После путешествия мы уехали домой с хорошими впечатлениями. Это путешествие было очень интересным и незабываемым."
+                                ],
+                                items: [
+                                { q: "Они поехали в Самарканд зимой.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Они ехали в Самарканд на поезде.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Поезд приехал вечером.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Туристы вошли в гостиницу.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Самарканд произвёл плохое впечатление.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Каждый день они ходили на экскурсии.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Им не понравился Регистан.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Однажды они поехали в горы.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Вечером они вернулись в деревню.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Путешествие было интересным и незабываемым.", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
                     id: 8,
-                    title: "Madaniyat va an'analar",
-                    description: "Grammatika: taqqoslash darajalari. Muloqot: urf-odatlar, bayramlar",
+                    title: "Oila va an'analar",
+                    description: "Oila, urf-odatlar, bayramlar va qiyosiy daraja haqida suhbat",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-people-group"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">Sifatlarning qiyosiy va orttirma darajasi</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda <b>qiyosiy daraja</b> (interesnee, dobree, starshe)
+                            va <b>orttirma daraja</b> (samyy, samaya, samoe) hamda <b>chem … tem …</b>
+                            qurilmasi oila va an'analar mavzusida o'rganiladi.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">QIYOSIY</span>
+                              <h4>Сравнительная степень</h4>
+                              <p class="t1g-card-uz">Сифатнинг қиёсий шакли</p>
+                              <ul>
+                                <li><b>-ее / -ей:</b> добр<b>ее</b>, интересн<b>ее</b>, красив<b>ее</b></li>
+                                <li><b>-е:</b> старш<b>е</b>, тиш<b>е</b>, дальш<b>е</b></li>
+                                <li>Tartibsiz: большой → <b>больше</b>, хороший → <b>лучше</b>, плохой → <b>хуже</b></li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Эта традиция интереснее.</span>
+                                <span class="t1g-uz">Bu an'ana qiziqroq.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">ORTTIRMA</span>
+                              <h4>Превосходная степень</h4>
+                              <p class="t1g-card-uz">Eng yuqori daraja — «eng…»</p>
+                              <ul>
+                                <li><b>самый / самая / самое / самые</b> + sifat</li>
+                                <li><b>более / менее</b> + sifat (ko'proq / kamroq)</li>
+                                <li>Род va son bilan mos kelishi shart</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Навруз — самый любимый праздник.</span>
+                                <span class="t1g-uz">Navro'z — eng sevimli bayram.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-table-list"></i> Tartibsiz qiyosiy shakllar</h4>
+                          <table class="t1g-table">
+                            <thead>
+                              <tr><th>Sifat</th><th>Qiyosiy</th><th>Ma'no</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr><td>большой</td><td><b>больше</b></td><td>kattaroq</td></tr>
+                              <tr><td>хороший</td><td><b>лучше</b></td><td>yaxshiroq</td></tr>
+                              <tr><td>плохой</td><td><b>хуже</b></td><td>yomonroq</td></tr>
+                              <tr><td>старый</td><td><b>старше</b></td><td>kattaroq (yosh)</td></tr>
+                              <tr><td>молодой</td><td><b>моложе</b></td><td>yoshroq</td></tr>
+                              <tr><td>далёкий</td><td><b>дальше</b></td><td>uzoqroq</td></tr>
+                            </tbody>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-arrows-up-down"></i> «Чем … тем …» qurilmasi</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">ЧЕМ</span>
+                                <b>Чем больше семья,</b>
+                                <small>qancha … bo'lsa</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">ТЕМ</span>
+                                <b>тем веселее жизнь.</b>
+                                <small>shuncha … bo'ladi</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li>Qiyosiy daraja: <b>-ее / -е / -ше</b> qo'shimchasi yoki «<b>более</b> + sifat»</li>
+                              <li>Orttirma daraja: <b>самый / самая / самое</b> род va songa moslashadi</li>
+                              <li><b>Чем … тем …</b> = «qanchalik … shunchalik …»</li>
+                              <li>Tartibsiz: больше / лучше / хуже / старше — yodlash kerak</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Qiyosiy daraja -ee / -e / -she qo'shimchasi yoki «более» bilan, orttirma daraja «самый/самая/самое» bilan yasaladi. «Чем … тем …» qurilmasi «qanchalik … shunchalik …» ma'nosini beradi."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #FF8F00, #FFB300); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(255, 143, 0, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🏛️</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Oila va an'analar» mavzusiga oid <strong>76 ta so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html'"
+                                    style="background: white; color: #FF8F00; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Oila, urf-odat va bayram lug'ati
+                            </p>
+                        </div>
+`,
                     quiz: {
-                        mcQuestions: [],
-                        mcOptions: [],
-                        mcAnswers: [],
-                        blankQuestions: [],
-                        blankAnswers: []
+                        matchingGame: {
+                            title: "1-mashq. Ikki qismini bog'lang",
+                            instruction: "Chap ustundan boshlanishini, o'ng ustundan mos davomini tanlang",
+                            leftLabel: "Boshlanishi",
+                            rightLabel: "Davomi",
+                            pairs: [
+                                { left: "Чем больше семья,", right: "тем больше разговоров за столом.", translation: "qancha katta oila bo'lsa, shuncha ko'p gap" },
+                                { left: "Чем старше традиция,", right: "тем интереснее она.", translation: "qancha qadimiy bo'lsa, shuncha qiziq" },
+                                { left: "Чем ярче одежда,", right: "тем красивее праздник.", translation: "qancha yorqin kiyim, shuncha chiroyli bayram" },
+                                { left: "Чем вкуснее еда,", right: "тем вкуснее кажется чай.", translation: "qancha mazali ovqat, shuncha mazali choy" },
+                                { left: "Чем веселее праздник,", right: "тем больше люди танцуют.", translation: "qancha quvnoq bayram, shuncha ko'p raqs" },
+                                { left: "Чем дружнее люди,", right: "тем счастливее жизнь.", translation: "qancha ahil odamlar, shuncha baxtli hayot" },
+                                { left: "Чем больше гостей приходит,", right: "тем дольше люди гуляют.", translation: "qancha ko'p mehmon, shuncha uzoq sayr" },
+                                { left: "Чем интереснее фильм,", right: "тем внимательнее зрители.", translation: "qancha qiziq film, shuncha diqqatli tomoshabin" },
+                                { left: "Чем красивее город,", right: "тем больше туристов приезжает.", translation: "qancha chiroyli shahar, shuncha ko'p sayyoh" },
+                                { left: "Чем теплее весна,", right: "тем больше цветов появляется.", translation: "qancha issiq bahor, shuncha ko'p gul" }
+                            ]
+                        }
+                    },
+                    matchingFirst: true,
+                    topic8Exercises: {
+                        exercises: [
+                            {
+                                id: "ex2", type: "input", icon: "fa-pen",
+                                title: "2-mashq. Qavs ichidagi sifatni qiyosiy darajada yozing",
+                                intro: "Bo'sh joyga sifatning qiyosiy shaklini yozing.",
+                                items: [
+                                { q: "Чем (старый) __________ традиция, тем она интереснее.", answer: ["старше"] },
+                                { q: "Чем (яркий) __________ праздник, тем больше гостей.", answer: ["ярче"] },
+                                { q: "Чем (вкусный) __________ сумаляк, тем быстрее его едят.", answer: ["вкуснее"] },
+                                { q: "Чем (добрый) __________ человек, тем больше друзей у него.", answer: ["добрее"] },
+                                { q: "Чем (красивый) __________ национальная одежда, тем лучше фотографии.", answer: ["красивее"] },
+                                { q: "Чем (весёлый) __________ музыка, тем активнее люди танцуют.", answer: ["веселее"] },
+                                { q: "Чем (большой) __________ семья, тем шумнее дом.", answer: ["больше"] },
+                                { q: "Чем (древний) __________ город, тем интереснее история.", answer: ["древнее"] },
+                                { q: "Чем (интересный) __________ фильм, тем меньше люди смотрят в телефон.", answer: ["интереснее"] },
+                                { q: "Чем (тёплый) __________ погода, тем больше людей гуляет.", answer: ["теплее"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-eraser",
+                                title: "3-mashq. Xatolarni topib to'g'rilang",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Чем старый традиция, тем она интереснее.", answer: ["Чем старше традиция тем она интереснее"] },
+                                { q: "Чем яркий праздник, тем больше гости приходит.", answer: ["Чем ярче праздник тем больше гостей приходит"] },
+                                { q: "Чем добрый человек, тем больше у него друзей.", answer: ["Чем добрее человек тем больше у него друзей"] },
+                                { q: "Чем вкусный плов, тем быстрее его кушают.", answer: ["Чем вкуснее плов тем быстрее его кушают"] },
+                                { q: "Чем древняя традиция, тем она важнее.", answer: ["Чем древнее традиция тем она важнее"] },
+                                { q: "Чем веселая музыка, тем больше люди танцуют.", answer: ["Чем веселее музыка тем больше люди танцуют"] },
+                                { q: "Чем большой семья, тем счастливее дети.", answer: ["Чем больше семья тем счастливее дети"] },
+                                { q: "Чем красивый город, тем больше туристов.", answer: ["Чем красивее город тем больше туристов"] },
+                                { q: "Чем интересный фильм, тем меньше скучно.", answer: ["Чем интереснее фильм тем меньше скучно"] },
+                                { q: "Чем теплая погода, тем больше прогулки.", answer: ["Чем теплее погода тем больше прогулок"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-language",
+                                title: "4-mashq. Tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Qanchalik katta oila bo'lsa, shunchalik quvnoq bo'ladi.", answer: ["Чем больше семья тем веселее жизнь", "Чем больше семья тем веселее"] },
+                                { q: "Qanchalik mazali ovqat bo'lsa, shunchalik ko'p mehmon keladi.", answer: ["Чем вкуснее еда тем больше гостей приходит", "Чем вкуснее еда тем больше гостей"] },
+                                { q: "Qanchalik qadimiy urf-odat bo'lsa, shunchalik qiziq bo'ladi.", answer: ["Чем древнее традиция тем она интереснее", "Чем древнее обычай тем он интереснее"] },
+                                { q: "Qanchalik chiroyli to'y bo'lsa, shunchalik ko'p odam eslab qoladi.", answer: ["Чем красивее свадьба тем больше людей её запоминает", "Чем красивее свадьба тем больше людей запоминают"] },
+                                { q: "Qanchalik yorqin bayram bo'lsa, shunchalik yaxshi kayfiyat bo'ladi.", answer: ["Чем ярче праздник тем лучше настроение"] },
+                                { q: "Qanchalik mehribon inson bo'lsa, shunchalik ko'p do'sti bo'ladi.", answer: ["Чем добрее человек тем больше у него друзей"] },
+                                { q: "Qanchalik ko'p musiqa bo'lsa, shunchalik ko'p raqs bo'ladi.", answer: ["Чем больше музыки тем больше танцев"] },
+                                { q: "Qanchalik ahil oila bo'lsa, shunchalik baxtli hayot bo'ladi.", answer: ["Чем дружнее семья тем счастливее жизнь"] },
+                                { q: "Qanchalik katta dasturxon bo'lsa, shunchalik ko'p mehmon bo'ladi.", answer: ["Чем больше праздничный стол тем больше гостей"] },
+                                { q: "Qanchalik issiq bahor bo'lsa, shunchalik chiroyli Navro'z bo'ladi.", answer: ["Чем теплее весна тем красивее Навруз"] }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "choice", style: "chips", icon: "fa-hand-pointer",
+                                title: "5-mashq. To'g'ri variantni tanlang",
+                                intro: "Har bir gap uchun mos sifat / shaklni tanlang.",
+                                items: [
+                                { q: "Навруз ___ других праздников.", options: ["интересный", "интереснее"], answer: "интереснее" },
+                                { q: "Это ___ древний обычай.", options: ["самый", "более"], answer: "самый" },
+                                { q: "Моя семья ___ дружная.", options: ["более", "самый"], answer: "более" },
+                                { q: "Эта свадьба ___ прошлой.", options: ["красивее", "красивый"], answer: "красивее" },
+                                { q: "Плов — ___ известное блюдо.", options: ["самое", "более"], answer: "самое" }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "input", icon: "fa-eraser",
+                                title: "6-mashq. Xatolarni topib to'g'rilang",
+                                intro: "Noto'g'ri gapni topib, to'g'ri shaklda qayta yozing.",
+                                items: [
+                                { q: "Навруз самый интереснее праздник.", answer: ["Навруз — самый интересный праздник", "Навруз самый интересный праздник"] },
+                                { q: "Эта традиция более древнее.", answer: ["Эта традиция более древняя"] },
+                                { q: "Семья самая важный часть жизни.", answer: ["Семья — самая важная часть жизни", "Семья самая важная часть жизни"] },
+                                { q: "Плов вкусная лагмана.", answer: ["Плов вкуснее лагмана"] },
+                                { q: "Узбекистан имеет самый древний культура.", answer: ["Узбекистан имеет самую древнюю культуру"] },
+                                { q: "Моя бабушка добрее всех человек.", answer: ["Моя бабушка добрее всех людей"] },
+                                { q: "Этот праздник более весёлый чем тот праздник.", answer: ["Этот праздник более весёлый чем тот праздник"] },
+                                { q: "Келин красивый прошлой невесты.", answer: ["Келин красивее прошлой невесты"] },
+                                { q: "Люди уважает старших.", answer: ["Люди уважают старших"] },
+                                { q: "Самое лучший праздник — Навруз.", answer: ["Самый лучший праздник — Навруз", "Самый лучший праздник Навруз"] }
+                                ]
+                            },
+                            {
+                                id: "reading", type: "choice", style: "tf", icon: "fa-book-open",
+                                title: "Rost yoki yolg'on",
+                                intro: "Yuqoridagi matnga asoslanib har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                readingTitle: "Matn: Моя семья и традиции",
+                                readingText: [
+                                    "У меня большая и дружная семья. В нашей семье есть мама, папа, бабушка, дедушка, ака, опа и младший брат. Мы очень любим проводить время вместе. По праздникам вся семья собирается за большим столом.",
+                                    "Моя мама очень добрая, а папа самый мудрый человек в семье. Бабушка любит готовить национальные блюда, особенно плов и сумаляк. Дедушка рассказывает интересные истории о старых традициях.",
+                                    "У моего брата недавно была свадьба. На свадьбе были келин, куйов, qaynona, qaynota и много гостей. Все танцевали, пели песни и поздравляли молодых. Национальная музыка была очень весёлой.",
+                                    "В нашей семье уважают старших и помогают младшим. Чем дружнее семья, тем счастливее жизнь. Мы стараемся сохранять наши традиции и передавать их следующему поколению.",
+                                    "Навруз — самый любимый праздник в нашей семье. В этот день мы готовим вкусную еду, встречаем гостей и надеваем национальную одежду. Этот праздник очень важен для нашей культуры."
+                                ],
+                                items: [
+                                { q: "В семье автора есть только мама и папа.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Бабушка любит готовить национальные блюда.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Дедушка рассказывает истории о традициях.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "У брата автора недавно была свадьба.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "На свадьбе никто не танцевал.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "В семье не уважают старших.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Навруз — самый любимый праздник в семье автора.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "На Навруз семья надевает национальную одежду.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Семья автора не любит встречать гостей.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Чем дружнее семья, тем счастливее жизнь.", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
@@ -3930,7 +4579,7 @@
         function loadQuiz(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
-            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises) { renderTopic1Exercises(topicId); return; }
+            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises) { renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
             const topicResults = userQuizResults[`topic_${topicId}`];
@@ -4988,6 +5637,8 @@
             .t1-q-text { font-size:1rem; color:#333; line-height:1.6; padding-top:1px; }
             .t1-blank { display:inline-block; min-width:70px; border-bottom:2px dashed #FF9800;
                 color:transparent; margin:0 3px; }
+            .t1-blank.t1-blank-filled { color:#E65100; font-weight:700; border-bottom-color:#FF9800;
+                border-bottom-style:solid; min-width:auto; padding:0 4px; }
             .t1-opts { display:flex; gap:10px; flex-wrap:wrap; }
             .t1-opts-test, .t1-opts-tf { flex-direction:column; }
             .t1-opt { font-family:inherit; cursor:pointer; border-radius:10px;
@@ -5012,6 +5663,28 @@
             .t1-input:focus { outline:none; border-color:#FF9800; background:#FFFDF7; }
             .t1-input.correct { border-color:#4CAF50; background:#E8F5E9; }
             .t1-input.incorrect { border-color:#F44336; background:#FFEBEE; }
+            .t1-hint { margin-top:6px; font-size:.82rem; color:#888; font-style:italic;
+                display:flex; align-items:center; gap:6px; }
+            .t1-hint::before { content:"💡"; font-style:normal; }
+            .t1-audio-placeholder { margin-top:16px; padding:14px 16px; border-radius:10px;
+                background:rgba(255,255,255,.15); color:rgba(255,255,255,.92); font-size:.95rem;
+                display:flex; align-items:center; gap:10px; }
+            .t1-reading-card { background:linear-gradient(135deg,#FFF8E1,#FFFDE7);
+                border-radius:16px; padding:24px; margin:18px 0; border:1px solid #FFE0B2;
+                box-shadow:0 4px 18px rgba(0,0,0,.06); }
+            .t1-reading-head { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+            .t1-reading-ico { width:48px; height:48px; flex:none; border-radius:12px;
+                background:linear-gradient(135deg,#FF9800,#F57C00); color:#fff;
+                display:flex; align-items:center; justify-content:center; font-size:1.25rem; }
+            .t1-reading-title { margin:0; font-size:1.18rem; color:#5d4037; line-height:1.4; }
+            .t1-reading-body { font-size:1rem; line-height:1.78; color:#333; }
+            .t1-reading-body p { margin:0 0 12px; }
+            .t1-reading-body p:last-child { margin-bottom:0; }
+            @media (max-width:480px) {
+                .t1-reading-card { padding:18px; }
+                .t1-reading-title { font-size:1.05rem; }
+                .t1-reading-body { font-size:.95rem; line-height:1.7; }
+            }
             .t1-builder { display:flex; flex-direction:column; gap:10px; }
             .t1-build-slot { min-height:48px; border:2px dashed #e0d6c0; border-radius:10px;
                 padding:8px; display:flex; flex-wrap:wrap; gap:6px; background:#fff; align-content:flex-start; }
@@ -5071,6 +5744,14 @@
                 && location.pathname.indexOf("/paid-courses/") !== -1) {
                 src = "../" + src;
             }
+            var player = src
+                ? '<audio controls preload="metadata" class="t1-audio-player">'
+                  + '<source src="' + src + '" type="audio/mpeg">'
+                  + "Brauzeringiz audio ijro etishni qo'llab-quvvatlamaydi."
+                  + '</audio>'
+                : '<div class="t1-audio-placeholder">'
+                  + '<i class="fas fa-clock"></i> Audio fayl tez orada qo\'shiladi.'
+                  + '</div>';
             return `
                 <div class="t1-audio-card">
                     <div class="t1-audio-header">
@@ -5080,11 +5761,29 @@
                             <p>Audio matnni tinglang va savollarga javob bering.</p>
                         </div>
                     </div>
-                    <audio controls preload="metadata" class="t1-audio-player">
-                        <source src="${src}" type="audio/mpeg">
-                        Brauzeringiz audio ijro etishni qo'llab-quvvatlamaydi.
-                    </audio>
+                    ${player}
                 </div>`;
+        }
+
+        /* Reading-comprehension card — used by groups with id "reading" and
+           a `readingTitle` + `readingText` (array of paragraphs OR string).
+           Visually distinct from the audio card; no player, no placeholder. */
+        function renderT1ReadingBlock(group) {
+            if (!group) return "";
+            var title = t1EscHtml(group.readingTitle || "Matn");
+            var raw = group.readingText;
+            var paragraphs = Array.isArray(raw) ? raw : (raw ? [String(raw)] : []);
+            var body = paragraphs
+                .map(function (p) { return "<p>" + t1EscHtml(p) + "</p>"; })
+                .join("");
+            return ''
+                + '<div class="t1-reading-card">'
+                +   '<div class="t1-reading-head">'
+                +     '<div class="t1-reading-ico"><i class="fas fa-book-open"></i></div>'
+                +     '<h4 class="t1-reading-title">' + title + '</h4>'
+                +   '</div>'
+                +   '<div class="t1-reading-body">' + body + '</div>'
+                + '</div>';
         }
 
         function renderT1Group(g) {
@@ -5119,6 +5818,7 @@
                     cell = '<input type="text" class="t1-input" data-t1-input="' + key + '" '
                          + 'placeholder="' + t1EscAttr(item.placeholder || "Javobingizni yozing...") + '" '
                          + 'autocomplete="off" spellcheck="false">';
+                    if (item.hint) cell += '<div class="t1-hint">' + t1EscHtml(item.hint) + '</div>';
                 }
                 body += '<div class="t1-item">'
                       +   '<div class="t1-q"><span class="t1-num">' + (i + 1) + "</span>"
@@ -5137,7 +5837,7 @@
         }
 
         function getT1ExData(topic) {
-            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises)) || null;
+            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises)) || null;
         }
 
         function renderTopic1Exercises(topicId) {
@@ -5155,6 +5855,7 @@
                      + '<h3 class="t1-main-title"><i class="fas fa-graduation-cap"></i> Mavzu mashqlari</h3>';
             groups.forEach(function (g) {
                 if (g.id === "audio") html += renderT1AudioBlock(g);
+                else if (g.id === "reading") html += renderT1ReadingBlock(g);
                 html += renderT1Group(g);
             });
             html += "</div>";
@@ -5168,6 +5869,17 @@
                         o.classList.remove("selected", "t1-ok", "t1-bad", "t1-reveal");
                     });
                     this.classList.add("selected");
+                    /* If the question has a fill-in blank (___), reflect the
+                       selected option inside the blank so the learner sees the
+                       full sentence build live (useful for chip / prefix exercises). */
+                    var item = this.closest(".t1-item");
+                    var blank = item ? item.querySelector(".t1-blank") : null;
+                    if (blank) {
+                        var val = this.getAttribute("data-value");
+                        if (val == null) val = (this.textContent || "").trim();
+                        blank.textContent = val;
+                        blank.classList.add("t1-blank-filled");
+                    }
                 });
             });
 
@@ -5212,7 +5924,17 @@
             });
 
             if (topic.quiz && topic.quiz.matchingGame && typeof loadMatchingGame === "function") {
-                setTimeout(function () { loadMatchingGame(topicId); }, 60);
+                setTimeout(function () {
+                    loadMatchingGame(topicId);
+                    /* When the topic flags matchingFirst, move the rendered game
+                       to the top of quizSection so it visually appears as #1. */
+                    if (topic.matchingFirst) {
+                        var mg = document.getElementById("matchingGame");
+                        if (mg && quizSection && quizSection.firstChild) {
+                            quizSection.insertBefore(mg, quizSection.firstChild);
+                        }
+                    }
+                }, 60);
             }
         }
 
@@ -5328,6 +6050,9 @@
         window.checkTopic3Exercises = window.checkTopic1Exercises;
         window.checkTopic4Exercises = window.checkTopic1Exercises;
         window.checkTopic5Exercises = window.checkTopic1Exercises;
+        window.checkTopic6Exercises = window.checkTopic1Exercises;
+        window.checkTopic7Exercises = window.checkTopic1Exercises;
+        window.checkTopic8Exercises = window.checkTopic1Exercises;
 
         injectTopic1Styles();
 

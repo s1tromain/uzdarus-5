@@ -338,7 +338,7 @@
             input cells -> [data-t1-input="<id>-<i>"]                                */
     function collectTopic1ExercisesResults(topic, scope) {
         var results = [];
-        var exObj = topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises);
+        var exObj = topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises);
         if (!exObj || !Array.isArray(exObj.exercises)) return results;
         var topicTitle = topic.title || '';
 
@@ -739,7 +739,9 @@
                 await window.checkTopic5Exercises(topicId);
             }
 
-            /* Dynamic call for topic 6+ check functions */
+            /* Dynamic call for topic 6+ check functions (already covered for
+               topic 6 by the static checkTopic6Exercises hook in the course
+               file, but kept for generic forward-compat with topics 7+). */
             for (var n = 6; n <= 30; n++) {
                 var exKey = 'topic' + n + 'Exercises';
                 var fnName = 'checkTopic' + n + 'Exercises';

@@ -10,7 +10,19 @@
       "Bash(del paid-courses\\\\__engine_block.js)",
       "Bash(node --check paid-courses/__engine_block.js)",
       "Bash(node __splice.js)",
-      "Bash(node __splice.cjs)"
+      "Bash(node __splice.cjs)",
+      "Bash(awk 'NR>=3261&&NR<=3284{print NR\": [\"$0\"]\"}' paid-courses/b1-course.html)",
+      "Bash(awk 'NR>=1311&&NR<=1324{print NR\": [\"$0\"]\"}' paid-courses/b1-vocabulary.html)",
+      "Bash(python _t6gen.py)",
+      "Bash(python -c ' *)",
+      "Bash(rm -f _t6gen.py paid-courses/b1-course.html.bak paid-courses/b1-vocabulary.html.bak)",
+      "Bash(grep -n \"renderT1AudioBlock\\(g\\);\\\\|id: \\\\\"audio\\\\\", type: \\\\\"choice\\\\\", style: \\\\\"tf\\\\\", icon: \\\\\"fa-circle-question\\\\\",\\\\\\\\s*$\\\\|title: \\\\\"Audio: Rost yoki yolg\\\\|t1-audio-placeholder { margin-top:16\" paid-courses/b1-course.html)",
+      "Bash(awk 'NR>=3500&&NR<=3523{print NR\": [\"$0\"]\"}' paid-courses/b1-course.html)",
+      "Bash(awk 'NR>=1370&&NR<=1382{print NR\": [\"$0\"]\"}' paid-courses/b1-vocabulary.html)",
+      "Bash(python _t7gen.py)",
+      "Bash(awk 'NR>=3726&&NR<=3748{print NR\": [\"$0\"]\"}' paid-courses/b1-course.html)",
+      "Bash(awk 'NR>=1451&&NR<=1463{print NR\": [\"$0\"]\"}' paid-courses/b1-vocabulary.html)",
+      "Bash(python _t8gen.py)"
     ]
   }
 }
