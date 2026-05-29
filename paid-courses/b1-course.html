@@ -3967,40 +3967,562 @@
                 },
                 {
                     id: 9,
-                    title: "Ommaviy axborot va internet",
-                    description: "Grammatika: bilvosita nutq. Muloqot: yangiliklar, ijtimoiy tarmoqlar",
+                    title: "Internet va ijtimoiy tarmoqlar",
+                    description: "Internet, telefon, ijtimoiy tarmoqlar va zamonaviy aloqa vositalari haqida suhbat",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-globe"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">«В» yoki «по» — media bilan predloglar</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda <b>в</b> va <b>по</b> predloglarining
+                            internet, telefon va ommaviy axborot vositalari bilan ishlatilishi o'rganiladi —
+                            «in» va «orqali / through» ma'nolarini farqlash uchun.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">В + П.п</span>
+                              <h4>В — ichida</h4>
+                              <p class="t1g-card-uz">«inside / in» — joy/manba</p>
+                              <ul>
+                                <li><b>в интернете</b> — internetda</li>
+                                <li><b>в телефоне</b> — telefonda</li>
+                                <li><b>в социальных сетях</b> — ijtimoiy tarmoqlarda</li>
+                                <li><b>в Telegram, в Instagram</b></li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я читаю новости в интернете.</span>
+                                <span class="t1g-uz">Men internetda yangilik o'qiyman.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">ПО + Д.п</span>
+                              <h4>По — orqali</h4>
+                              <p class="t1g-card-uz">«through / by» — vositachi</p>
+                              <ul>
+                                <li><b>по интернету</b> — internet orqali</li>
+                                <li><b>по телефону</b> — telefon orqali</li>
+                                <li><b>по телевизору</b> — televizor orqali</li>
+                                <li><b>по радио</b> — radio orqali</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Мы общаемся по интернету.</span>
+                                <span class="t1g-uz">Biz internet orqali muloqot qilamiz.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-table-list"></i> Qaysisi qachon?</h4>
+                          <table class="t1g-table">
+                            <thead>
+                              <tr><th>Vosita</th><th>В (ichida)</th><th>ПО (orqali)</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr><td>интернет</td><td><b>в интернете</b> (oʻqiyman, sidi…)</td><td><b>по интернету</b> (общаемся)</td></tr>
+                              <tr><td>телефон</td><td><b>в телефоне</b> (vaqt oʻtkazaman)</td><td><b>по телефону</b> (gaplashaman)</td></tr>
+                              <tr><td>телевизор</td><td>—</td><td><b>по телевизору</b> (smotryu)</td></tr>
+                              <tr><td>радио</td><td>—</td><td><b>по радио</b> (slushayu)</td></tr>
+                              <tr><td>Telegram / Instagram</td><td><b>в Telegram, в Instagram</b></td><td>—</td></tr>
+                            </tbody>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-code-compare"></i> Solishtiring</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">В</span>
+                                <b>Я сижу в телефоне.</b>
+                                <small>«ichida» — qayerdaligini aytadi</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">ПО</span>
+                                <b>Я говорю по телефону.</b>
+                                <small>«orqali» — qanday vositadaligini aytadi</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li><b>в + П.п</b> — «ichida», kontent yoki joy: <i>в интернете, в Telegram</i></li>
+                              <li><b>по + Д.п</b> — «orqali», aloqa vositasi: <i>по телефону, по телевизору</i></li>
+                              <li>Televizor / radio bilan deyarli doim <b>по</b></li>
+                              <li>Ilovalar (Telegram, Instagram, TikTok) bilan doimo <b>в</b></li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "«В + П.п» — ichida / kontent (в интернете, в Telegram). «По + Д.п» — vositachi / orqali (по интернету, по телефону, по телевизору, по радио). Televizor va radio bilan ko'pincha «по», ilovalar bilan «в»."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #0288D1, #03A9F4); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(2, 136, 209, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🌐</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Internet va ijtimoiy tarmoqlar» mavzusiga oid <strong>65 ta so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html'"
+                                    style="background: white; color: #0288D1; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Internet, telefon va ijtimoiy tarmoq lug'ati
+                            </p>
+                        </div>
+`,
                     quiz: {
-                        mcQuestions: [],
-                        mcOptions: [],
-                        mcAnswers: [],
-                        blankQuestions: [],
-                        blankAnswers: []
+                        matchingGame: {
+                            title: "5-mashq. Moslashtiring",
+                            instruction: "Chap ustundan fe'lni, o'ng ustundan unga mos obyektni tanlang",
+                            leftLabel: "Fe'l",
+                            rightLabel: "Obyekt",
+                            pairs: [
+                                { left: "смотреть", right: "новости", translation: "tomosha qilmoq → yangiliklar" },
+                                { left: "писать", right: "сообщения", translation: "yozmoq → xabarlar" },
+                                { left: "общаться", right: "по интернету", translation: "muloqot qilmoq → internet orqali" },
+                                { left: "читать", right: "статьи", translation: "o'qimoq → maqolalar" },
+                                { left: "сидеть", right: "в телефоне", translation: "o'tirmoq → telefonda" }
+                            ]
+                        }
+                    },
+                    topic9Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "1-mashq. To'g'ri predlogni tanlang",
+                                intro: "Bo'sh joyga mos predlog (в / по / на …) ni tanlang.",
+                                items: [
+                                { q: "Мы общаемся ___ интернету.", options: ["в", "по", "на"], answer: "по" },
+                                { q: "Она смотрит сериал ___ телевизору.", options: ["по", "в", "на"], answer: "по" },
+                                { q: "Я читаю новости ___ интернете.", options: ["по", "в", "с"], answer: "в" },
+                                { q: "Дети сидят ___ телефоне.", options: ["в", "по", "у"], answer: "в" },
+                                { q: "Мы познакомились ___ социальных сетях.", options: ["на", "по", "в"], answer: "в" },
+                                { q: "Он говорил с другом ___ телефону.", options: ["по", "в", "на"], answer: "по" },
+                                { q: "Я увидел рекламу ___ интернете.", options: ["по", "в", "с"], answer: "в" },
+                                { q: "Бабушка слушает новости ___ радио.", options: ["в", "по", "на"], answer: "по" },
+                                { q: "Она пишет сообщения ___ Telegram.", options: ["в", "по", "у"], answer: "в" },
+                                { q: "Мы смотрим фильм ___ телевизору вечером.", options: ["по", "в", "за"], answer: "по" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "2-mashq. To'g'ri fe'lni tanlang",
+                                intro: "Bo'sh joyga mos fe'lni tanlang.",
+                                items: [
+                                { q: "Я ___ новости в интернете.", options: ["пишу", "читаю", "смотрю"], answer: "читаю" },
+                                { q: "Мы ___ по интернету каждый день.", options: ["общаемся", "смотрим", "слушаем"], answer: "общаемся" },
+                                { q: "Она ___ видео в TikTok.", options: ["смотрит", "пишет", "читает"], answer: "смотрит" },
+                                { q: "Студенты часто ___ в телефоне.", options: ["читают", "сидят", "смотрят"], answer: "сидят" },
+                                { q: "Я ___ сообщение другу.", options: ["читаю", "пишу", "слушаю"], answer: "пишу" },
+                                { q: "Он ___ блогеров в интернете.", options: ["читает", "слушает", "смотрит"], answer: "смотрит" },
+                                { q: "Мы ___ новости по телевизору.", options: ["читаем", "слушаем", "смотрим"], answer: "смотрим" },
+                                { q: "Девочка ___ статьи в телефоне.", options: ["пишет", "читает", "смотрит"], answer: "читает" },
+                                { q: "Ты часто ___ в социальных сетях?", options: ["сидишь", "читаешь", "общаешься"], answer: "общаешься" },
+                                { q: "Я ___ комментарии в Instagram.", options: ["читаю", "отправляю", "пишу"], answer: "пишу" }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-pen",
+                                title: "3-mashq. Bo'sh joyni to'ldiring",
+                                intro: "Mos predlogni yozing (в yoki по).",
+                                items: [
+                                { q: "Мы общаемся ___ интернету.", answer: ["по"] },
+                                { q: "Я читаю новости ___ интернете.", answer: ["в"] },
+                                { q: "Она сидит ___ телефоне.", answer: ["в"] },
+                                { q: "Дети смотрят мультфильм ___ телевизору.", answer: ["по"] },
+                                { q: "Он пишет сообщения ___ Telegram.", answer: ["в"] },
+                                { q: "Мы познакомились ___ социальных сетях.", answer: ["в"] },
+                                { q: "Брат слушает музыку ___ интернету.", answer: ["по"] },
+                                { q: "Я увидел это видео ___ интернете.", answer: ["в"] },
+                                { q: "Она разговаривает ___ телефону.", answer: ["по"] },
+                                { q: "Студенты читают статьи ___ телефоне.", answer: ["в"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-eraser",
+                                title: "4-mashq. Xatoni toping",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Я смотрю новости по интернете.", answer: ["Я смотрю новости в интернете"] },
+                                { q: "Мы общаемся в интернету.", answer: ["Мы общаемся по интернету"] },
+                                { q: "Она сидит по телефоне.", answer: ["Она сидит в телефоне"] },
+                                { q: "Я видел фильм в телевизору.", answer: ["Я видел фильм по телевизору"] },
+                                { q: "Мы пишем сообщения по Telegram.", answer: ["Мы пишем сообщения в Telegram"] },
+                                { q: "Он читает новости по интернете.", answer: ["Он читает новости в интернете"] },
+                                { q: "Она разговаривает в телефону.", answer: ["Она разговаривает по телефону"] },
+                                { q: "Дети сидят по социальных сетях.", answer: ["Дети сидят в социальных сетях"] },
+                                { q: "Я смотрел сериал в телевизоре.", answer: ["Я смотрел сериал по телевизору"] },
+                                { q: "Мы познакомились по социальных сетях.", answer: ["Мы познакомились в социальных сетях"] }
+                                ]
+                            },
+                            { id: "matchingSlot" },
+                            {
+                                id: "ex6", type: "input", icon: "fa-language",
+                                title: "6-mashq. Tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Men internetda yangilik o'qiyman.", answer: ["Я читаю новости в интернете"] },
+                                { q: "Biz internet orqali gaplashamiz.", answer: ["Мы общаемся по интернету", "Мы разговариваем по интернету"] },
+                                { q: "U telefonda ko'p vaqt o'tkazadi.", answer: ["Он проводит много времени в телефоне", "Она проводит много времени в телефоне"] },
+                                { q: "Men Telegramda xabar yozaman.", answer: ["Я пишу сообщение в Telegram", "Я пишу сообщения в Telegram"] },
+                                { q: "Biz televizor orqali film ko'ramiz.", answer: ["Мы смотрим фильм по телевизору"] },
+                                { q: "U ijtimoiy tarmoqlarda ishlaydi.", answer: ["Он работает в социальных сетях", "Она работает в социальных сетях"] },
+                                { q: "Men internet orqali musiqa tinglayman.", answer: ["Я слушаю музыку по интернету"] },
+                                { q: "Bolalar telefonda o'yin o'ynaydi.", answer: ["Дети играют в игры в телефоне", "Дети играют в телефоне"] },
+                                { q: "U Instagramda video ko'radi.", answer: ["Она смотрит видео в Instagram", "Он смотрит видео в Instagram"] },
+                                { q: "Biz telefon orqali gaplashdik.", answer: ["Мы разговаривали по телефону", "Мы говорили по телефону"] }
+                                ]
+                            },
+                            {
+                                id: "ex7", type: "choice", style: "tf", icon: "fa-circle-question",
+                                title: "7-mashq. To'g'ri yoki noto'g'ri",
+                                intro: "Har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                items: [
+                                { q: "«По интернету» — internet ichida degani.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "«В интернете» — internetda degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«По телефону» — telefon orqali degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«В телефоне» — telefon orqali degani.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "«Общаться» — muloqot qilmoq.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Смотреть» — yozmoq.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "«Писать сообщения» — xabar yozmoq.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«В социальных сетях» — ijtimoiy tarmoqlarda.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«По телевизору» — televizor orqali.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Читать новости» — yangilik o'qimoq.", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            },
+                            {
+                                id: "ex8", type: "builder", icon: "fa-cubes",
+                                title: "8-mashq. Aralash so'zlardan gap tuzing",
+                                intro: "So'zlarni to'g'ri tartibda bosib, gap tuzing.",
+                                items: [
+                                { words: ["интернете", "новости", "читаю", "я", "в"], q: "интернете / новости / читаю / я / в", answer: "Я читаю новости в интернете." },
+                                { words: ["интернету", "мы", "по", "общаемся"], q: "интернету / мы / по / общаемся", answer: "Мы общаемся по интернету." },
+                                { words: ["сидит", "она", "телефоне", "в"], q: "сидит / она / телефоне / в", answer: "Она сидит в телефоне." },
+                                { words: ["телевизору", "фильм", "смотрим", "мы", "по"], q: "телевизору / фильм / смотрим / мы / по", answer: "Мы смотрим фильм по телевизору." },
+                                { words: ["Telegram", "сообщения", "пишу", "в", "я"], q: "Telegram / сообщения / пишу / в / я", answer: "Я пишу сообщения в Telegram." },
+                                { words: ["социальных", "познакомились", "сетях", "мы", "в"], q: "социальных / познакомились / сетях / мы / в", answer: "Мы познакомились в социальных сетях." },
+                                { words: ["телефону", "говорит", "мама", "по"], q: "телефону / говорит / мама / по", answer: "Мама говорит по телефону." },
+                                { words: ["видео", "интернете", "смотрит", "он", "в"], q: "видео / интернете / смотрит / он / в", answer: "Он смотрит видео в интернете." },
+                                { words: ["статьи", "телефоне", "читаю", "я", "в"], q: "статьи / телефоне / читаю / я / в", answer: "Я читаю статьи в телефоне." },
+                                { words: ["друзья", "интернету", "по", "общаются", "мои"], q: "друзья / интернету / по / общаются / мои", answer: "Мои друзья общаются по интернету." }
+                                ]
+                            },
+                            {
+                                id: "reading", type: "choice", style: "tf", icon: "fa-book-open",
+                                title: "Rost yoki yolg'on",
+                                intro: "Yuqoridagi matnga asoslanib har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                readingTitle: "Matn: Интернет и социальные сети",
+                                readingText: [
+                                    "Сегодня интернет играет очень важную роль в жизни людей. Многие люди каждый день сидят в телефоне и пользуются интернетом. Утром я обычно читаю новости в интернете и смотрю видео в Telegram или Instagram.",
+                                    "Мои друзья любят общаться по интернету. Мы часто отправляем сообщения и разговариваем по телефону. Иногда вечером мы смотрим фильмы по телевизору или слушаем музыку по интернету.",
+                                    "Молодёжь очень активно пользуется социальными сетями. Некоторые люди проводят много времени в телефоне: читают статьи, смотрят блогеров и пишут комментарии. Интернет помогает людям быстро находить информацию и общаться с друзьями из разных стран.",
+                                    "Но иногда интернет-зависимость становится проблемой. Поэтому важно правильно пользоваться интернетом и не сидеть в телефоне целый день."
+                                ],
+                                items: [
+                                { q: "Интернет играет важную роль в жизни людей.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Автор никогда не пользуется интернетом.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Друзья общаются по интернету.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Вечером друзья смотрят фильмы по телевизору.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Молодёжь не любит социальные сети.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Люди читают статьи и смотрят блогеров в интернете.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Интернет помогает быстро находить информацию.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Все люди редко сидят в телефоне.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Интернет-зависимость может стать проблемой.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Нужно сидеть в телефоне целый день.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
                     id: 10,
                     title: "His-tuyg'ular va munosabatlar",
-                    description: "Grammatika: возвратные глаголы. Muloqot: his-tuyg'ularni izohlash",
+                    description: "His-tuyg'ular, emotsiyalar va возвратные глаголы mavzusi",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-heart"></i> Grammatika</span>
+                            <h3 class="t1g-hero-title">Возвратные глаголы — o'ziga qaytuvchi fe'llar</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda <b>-ся / -сь</b> bilan tugaydigan fe'llar
+                            va ular bilan ishlatiladigan kelishiklar (родительный, дательный, творительный,
+                            винительный) o'rganiladi — his-tuyg'u va munosabatni ifodalash uchun.</p>
+                          </div>
+
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">-СЯ / -СЬ</span>
+                              <h4>Возвратный fe'l nima?</h4>
+                              <p class="t1g-card-uz">«o'ziga qaytuvchi» — harakat bajaruvchining o'ziga qaytadi</p>
+                              <ul>
+                                <li><b>волноваться</b> — hayajonlanmoq</li>
+                                <li><b>радоваться</b> — xursand bo'lmoq</li>
+                                <li><b>бояться</b> — qo'rqmoq</li>
+                                <li><b>интересоваться</b> — qiziqmoq</li>
+                                <li><b>смеяться</b> — kulmoq</li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я волну<u>юсь</u> перед экзаменом.</span>
+                                <span class="t1g-uz">Men imtihondan oldin hayajonlanaman.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">Падежи</span>
+                              <h4>Qaysi fe'l + qaysi kelishik?</h4>
+                              <p class="t1g-card-uz">Har bir his-tuyg'u fe'li o'zining kelishigini «boshqaradi»</p>
+                              <ul>
+                                <li><b>бояться</b> + <b>Р.п</b> (кого/чего): <i>боюсь экзамена</i></li>
+                                <li><b>радоваться</b> + <b>Д.п</b> (кому/чему): <i>радуюсь подарку</i></li>
+                                <li><b>интересоваться</b> + <b>Т.п</b> (кем/чем): <i>интересуюсь спортом</i></li>
+                                <li><b>злиться на</b> + <b>В.п</b>: <i>злюсь на брата</i></li>
+                                <li><b>смеяться над</b> + <b>Т.п</b>: <i>смеюсь над шуткой</i></li>
+                                <li><b>надеяться на</b> + <b>В.п</b>: <i>надеюсь на успех</i></li>
+                              </ul>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Мы интересуемся русским языком.</span>
+                                <span class="t1g-uz">Biz rus tiliga qiziqamiz.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-table-list"></i> Tuslanishi (волноваться)</h4>
+                          <table class="t1g-table">
+                            <thead>
+                              <tr><th>Olmosh</th><th>Shakl</th><th>Misol</th></tr>
+                            </thead>
+                            <tbody>
+                              <tr><td>я</td><td><b>волнуюсь</b></td><td>Я волнуюсь.</td></tr>
+                              <tr><td>ты</td><td><b>волнуешься</b></td><td>Ты волнуешься?</td></tr>
+                              <tr><td>он / она</td><td><b>волнуется</b></td><td>Она волнуется.</td></tr>
+                              <tr><td>мы</td><td><b>волнуемся</b></td><td>Мы волнуемся.</td></tr>
+                              <tr><td>вы</td><td><b>волнуетесь</b></td><td>Вы волнуетесь.</td></tr>
+                              <tr><td>они</td><td><b>волнуются</b></td><td>Они волнуются.</td></tr>
+                            </tbody>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-code-compare"></i> Solishtiring</h4>
+                          <div class="t1g-compare">
+                            <div class="t1g-comp-row">
+                              <div class="t1g-comp-cell t1g-nsv">
+                                <span class="t1g-mini">Р.п</span>
+                                <b>Я боюсь собаки.</b>
+                                <small>«bояться» + nimadan? — Р.п</small>
+                              </div>
+                              <div class="t1g-comp-cell t1g-sv">
+                                <span class="t1g-mini">Д.п</span>
+                                <b>Дети радуются подарку.</b>
+                                <small>«радоваться» + nimaga? — Д.п</small>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li>Возвратные глаголы — <b>-ся</b> (undosh keyin) yoki <b>-сь</b> (unli keyin)</li>
+                              <li><b>бояться</b> — Р.п, <b>радоваться</b> — Д.п, <b>интересоваться</b> — Т.п</li>
+                              <li><b>злиться на</b>, <b>надеяться на</b> — В.п bilan ishlatiladi</li>
+                              <li><b>смеяться над</b>, <b>удивляться</b> — Т.п / Д.п bilan</li>
+                              <li><b>влюбиться в кого</b> — В.п (sevib qolmoq)</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Возвратные глаголы — «-ся / -сь» bilan tugaydigan, his-tuyg'u va munosabatni ifodalovchi fe'llar. Har biri o'ziga xos kelishikni boshqaradi: бояться + Р.п, радоваться + Д.п, интересоваться + Т.п, злиться на / надеяться на + В.п, смеяться над + Т.п."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #E91E63, #F06292); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(233, 30, 99, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">💖</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «His-tuyg'ular va munosabatlar» mavzusiga oid <strong>70+ so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html'"
+                                    style="background: white; color: #E91E63; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> His-tuyg'u, emotsiya va munosabat lug'ati
+                            </p>
+                        </div>
+`,
                     quiz: {
-                        mcQuestions: [],
-                        mcOptions: [],
-                        mcAnswers: [],
-                        blankQuestions: [],
-                        blankAnswers: []
+                        matchingGame: {
+                            title: "4-mashq. Mosini toping",
+                            instruction: "Chap ustundan rus fe'lini, o'ng ustundan o'zbek tarjimasini tanlang",
+                            leftLabel: "Rus fe'li",
+                            rightLabel: "Tarjima",
+                            pairs: [
+                                { left: "бояться", right: "qo'rqmoq", translation: "qo'rqmoq" },
+                                { left: "радоваться", right: "xursand bo'lmoq", translation: "xursand bo'lmoq" },
+                                { left: "интересоваться", right: "qiziqmoq", translation: "qiziqmoq" },
+                                { left: "злиться", right: "jahli chiqmoq", translation: "jahli chiqmoq" },
+                                { left: "волноваться", right: "hayajonlanmoq", translation: "hayajonlanmoq" },
+                                { left: "удивляться", right: "hayron bo'lmoq", translation: "hayron bo'lmoq" },
+                                { left: "надеяться", right: "umid qilmoq", translation: "umid qilmoq" },
+                                { left: "смеяться", right: "kulmoq", translation: "kulmoq" },
+                                { left: "стесняться", right: "uyalmoq", translation: "uyalmoq" },
+                                { left: "влюбиться", right: "sevib qolmoq", translation: "sevib qolmoq" }
+                            ]
+                        }
+                    },
+                    topic10Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "1-mashq. To'g'ri variantni tanlang",
+                                intro: "Bo'sh joyga mos возвратный fe'lni tanlang.",
+                                items: [
+                                { q: "Я всегда ___ перед экзаменом.", options: ["волнуюсь", "радуюсь", "смеюсь"], answer: "волнуюсь" },
+                                { q: "Дети ___ подаркам.", options: ["боятся", "радуются", "злятся"], answer: "радуются" },
+                                { q: "Она очень ___ собак.", options: ["радуется", "смеётся", "боится"], answer: "боится" },
+                                { q: "Мы ___ русской музыкой.", options: ["боимся", "интересуемся", "смеёмся"], answer: "интересуемся" },
+                                { q: "Почему ты ___ на друга?", options: ["злишься", "радуешься", "удивляешься"], answer: "злишься" },
+                                { q: "Я часто ___ из-за работы.", options: ["радуюсь", "беспокоюсь", "смеюсь"], answer: "беспокоюсь" },
+                                { q: "Девочка ___ темноты.", options: ["радуется", "боится", "смеётся"], answer: "боится" },
+                                { q: "Он ___ новой машиной.", options: ["боится", "злится", "радуется"], answer: "радуется" },
+                                { q: "Мы ___ этой новости.", options: ["удивляемся", "боимся", "стесняемся"], answer: "удивляемся" },
+                                { q: "Ты часто ___ на уроках?", options: ["боишься", "злишься", "улыбаешься"], answer: "улыбаешься" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-pen",
+                                title: "2-mashq. Bo'sh joyni to'ldiring",
+                                intro: "Kerakli возвратный fe'lni yozing.",
+                                items: [
+                                { q: "Я __________ перед выступлением.", answer: ["волнуюсь"] },
+                                { q: "Дети __________ каникулам.", answer: ["радуются"] },
+                                { q: "Она __________ пауков.", answer: ["боится"] },
+                                { q: "Мы __________ спортом.", answer: ["интересуемся"] },
+                                { q: "Почему ты __________?", answer: ["злишься"] },
+                                { q: "Студенты __________ результатами экзамена.", answer: ["довольны"] },
+                                { q: "Мама __________ за сына.", answer: ["беспокоится"] },
+                                { q: "Девушка __________ своей ошибки.", answer: ["стесняется"] },
+                                { q: "Я __________ этой истории.", answer: ["удивляюсь"] },
+                                { q: "Они __________ над шуткой.", answer: ["смеются"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-language",
+                                title: "3-mashq. Tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Men imtihondan qo'rqaman.", answer: ["Я боюсь экзамена"] },
+                                { q: "Biz rus tiliga qiziqamiz.", answer: ["Мы интересуемся русским языком"] },
+                                { q: "U mendan jahli chiqyapti.", answer: ["Он злится на меня", "Она злится на меня"] },
+                                { q: "Bolalar bayramdan xursand.", answer: ["Дети радуются празднику"] },
+                                { q: "Men sen uchun xavotirdaman.", answer: ["Я беспокоюсь за тебя"] },
+                                { q: "Ular hazildan kulishyapti.", answer: ["Они смеются над шуткой"] },
+                                { q: "Men bu yangilikdan hayronman.", answer: ["Я удивляюсь этой новости"] },
+                                { q: "U qizni sevib qoldi.", answer: ["Он влюбился в девушку"] },
+                                { q: "Sen nimadan qo'rqyapsan?", answer: ["Чего ты боишься"] },
+                                { q: "Men yaxshi natijaga umid qilyapman.", answer: ["Я надеюсь на хороший результат"] }
+                                ]
+                            },
+                            { id: "matchingSlot" },
+                            {
+                                id: "ex5", type: "builder", icon: "fa-cubes",
+                                title: "5-mashq. Gap tuzing",
+                                intro: "So'zlarni to'g'ri tartibda bosib, gap tuzing.",
+                                items: [
+                                { words: ["я", "волнуюсь", "перед", "экзаменом"], q: "я / волноваться / экзамен", answer: "Я волнуюсь перед экзаменом." },
+                                { words: ["дети", "радуются", "празднику"], q: "дети / радоваться / праздник", answer: "Дети радуются празднику." },
+                                { words: ["она", "боится", "темноты"], q: "она / бояться / темнота", answer: "Она боится темноты." },
+                                { words: ["мы", "интересуемся", "музыкой"], q: "мы / интересоваться / музыка", answer: "Мы интересуемся музыкой." },
+                                { words: ["мама", "злится", "на", "сына"], q: "мама / злиться / сын", answer: "Мама злится на сына." },
+                                { words: ["студент", "надеется", "на", "хороший", "результат"], q: "студент / надеяться / хороший результат", answer: "Студент надеется на хороший результат." },
+                                { words: ["друзья", "смеются", "над", "шуткой"], q: "друзья / смеяться / шутка", answer: "Друзья смеются над шуткой." },
+                                { words: ["девушка", "влюбилась", "в", "актёра"], q: "девушка / влюбиться / актёр", answer: "Девушка влюбилась в актёра." },
+                                { words: ["ты", "беспокоишься", "за", "семью"], q: "ты / беспокоиться / семья", answer: "Ты беспокоишься за семью." },
+                                { words: ["они", "удивляются", "новости"], q: "они / удивляться / новость", answer: "Они удивляются новости." }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "6-mashq. To'g'ri kelishikni tanlang",
+                                intro: "Возвратный fe'lga mos kelishikdagi shaklni tanlang.",
+                                items: [
+                                { q: "Я боюсь ___", options: ["собаку", "собаки", "собаке"], answer: "собаки" },
+                                { q: "Мы интересуемся ___", options: ["спорт", "спортом", "спорта"], answer: "спортом" },
+                                { q: "Она злится ___", options: ["брату", "брата", "на брата"], answer: "на брата" },
+                                { q: "Дети радуются ___", options: ["подарок", "подарка", "подарку"], answer: "подарку" },
+                                { q: "Я волнуюсь ___", options: ["маму", "маме", "за маму"], answer: "за маму" },
+                                { q: "Он удивляется ___", options: ["новость", "новости", "новостью"], answer: "новости" },
+                                { q: "Ты смеёшься ___", options: ["шутку", "над шуткой", "шутке"], answer: "над шуткой" },
+                                { q: "Мы надеемся ___", options: ["успех", "успеху", "на успех"], answer: "на успех" },
+                                { q: "Девочка боится ___", options: ["темноту", "темноты", "темноте"], answer: "темноты" },
+                                { q: "Они интересуются ___", options: ["русский язык", "русским языком", "русского языка"], answer: "русским языком" }
+                                ]
+                            },
+                            {
+                                id: "ex8", type: "input", icon: "fa-eraser",
+                                title: "7-mashq. Xatoni toping",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Я боюсь собаку.", answer: ["Я боюсь собаки"] },
+                                { q: "Мы интересуемся музыка.", answer: ["Мы интересуемся музыкой"] },
+                                { q: "Она злится брата.", answer: ["Она злится на брата"] },
+                                { q: "Дети радуются подарок.", answer: ["Дети радуются подарку"] },
+                                { q: "Я волнуюсь маму.", answer: ["Я волнуюсь за маму"] },
+                                { q: "Он смеётся шутку.", answer: ["Он смеётся над шуткой"] },
+                                { q: "Ты удивляешься новость.", answer: ["Ты удивляешься новости"] },
+                                { q: "Они надеются хороший результат.", answer: ["Они надеются на хороший результат"] },
+                                { q: "Девочка боится темноту.", answer: ["Девочка боится темноты"] },
+                                { q: "Мы интересуемся русский язык.", answer: ["Мы интересуемся русским языком"] }
+                                ]
+                            },
+                            {
+                                id: "ex9", type: "choice", style: "tf", icon: "fa-circle-question",
+                                title: "8-mashq. Rost yoki yolg'on",
+                                intro: "Har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                items: [
+                                { q: "«Бояться» fe'lidan keyin родительный падеж ishlatiladi.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Интересоваться» bilan винительный падеж ishlatiladi.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "«Радоваться» — xursand bo'lmoq degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Злиться» — kulmoq degani.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "«Влюбиться» — sevib qolmoq degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Смеяться» fe'li возвратный fe'l hisoblanadi.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Волноваться» — hayajonlanmoq degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Бояться» fe'li -СЯ bilan tugaydi.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "«Интересоваться» his-tuyg'uni bildirishi mumkin.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Удивляться» — hayron bo'lmoq degani.", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            },
+                            {
+                                id: "reading", type: "choice", style: "tf", icon: "fa-book-open",
+                                title: "Rost yoki yolg'on savollar",
+                                intro: "Yuqoridagi matnga asoslanib har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                readingTitle: "Matn: Мои чувства перед экзаменом",
+                                readingText: [
+                                    "Завтра у меня важный экзамен, поэтому я немного волнуюсь. Я боюсь сложных вопросов и переживаю за результат. Но мои друзья поддерживают меня, и я радуюсь этому. Мы вместе готовимся к экзамену и интересуемся новыми темами.",
+                                    "Иногда я злюсь на себя, потому что делаю ошибки. Но потом я успокаиваюсь и надеюсь на хороший результат. Моя мама всегда улыбается и говорит: «Не бойся, у тебя всё получится!»",
+                                    "Вчера я удивился, потому что смог быстро решить трудное задание. Теперь я чувствую себя увереннее. После занятий мы смеялись над смешной историей преподавателя и немного отдыхали.",
+                                    "Я понимаю, что нельзя постоянно бояться и волноваться. Нужно верить в себя, учиться и радоваться маленьким успехам."
+                                ],
+                                items: [
+                                { q: "Завтра у автора важный экзамен.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Автор совсем не волнуется перед экзаменом.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Друзья помогают автору готовиться к экзамену.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Автор злится на преподавателя.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Мама говорит, что у автора всё получится.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Вчера автор не смог решить трудное задание.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "После занятий студенты смеялись.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Автор считает, что нужно постоянно бояться.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Автор надеется на хороший результат.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Автор радуется маленьким успехам.", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
@@ -4579,7 +5101,7 @@
         function loadQuiz(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
-            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises) { renderTopic1Exercises(topicId); return; }
+            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises) { renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
             const topicResults = userQuizResults[`topic_${topicId}`];
@@ -5837,7 +6359,7 @@
         }
 
         function getT1ExData(topic) {
-            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises)) || null;
+            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises)) || null;
         }
 
         function renderTopic1Exercises(topicId) {
@@ -5856,7 +6378,14 @@
             groups.forEach(function (g) {
                 if (g.id === "audio") html += renderT1AudioBlock(g);
                 else if (g.id === "reading") html += renderT1ReadingBlock(g);
-                html += renderT1Group(g);
+                if (g.id === "matchingSlot") {
+                    /* Inline placeholder — the rendered matching game gets
+                       moved into here in the setTimeout below, so it appears
+                       in the data-driven position the topic asks for. */
+                    html += '<div id="matchingGameSlot" class="t1-matching-slot"></div>';
+                } else {
+                    html += renderT1Group(g);
+                }
             });
             html += "</div>";
             quizSection.innerHTML = html;
@@ -5926,13 +6455,16 @@
             if (topic.quiz && topic.quiz.matchingGame && typeof loadMatchingGame === "function") {
                 setTimeout(function () {
                     loadMatchingGame(topicId);
-                    /* When the topic flags matchingFirst, move the rendered game
-                       to the top of quizSection so it visually appears as #1. */
-                    if (topic.matchingFirst) {
-                        var mg = document.getElementById("matchingGame");
-                        if (mg && quizSection && quizSection.firstChild) {
-                            quizSection.insertBefore(mg, quizSection.firstChild);
-                        }
+                    var mg = document.getElementById("matchingGame");
+                    if (!mg) return;
+                    /* Data-driven placement: a <div#matchingGameSlot> placeholder
+                       in the exercises array wins, then matchingFirst, else the
+                       default (rendered as a sibling after quizSection). */
+                    var slot = document.getElementById("matchingGameSlot");
+                    if (slot && slot.parentNode) {
+                        slot.parentNode.replaceChild(mg, slot);
+                    } else if (topic.matchingFirst && quizSection && quizSection.firstChild) {
+                        quizSection.insertBefore(mg, quizSection.firstChild);
                     }
                 }, 60);
             }
@@ -6053,6 +6585,8 @@
         window.checkTopic6Exercises = window.checkTopic1Exercises;
         window.checkTopic7Exercises = window.checkTopic1Exercises;
         window.checkTopic8Exercises = window.checkTopic1Exercises;
+        window.checkTopic9Exercises = window.checkTopic1Exercises;
+        window.checkTopic10Exercises = window.checkTopic1Exercises;
 
         injectTopic1Styles();
 

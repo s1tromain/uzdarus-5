@@ -22,7 +22,14 @@
       "Bash(python _t7gen.py)",
       "Bash(awk 'NR>=3726&&NR<=3748{print NR\": [\"$0\"]\"}' paid-courses/b1-course.html)",
       "Bash(awk 'NR>=1451&&NR<=1463{print NR\": [\"$0\"]\"}' paid-courses/b1-vocabulary.html)",
-      "Bash(python _t8gen.py)"
+      "Bash(python _t8gen.py)",
+      "Bash(awk 'NR>=3967&&NR<=3989{print NR\": [\"$0\"]\"}' paid-courses/b1-course.html)",
+      "Bash(awk 'NR>=1537&&NR<=1549{print NR\": [\"$0\"]\"}' paid-courses/b1-vocabulary.html)",
+      "Bash(awk 'NR>=5925&&NR<=5942{print NR\": \"$0}' paid-courses/b1-course.html)",
+      "Bash(grep -n \"topic.topic7Exercises || topic.topic8Exercises\\\\|topic7Exercises || topic.topic8Exercises\\) { renderTopic1\\\\|checkTopic8Exercises = window\\\\|g.id === .audio.. html += renderT1AudioBlock\" paid-courses/b1-course.html)",
+      "Bash(python _t9gen.py)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const html=fs.readFileSync\\('c:/Users/johnc/Desktop/UzdaRus V16/paid-courses/b1-course.html','utf8'\\);const m=html.match\\(/topic10Exercises:[\\\\\\\\s\\\\\\\\S]*?\\\\\\\\n                    \\\\\\\\}/\\);console.log\\('topic10Exercises found:', !!m\\);console.log\\('length:', m?m[0].length:0\\);\")",
+      "Bash(node -e ' *)"
     ]
   }
 }
