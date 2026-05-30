@@ -898,3 +898,208 @@
         startTopicObserver();
     }
 })();
+
+/* ====================================================================
+   GLOBAL VALIDATION COMPLETENESS GATE  (Phase 2 — platform-wide)
+   --------------------------------------------------------------------
+   Blocks the "Javoblarni tekshirish" button whenever ANY answer field
+   in the active topic is left empty. Runs on the document in the CAPTURE
+   phase so it pre-empts the scoring/feedback handler bound to the button
+   (stopImmediatePropagation prevents that handler from ever running, so
+   no score is calculated, no success feedback shown and the topic cannot
+   be marked complete with missing answers).
+
+   It only inspects the explicit data-* hooks the scoring engine already
+   reads, so decorative inputs never cause a false "incomplete".
+   ==================================================================== */
+(function () {
+    'use strict';
+
+    var WARN_TEXT = 'Iltimos, barcha mashqlarni bajaring.';
+
+    function isEmpty(v) {
+        var s = String(v == null ? '' : v).trim();
+        if (!s) return true;
+        return s === '(tanlanmagan)' || s === '(kiritilmagan)' || s === "(yig'ilmagan)";
+    }
+
+    function visible(el) {
+        return !!(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+    }
+
+    function getTopicRoot(btn) {
+        return (btn && btn.closest && btn.closest('.topic-exercises')) ||
+               document.querySelector('.topic-exercises') ||
+               document.getElementById('lessonContent') ||
+               document;
+    }
+
+    function getActiveTopicData() {
+        try { if (typeof currentTopic !== 'undefined' && currentTopic) return currentTopic; } catch (e) { /* ignore */ }
+        if (window.currentTopic) return window.currentTopic;
+        var id = null;
+        try { if (typeof currentTopicId !== 'undefined' && Number.isFinite(currentTopicId)) id = currentTopicId; } catch (e) { /* ignore */ }
+        if (id === null && Number.isFinite(window.currentTopicId)) id = window.currentTopicId;
+        var data = null;
+        try { if (typeof courseData !== 'undefined' && courseData) data = courseData; } catch (e) { /* ignore */ }
+        if (!data) data = window.courseData || null;
+        if (data && Array.isArray(data.topics) && Number.isFinite(id)) {
+            return data.topics.find(function (t) { return t.id === id; }) || null;
+        }
+        return null;
+    }
+
+    function getMatchingState() {
+        try { if (typeof matchingStateA1 !== 'undefined' && matchingStateA1) return matchingStateA1; } catch (e) { /* ignore */ }
+        try { if (typeof matchingState !== 'undefined' && matchingState) return matchingState; } catch (e) { /* ignore */ }
+        return window.matchingStateA1 || window.matchingState || null;
+    }
+
+    /* Returns every unanswered answer-field (DOM element) in the topic,
+       ordered top-to-bottom. Empty array => topic is fully answered. */
+    function findIncomplete(root) {
+        var miss = [];
+        function add(el) { if (el && visible(el) && miss.indexOf(el) === -1) miss.push(el); }
+
+        /* text / inline / dropdown text inputs */
+        Array.prototype.forEach.call(
+            root.querySelectorAll(
+                'input[data-blank], .blank-input-inline, input[data-section],' +
+                'input[data-topic4-fill], [data-t1-input],' +
+                'input[data-topic5-e2], input[data-topic5-e3], input[data-topic5-e4]'
+            ),
+            function (el) { if (isEmpty(el.value)) add(el); }
+        );
+
+        /* generic topicN inputs + sentence builders (hidden inputs) */
+        Array.prototype.forEach.call(root.querySelectorAll('input'), function (el) {
+            var attrs = el.attributes, isField = false, isBuilder = false, i;
+            for (i = 0; i < attrs.length; i++) {
+                var n = attrs[i].name;
+                if (/^data-topic\d+-e\d+$/.test(n)) isField = true;
+                if (/^data-topic\d+-builder-selected$/.test(n)) isBuilder = true;
+            }
+            if ((isField || isBuilder) && isEmpty(el.value)) {
+                if (isBuilder && !visible(el)) {
+                    var t = (el.closest && el.closest('.exercise-block, .quiz-question')) || el.parentElement;
+                    add(t);
+                } else {
+                    add(el);
+                }
+            }
+        });
+
+        /* multiple-choice groups (one option must be selected) */
+        Array.prototype.forEach.call(root.querySelectorAll('.quiz-options[data-question]'), function (box) {
+            if (!box.querySelector('.quiz-option.selected')) add(box);
+        });
+
+        /* topic1-style choice rows */
+        Array.prototype.forEach.call(root.querySelectorAll('[data-t1-row]'), function (row) {
+            if (!row.querySelector('.t1-opt.selected')) add(row);
+        });
+
+        /* topic5 dropdown blanks */
+        Array.prototype.forEach.call(root.querySelectorAll('.topic5-select-blank[data-topic5-select]'), function (b) {
+            if (isEmpty(b.dataset ? b.dataset.value : '')) add(b);
+        });
+
+        /* chip rows (data-topicN-eM-row) — a chip must be selected */
+        Array.prototype.forEach.call(root.querySelectorAll('*'), function (row) {
+            var attrs = row.attributes, isChipRow = false, i;
+            if (!attrs) return;
+            for (i = 0; i < attrs.length; i++) {
+                if (/^data-topic\d+-e\d+-row$/.test(attrs[i].name)) { isChipRow = true; break; }
+            }
+            if (isChipRow && !row.querySelector('.selected') && isEmpty(row.dataset ? row.dataset.value : '')) {
+                add(row);
+            }
+        });
+
+        /* matching game — every pair must be matched (data-driven count) */
+        var topic = getActiveTopicData();
+        var pairs = (topic && topic.quiz && topic.quiz.matchingGame && Array.isArray(topic.quiz.matchingGame.pairs))
+            ? topic.quiz.matchingGame.pairs.length : 0;
+        if (pairs) {
+            var st = getMatchingState();
+            var distinct = {};
+            if (st && Array.isArray(st.matches)) {
+                st.matches.forEach(function (m) {
+                    if (m && Number.isInteger(m.left)) distinct[m.left] = true;
+                });
+            }
+            var matched = Object.keys(distinct).length;
+            var container = root.querySelector('.matching-game-container, .matching-game');
+            if (matched < pairs) add(container || root.querySelector('.matching-game-container') || root);
+        }
+
+        miss.sort(function (a, b) {
+            return a.getBoundingClientRect().top - b.getBoundingClientRect().top;
+        });
+        return miss;
+    }
+
+    function showWarning(btn, firstEl, missCount) {
+        var host = btn.closest('.topic-check-section, .topic-check-host');
+        var fb = host ? host.querySelector('.topic-feedback') : null;
+        if (fb) {
+            fb.innerHTML = '<div class="fb-block-warning">⚠️ ' + WARN_TEXT +
+                ' <span class="fb-block-count">(' + missCount +
+                ' ta mashq to‘ldirilmagan)</span></div>';
+            fb.classList.remove('hidden');
+            fb.classList.add('show');
+        }
+        if (firstEl) {
+            try { firstEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { /* ignore */ }
+            firstEl.classList.add('validation-missing');
+            setTimeout(function () { firstEl.classList.remove('validation-missing'); }, 2600);
+            var f = (firstEl.matches && firstEl.matches('input, textarea, select'))
+                ? firstEl
+                : firstEl.querySelector('input, textarea, select, button');
+            if (f && typeof f.focus === 'function') {
+                try { f.focus({ preventScroll: true }); } catch (e) { try { f.focus(); } catch (e2) { /* ignore */ } }
+            }
+        } else if (fb) {
+            try { fb.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
+        }
+    }
+
+    function onClickCapture(e) {
+        var btn = (e.target && e.target.closest)
+            ? e.target.closest('.check-topic-btn, #submitQuiz, .submit-btn')
+            : null;
+        if (!btn) return;
+        var root = getTopicRoot(btn);
+        var miss;
+        try { miss = findIncomplete(root); } catch (err) { miss = []; }
+        if (miss && miss.length) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            showWarning(btn, miss[0], miss.length);
+        }
+    }
+
+    document.addEventListener('click', onClickCapture, true);
+
+    /* minimal functional styling for the gate (no redesign) */
+    function injectStyle() {
+        if (document.getElementById('validation-gate-style')) return;
+        var css =
+            '.validation-missing{outline:2px solid #e74c3c !important;outline-offset:2px;' +
+            'border-radius:6px;box-shadow:0 0 0 3px rgba(231,76,60,.25) !important;' +
+            'transition:outline .2s ease,box-shadow .2s ease;}' +
+            '.fb-block-warning{background:#fdecea;color:#b71c1c;border:1px solid #f5c6cb;' +
+            'padding:12px 14px;border-radius:10px;font-weight:600;line-height:1.45;}' +
+            '.fb-block-warning .fb-block-count{display:block;font-weight:400;font-size:.9em;' +
+            'opacity:.85;margin-top:2px;}';
+        var s = document.createElement('style');
+        s.id = 'validation-gate-style';
+        s.textContent = css;
+        (document.head || document.documentElement).appendChild(s);
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectStyle);
+    } else {
+        injectStyle();
+    }
+})();
