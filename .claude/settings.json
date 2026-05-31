@@ -53,7 +53,29 @@
       "Bash(node -e 'const fs=require\\(\"fs\"\\);for\\(const f of [\"b2-demo.html\",\"paid-courses/b2-course.html\"]\\){const html=fs.readFileSync\\(f,\"utf8\"\\);const re=/<script\\(?![^>]*\\\\bsrc=\\)\\(?![^>]*type=[\"\\\\x27]module\\)[^>]*>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m;while\\(\\(m=re.exec\\(html\\)\\)\\){const body=m[1];if\\(body.indexOf\\(\"completeTopicHandler\"\\)===-1\\)continue;try{new Function\\(body\\);console.log\\(f+\": SCRIPT OK\"\\);}catch\\(e\\){console.log\\(f+\": SYNTAX ERROR -> \"+e.message\\);}}console.log\\(f+\": msg=\"+html.includes\\(\"Iltimos, barcha mashqlarni bajaring.\"\\)+\" guard=\"+html.includes\\(\"showB2CompletionBlocked\"\\)\\);}')",
       "Bash(node -e 'const fs=require\\(\"fs\"\\);for\\(const f of [\"b2-demo.html\",\"paid-courses/b2-course.html\"]\\){const html=fs.readFileSync\\(f,\"utf8\"\\);const re=/<script\\(?![^>]*\\\\bsrc=\\)\\(?![^>]*type=[\"\\\\x27]module\\)[^>]*>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m;while\\(\\(m=re.exec\\(html\\)\\)\\){const body=m[1];if\\(body.indexOf\\(\"completeTopicHandler\"\\)===-1\\)continue;try{new Function\\(body\\);console.log\\(f+\": OK\"\\);}catch\\(e\\){console.log\\(f+\": ERR \"+e.message\\);}}console.log\\(f+\": msg=\"+html.includes\\(\"Iltimos, barcha mashqlarni bajaring.\"\\)+\" guard=\"+html.includes\\(\"showB2CompletionBlocked\"\\)\\);}')",
       "Bash(node -e 'const fs=require\\(\"fs\"\\);for\\(const f of [\"b2-demo.html\",\"paid-courses/b2-course.html\"]\\){const html=fs.readFileSync\\(f,\"utf8\"\\);const re=/<script\\(?![^>]*\\\\bsrc=\\)\\(?![^>]*type=[\"\\\\x27]module\\)[^>]*>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m,syn=\"NO-HANDLER\";while\\(\\(m=re.exec\\(html\\)\\)\\){const body=m[1];if\\(body.indexOf\\(\"completeTopicHandler\"\\)===-1\\)continue;try{new Function\\(body\\);syn=\"OK\";}catch\\(e\\){syn=\"ERR \"+e.message;}}console.log\\(\"\\\\n\"+f\\);console.log\\(\"  syntax=\"+syn\\);console.log\\(\"  msg=\"+html.includes\\(\"Iltimos, barcha mashqlarni bajaring.\"\\)\\);console.log\\(\"  guard=\"+html.includes\\(\"showB2CompletionBlocked\"\\)\\);console.log\\(\"  bypassRemoved=\"+!/completeTopicHandler = async function\\\\\\(topicId\\\\\\) \\\\{\\\\s*await saveProgress/.test\\(html\\)\\);}')",
-      "Bash([ -f \"audios/$f\" ])"
+      "Bash([ -f \"audios/$f\" ])",
+      "Bash(node -e \"console.log\\('node works'\\)\")",
+      "Bash(xxd)",
+      "PowerShell($p = \"paid-courses\\\\b1-vocabulary.html\"; $bytes = [System.IO.File]::ReadAllBytes\\($p\\); \"First 8 bytes: \" + \\(\\($bytes[0..7] | ForEach-Object { $_.ToString\\('X2'\\) }\\) -join ' '\\); \"Total bytes: $\\($bytes.Length\\)\"; $txt = [System.IO.File]::ReadAllText\\($p\\); \"Char length: $\\($txt.Length\\)\"; \"Contains Poppins: $\\($txt.Contains\\('Poppins'\\)\\)\"; \"Contains 'topic': $\\($txt.ToLower\\(\\).Contains\\('topic'\\)\\)\"; \"Contains cyrillic dobry: $\\($txt.Contains\\([char]0x0434\\)\\)\")",
+      "Bash(node -e \"const r=require\\('./sem.json'\\); console.log\\('pairs='+r.course_matching_pairs+' ex2='+r.ex2_items+' ex3='+r.ex3_items+' ex4='+r.ex4_items+' vocab11='+r.vocab_t11_words+' gfix11='+r.gfix_collector_has11\\);\")",
+      "Bash(node -e \"const r=require\\('./rep2.json'\\);console.log\\('alias='+r.alias+' guard='+r.guard+' ex5='+r.ex5+' ex6='+r.ex6+' ex7='+r.ex7+' ex8='+r.ex8+' reading='+r.reading+' matchingSlot='+r.matchingSlot\\);console.log\\('caBody='+r.caBody\\);\")",
+      "Bash(node -e \"const r=require\\('./rep2.json'\\);process.stdout.write\\('alias='+r.alias+' guard='+r.guard+' ex5='+r.ex5+' ex6='+r.ex6+' ex7='+r.ex7+' ex8='+r.ex8+' reading='+r.reading+' matchingSlot='+r.matchingSlot+'\\\\n'\\);\")",
+      "Bash(node -e \"const r=require\\('./t11.json'\\);process.stdout.write\\('ids='+r.topic11_exercise_ids.join\\(','\\)+'\\\\nq_items='+r.topic11_q_items+'\\\\n'\\);\")",
+      "Bash(node -e \"const r=require\\('./fin.json'\\);process.stdout.write\\('course_syntax_errors='+r.course_syntax.length+' alias='+r.alias+' guard='+r.guard+' GLOBAL_OK\\\\n'\\); if\\(r.course_syntax.length\\)console.log\\(r.course_syntax\\);\")",
+      "Bash(node -e \"const r=require\\('./fin.json'\\);process.stdout.write\\('SYNTAX_ERRS='+r.course_syntax.length+' ALIAS='+r.alias+' GUARD='+r.guard+'\\\\n'\\);\")",
+      "Bash(node validation_qa.test.cjs)",
+      "Bash(echo \"QA exit=$?\")",
+      "Bash(rm -f qa.out)",
+      "Bash(echo \"QA_EXIT=$?\")",
+      "Bash(echo \"RULES_EXIT=$?\")",
+      "Bash(rm -f qa.out ru.out)",
+      "Bash(node -e \"const r=require\\('./chk11.json'\\);process.stdout.write\\('ids='+r.ids.join\\(','\\)+'\\\\nreadingTitle='+r.has_reading_title+' timur='+r.has_timur+' Pravda='+r.tf_pravda+' Lozh='+r.tf_lozh+' q_items='+r.q_items+' ex5chips='+r.ex5_chips+'\\\\n'\\);\")",
+      "Bash(rm -f chk11.json)",
+      "Bash(node -e \"const r=require\\('./c11.json'\\);process.stdout.write\\('ids='+r.ids+'\\\\nreadingTitle='+r.readingTitle+' Pravda='+r.pravda+' Lozh='+r.lozh+' q_items='+r.q_items+'\\\\n'\\);\")",
+      "Bash(rm -f c11.json)",
+      "Bash(node -e \"const r=require\\('./c11.json'\\); console.log\\('ids='+r.ids\\); console.log\\('readingTitle='+r.readingTitle+' Pravda='+r.pravda+' Lozh='+r.lozh+' q='+r.q\\);\")",
+      "Bash(type out11.txt)",
+      "Bash(rm -f out11.txt)"
     ]
   }
 }
