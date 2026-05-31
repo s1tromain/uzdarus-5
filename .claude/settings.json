@@ -75,7 +75,12 @@
       "Bash(rm -f c11.json)",
       "Bash(node -e \"const r=require\\('./c11.json'\\); console.log\\('ids='+r.ids\\); console.log\\('readingTitle='+r.readingTitle+' Pravda='+r.pravda+' Lozh='+r.lozh+' q='+r.q\\);\")",
       "Bash(type out11.txt)",
-      "Bash(rm -f out11.txt)"
+      "Bash(rm -f out11.txt)",
+      "Bash(rm -f vc.json)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const t=fs.readFileSync\\('paid-courses/b1-vocabulary.html','utf8'\\);fs.writeFileSync\\('vc.txt','id12='+\\(t.match\\(/id: 12,/g\\)||[]\\).length+' passivDesc='+\\(t.match\\(/Пассив, texnologiya/g\\)||[]\\).length+' id11='+\\(t.match\\(/id: 11,/g\\)||[]\\).length\\);\")",
+      "Bash(rm -f vc.txt)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const t=fs.readFileSync\\('paid-courses/b1-vocabulary.html','utf8'\\);const m=[...t.matchAll\\(/id: \\(\\\\d+\\),/g\\)].map\\(x=>x[1]\\);require\\('fs'\\).writeFileSync\\('ids.txt','ALL_IDS='+m.join\\(','\\)\\);\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);function chk\\(f\\){const h=fs.readFileSync\\(f,'utf8'\\);const re=/<script\\\\b\\([^>]*\\)>\\([\\\\s\\\\S]*?\\)<\\\\/script>/gi;let m,i=0,e=0;while\\(\\(m=re.exec\\(h\\)\\)\\){if\\(/\\\\bsrc=/i.test\\(m[1]\\)\\)continue;i++;try{new Function\\(m[2]\\)}catch\\(x\\){e++;}}return i+'/'+e;}fs.writeFileSync\\('s.txt','course\\(scripts/errs\\)='+chk\\('paid-courses/b1-course.html'\\)+' vocab='+chk\\('paid-courses/b1-vocabulary.html'\\)\\);\")"
     ]
   }
 }

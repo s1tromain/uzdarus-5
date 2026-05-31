@@ -4792,17 +4792,231 @@
                     description: "Grammatika: пассив konstruktsiyalar (oddiy). Muloqot: texnologiyaning foydasi va zarari",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-microchip"></i> B1 · Mavzu 12</span>
+                            <h3 class="t1g-hero-title">Passiv nisbat (страдательный залог)</h3>
+                            <p class="t1g-hero-sub">Passiv nisbatda harakatni kim bajarayotgani emas, balki harakatning o'zi muhim bo'ladi. Texnologiya mavzusida bu juda ko'p ishlatiladi: «Сообщение отправлено», «Файл загружен», «Смартфоны продаются во всём мире».</p>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-right-left"></i> 1. Aktiv va passiv nisbat</h4>
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">АКТИВ</span>
+                              <h4>Действительный залог</h4>
+                              <p class="t1g-card-uz">Ish-harakatni kim bajarayotgani muhim</p>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Компания производит смартфоны.</span>
+                                <span class="t1g-uz">Kompaniya smartfon ishlab chiqaradi.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">ПАССИВ</span>
+                              <h4>Страдательный залог</h4>
+                              <p class="t1g-card-uz">Harakatning o'zi muhim, bajaruvchi — творительный падежда</p>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Смартфоны производятся компанией.</span>
+                                <span class="t1g-uz">Smartfonlar kompaniya tomonidan ishlab chiqariladi.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-gears"></i> 2. Passivning yasalishi</h4>
+                          <table class="t1g-table">
+                            <tr><th>Shakl</th><th>Yasalishi</th><th>Misol</th></tr>
+                            <tr><td>Hozirgi zamon (НСВ)</td><td>fe'l + -ся</td><td>Информация распространяется.</td></tr>
+                            <tr><td>O'tgan zamon (СВ)</td><td>qisqa sifatdosh: -н / -т</td><td>Файл загружен. Сообщение отправлено.</td></tr>
+                            <tr><td>Bajaruvchi</td><td>творительный падеж</td><td>Сайт создан программистом.</td></tr>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-table-cells"></i> 3. Qisqa sifatdosh rod va songa moslashadi</h4>
+                          <table class="t1g-table">
+                            <tr><th>Rod / son</th><th>Shakl</th><th>Misol</th></tr>
+                            <tr><td>М.р.</td><td>загружен, создан</td><td>Файл загружен.</td></tr>
+                            <tr><td>Ж.р.</td><td>загружена, создана</td><td>Программа установлена.</td></tr>
+                            <tr><td>С.р.</td><td>загружено, создано</td><td>Сообщение отправлено.</td></tr>
+                            <tr><td>Мн.ч.</td><td>загружены, созданы</td><td>Данные сохранены.</td></tr>
+                          </table>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li>Passivda bajaruvchi <b>творительный падеж</b>da turadi: компани<b>ей</b>, люд<b>ьми</b>, студент<b>ами</b>.</li>
+                              <li>Hozirgi zamon passivi ko'pincha <b>-ся</b> bilan: использу<b>ется</b>, продаю<b>тся</b>.</li>
+                              <li>Tugallangan natija — qisqa sifatdosh: <i>отправлено, загружен, создан, сохранены</i>.</li>
+                              <li>Qisqa sifatdosh ot bilan <b>rod va songa</b> moslashadi.</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Passiv nisbat (страдательный залог) harakat bajaruvchidan ko'ra harakatning o'zini ta'kidlaydi. Hozirgi zamonda fe'lga -ся qo'shiladi (используется, продаются), tugallangan natija esa qisqa sifatdosh bilan beriladi (отправлено, загружен, создан). Bajaruvchi творительный падежда turadi."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #00897B, #00695C); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(0, 137, 123, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">💻</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Texnologiya va kundalik hayot» mavzusiga oid <strong>100+ so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html?topic=12'"
+                                    style="background: white; color: #00897B; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Texnologiya, internet va passiv nisbat lug'ati
+                            </p>
+                        </div>
+`,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
                         blankAnswers: []
+                    },
+                    topic12Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "1-mashq. To'g'ri variantni tanlang",
+                                intro: "Bo'sh joyga mos passiv shaklni tanlang.",
+                                items: [
+                                { q: "Информация ___ через интернет.", options: ["получает", "распространяется", "отправляет"], answer: "распространяется" },
+                                { q: "Смартфоны ___ во всём мире.", options: ["продаются", "продаёт", "продавать"], answer: "продаются" },
+                                { q: "Файл ___ на компьютер.", options: ["загружать", "загружает", "загружен"], answer: "загружен" },
+                                { q: "Сообщение ___ вчера.", options: ["отправляет", "отправлено", "отправлять"], answer: "отправлено" },
+                                { q: "Эта программа ___ многими людьми.", options: ["используют", "используется", "использовать"], answer: "используется" },
+                                { q: "Данные ___ автоматически.", options: ["сохраняют", "сохраняются", "сохранять"], answer: "сохраняются" },
+                                { q: "Новый сайт ___ известной компанией.", options: ["создан", "создаёт", "создавать"], answer: "создан" },
+                                { q: "Электронные письма ___ за секунды.", options: ["отправляются", "отправляет", "отправлять"], answer: "отправляются" },
+                                { q: "Первый компьютер ___ в XX веке.", options: ["создаёт", "создавать", "был создан"], answer: "был создан" },
+                                { q: "Технологии ___ каждый день.", options: ["используют", "используются", "использовать"], answer: "используются" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-pen",
+                                title: "2-mashq. Bo'sh joyni to'ldiring",
+                                intro: "So'z bankidan mos passiv shaklni tanlab yozing: используется, отправлено, загружен, продаются, сохранены, распространяется, установлена, создан, заменяется, изобретён.",
+                                items: [
+                                { q: "Интернет ___ для поиска информации.", answer: ["используется"] },
+                                { q: "Смартфоны ___ во всём мире.", answer: ["продаются"] },
+                                { q: "Сообщение уже ___.", answer: ["отправлено"] },
+                                { q: "Файл ___ на компьютер.", answer: ["загружен"] },
+                                { q: "Все данные ___ в облаке.", answer: ["сохранены"] },
+                                { q: "Информация быстро ___ через интернет.", answer: ["распространяется"] },
+                                { q: "Новая программа ___ на телефон.", answer: ["установлена"] },
+                                { q: "Этот гаджет был ___ много лет назад.", answer: ["изобретён"] },
+                                { q: "Живое общение часто ___ сообщениями.", answer: ["заменяется"] },
+                                { q: "Этот сайт был ___ известной компанией.", answer: ["создан"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-right-left",
+                                title: "3-mashq. Aktiv gapni passiv gapga aylantiring",
+                                intro: "Berilgan aktiv gapni passiv gapga aylantirib, to'liq yozing.",
+                                items: [
+                                { q: "Компания производит смартфоны.", answer: ["Смартфоны производятся компанией"] },
+                                { q: "Учитель отправляет задания.", answer: ["Задания отправляются учителем"] },
+                                { q: "Студенты используют интернет.", answer: ["Интернет используется студентами"] },
+                                { q: "Люди покупают компьютеры.", answer: ["Компьютеры покупаются людьми"] },
+                                { q: "Программисты создают сайты.", answer: ["Сайты создаются программистами"] },
+                                { q: "Пользователи загружают файлы.", answer: ["Файлы загружаются пользователями"] },
+                                { q: "Компания разрабатывает приложения.", answer: ["Приложения разрабатываются компанией"] },
+                                { q: "Люди читают электронные книги.", answer: ["Электронные книги читаются людьми"] },
+                                { q: "Специалисты проверяют данные.", answer: ["Данные проверяются специалистами"] },
+                                { q: "Ученики используют онлайн-словари.", answer: ["Онлайн-словари используются учениками"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "choice", style: "tf", icon: "fa-circle-question",
+                                title: "4-mashq. Rost yoki yolg'on",
+                                intro: "Har bir gap to'g'ri (Верно) yoki noto'g'ri (Неверно) ekanini belgilang.",
+                                items: [
+                                { q: "Страдательный залог не используется в русском языке.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "В пассиве действие важнее, чем тот, кто его выполняет.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "«Смартфоны продают» — это страдательный залог.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "«Смартфоны продаются» — это страдательный залог.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Технологии активно используются в повседневной жизни.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Социальные сети всегда безопасны для личной информации.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "В пассиве бажарувчи стоит в творительном падеже (компанией, людьми).", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "«Файл загружен» — это краткая форма страдательного причастия.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Онлайн-курсы помогают учиться через интернет.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Интернет никогда не используется для общения.", options: ["Верно", "Неверно"], answer: "Неверно" }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "input", icon: "fa-language",
+                                title: "5-mashq. Tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling (passiv nisbatdan foydalaning).",
+                                items: [
+                                { q: "Telefon har kuni ishlatiladi.", answer: ["Телефон используется каждый день"] },
+                                { q: "Xabar yuborildi.", answer: ["Сообщение отправлено"] },
+                                { q: "Fayl yuklab olindi.", answer: ["Файл загружен"] },
+                                { q: "Ma'lumot internet orqali tarqaladi.", answer: ["Информация распространяется через интернет"] },
+                                { q: "Smartfonlar butun dunyo bo'ylab sotiladi.", answer: ["Смартфоны продаются во всём мире"] },
+                                { q: "Dastur kecha o'rnatildi.", answer: ["Программа была установлена вчера"] },
+                                { q: "Ma'lumotlar saqlandi.", answer: ["Данные были сохранены"] },
+                                { q: "Internetdan ko'p odamlar foydalanadi.", answer: ["Интернет используется многими людьми"] },
+                                { q: "Jonli muloqot xabarlar bilan almashtirilmoqda.", answer: ["Живое общение заменяется сообщениями"] },
+                                { q: "Birinchi kompyuter XX asrda yaratilgan.", answer: ["Первый компьютер был создан в XX веке"] }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "input", icon: "fa-eraser",
+                                title: "6-mashq. Xatoni toping va to'g'rilang",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Компьютер использует каждый день.", answer: ["Компьютер используется каждый день"] },
+                                { q: "Смартфоны продаётся во всём мире.", answer: ["Смартфоны продаются во всём мире"] },
+                                { q: "Сообщение отправлен вчера.", answer: ["Сообщение отправлено вчера"] },
+                                { q: "Эта программа используют многими людьми.", answer: ["Эта программа используется многими людьми"] },
+                                { q: "Данные сохраняется автоматически.", answer: ["Данные сохраняются автоматически"] },
+                                { q: "Информация распространяют через интернет.", answer: ["Информация распространяется через интернет"] },
+                                { q: "Новый сайт создана известной компанией.", answer: ["Новый сайт создан известной компанией"] },
+                                { q: "Электронные письма отправляется за секунды.", answer: ["Электронные письма отправляются за секунды"] },
+                                { q: "Онлайн-курс был использованы студентами вчера.", answer: ["Онлайн-курс был использован студентами вчера"] },
+                                { q: "Файл загружены на компьютер.", answer: ["Файл загружен на компьютер"] }
+                                ]
+                            },
+                            {
+                                id: "ex7", type: "input", icon: "fa-circle-check",
+                                title: "7-mashq. Xato bormi yoki yo'q?",
+                                intro: "Agar gap to'g'ri bo'lsa «✓» belgisini yozing. Agar xato bo'lsa, to'g'ri so'zni (passiv shaklni) yozing.",
+                                items: [
+                                { q: "Информация сохраняется автоматически.", answer: ["✓", "✔", "верно", "нет ошибки", "правильно", "ok"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Смартфоны продаёт во всём мире.", answer: ["продаются"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Сообщение отправлено вчера.", answer: ["✓", "✔", "верно", "нет ошибки", "правильно", "ok"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Сообщение отправлен вчера.", answer: ["отправлено"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Файл загружен на компьютер.", answer: ["✓", "✔", "верно", "нет ошибки", "правильно", "ok"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Информация распространяют через интернет.", answer: ["распространяется"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Данные проверяются специалистами.", answer: ["✓", "✔", "верно", "нет ошибки", "правильно", "ok"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Сайт создан компанией.", answer: ["✓", "✔", "верно", "нет ошибки", "правильно", "ok"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Технологии используют каждый день.", answer: ["используются"], placeholder: "✓ yoki to'g'ri so'z" },
+                                { q: "Интернет используется студентами.", answer: ["✓", "✔", "верно", "нет ошибки", "правильно", "ok"], placeholder: "✓ yoki to'g'ri so'z" }
+                                ]
+                            },
+                            {
+                                id: "audio", type: "choice", style: "tf", icon: "fa-headphones",
+                                title: "Audio savollari — «Технологии в нашей жизни»",
+                                intro: "Audioni tinglang va har bir gap to'g'ri (Верно) yoki noto'g'ri (Неверно) ekanini belgilang.",
+                                items: [
+                                { q: "Технологии редко используются в повседневной жизни.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "Технологии помогают людям общаться, учиться и работать.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "С помощью интернета информация распространяется очень медленно.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "Онлайн-курсы создаются специалистами.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Сообщения отправляются за секунды.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Личная информация в социальных сетях всегда в безопасности.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "Данные сохраняются в облачных сервисах.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "У технологий есть только преимущества.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "По мнению специалистов, технологии будут развиваться в будущем.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Человечество продолжит развиваться благодаря технологиям.", options: ["Верно", "Неверно"], answer: "Верно" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
@@ -5343,7 +5557,7 @@
         function loadQuiz(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
-            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises) { renderTopic1Exercises(topicId); return; }
+            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises) { renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
             const topicResults = userQuizResults[`topic_${topicId}`];
@@ -6625,7 +6839,7 @@
         }
 
         function getT1ExData(topic) {
-            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises)) || null;
+            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises)) || null;
         }
 
         function renderTopic1Exercises(topicId) {
@@ -6890,6 +7104,34 @@
             };
             var msgEl = document.getElementById("resultsMessage");
             if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar va juftliklar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
+        };
+
+        // Topic 12 also requires EVERY answer to be correct before completion
+        // is allowed (no matching game in this topic). Reuses the shared
+        // scorer for marking / feedback / saving, then tightens the gate.
+        window.checkTopic12Exercises = async function (topicId) {
+            await window.checkTopic1Exercises(topicId);
+
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic || !topic.topic12Exercises) return;
+
+            var total = 0;
+            (topic.topic12Exercises.exercises || []).forEach(function (g) {
+                total += (g.items || []).length;
+            });
+
+            var allCorrect = (currentScore >= total);
+            if (allCorrect || !completeBtn) return;
+
+            completeBtn.textContent = "Mavzu tugatilmadi";
+            completeBtn.className = "complete-btn failed";
+            completeBtn.style.display = "block";
+            if (retryBtn) retryBtn.style.display = "none";
+            completeBtn.onclick = function () {
+                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
+            };
+            var msgEl = document.getElementById("resultsMessage");
+            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
         };
 
         injectTopic1Styles();
