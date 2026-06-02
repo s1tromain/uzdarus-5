@@ -5025,17 +5025,232 @@
                     description: "Grammatika: я думаю, я считаю, по-моему. Muloqot: fikrni himoya qilish",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-comments"></i> B1 · Mavzu 13</span>
+                            <h3 class="t1g-hero-title">Fikr bildirish va uni himoya qilish</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda o'z fikrini bildirish, rozilik va rozi emaslikni ifodalash hamda dalil keltirishni o'rganamiz: «Я думаю, что…», «По-моему…», «Я согласен / Я не согласен», «потому что…».</p>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-comment-dots"></i> 1. Fikr bildirish iboralari</h4>
+                          <table class="t1g-table">
+                            <tr><th>Ibora</th><th>Tarjima</th><th>Misol</th></tr>
+                            <tr><td>Я думаю, что…</td><td>Menimcha…</td><td>Я думаю, что спорт полезен.</td></tr>
+                            <tr><td>Я считаю, что…</td><td>Men hisoblaymanki…</td><td>Я считаю, что образование важно.</td></tr>
+                            <tr><td>По-моему…</td><td>Mening fikrimcha…</td><td>По-моему, фильм интересный.</td></tr>
+                            <tr><td>На мой взгляд…</td><td>Mening nazarimda…</td><td>На мой взгляд, это правильно.</td></tr>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-thumbs-up"></i> 2. Rozilik va rozi emaslik</h4>
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">СОГЛАСИЕ</span>
+                              <h4>Rozilik</h4>
+                              <ul>
+                                <li>Я согласен / согласна</li>
+                                <li>Полностью согласен</li>
+                                <li>Конечно, вы правы</li>
+                              </ul>
+                            </div>
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">НЕСОГЛАСИЕ</span>
+                              <h4>Rozi emaslik</h4>
+                              <ul>
+                                <li>Я не согласен / согласна</li>
+                                <li>Я думаю иначе</li>
+                                <li>У меня другое мнение</li>
+                              </ul>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-link"></i> 3. Dalil va sabab bog'lovchilari</h4>
+                          <table class="t1g-table">
+                            <tr><th>Bog'lovchi</th><th>Tarjima</th><th>Misol</th></tr>
+                            <tr><td>потому что</td><td>chunki</td><td>Я согласен, потому что это хорошая идея.</td></tr>
+                            <tr><td>поэтому</td><td>shuning uchun</td><td>Это полезно, поэтому я читаю книги.</td></tr>
+                            <tr><td>дело в том, что</td><td>gap shundaki</td><td>Дело в том, что языки важны.</td></tr>
+                            <tr><td>например</td><td>masalan</td><td>Например, книга даёт знания.</td></tr>
+                          </table>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li>Fikrdan keyin ko'pincha <b>«что»</b> qo'llanadi: <i>Я думаю, <b>что</b>…</i></li>
+                              <li>«По-моему» va «На мой взгляд» dan keyin vergul qo'yiladi.</li>
+                              <li>Dalil keltirish uchun: <b>потому что</b>, <b>поэтому</b>, <b>например</b>.</li>
+                              <li>Rozilik/rozi emaslik egaga moslashadi: согласе<b>н</b> (m.r.) / согласн<b>а</b> (j.r.).</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Fikr bildirish uchun «Я думаю, что…», «Я считаю, что…», «По-моему…» iboralari ishlatiladi. Rozilik «Я согласен», rozi emaslik esa «Я не согласен» yoki «Я думаю иначе» bilan beriladi. Dalil keltirishda «потому что», «поэтому», «например» bog'lovchilaridan foydalaniladi."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #8E24AA, #6A1B9A); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(142, 36, 170, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">💭</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Bahs va fikr bildirish» mavzusiga oid <strong>75+ so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html?topic=13'"
+                                    style="background: white; color: #8E24AA; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Fikr, bahs va dalil lug'ati
+                            </p>
+                        </div>
+`,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
                         blankAnswers: []
+                    },
+                    topic13Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "1-mashq. To'g'ri variantni tanlang",
+                                intro: "Fikr bildirish uchun mos variantni tanlang.",
+                                items: [
+                                { q: "___, что спорт полезен.", options: ["Я думаю", "Я делаю", "Я иду"], answer: "Я думаю" },
+                                { q: "___, фильм интересный.", options: ["По-моему", "По-русски", "По-этому"], answer: "По-моему" },
+                                { q: "Я согласен ___ вами.", options: ["на", "с", "от"], answer: "с" },
+                                { q: "Я не согласен, ___ это неправильно.", options: ["потому что", "поэтому", "зато"], answer: "потому что" },
+                                { q: "Я думаю ___, у меня другое мнение.", options: ["так же", "иначе", "вместе"], answer: "иначе" },
+                                { q: "Я ___, что образование важно.", options: ["считаю", "читаю", "слушаю"], answer: "считаю" },
+                                { q: "___, книга даёт знания.", options: ["Например", "Наверное", "Никогда"], answer: "Например" },
+                                { q: "Это полезно, ___ я читаю книги.", options: ["поэтому", "потому", "зачем"], answer: "поэтому" },
+                                { q: "Каждый человек имеет своё ___.", options: ["мнение", "вопрос", "слово"], answer: "мнение" },
+                                { q: "Нужно уметь ___ своё мнение.", options: ["защищать", "забывать", "терять"], answer: "защищать" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-comment", free: true,
+                                title: "2-mashq. Gapni davom ettiring",
+                                intro: "Gapni o'z fikringiz bilan davom ettiring (kamida 3 ta so'z yozing). To'liq va mazmunli gap tuzing.",
+                                items: [
+                                { q: "Я думаю, что …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я считаю, что …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "По-моему, …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я согласен, потому что …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я не согласен, потому что …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "По-моему, русский язык …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я думаю, что интернет …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я считаю, что спорт …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "По-моему, книги …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я думаю иначе, потому что …", answer: [""], placeholder: "...davomini yozing" }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-language",
+                                title: "3-mashq. Tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Menimcha, sport foydali.", answer: ["Я думаю, что спорт полезен"] },
+                                { q: "Men hisoblaymanki, ta'lim muhim.", answer: ["Я считаю, что образование важно"] },
+                                { q: "Mening fikrimcha, bu film qiziqarli.", answer: ["По-моему, этот фильм интересный"] },
+                                { q: "Men siz bilan roziman.", answer: ["Я согласен с вами", "Я согласна с вами"] },
+                                { q: "Men rozi emasman.", answer: ["Я не согласен", "Я не согласна"] },
+                                { q: "Men boshqacha o'ylayman.", answer: ["Я думаю иначе"] },
+                                { q: "Chunki bu yaxshi fikr.", answer: ["Потому что это хорошая идея"] },
+                                { q: "Masalan, kitob bilim beradi.", answer: ["Например, книга даёт знания"] },
+                                { q: "Menimcha, internet foydali.", answer: ["Я думаю, что интернет полезен"] },
+                                { q: "Men hisoblaymanki, tillarni o'rganish kerak.", answer: ["Я считаю, что нужно изучать языки"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-eraser",
+                                title: "4-mashq. Xatoni toping va to'g'rilang",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Я думаю, что спорт полезный.", answer: ["Я думаю, что спорт полезен"] },
+                                { q: "По-моему фильм хороший.", answer: ["По-моему, фильм хороший"] },
+                                { q: "Я считаю, что книги важный.", answer: ["Я считаю, что книги важны"] },
+                                { q: "Я не согласен, потому это неправильно.", answer: ["Я не согласен, потому что это неправильно"] },
+                                { q: "Я думаю иначе, потому у меня другое мнение.", answer: ["Я думаю иначе, потому что у меня другое мнение"] },
+                                { q: "По-моему этот город красивый.", answer: ["По-моему, этот город красивый"] },
+                                { q: "Я считаю, что дети должен читать.", answer: ["Я считаю, что дети должны читать"] },
+                                { q: "Я согласен это хорошая идея.", answer: ["Я согласен, это хорошая идея"] },
+                                { q: "Я думаю, что образование важный.", answer: ["Я думаю, что образование важно"] },
+                                { q: "Я считаю, что спорт полезный.", answer: ["Я считаю, что спорт полезен"] }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "choice", style: "chips", icon: "fa-comments",
+                                title: "5-mashq. Dialogni to'ldiring",
+                                intro: "Dialogga mos iborani tanlang.",
+                                items: [
+                                { q: "— ___ спорт очень полезен для здоровья.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Я думаю, что" },
+                                { q: "— Да, ___ с тобой полностью.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Я согласен" },
+                                { q: "— ___ образование очень важно.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Я думаю, что" },
+                                { q: "— Я тоже так считаю, ___ это нужно для работы.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Потому что" },
+                                { q: "— ___, этот фильм очень интересный.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "По-моему" },
+                                { q: "— Да, ___, фильм мне тоже понравился.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Я согласен" },
+                                { q: "— ___, новый телефон лучше старого.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "По-моему" },
+                                { q: "— Нет, ___, старый тоже хороший.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Я не согласен" },
+                                { q: "— ___ нужно изучать иностранные языки.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Я думаю, что" },
+                                { q: "— Конечно, ___ с тобой.", options: ["Я думаю, что", "По-моему", "Я согласен", "Я не согласен", "Потому что"], answer: "Я согласен" }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "choice", style: "tf", icon: "fa-circle-question",
+                                title: "6-mashq. Rost yoki yolg'on",
+                                intro: "Har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                items: [
+                                { q: "«Я думаю, что…» fikr bildirish uchun ishlatiladi.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«По-моему» mening fikrimcha degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Я согласен» rozi emasman degani.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "«Потому что» sabab bildiradi.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Я думаю иначе» boshqacha fikrlash degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Fikrdan keyin ko'pincha «что» qo'llanadi.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Например» misol keltirish uchun ishlatiladi.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Har bir inson o'z fikrini bildirishi mumkin.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "«Аргумент» dalil degani.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "O'z fikrini himoya qilish — «отстаивать своё мнение».", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            },
+                            {
+                                id: "ex7", type: "builder", icon: "fa-cubes",
+                                title: "7-mashq. So'zlardan gap tuzing",
+                                intro: "So'zlarni to'g'ri tartibda bosib, gap tuzing.",
+                                items: [
+                                { words: ["Я", "думаю,", "что", "спорт", "полезен"], q: "я / думать / спорт / полезен", answer: "Я думаю, что спорт полезен." },
+                                { words: ["Я", "считаю,", "что", "образование", "важно"], q: "я / считать / образование / важно", answer: "Я считаю, что образование важно." },
+                                { words: ["По-моему,", "фильм", "интересный"], q: "по-моему / фильм / интересный", answer: "По-моему, фильм интересный." },
+                                { words: ["Я", "согласен", "с", "вами"], q: "я / согласен / вы", answer: "Я согласен с вами." },
+                                { words: ["Я", "не", "согласен"], q: "я / не / согласен", answer: "Я не согласен." },
+                                { words: ["Потому", "что", "это", "хорошо"], q: "потому что / это / хорошо", answer: "Потому что это хорошо." },
+                                { words: ["Например,", "книги", "дают", "знания"], q: "например / книги / давать / знания", answer: "Например, книги дают знания." },
+                                { words: ["Я", "думаю", "иначе"], q: "я / думать / иначе", answer: "Я думаю иначе." },
+                                { words: ["Русский", "язык", "полезный"], q: "русский язык / полезный", answer: "Русский язык полезный." },
+                                { words: ["Я", "считаю,", "что", "нужно", "изучать", "языки"], q: "я / считать / нужно / изучать / языки", answer: "Я считаю, что нужно изучать языки." }
+                                ]
+                            },
+                            {
+                                id: "audio", type: "choice", style: "tf", icon: "fa-headphones",
+                                title: "Audio savollari — «Нужно ли изучать иностранные языки?»",
+                                intro: "Audioni tinglang va har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                items: [
+                                { q: "Иностранные языки сегодня никому не нужны.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Знание языков помогает получить хорошую работу.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Языки можно выучить без всякого усилия.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Иностранные языки помогают находить друзей.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "По мнению автора, языки изучать не стоит.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Изучение языков развивает память и мышление.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Языки помогают узнавать другую культуру.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Знание языков полезно для путешествий.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Автор считает, что достаточно знать только родной язык.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Изучение языков стоит усилий и времени.", options: ["Rost", "Yolg'on"], answer: "Rost" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
@@ -5044,17 +5259,264 @@
                     description: "Grammatika: murakkab kelasi zamon tuzilmalari. Muloqot: rejalar, orzular haqida gapirish",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-bullseye"></i> B1 · Mavzu 14</span>
+                            <h3 class="t1g-hero-title">Kelasi zamon, rejalar va orzular</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda kelajak haqida gapirishni o'rganamiz: kelasi zamon (буду + infinitiv / СВ shakl), «собираться», «мечтать», «хотеть», «надеяться» fe'llari va orzu-rejalarni ifodalash.</p>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-clock"></i> 1. Kelasi zamon (будущее время)</h4>
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">СЛОЖНОЕ</span>
+                              <h4>Murakkab (НСВ)</h4>
+                              <p class="t1g-card-uz">буду / будешь / будет + infinitiv (НСВ)</p>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я буду изучать русский язык.</span>
+                                <span class="t1g-uz">Men rus tilini o'rganaman.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">ПРОСТОЕ</span>
+                              <h4>Oddiy (СВ)</h4>
+                              <p class="t1g-card-uz">СВ fe'lning shaxs shakli</p>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Я куплю новый дом.</span>
+                                <span class="t1g-uz">Men yangi uy sotib olaman.</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-list-ol"></i> 2. «буду» fe'lining tuslanishi</h4>
+                          <table class="t1g-table">
+                            <tr><th>Shaxs</th><th>Shakl</th><th>Misol</th></tr>
+                            <tr><td>я</td><td>буду</td><td>Я буду работать.</td></tr>
+                            <tr><td>ты</td><td>будешь</td><td>Ты будешь учиться.</td></tr>
+                            <tr><td>он / она</td><td>будет</td><td>Она будет жить здесь.</td></tr>
+                            <tr><td>мы</td><td>будем</td><td>Мы будем путешествовать.</td></tr>
+                            <tr><td>вы</td><td>будете</td><td>Вы будете отдыхать.</td></tr>
+                            <tr><td>они</td><td>будут</td><td>Они будут помогать.</td></tr>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-star"></i> 3. Rejalar va orzular fe'llari</h4>
+                          <table class="t1g-table">
+                            <tr><th>Fe'l</th><th>Tarjima</th><th>Misol</th></tr>
+                            <tr><td>собираться</td><td>niyat qilmoq</td><td>Я собираюсь учиться за границей.</td></tr>
+                            <tr><td>мечтать</td><td>orzu qilmoq</td><td>Я мечтаю путешествовать по миру.</td></tr>
+                            <tr><td>хотеть</td><td>xohlamoq</td><td>Я хочу стать врачом.</td></tr>
+                            <tr><td>надеяться</td><td>umid qilmoq</td><td>Мы надеемся на успех.</td></tr>
+                            <tr><td>планировать</td><td>rejalashtirmoq</td><td>Я планирую открыть бизнес.</td></tr>
+                          </table>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li>Murakkab kelasi zamon: <b>буду + infinitiv (НСВ)</b> — jarayon.</li>
+                              <li>Oddiy kelasi zamon: <b>СВ fe'l</b> — natija (куплю, поступлю, найду).</li>
+                              <li>«собираться» dan keyin infinitiv keladi: <i>собираюсь переехать</i>.</li>
+                              <li>«мечтать о + предложный»: <i>мечтаю о путешествии</i>; yoki infinitiv: <i>мечтаю путешествовать</i>.</li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Kelajak haqida gapirish uchun kelasi zamon ishlatiladi: murakkab shakl (буду + infinitiv) jarayonni, oddiy shakl (СВ fe'l) natijani bildiradi. Rejalar va orzularni «собираться», «мечтать», «хотеть», «надеяться», «планировать» fe'llari bilan ifodalanadi."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #F4511E, #D84315); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(244, 81, 30, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🎯</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Kelajak rejalari va orzular» mavzusiga oid <strong>90+ so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html?topic=14'"
+                                    style="background: white; color: #D84315; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Kelajak, reja, orzu va kelasi zamon lug'ati
+                            </p>
+                        </div>
+`,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
                         blankAnswers: []
+                    },
+                    topic14Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "1-mashq. To'g'ri variantni tanlang",
+                                intro: "Kelasi zamon va reja-orzu fe'llariga mos variantni tanlang.",
+                                items: [
+                                { q: "Завтра я ___ работать.", options: ["буду", "был", "есть"], answer: "буду" },
+                                { q: "В следующем году мы ___ новый дом.", options: ["покупаем", "купим", "купили"], answer: "купим" },
+                                { q: "Она ___ учиться за границей.", options: ["собирается", "собирался", "собрать"], answer: "собирается" },
+                                { q: "Я ___ путешествовать по миру.", options: ["мечтаю", "мечтал", "мечта"], answer: "мечтаю" },
+                                { q: "Мы ___ на успех.", options: ["надеемся", "надеялись", "надежда"], answer: "надеемся" },
+                                { q: "Я ___ стать врачом.", options: ["хочу", "хотел", "хотеть"], answer: "хочу" },
+                                { q: "Они ___ работу в большой компании.", options: ["найдут", "находят", "нашли"], answer: "найдут" },
+                                { q: "Через год она ___ в университет.", options: ["поступает", "поступит", "поступила"], answer: "поступит" },
+                                { q: "Я уверен, что мои мечты ___.", options: ["сбудутся", "сбылись", "сбываться"], answer: "сбудутся" },
+                                { q: "В будущем мы ___ жить в большом доме.", options: ["будем", "были", "есть"], answer: "будем" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-comment", free: true,
+                                title: "2-mashq. Gaplarni davom ettiring",
+                                intro: "Gapni o'z rejalaringiz bilan davom ettiring (kamida 4 ta so'z yozing).",
+                                items: [
+                                { q: "В будущем я хочу …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я мечтаю …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Через пять лет я …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я собираюсь …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Моя главная цель — …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "В следующем году я …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Я надеюсь, что …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Когда-нибудь я …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Чтобы добиться успеха, я …", answer: [""], placeholder: "...davomini yozing" },
+                                { q: "Моя семья будет …", answer: [""], placeholder: "...davomini yozing" }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "input", icon: "fa-language",
+                                title: "3-mashq. O'zbekchadan ruschaga tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Men shifokor bo'lishni xohlayman.", answer: ["Я хочу стать врачом"] },
+                                { q: "Biz yangi uy sotib olamiz.", answer: ["Мы купим новый дом"] },
+                                { q: "U chet elda o'qishga niyat qilmoqda.", answer: ["Она собирается учиться за границей"] },
+                                { q: "Men dunyo bo'ylab sayohat qilishni orzu qilaman.", answer: ["Я мечтаю путешествовать по миру"] },
+                                { q: "Biz muvaffaqiyatga umid qilamiz.", answer: ["Мы надеемся на успех"] },
+                                { q: "Men rus tilini o'rganaman.", answer: ["Я буду изучать русский язык"] },
+                                { q: "U universitetga kiradi.", answer: ["Она поступит в университет"] },
+                                { q: "Biz boshqa shaharga ko'chib o'tmoqchimiz.", answer: ["Мы собираемся переехать в другой город"] },
+                                { q: "Men yangi ish topaman.", answer: ["Я найду новую работу"] },
+                                { q: "Kelajakda biz katta uyda yashaymiz.", answer: ["В будущем мы будем жить в большом доме"] }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "input", icon: "fa-eraser",
+                                title: "4-mashq. Xatolarni toping va to'g'rilang",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Завтра я буду работал.", answer: ["Завтра я буду работать"] },
+                                { q: "Мы купим новый дом в следующий год.", answer: ["Мы купим новый дом в следующем году"] },
+                                { q: "Она собирается учиться за границу.", answer: ["Она собирается учиться за границей"] },
+                                { q: "Я мечтаю путешествовать по мир.", answer: ["Я мечтаю путешествовать по миру"] },
+                                { q: "Мы надеемся на успехе.", answer: ["Мы надеемся на успех"] },
+                                { q: "Я буду изучаю русский язык.", answer: ["Я буду изучать русский язык"] },
+                                { q: "Она поступать в университет.", answer: ["Она поступит в университет"] },
+                                { q: "Я хочу стать врач.", answer: ["Я хочу стать врачом"] },
+                                { q: "Они найдут работа.", answer: ["Они найдут работу"] },
+                                { q: "В будущем мы будем жить в большой дом.", answer: ["В будущем мы будем жить в большом доме"] }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "builder", icon: "fa-cubes",
+                                title: "5-mashq. So'zlardan gap tuzing",
+                                intro: "So'zlarni to'g'ri tartibda bosib, gap tuzing.",
+                                items: [
+                                { words: ["Я", "мечтаю", "путешествовать"], q: "я / мечтать / путешествовать", answer: "Я мечтаю путешествовать." },
+                                { words: ["Мы", "будем", "работать"], q: "мы / будущее / работать", answer: "Мы будем работать." },
+                                { words: ["Она", "собирается", "учиться"], q: "она / собираться / учиться", answer: "Она собирается учиться." },
+                                { words: ["Мы", "купим", "новый", "дом"], q: "мы / купить / новый дом", answer: "Мы купим новый дом." },
+                                { words: ["Я", "хочу", "стать", "врачом"], q: "я / хотеть / стать / врач", answer: "Я хочу стать врачом." },
+                                { words: ["Они", "найдут", "работу"], q: "они / найти / работа", answer: "Они найдут работу." },
+                                { words: ["Я", "надеюсь", "на", "успех"], q: "я / надеяться / успех", answer: "Я надеюсь на успех." },
+                                { words: ["Моя", "семья", "будет", "жить"], q: "моя семья / будущее / жить", answer: "Моя семья будет жить." },
+                                { words: ["Он", "поступит", "в", "университет"], q: "он / поступить / университет", answer: "Он поступит в университет." },
+                                { words: ["Я", "открою", "бизнес"], q: "я / открыть / бизнес", answer: "Я открою бизнес." }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "input", icon: "fa-pen",
+                                title: "6-mashq. Bo'sh joylarni to'ldiring",
+                                intro: "Kelasi zamon yoki reja fe'lining to'g'ri shaklini yozing.",
+                                items: [
+                                { q: "Завтра я ___ работать. (буду / будет)", answer: ["буду"] },
+                                { q: "В будущем мы ___ жить в большом доме. (буду / будем)", answer: ["будем"] },
+                                { q: "Она ___ поступать в университет. (собирается / собираюсь)", answer: ["собирается"] },
+                                { q: "Я ___ стать переводчиком. (хочу / хочет)", answer: ["хочу"] },
+                                { q: "Я ___ путешествовать по миру. (мечтаю / мечтает)", answer: ["мечтаю"] },
+                                { q: "Мы ___ на успех. (надеемся / надеется)", answer: ["надеемся"] },
+                                { q: "Я ___ новый дом. (куплю / купит)", answer: ["куплю"] },
+                                { q: "Через год я ___ в магистратуру. (поступлю / поступит)", answer: ["поступлю"] },
+                                { q: "Летом я ___ за границу. (поеду / поедет)", answer: ["поеду"] },
+                                { q: "Я уверен, что всё ___ хорошо. (будет / будут)", answer: ["будет"] }
+                                ]
+                            },
+                            {
+                                id: "ex7", type: "input", icon: "fa-comments",
+                                title: "7-mashq. Dialogni to'ldiring",
+                                intro: "Dialogni mos fe'l shakli bilan to'ldiring.",
+                                items: [
+                                { q: "— Что ты будешь делать после университета?\n— Я ___ открыть свой бизнес. (niyatda)", answer: ["собираюсь"] },
+                                { q: "— О чём ты ___? (orzu qilmoq, sen)", answer: ["мечтаешь"] },
+                                { q: "— Я ___ путешествовать по всему миру. (orzu qilmoq, men)", answer: ["мечтаю"] },
+                                { q: "— А я ___ русский язык, чтобы найти хорошую работу. (kelasi zamon: o'rganaman)", answer: ["буду изучать"] },
+                                { q: "— Я ___, что все наши мечты сбудутся. (umid qilmoq, men)", answer: ["надеюсь"] }
+                                ]
+                            },
+                            {
+                                id: "ex8", type: "input", icon: "fa-comment-dots", free: true,
+                                title: "8-mashq. Savollarga javob bering",
+                                intro: "Savollarga to'liq javob yozing (kamida 4 ta so'z).",
+                                items: [
+                                { q: "Кем вы хотите стать в будущем?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "О чём вы мечтаете?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Какие у вас планы на следующий год?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Где вы хотите жить в будущем?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Что вы будете делать, чтобы добиться успеха?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Хотите ли вы путешествовать? Куда?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Какую профессию вы хотите получить?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Какой будет ваша семья в будущем?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Какие иностранные языки вы хотите изучать?", answer: [""], placeholder: "to'liq javob yozing" },
+                                { q: "Что для вас самое важное в будущем?", answer: [""], placeholder: "to'liq javob yozing" }
+                                ]
+                            },
+                            {
+                                id: "ex9", type: "input", icon: "fa-circle-check",
+                                title: "9-mashq. To'g'ri yoki noto'g'ri?",
+                                intro: "Agar gap to'g'ri bo'lsa «✓» belgisini yozing. Agar xato bo'lsa, to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Я буду работать в большой компании.", answer: ["✓", "✔", "верно", "правильно", "нет ошибки", "ok"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Мы будем работаем вместе.", answer: ["Мы будем работать вместе"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Она собирается учиться за границей.", answer: ["✓", "✔", "верно", "правильно", "нет ошибки", "ok"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Я мечтаю путешествовать по миру.", answer: ["✓", "✔", "верно", "правильно", "нет ошибки", "ok"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Они купят новая машина.", answer: ["Они купят новую машину"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "В будущем я открою свой бизнес.", answer: ["✓", "✔", "верно", "правильно", "нет ошибки", "ok"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Мы надеемся на успех.", answer: ["✓", "✔", "верно", "правильно", "нет ошибки", "ok"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Я буду изучаю русский язык.", answer: ["Я буду изучать русский язык"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Через год она поступит в университет.", answer: ["✓", "✔", "верно", "правильно", "нет ошибки", "ok"], placeholder: "✓ yoki to'g'ri gap" },
+                                { q: "Я хочу создать счастливую семью.", answer: ["✓", "✔", "верно", "правильно", "нет ошибки", "ok"], placeholder: "✓ yoki to'g'ri gap" }
+                                ]
+                            },
+                            {
+                                id: "audio", type: "choice", style: "tf", icon: "fa-headphones",
+                                title: "Audio savollari — «Мои планы на будущее и мечты»",
+                                intro: "Audioni tinglang va har bir gap to'g'ri (Верно) yoki noto'g'ri (Неверно) ekanini belgilang.",
+                                items: [
+                                { q: "У автора нет никаких планов на будущее.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "Автор хочет получить хорошую профессию.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Автор не собирается изучать иностранные языки.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "Автор мечтает путешествовать по миру.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Автор считает, что для успеха не нужно работать.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "Автор хочет создать счастливую семью.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Автор планирует много работать, чтобы добиться успеха.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Автор уверен, что мечты сбываются сами по себе.", options: ["Верно", "Неверно"], answer: "Неверно" },
+                                { q: "Автор хочет помогать людям.", options: ["Верно", "Неверно"], answer: "Верно" },
+                                { q: "Автор советует сдаваться при первых трудностях.", options: ["Верно", "Неверно"], answer: "Неверно" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
@@ -5063,17 +5525,235 @@
                     description: "Grammatika: buyruq shaklining murakkab turlari. Muloqot: shikoyat, norozilik bildirish",
                     isLocked: false,
                     isSubscriptionLocked: false,
-                    grammar: "",
+                    grammar: `
+                        <div class="t1g">
+                          <div class="t1g-hero">
+                            <span class="t1g-hero-badge"><i class="fas fa-triangle-exclamation"></i> B1 · Mavzu 15</span>
+                            <h3 class="t1g-hero-title">Buyruq mayli, shikoyat va norozilik</h3>
+                            <p class="t1g-hero-sub">Bu mavzuda buyruq mayli (повелительное наклонение), inkor buyruq («не» + НСВ), «давайте» va «пусть» konstruksiyalari hamda muloyim shikoyat qilishni o'rganamiz.</p>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-bullhorn"></i> 1. Buyruq mayli (повелительное наклонение)</h4>
+                          <table class="t1g-table">
+                            <tr><th>Kim?</th><th>Shakl</th><th>Misol</th></tr>
+                            <tr><td>ты</td><td>-и / -й</td><td>Реши! Объясни! Открой!</td></tr>
+                            <tr><td>вы</td><td>-ите / -йте</td><td>Решите! Объясните! Откройте!</td></tr>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-ban"></i> 2. Inkor buyruq — «не» + НСВ</h4>
+                          <div class="t1g-cards">
+                            <div class="t1g-card t1g-card-sv">
+                              <span class="t1g-card-tag">+ BUYRUQ</span>
+                              <h4>Tasdiq</h4>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Закройте дверь.</span>
+                                <span class="t1g-uz">Eshikni yoping.</span>
+                              </div>
+                            </div>
+                            <div class="t1g-card t1g-card-nsv">
+                              <span class="t1g-card-tag">− INKOR</span>
+                              <h4>Inkor (не + НСВ)</h4>
+                              <div class="t1g-ex">
+                                <span class="t1g-ru">Не шумите! Не опаздывайте!</span>
+                                <span class="t1g-uz">Shovqin qilmang! Kechikmang!</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <h4 class="t1g-h"><i class="fas fa-people-group"></i> 3. «Давайте» va «Пусть»</h4>
+                          <table class="t1g-table">
+                            <tr><th>Konstruksiya</th><th>Ma'no</th><th>Misol</th></tr>
+                            <tr><td>Давайте + …</td><td>kel(ing), birga qilaylik (мы)</td><td>Давайте обсудим проблему.</td></tr>
+                            <tr><td>Пусть + …</td><td>...sin/qilsin (он/она/они)</td><td>Пусть он объяснит.</td></tr>
+                          </table>
+
+                          <h4 class="t1g-h"><i class="fas fa-comment-dots"></i> 4. Muloyim shikoyat iboralari</h4>
+                          <table class="t1g-table">
+                            <tr><th>Ibora</th><th>Tarjima</th></tr>
+                            <tr><td>Я хочу пожаловаться.</td><td>Men shikoyat qilmoqchiman.</td></tr>
+                            <tr><td>Меня это не устраивает.</td><td>Bu meni qoniqtirmaydi.</td></tr>
+                            <tr><td>Это неприемлемо.</td><td>Bu qabul qilib bo'lmaydi.</td></tr>
+                            <tr><td>Примите меры. / Верните деньги.</td><td>Chora ko'ring. / Pulni qaytaring.</td></tr>
+                          </table>
+
+                          <div class="t1g-remember">
+                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Muhim eslab qoling</div>
+                            <ul>
+                              <li>Inkor buyruq deyarli doimo <b>не + НСВ</b>: <i>не опаздывайте</i> (не «не опоздайте»).</li>
+                              <li><b>Давайте</b> — «мы» (biz birga), <b>Пусть</b> — «он/она/они».</li>
+                              <li>Muloyimlik uchun «пожалуйста» qo'shing: <i>Решите, пожалуйста, проблему.</i></li>
+                              <li>Shikoyatni xotirjam va muloyim bildiring: <i>Я недоволен, потому что…</i></li>
+                            </ul>
+                          </div>
+                        </div>
+`,
                     explanation: {
-                        uz: "Ushbu mavzu faqat to'liq kurs obunachilari uchun ochiq."
+                        uz: "Buyruq mayli «ты» uchun -и/-й, «вы» uchun -ите/-йте bilan yasaladi. Inkor buyruq «не» + tugallanmagan fe'l (НСВ) bilan beriladi. «Давайте» birgalikdagi harakatni (мы), «пусть» esa uchinchi shaxs buyrug'ini (он/она/они) bildiradi. Shikoyat muloyim va xotirjam iboralar bilan ifodalanadi."
                     },
-                    content: "",
+                    content: `
+                        <div style="background: linear-gradient(135deg, #C62828, #AD1457); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(198, 40, 40, 0.3);">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">⚠️</div>
+                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
+                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
+                                «Muammoli vaziyatlar va shikoyat» mavzusiga oid <strong>110+ so'z va ibora</strong>
+                            </p>
+                            <button onclick="window.location.href='b1-vocabulary.html?topic=15'"
+                                    style="background: white; color: #C62828; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
+                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
+                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
+                                <i class="fas fa-book-open"></i> Lug'atni ochish
+                            </button>
+                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
+                                <i class="fas fa-graduation-cap"></i> Shikoyat, buyruq mayli va norozilik lug'ati
+                            </p>
+                        </div>
+`,
                     quiz: {
                         mcQuestions: [],
                         mcOptions: [],
                         mcAnswers: [],
                         blankQuestions: [],
                         blankAnswers: []
+                    },
+                    topic15Exercises: {
+                        exercises: [
+                            {
+                                id: "ex1", type: "choice", style: "test", icon: "fa-list-check",
+                                title: "1-mashq. To'g'ri buyruq shaklini tanlang",
+                                intro: "Gapga mos buyruq shaklini tanlang.",
+                                items: [
+                                { q: "___ дверь, пожалуйста. (вы)", options: ["Закрой", "Закройте"], answer: "Закройте" },
+                                { q: "___ мне, пожалуйста. (ты, do'stingga)", options: ["Помоги", "Помогите"], answer: "Помоги" },
+                                { q: "___ проблему сейчас же! (вы)", options: ["Реши", "Решите"], answer: "Решите" },
+                                { q: "Не ___, пожалуйста. (вы — kechikmang)", options: ["опоздайте", "опаздывайте"], answer: "опаздывайте" },
+                                { q: "___ обсудим этот вопрос вместе.", options: ["Давайте", "Пусть"], answer: "Давайте" },
+                                { q: "___ он сам объяснит ситуацию.", options: ["Давайте", "Пусть"], answer: "Пусть" },
+                                { q: "___, пожалуйста, что случилось. (вы)", options: ["Объясните", "Объясни"], answer: "Объясните" },
+                                { q: "Не ___ здесь, это мешает людям. (вы)", options: ["шумите", "шумьте"], answer: "шумите" },
+                                { q: "___ деньги за этот товар. (вы — pulni qaytaring)", options: ["Верните", "Вернёте"], answer: "Верните" },
+                                { q: "___ меры, пожалуйста. (вы — chora ko'ring)", options: ["Примите", "Принимаете"], answer: "Примите" }
+                                ]
+                            },
+                            {
+                                id: "ex2", type: "input", icon: "fa-ban",
+                                title: "2-mashq. «Не» bilan inkor buyruq yasang",
+                                intro: "Berilgan fe'ldan «вы» uchun inkor buyruq yasang (masalan: опаздывать → Не опаздывайте).",
+                                items: [
+                                { q: "опаздывать → ______", answer: ["Не опаздывайте"] },
+                                { q: "кричать → ______", answer: ["Не кричите"] },
+                                { q: "спорить → ______", answer: ["Не спорьте"] },
+                                { q: "трогать → ______", answer: ["Не трогайте"] },
+                                { q: "бегать → ______", answer: ["Не бегайте"] },
+                                { q: "перебивать → ______", answer: ["Не перебивайте"] },
+                                { q: "курить → ______", answer: ["Не курите"] },
+                                { q: "шуметь → ______", answer: ["Не шумите"] },
+                                { q: "забыть → ______", answer: ["Не забудьте"] },
+                                { q: "открывать → ______", answer: ["Не открывайте"] }
+                                ]
+                            },
+                            {
+                                id: "ex3", type: "choice", style: "chips", icon: "fa-people-group",
+                                title: "3-mashq. «Давайте» yoki «Пусть» ni tanlang",
+                                intro: "Gapga mos konstruksiyani tanlang.",
+                                items: [
+                                { q: "___ обсудим эту проблему вместе.", options: ["Давайте", "Пусть"], answer: "Давайте" },
+                                { q: "___ он сам решит этот вопрос.", options: ["Давайте", "Пусть"], answer: "Пусть" },
+                                { q: "___ позвоним менеджеру.", options: ["Давайте", "Пусть"], answer: "Давайте" },
+                                { q: "___ они проверят заказ.", options: ["Давайте", "Пусть"], answer: "Пусть" },
+                                { q: "___ вернём этот товар в магазин.", options: ["Давайте", "Пусть"], answer: "Давайте" },
+                                { q: "___ директор объяснит ситуацию.", options: ["Давайте", "Пусть"], answer: "Пусть" },
+                                { q: "___ напишем жалобу вместе.", options: ["Давайте", "Пусть"], answer: "Давайте" },
+                                { q: "___ сотрудник исправит ошибку.", options: ["Давайте", "Пусть"], answer: "Пусть" },
+                                { q: "___ подождём ответа поддержки.", options: ["Давайте", "Пусть"], answer: "Давайте" },
+                                { q: "___ менеджер примет меры.", options: ["Давайте", "Пусть"], answer: "Пусть" }
+                                ]
+                            },
+                            {
+                                id: "ex4", type: "choice", style: "test", icon: "fa-comment",
+                                title: "4-mashq. Shikoyat uchun mos iborani tanlang",
+                                intro: "Vaziyatga mos eng muloyim va to'g'ri shikoyat iborasini tanlang.",
+                                items: [
+                                { q: "Mahsulot nosoz chiqdi. Siz aytasiz:", options: ["Я хочу пожаловаться на товар.", "Это не моё дело."], answer: "Я хочу пожаловаться на товар." },
+                                { q: "Sizga xizmat yoqmadi:", options: ["Меня не устраивает обслуживание.", "Мне всё нравится."], answer: "Меня не устраивает обслуживание." },
+                                { q: "Muammoni hal qilishlarini xohlaysiz:", options: ["Решите, пожалуйста, проблему.", "Ничего не делайте."], answer: "Решите, пожалуйста, проблему." },
+                                { q: "Pulingizni qaytarishlarini so'raysiz:", options: ["Верните, пожалуйста, деньги.", "Оставьте деньги себе."], answer: "Верните, пожалуйста, деньги." },
+                                { q: "Qaror adolatsiz deb hisoblaysiz:", options: ["Я не согласен с этим решением.", "Я полностью согласен."], answer: "Я не согласен с этим решением." },
+                                { q: "Vaziyat juda yomon:", options: ["Это неприемлемо.", "Это прекрасно."], answer: "Это неприемлемо." },
+                                { q: "Chora ko'rishlarini talab qilasiz:", options: ["Примите меры, пожалуйста.", "Не обращайте внимания."], answer: "Примите меры, пожалуйста." },
+                                { q: "Muammo qayta-qayta takrorlanmoqda:", options: ["Эта проблема повторяется снова.", "Всё работает отлично."], answer: "Эта проблема повторяется снова." },
+                                { q: "Muloyim tushuntirish so'raysiz:", options: ["Объясните, пожалуйста, ситуацию.", "Молчите."], answer: "Объясните, пожалуйста, ситуацию." },
+                                { q: "Norozisiz va buni bildirasiz:", options: ["Я недоволен качеством товара.", "Я очень доволен."], answer: "Я недоволен качеством товара." }
+                                ]
+                            },
+                            {
+                                id: "ex5", type: "input", icon: "fa-language",
+                                title: "5-mashq. Gapni davomini tarjima qiling",
+                                intro: "Gap boshini o'qing va o'zbekcha sababni rus tiliga tarjima qilib davom ettiring (faqat «потому что …» qismini yozing).",
+                                items: [
+                                { q: "Я хочу пожаловаться, … (chunki xizmat yomon edi)", answer: ["потому что обслуживание было плохим"] },
+                                { q: "Я недоволен, … (chunki buyurtma kech keldi)", answer: ["потому что заказ пришёл поздно"] },
+                                { q: "Я хочу вернуть товар, … (chunki mahsulot nosoz chiqdi)", answer: ["потому что товар оказался неисправным"] },
+                                { q: "Я прошу заменить услугу, … (chunki men xizmatdan foydalana olmayman)", answer: ["потому что я не могу пользоваться услугой"] },
+                                { q: "Я жалуюсь, … (chunki mahsulot sifati past)", answer: ["потому что качество товара низкое"] },
+                                { q: "Объясните, пожалуйста, … (chunki men hech narsani tushunmayapman)", answer: ["потому что я ничего не понимаю"] },
+                                { q: "Я требую возврат денег, … (chunki mahsulot ishlamayapti)", answer: ["потому что товар не работает"] },
+                                { q: "Я не согласен, … (chunki ma'lumot noto'g'ri)", answer: ["потому что информация неверная"] },
+                                { q: "Я подаю претензию, … (chunki bu qaror adolatsiz)", answer: ["потому что это решение несправедливо"] },
+                                { q: "Я очень раздражён, … (chunki muammo qayta-qayta takrorlanmoqda)", answer: ["потому что проблема повторяется снова и снова"] }
+                                ]
+                            },
+                            {
+                                id: "ex6", type: "input", icon: "fa-eraser",
+                                title: "6-mashq. Xatoni toping va tuzating",
+                                intro: "Gapdagi xatoni toping va to'g'ri gapni to'liq yozing.",
+                                items: [
+                                { q: "Не шумьте!", answer: ["Не шумите"] },
+                                { q: "Давайте решить проблему.", answer: ["Давайте решим проблему", "Пусть решат проблему"] },
+                                { q: "Я хочу жаловаться.", answer: ["Я хочу пожаловаться"] },
+                                { q: "Я не согласный.", answer: ["Я не согласен"] },
+                                { q: "Решайте проблему.", answer: ["Решите проблему"] },
+                                { q: "Не опаздайте!", answer: ["Не опаздывайте"] },
+                                { q: "Пусть он рассказать.", answer: ["Пусть он расскажет"] },
+                                { q: "Я недовольный этим товаром.", answer: ["Я недоволен этим товаром"] },
+                                { q: "Давайте обсудить вопрос.", answer: ["Давайте обсудим вопрос"] },
+                                { q: "Решайте проблему сейчас!", answer: ["Решите проблему сейчас"] }
+                                ]
+                            },
+                            {
+                                id: "ex7", type: "input", icon: "fa-pen",
+                                title: "7-mashq. Rus tiliga tarjima qiling",
+                                intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
+                                items: [
+                                { q: "Men shikoyat qilmoqchiman.", answer: ["Я хочу пожаловаться"] },
+                                { q: "Bu meni qoniqtirmaydi.", answer: ["Меня это не устраивает"] },
+                                { q: "Muammoni hal qiling.", answer: ["Решите проблему"] },
+                                { q: "Iltimos, tushuntiring.", answer: ["Пожалуйста, объясните"] },
+                                { q: "Men bu qaror bilan rozi emasman.", answer: ["Я не согласен с этим решением", "Я не согласна с этим решением"] },
+                                { q: "Bu qabul qilib bo'lmaydi.", answer: ["Это неприемлемо"] },
+                                { q: "Chora ko'ring.", answer: ["Примите меры"] },
+                                { q: "Pulni qaytaring.", answer: ["Верните деньги"] },
+                                { q: "Kechikmang.", answer: ["Не опаздывайте"] },
+                                { q: "Keling, muhokama qilaylik.", answer: ["Давайте обсудим"] }
+                                ]
+                            },
+                            {
+                                id: "audio", type: "choice", style: "tf", icon: "fa-headphones",
+                                title: "Audio savollari — «Жалоба в магазине»",
+                                intro: "Audioni tinglang va har bir gap to'g'ri (Rost) yoki noto'g'ri (Yolg'on) ekanini belgilang.",
+                                items: [
+                                { q: "Покупатель пришёл в магазин с жалобой.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Покупатель был полностью доволен товаром.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Купленный товар оказался неисправным.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Покупатель кричал и вёл себя грубо.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Покупатель попросил решить проблему.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Сотрудник магазина выслушал клиента.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Менеджер отказался помогать покупателю.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" },
+                                { q: "Покупателю предложили заменить товар или вернуть деньги.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Проблему в итоге решили.", options: ["Rost", "Yolg'on"], answer: "Rost" },
+                                { q: "Покупатель остался недоволен и ушёл со скандалом.", options: ["Rost", "Yolg'on"], answer: "Yolg'on" }
+                                ]
+                            }
+                        ]
                     }
                 },
                 {
@@ -5557,7 +6237,7 @@
         function loadQuiz(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
-            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises) { renderTopic1Exercises(topicId); return; }
+            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises) { renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
             const topicResults = userQuizResults[`topic_${topicId}`];
@@ -6839,7 +7519,7 @@
         }
 
         function getT1ExData(topic) {
-            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises)) || null;
+            return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises)) || null;
         }
 
         function renderTopic1Exercises(topicId) {
@@ -6990,7 +7670,11 @@
                     } else {
                         var inp = quizSection.querySelector('[data-t1-input="' + key + '"]');
                         uv = inp ? inp.value.trim() : "";
-                        var okI = t1Match(uv, item.answer);
+                        // Free completion items: meaningful answer = non-empty and
+                        // at least 3 words. Exact match is not required.
+                        var okI = item.free
+                            ? (uv.split(/\s+/).filter(Boolean).length >= 3)
+                            : t1Match(uv, item.answer);
                         if (inp) {
                             inp.classList.remove("correct", "incorrect");
                             inp.classList.add(okI ? "correct" : "incorrect");
@@ -7117,6 +7801,92 @@
 
             var total = 0;
             (topic.topic12Exercises.exercises || []).forEach(function (g) {
+                total += (g.items || []).length;
+            });
+
+            var allCorrect = (currentScore >= total);
+            if (allCorrect || !completeBtn) return;
+
+            completeBtn.textContent = "Mavzu tugatilmadi";
+            completeBtn.className = "complete-btn failed";
+            completeBtn.style.display = "block";
+            if (retryBtn) retryBtn.style.display = "none";
+            completeBtn.onclick = function () {
+                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
+            };
+            var msgEl = document.getElementById("resultsMessage");
+            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
+        };
+
+        // Topic 13 — same 100%-completion gate. Exercise 2 items are marked
+        // `free:true`, so the shared scorer counts them correct when the
+        // learner writes a meaningful answer (>= 3 words); every other item
+        // still needs an exact match.
+        window.checkTopic13Exercises = async function (topicId) {
+            await window.checkTopic1Exercises(topicId);
+
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic || !topic.topic13Exercises) return;
+
+            var total = 0;
+            (topic.topic13Exercises.exercises || []).forEach(function (g) {
+                total += (g.items || []).length;
+            });
+
+            var allCorrect = (currentScore >= total);
+            if (allCorrect || !completeBtn) return;
+
+            completeBtn.textContent = "Mavzu tugatilmadi";
+            completeBtn.className = "complete-btn failed";
+            completeBtn.style.display = "block";
+            if (retryBtn) retryBtn.style.display = "none";
+            completeBtn.onclick = function () {
+                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
+            };
+            var msgEl = document.getElementById("resultsMessage");
+            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
+        };
+
+        // Topic 14 — same 100%-completion gate. Exercises 2 and 8 are
+        // `free:true` (open answers, >= 4 words handled by the items' own
+        // wording; the shared scorer's free branch needs >= 3 words and a
+        // non-empty answer). Every other item needs an exact match.
+        window.checkTopic14Exercises = async function (topicId) {
+            await window.checkTopic1Exercises(topicId);
+
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic || !topic.topic14Exercises) return;
+
+            var total = 0;
+            (topic.topic14Exercises.exercises || []).forEach(function (g) {
+                total += (g.items || []).length;
+            });
+
+            var allCorrect = (currentScore >= total);
+            if (allCorrect || !completeBtn) return;
+
+            completeBtn.textContent = "Mavzu tugatilmadi";
+            completeBtn.className = "complete-btn failed";
+            completeBtn.style.display = "block";
+            if (retryBtn) retryBtn.style.display = "none";
+            completeBtn.onclick = function () {
+                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
+            };
+            var msgEl = document.getElementById("resultsMessage");
+            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
+        };
+
+        // Topic 15 — same 100%-completion gate (no free items). Every item
+        // needs an exact / accepted-variant match; Exercise 6 item 2 accepts
+        // two valid answers (Давайте решим… / Пусть решат…).
+        window.checkTopic15Exercises = async function (topicId) {
+            await window.checkTopic1Exercises(topicId);
+
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic || !topic.topic15Exercises) return;
+
+            var total = 0;
+            (topic.topic15Exercises.exercises || []).forEach(function (g) {
                 total += (g.items || []).length;
             });
 

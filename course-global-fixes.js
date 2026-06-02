@@ -338,7 +338,7 @@
             input cells -> [data-t1-input="<id>-<i>"]                                */
     function collectTopic1ExercisesResults(topic, scope) {
         var results = [];
-        var exObj = topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises);
+        var exObj = topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises);
         if (!exObj || !Array.isArray(exObj.exercises)) return results;
         var topicTitle = topic.title || '';
 
@@ -355,11 +355,16 @@
                 } else {
                     var inp = queryIn(scope, '[data-t1-input="' + key + '"]');
                     uv = inp ? inp.value.trim() : '';
-                    markInput(inp, isCorrect(uv, item.answer));
+                    markInput(inp, item.free
+                        ? (uv.split(/\s+/).filter(Boolean).length >= 3)
+                        : isCorrect(uv, item.answer));
                 }
                 var exp = item.answer;
-                var ok = isCorrect(uv, exp);
-                var ed = expectedDisplay(exp);
+                /* Free completion items: meaningful = non-empty + >= 3 words. */
+                var ok = item.free
+                    ? (uv.split(/\s+/).filter(Boolean).length >= 3)
+                    : isCorrect(uv, exp);
+                var ed = item.free ? 'Bemalol javob (kamida 3 soʻz)' : expectedDisplay(exp);
                 results.push(makeResult(
                     exTitle + ' — ' + (i + 1),
                     item.q || item.prompt || '',

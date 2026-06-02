@@ -43,6 +43,8 @@ const varNames = [
     "_VERDICT_REASON"
 ];
 
+const varNames2 = ["_SPEECH_OPTIONAL_WORDS", "_VERDICT_RANK"];
+
 const functionNames = [
     "_normalizeSpeechText",
     "_matchForm",
@@ -55,11 +57,18 @@ const functionNames = [
     "_evaluateVerdict",
     "_statesToFeedback",
     "_packageGrade",
+    "_speechHasCyrillic",
+    "_speechIsLatinGloss",
+    "_speechExpandParens",
+    "_speechExpandSlashes",
+    "_speechExpandOptional",
+    "_referenceVariants",
     "_gradeSpeech"
 ];
 
 globalThis.eval(
-    varNames.map(extractVar).join("\n") + "\n\n" +
+    varNames.map(extractVar).join("\n") + "\n" +
+    varNames2.map(extractVar).join("\n") + "\n\n" +
     functionNames.map(extractFunction).join("\n\n")
 );
 
@@ -96,7 +105,26 @@ const scenarios = [
 
     /* ---- short-word strict mode ---- */
     { name: "Short word strict",       reference: "он не там", recognized: "он не там", expect: "excellent" },
-    { name: "Two-word card perfect",   reference: "Доброе утро", recognized: "доброе утро", expect: "excellent" }
+    { name: "Two-word card perfect",   reference: "Доброе утро", recognized: "доброе утро", expect: "excellent" },
+
+    /* ---- multi-form references: ANY accepted variant must pass ---- */
+    { name: "Slash phrase form A",     reference: "Друг / Друзья",            recognized: "друг",            expect: "excellent" },
+    { name: "Slash phrase form B",     reference: "Друг / Друзья",            recognized: "друзья",          expect: "excellent" },
+    { name: "Slash tail inherits A",   reference: "Я не согласен / согласна", recognized: "я не согласен",   expect: "excellent" },
+    { name: "Slash tail inherits B",   reference: "Я не согласен / согласна", recognized: "я не согласна",   expect: "excellent" },
+    { name: "Inline slash он/она A",   reference: "он/она говорит",           recognized: "он говорит",      expect: "excellent" },
+    { name: "Inline slash он/она B",   reference: "он/она говорит",           recognized: "она говорит",     expect: "excellent" },
+    { name: "Paren suffix base",       reference: "уверен(а)",                recognized: "уверен",          expect: "excellent" },
+    { name: "Paren suffix alt",        reference: "уверен(а)",                recognized: "уверена",         expect: "excellent" },
+    { name: "Paren synonym base",      reference: "Мать (мама)",              recognized: "мать",            expect: "excellent" },
+    { name: "Paren synonym alt",       reference: "Мать (мама)",              recognized: "мама",            expect: "excellent" },
+    { name: "Latin gloss dropped",     reference: "Вашего (erkak)",           recognized: "вашего",          expect: "excellent" },
+    { name: "Optional word omitted",   reference: "скажите, пожалуйста",      recognized: "скажите",         expect: "excellent" },
+    { name: "Optional word included",  reference: "скажите, пожалуйста",      recognized: "скажите пожалуйста", expect: "excellent" },
+
+    /* ---- multi-form must NOT make garbage pass ---- */
+    { name: "Multi-form garbage fail", reference: "Друг / Друзья",            recognized: "кошка собака",    expect: "unclear" },
+    { name: "Inline slash wrong word", reference: "он/она говорит",           recognized: "кошка бежит",     expect: "unclear" }
 ];
 
 let failures = 0;

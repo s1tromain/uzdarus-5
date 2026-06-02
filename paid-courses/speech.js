@@ -1213,7 +1213,137 @@ function _packageGrade(verdict, cls, reasonOverride) {
     };
 }
 
-/* AUTHORITATIVE GRADER -- the single source of truth for the verdict. */
+/* ==================================================================
+ *  REFERENCE VARIANTS — multi-form / optional-word support
+ *  ------------------------------------------------------------------
+ *  A vocabulary card's reference text may encode several acceptable
+ *  spoken answers in one string. The speech grader should accept ANY
+ *  of them, so we expand the raw reference into a list of variants and
+ *  grade the recognized speech against each, keeping the best verdict.
+ *
+ *  Supported, data-driven (NO hardcoded word lists, so every current
+ *  and future vocabulary entry inherits this automatically):
+ *    "Друг / Друзья"            -> "Друг",  "Друзья"
+ *    "Я не согласен / согласна" -> "Я не согласен", "Я не согласна"
+ *    "он/она говорит"           -> "он говорит", "она говорит"
+ *    "уверен(а)"                -> "уверен", "уверена"
+ *    "Мать (мама)"              -> "Мать",  "мама"
+ *    "Вашего (erkak)"           -> "Вашего"          (Latin gloss dropped)
+ *    "скажите, пожалуйста"      -> + "скажите"       (optional particle)
+ *
+ *  This affects ONLY speech grading. Text/grammar/translation/test
+ *  validation lives in the course files (t1Match / isCorrect) and never
+ *  calls into here, so written-answer accuracy is unchanged.
+ * ================================================================== */
+
+/* Discourse particles that must never be REQUIRED in spoken answers. */
+var _SPEECH_OPTIONAL_WORDS = ['пожалуйста', 'ну', 'же', 'вот'];
+
+function _speechHasCyrillic(s) { return /[а-яё]/i.test(s); }
+/* A parenthetical that is Latin-only (e.g. "(erkak)", "(ko'plik)") is an
+   Uzbek gloss / annotation, not a spoken alternative. */
+function _speechIsLatinGloss(s) { return /[a-z]/i.test(s) && !/[а-яё]/i.test(s); }
+
+/* "уверен(а)" / "Мать (мама)" -> base form + alternative form(s). */
+function _speechExpandParens(list) {
+    var out = [];
+    list.forEach(function (s) {
+        var m = s.match(/^(.*?)(\s*)\(([^)]*)\)(.*)$/);
+        if (!m) { out.push(s); return; }
+        var before = m[1], spaced = m[2].length > 0, inner = m[3].trim(), after = m[4];
+        var baseNoParen = (before + after).replace(/\s+/g, ' ').trim();
+        out.push(baseNoParen);
+        if (inner && _speechHasCyrillic(inner) && !_speechIsLatinGloss(inner)) {
+            if (!spaced) {
+                /* inline suffix: "уверен(а)" -> "уверена" */
+                out.push((before + inner + after).replace(/\s+/g, ' ').trim());
+            } else {
+                /* spaced synonym: "Мать (мама)" -> "мама" */
+                out.push(inner);
+            }
+        }
+    });
+    return out;
+}
+
+/* "Друг / Друзья" and "он/она говорит" -> separate alternatives. */
+function _speechExpandSlashes(list) {
+    var out = [];
+    list.forEach(function (s) {
+        if (s.indexOf('/') === -1) { out.push(s); return; }
+        if (/\s\/\s/.test(s)) {
+            /* phrase-level " / " alternatives */
+            var parts = s.split(/\s*\/\s*/).map(function (p) { return p.trim(); }).filter(Boolean);
+            var leftWords = parts[0].split(/\s+/);
+            parts.forEach(function (p, idx) {
+                var pw = p.split(/\s+/);
+                /* a shorter tail alternative ("согласна") inherits the left
+                   prefix ("Я не") -> "Я не согласна" */
+                if (idx > 0 && pw.length < leftWords.length) {
+                    out.push(leftWords.slice(0, leftWords.length - pw.length).concat(pw).join(' '));
+                } else {
+                    out.push(p);
+                }
+            });
+            return;
+        }
+        /* inline "он/она говорит" -> cartesian over slashed tokens */
+        var combos = [''];
+        s.split(/\s+/).forEach(function (tok) {
+            if (tok.indexOf('/') !== -1) {
+                var alts = tok.split('/').filter(Boolean), next = [];
+                combos.forEach(function (c) {
+                    alts.forEach(function (a) { next.push((c + ' ' + a).trim()); });
+                });
+                combos = next;
+            } else {
+                combos = combos.map(function (c) { return (c + ' ' + tok).trim(); });
+            }
+        });
+        combos.forEach(function (c) { out.push(c); });
+    });
+    return out;
+}
+
+/* Add a variant with optional discourse particles removed. */
+function _speechExpandOptional(list) {
+    var out = [];
+    list.forEach(function (s) {
+        out.push(s);
+        var kept = s.split(/\s+/).filter(function (w) {
+            return _SPEECH_OPTIONAL_WORDS.indexOf(_normalizeSpeechText(w)) === -1;
+        });
+        var trimmed = kept.join(' ').trim();
+        if (trimmed && trimmed !== s.trim()) out.push(trimmed);
+    });
+    return out;
+}
+
+/* Expand a raw reference string into all acceptable spoken variants.
+   Always returns at least one entry (the original). Deduped by
+   normalized form. */
+function _referenceVariants(raw) {
+    var s = String(raw == null ? '' : raw).trim();
+    if (!s) return [''];
+    var list = _speechExpandOptional(_speechExpandSlashes(_speechExpandParens([s])));
+    var seen = {}, result = [];
+    list.forEach(function (v) {
+        var n = _normalizeSpeechText(v);
+        if (!n || seen[n]) return;
+        seen[n] = true;
+        result.push(v.trim());
+    });
+    return result.length ? result : [s];
+}
+
+/* Rank verdicts so we can keep the BEST one across reference variants. */
+var _VERDICT_RANK = { excellent: 4, good: 3, average: 2, unclear: 1, empty: 0 };
+
+/* AUTHORITATIVE GRADER -- the single source of truth for the verdict.
+   Grades the recognized speech against every acceptable reference
+   variant and keeps the best result, so multi-form cards
+   ("Друг / Друзья", "уверен(а)", "он/она говорит") and optional
+   particles ("пожалуйста") never cause a false failure. */
 function _gradeSpeech(recognizedText, referenceText, opts) {
     opts = opts || {};
     var ref = referenceText || '';
@@ -1223,15 +1353,24 @@ function _gradeSpeech(recognizedText, referenceText, opts) {
         return _packageGrade('empty', _classifyWords('', ref), 'no_speech');
     }
 
-    var cls = _classifyWords(recognizedText, ref);
+    var variants = _referenceVariants(ref);
+    var best = null;
+    for (var i = 0; i < variants.length; i++) {
+        var cls = _classifyWords(recognizedText, variants[i]);
 
-    /* Anti-cheat: Azure echoed the reference text without real, clean
-       audio behind it -> never allowed to pass. */
-    if (opts.fakeMatch) {
-        return _packageGrade('unclear', cls, 'fake_match');
+        /* Anti-cheat: Azure echoed the reference text without real, clean
+           audio behind it -> never allowed to pass. */
+        if (opts.fakeMatch) {
+            return _packageGrade('unclear', cls, 'fake_match');
+        }
+
+        var graded = _packageGrade(_evaluateVerdict(cls), cls);
+        if (!best || _VERDICT_RANK[graded.verdict] > _VERDICT_RANK[best.verdict]) {
+            best = graded;
+            if (graded.verdict === 'excellent') break;   /* can't do better */
+        }
     }
-
-    return _packageGrade(_evaluateVerdict(cls), cls);
+    return best;
 }
 
 /* Back-compat shim -- legacy callers expect token-presence stats. */
