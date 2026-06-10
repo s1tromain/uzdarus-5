@@ -554,6 +554,23 @@ function initTabs() {
 
 function initCreateCustomer() {
     const form = document.getElementById('createCustomerForm');
+
+    // Month-duration quick presets (Phase 4): selecting 1/3/6/12 months fills
+    // the "Obuna kunlari" field with the matching real day count. The backend
+    // computes endAt from these days using real timestamps.
+    const presetSelect = form.querySelector('#durationPreset');
+    const daysInput = form.querySelector('input[name="subscriptionDays"]');
+    if (presetSelect && daysInput) {
+        presetSelect.addEventListener('change', () => {
+            if (presetSelect.value !== 'custom') {
+                daysInput.value = presetSelect.value;
+            }
+        });
+        daysInput.addEventListener('input', () => {
+            presetSelect.value = 'custom';
+        });
+    }
+
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
         clearNotice(globalError);

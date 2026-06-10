@@ -7332,9 +7332,16 @@
                 const topicBtn = document.createElement('button');
                 topicBtn.className = 'topic-btn';
 
-                // Проверяем, доступна ли тема (последовательность)
-                const isSequenceLocked = false;
-                
+                // Sequential unlock (Phase 3): customers must finish the previous
+                // topic before the next opens. Privileged roles (developer/admin)
+                // and already-completed topics always stay unlocked.
+                const __role = String((window.currentUser && window.currentUser.role) || '').toLowerCase();
+                const isPrivileged = __role === 'developer' || __role === 'admin';
+                const isSequenceLocked = !isPrivileged
+                    && topic.id > 1
+                    && !completedTopics.includes(topic.id - 1)
+                    && !completedTopics.includes(topic.id);
+
                 console.log(`📚 TOPICS: Topic ${topic.id} - Completed: ${completedTopics.includes(topic.id)}, SequenceLocked: ${isSequenceLocked}`);
 
                 if (false) {
@@ -7359,7 +7366,7 @@
                             block: 'start'
                         });
                     });
-                } else if (false) {
+                } else if (isSequenceLocked) {
                     // Для тем, которые заблокированы из-за последовательности
                     topicBtn.classList.add('sequence-locked');
                     topicBtn.innerHTML = `
@@ -7407,7 +7414,7 @@
 
                     topicBtn.addEventListener('click', () => {
                         // Проверяем, завершена ли предыдущая тема
-                        if (false) {
+                        if (isSequenceLocked) {
                             alert(`Ushbu mavzuni ochish uchun avval ${topic.id - 1}-mavzuni tugatishingiz kerak!`);
                             return;
                         }

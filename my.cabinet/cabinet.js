@@ -65,6 +65,39 @@ const PACKAGE_CONFIG = Object.freeze({
     }
 });
 
+// Phase 5 — Course visibility. These courses are "Tez orada" (coming soon)
+// for customers; staff/privileged accounts always see them open so the team
+// can keep developing them.
+const COMING_SOON_COURSES = Object.freeze(new Set(['A2', 'B2']));
+const COMING_SOON_LABEL = 'Tez orada';
+
+const COURSE_TO_PACK = Object.freeze({
+    A1: 'A1A2',
+    A2: 'A1A2',
+    B1: 'B1B2',
+    B2: 'B1B2'
+});
+
+function isCourseComingSoon(courseCode, privilegedRole) {
+    if (privilegedRole) {
+        return false;
+    }
+
+    return COMING_SOON_COURSES.has(courseCode);
+}
+
+function getVocabLearnedCount(courseProgress) {
+    const learned = courseProgress?.vocabulary?.learnedWords;
+    if (!learned || typeof learned !== 'object') {
+        return 0;
+    }
+
+    return Object.values(learned).reduce((sum, value) => {
+        const numeric = Number(value);
+        return sum + (Number.isFinite(numeric) && numeric > 0 ? numeric : 0);
+    }, 0);
+}
+
 function showNotice(element, text, type = 'error') {
     if (!element) {
         return;
@@ -514,19 +547,33 @@ function createPackCard({ title, description, href, enabled }) {
     return card;
 }
 
-function createCourseCard({ courseCode, title, description, href, progress }) {
+function createCourseCard({ courseCode, title, description, href, progress, comingSoon = false, hasAccess = true, vocabLearned = 0 }) {
     const card = document.createElement('article');
     card.className = 'pack-card course-card';
+    if (comingSoon) {
+        card.classList.add('course-card-locked');
+    }
+
+    const titleRow = document.createElement('div');
+    titleRow.className = 'course-card-head';
 
     const titleElement = document.createElement('h3');
     titleElement.textContent = title;
+    titleRow.appendChild(titleElement);
+
+    if (comingSoon) {
+        const badge = document.createElement('span');
+        badge.className = 'course-badge course-badge-soon';
+        badge.textContent = COMING_SOON_LABEL;
+        titleRow.appendChild(badge);
+    }
 
     const descriptionElement = document.createElement('p');
     descriptionElement.textContent = description;
 
     const progressText = document.createElement('p');
     progressText.className = 'course-progress-text';
-    progressText.textContent = `Progress: ${progress.progressPercent}% (${progress.completedTopics}/${progress.totalTopics})`;
+    progressText.textContent = `${progress.completedTopics}/${progress.totalTopics} mavzu • ${progress.progressPercent}%`;
 
     const progressTrack = document.createElement('div');
     progressTrack.className = 'course-progress-track';
@@ -538,18 +585,131 @@ function createCourseCard({ courseCode, title, description, href, progress }) {
 
     progressTrack.appendChild(progressFill);
 
-    const actionLink = document.createElement('a');
-    actionLink.className = 'btn';
-    actionLink.href = href;
-    actionLink.textContent = 'Kursni ochish';
-
-    card.appendChild(titleElement);
+    card.appendChild(titleRow);
     card.appendChild(descriptionElement);
     card.appendChild(progressText);
     card.appendChild(progressTrack);
-    card.appendChild(actionLink);
+
+    if (vocabLearned > 0) {
+        const vocab = document.createElement('p');
+        vocab.className = 'course-vocab-text';
+        vocab.textContent = `Lug‘at: ${vocabLearned} ta so‘z o‘rganildi`;
+        card.appendChild(vocab);
+    }
+
+    if (comingSoon) {
+        const lockedBtn = document.createElement('button');
+        lockedBtn.className = 'btn btn-secondary';
+        lockedBtn.type = 'button';
+        lockedBtn.disabled = true;
+        lockedBtn.textContent = COMING_SOON_LABEL;
+        card.appendChild(lockedBtn);
+    } else if (hasAccess) {
+        const actionLink = document.createElement('a');
+        actionLink.className = 'btn';
+        actionLink.href = href;
+        actionLink.textContent = 'Kursni ochish';
+        card.appendChild(actionLink);
+    } else {
+        const noAccessBtn = document.createElement('button');
+        noAccessBtn.className = 'btn btn-secondary';
+        noAccessBtn.type = 'button';
+        noAccessBtn.disabled = true;
+        noAccessBtn.textContent = 'Ruxsat yo‘q';
+        card.appendChild(noAccessBtn);
+    }
 
     return card;
+}
+
+function renderSubscriptionCard(container, profile, role, privilegedRole, activeSubscription) {
+    if (!container) {
+        return;
+    }
+
+    let statusLabel;
+    let statusClass;
+    let tariff;
+    let expiry;
+    let remaining;
+
+    if (privilegedRole) {
+        statusLabel = 'To‘liq ruxsat';
+        statusClass = 'status-active';
+        tariff = profile.role || 'staff';
+        expiry = 'Muddatsiz';
+        remaining = '∞';
+    } else if (role === 'moderator') {
+        statusLabel = 'Staff';
+        statusClass = 'status-active';
+        tariff = 'moderator';
+        expiry = 'Muddatsiz';
+        remaining = '∞';
+    } else {
+        statusLabel = activeSubscription ? 'Obuna faol' : 'Obuna faol emas';
+        statusClass = activeSubscription ? 'status-active' : 'status-inactive';
+        tariff = profile.subscription?.tariff || 'Tarif yo‘q';
+        expiry = formatDate(profile.subscription?.endAt);
+        const daysLeft = getDaysLeft(profile.subscription?.endAt);
+        remaining = daysLeft && daysLeft > 0 ? `${daysLeft} kun` : 'Tugagan';
+    }
+
+    container.innerHTML = `
+        <div class="sub-card-head">
+            <h3>Obuna holati</h3>
+            <span class="status-pill ${statusClass}">${escapeText(statusLabel)}</span>
+        </div>
+        <div class="sub-card-grid">
+            <div class="sub-stat">
+                <span class="sub-stat-label">Tarif</span>
+                <span class="sub-stat-value">${escapeText(tariff)}</span>
+            </div>
+            <div class="sub-stat">
+                <span class="sub-stat-label">Tugash sanasi</span>
+                <span class="sub-stat-value">${escapeText(expiry)}</span>
+            </div>
+            <div class="sub-stat">
+                <span class="sub-stat-label">Qolgan</span>
+                <span class="sub-stat-value">${escapeText(remaining)}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderDashboardCourses(container, profile, privilegedRole) {
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '';
+    ['A1', 'A2', 'B1', 'B2'].forEach((courseCode) => {
+        const courseConfig = COURSE_CONFIG[courseCode];
+        if (!courseConfig) {
+            return;
+        }
+
+        const progress = getCourseProgress(profile, courseCode);
+        const packCode = COURSE_TO_PACK[courseCode];
+        const card = createCourseCard({
+            courseCode,
+            title: courseConfig.title,
+            description: courseConfig.description,
+            href: courseConfig.href,
+            progress,
+            comingSoon: isCourseComingSoon(courseCode, privilegedRole),
+            hasAccess: canAccessPaid(profile, packCode).allowed,
+            vocabLearned: getVocabLearnedCount(profile?.courses?.[courseCode])
+        });
+
+        container.appendChild(card);
+    });
+}
+
+function escapeText(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 async function initDashboardPage() {
@@ -617,6 +777,20 @@ async function initDashboardPage() {
     }
 
     applySubscriptionBadge(profile, role, privilegedRole, activeSubscription, subscriptionBadge);
+
+    renderSubscriptionCard(
+        document.getElementById('subscriptionCard'),
+        profile,
+        role,
+        privilegedRole,
+        activeSubscription
+    );
+
+    renderDashboardCourses(
+        document.getElementById('courseProgressGrid'),
+        profile,
+        privilegedRole
+    );
 
     if (profile.blocked && !privilegedRole) {
         if (blockBanner) {
@@ -780,7 +954,10 @@ async function initPackageOverviewPage() {
             title: courseConfig.title,
             description: courseConfig.description,
             href: courseConfig.href,
-            progress
+            progress,
+            comingSoon: isCourseComingSoon(courseCode, privilegedRole),
+            hasAccess: true,
+            vocabLearned: getVocabLearnedCount(profile?.courses?.[courseCode])
         });
 
         courseGrid.appendChild(card);
