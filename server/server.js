@@ -185,8 +185,8 @@ app.post('/api/send-payment', async (req, res) => {
 function getTariffPrice(tariff) {
     switch (tariff) {
         case 'START': return '780,000 so\'m';
-        case 'GOLD': return '1,300,000 so\'m';
-        case 'PLATINUM': return '1,900,000 so\'m';
+        case 'TURBO': return '1,300,000 so\'m';
+        case 'PREMIUM': return '1,900,000 so\'m';
         default: return 'Noma\'lum';
     }
 }

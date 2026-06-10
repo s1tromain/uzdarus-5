@@ -654,7 +654,7 @@ async function subscriptionFlow(userId) {
     }
 
     const durationDays = Number(prompt('Necha kunga aktiv qilinsin?', '30') || 30);
-    const tariff = String(prompt('Tarif nomi (START/GOLD/PLATINUM):', 'START') || 'START').toUpperCase();
+    const tariff = String(prompt('Tarif nomi (START/TURBO/PREMIUM):', 'START') || 'START').toUpperCase();
     const packsInput = String(prompt('Packlar (vergul bilan): A1A2,B1B2', 'A1A2') || '');
     const accessPacks = packsInput
         .split(',')

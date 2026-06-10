@@ -663,8 +663,8 @@
                             <select id="tariff" name="tariff" required>
                                 <option value="">Tarifni tanlang</option>
                                 <option value="START">START - 780,000 so'm/oy</option>
-                                <option value="GOLD">GOLD - 1,300,000 so'm/oy</option>
-                                <option value="PLATINUM">PLATINUM - 1,900,000 so'm/oy</option>
+                                <option value="TURBO">TURBO - 1,300,000 so'm/oy</option>
+                                <option value="PREMIUM">PREMIUM - 1,900,000 so'm/oy</option>
                             </select>
                             <div class="error-message">Iltimos, tarifni tanlang</div>
                         </div>
@@ -675,7 +675,7 @@
                                 <option value="">Kursni tanlang</option>
                                 <option value="A1-A2">A1-A2 (Boshlang'ich)</option>
                                 <option value="B1-B2">B1-B2 (O'rta)</option>
-                                <option value="C1" id="c1-option" disabled>C1 (Yuqori) - Faqat PLATINUM</option>
+                                <option value="C1" id="c1-option" disabled>C1 (Yuqori) - Faqat PREMIUM</option>
                             </select>
                             <div class="error-message">Iltimos, kursni tanlang</div>
                         </div>
@@ -833,8 +833,8 @@
             courseSelect.value = '';
             c1Option.disabled = true;
 
-            // Enable C1 option only for PLATINUM
-            if (selectedTariff === 'PLATINUM') {
+            // Enable C1 option only for PREMIUM
+            if (selectedTariff === 'PREMIUM') {
                 c1Option.disabled = false;
             }
 
@@ -842,7 +842,7 @@
             Array.from(courseSelect.options).forEach(option => {
                 if (option.value === 'C1') return;
 
-                if (selectedTariff === 'PLATINUM') {
+                if (selectedTariff === 'PREMIUM') {
                     option.disabled = true;
                 } else {
                     option.disabled = false;
@@ -1034,8 +1034,8 @@
         function getTariffPrice(tariff) {
             switch (tariff) {
                 case 'START': return '780,000 so\'m';
-                case 'GOLD': return '1,300,000 so\'m';
-                case 'PLATINUM': return '1,900,000 so\'m';
+                case 'TURBO': return '1,300,000 so\'m';
+                case 'PREMIUM': return '1,900,000 so\'m';
                 default: return 'Noma\'lum';
             }
         }

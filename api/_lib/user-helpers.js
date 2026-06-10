@@ -3,6 +3,26 @@ import { normalizeRole, isSupportedRoleInput } from './roles.js';
 
 const VALID_PACKS = new Set(['A1A2', 'B1B2']);
 
+// Legacy plan names → current plan names.
+// Existing users on GOLD/PLATINUM are transparently mapped on every read/write.
+const TARIFF_MIGRATION = {
+    GOLD: 'TURBO',
+    PLATINUM: 'PREMIUM'
+};
+
+export function normalizeTariff(rawTariff) {
+    if (rawTariff == null) {
+        return rawTariff;
+    }
+
+    const value = String(rawTariff).trim().toUpperCase();
+    if (!value) {
+        return rawTariff;
+    }
+
+    return TARIFF_MIGRATION[value] || value;
+}
+
 export function normalizeUsername(rawValue) {
     return String(rawValue || '')
         .trim()
@@ -83,6 +103,13 @@ export function normalizeUserDocument(userId, data = {}) {
         return null;
     }
 
+    const subscription = data.subscription && typeof data.subscription === 'object'
+        ? {
+            ...data.subscription,
+            tariff: normalizeTariff(data.subscription.tariff)
+        }
+        : {};
+
     return {
         uid,
         username,
@@ -94,9 +121,7 @@ export function normalizeUserDocument(userId, data = {}) {
         forcePasswordChange: Boolean(data.forcePasswordChange),
         accessPacks: normalizePacks(data.accessPacks),
         deviceHashes: Array.isArray(data.deviceHashes) ? data.deviceHashes.filter(Boolean) : [],
-        subscription: data.subscription && typeof data.subscription === 'object'
-            ? data.subscription
-            : {},
+        subscription,
         updatedAt: data.updatedAt || null
     };
 }
