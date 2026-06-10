@@ -338,7 +338,7 @@
             input cells -> [data-t1-input="<id>-<i>"]                                */
     function collectTopic1ExercisesResults(topic, scope) {
         var results = [];
-        var exObj = topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises);
+        var exObj = topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises || topic.topic16Exercises || topic.topic17Exercises || topic.topic18Exercises || topic.topic19Exercises || topic.topic20Exercises);
         if (!exObj || !Array.isArray(exObj.exercises)) return results;
         var topicTitle = topic.title || '';
 
