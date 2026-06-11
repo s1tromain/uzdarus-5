@@ -64,6 +64,170 @@ if (typeof firebase !== 'undefined' && firebase.auth) {
 }
 
 /* ================================================================== */
+/*  Azure Speech SDK loader — resilient multi-CDN + auto-retry        */
+/*  ----------------------------------------------------------------  */
+/*  ROOT CAUSE of "Speech SDK yuklanmadi. Sahifani yangilang.":       */
+/*  every page loaded the SDK from a SINGLE redirect URL              */
+/*  (https://aka.ms/csspeech/jsbrowserpackageraw) as a plain <script> */
+/*  tag with NO error handling, NO retry and NO fallback. When that   */
+/*  redirect/CDN was slow or blocked — common inside the Telegram     */
+/*  Mini App in-app webview and on flaky mobile networks — the tag    */
+/*  failed silently, window.SpeechSDK stayed undefined forever and    */
+/*  the next mic tap hit the hard alert with no way to recover but a  */
+/*  full page reload.                                                 */
+/*                                                                    */
+/*  This loader fixes it: it preloads the SDK on page load, tries     */
+/*  several CDNs in turn, retries automatically with backoff, exposes */
+/*  a ready-state the UI gates the mic button on, and lets the        */
+/*  recognition flow await a ready SDK instead of erroring out.       */
+/* ================================================================== */
+var SPEECH_SDK_URLS = [
+    'https://aka.ms/csspeech/jsbrowserpackageraw',
+    'https://cdn.jsdelivr.net/npm/microsoft-cognitiveservices-speech-sdk@1.40.0/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js',
+    'https://unpkg.com/microsoft-cognitiveservices-speech-sdk@1.40.0/distrib/browser/microsoft.cognitiveservices.speech.sdk.bundle-min.js'
+];
+var SPEECH_SDK_LOAD_TIMEOUT = 12000;  /* per-attempt timeout (ms) */
+var SPEECH_SDK_MAX_RETRIES = 2;       /* extra full passes over the URL list */
+var _speechSdkPromise = null;
+
+function _speechSdkReady() {
+    return typeof window !== 'undefined'
+        && !!window.SpeechSDK
+        && typeof window.SpeechSDK.SpeechRecognizer === 'function';
+}
+
+function _delay(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
+
+/* Poll for an SDK that another <script> tag (e.g. the static one still in
+   the page) may set on its own — avoids injecting a duplicate in the
+   common case where the page tag eventually wins the race. */
+function _waitForSpeechSdk(ms) {
+    return new Promise(function (resolve) {
+        if (_speechSdkReady()) { resolve(true); return; }
+        var start = Date.now();
+        var iv = setInterval(function () {
+            if (_speechSdkReady()) { clearInterval(iv); resolve(true); }
+            /* bail out immediately if the static page tag hard-errored, so we
+               jump straight to the fallback CDNs instead of waiting it out */
+            else if (window.__speechSdkTagFailed || Date.now() - start >= ms) {
+                clearInterval(iv);
+                resolve(false);
+            }
+        }, 150);
+    });
+}
+
+/* Inject one SDK <script> tag and resolve when window.SpeechSDK appears. */
+function _injectSpeechSdkScript(url, timeout) {
+    return new Promise(function (resolve, reject) {
+        if (_speechSdkReady()) { resolve(); return; }
+
+        var done = false;
+        var timer = setTimeout(function () {
+            finish(false, new Error('Speech SDK timeout: ' + url));
+        }, timeout);
+
+        function finish(ok, err) {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            if (ok || _speechSdkReady()) resolve();
+            else reject(err || new Error('Speech SDK load error: ' + url));
+        }
+
+        var s = document.createElement('script');
+        s.src = url;
+        s.async = true;
+        s.setAttribute('data-speech-sdk-fallback', '1');
+        s.onload = function () { finish(true); };
+        s.onerror = function () {
+            try { if (s.parentNode) s.parentNode.removeChild(s); } catch (e) {}
+            finish(false, new Error('Speech SDK script error: ' + url));
+        };
+        (document.head || document.documentElement).appendChild(s);
+    });
+}
+
+/* Public: returns a Promise that resolves with window.SpeechSDK once the
+   SDK is fully loaded, retrying across CDNs automatically. Concurrent
+   callers share a single in-flight promise. */
+function _ensureSpeechSDK() {
+    if (_speechSdkReady()) return Promise.resolve(window.SpeechSDK);
+    if (_speechSdkPromise) return _speechSdkPromise;
+
+    _setSpeechSdkUiState('loading');
+
+    _speechSdkPromise = (async function () {
+        /* 1) give any pre-existing static <script> tag a head start so we
+              don't download the bundle twice on a normal connection (skipped
+              if that tag already hard-errored) */
+        if (!window.__speechSdkTagFailed &&
+            document.querySelector('script[src*="csspeech"]:not([data-speech-sdk-fallback])')) {
+            if (await _waitForSpeechSdk(4000)) return window.SpeechSDK;
+        }
+
+        /* 2) fallback chain with automatic retries */
+        var lastErr = null;
+        for (var pass = 0; pass <= SPEECH_SDK_MAX_RETRIES; pass++) {
+            for (var i = 0; i < SPEECH_SDK_URLS.length; i++) {
+                if (_speechSdkReady()) return window.SpeechSDK;
+                try {
+                    console.log('[SDK] loading attempt', pass + 1, '→', SPEECH_SDK_URLS[i]);
+                    await _injectSpeechSdkScript(SPEECH_SDK_URLS[i], SPEECH_SDK_LOAD_TIMEOUT);
+                    if (_speechSdkReady()) return window.SpeechSDK;
+                } catch (e) {
+                    lastErr = e;
+                    console.warn('[SDK] load failed:', e && e.message);
+                }
+            }
+            if (!_speechSdkReady() && pass < SPEECH_SDK_MAX_RETRIES) {
+                await _delay(800 * (pass + 1));  /* linear backoff before next pass */
+            }
+        }
+
+        if (_speechSdkReady()) return window.SpeechSDK;
+
+        _speechSdkPromise = null;   /* allow a fresh attempt on the next tap */
+        throw lastErr || new Error('Speech SDK yuklanmadi');
+    })().then(function (sdk) {
+        _setSpeechSdkUiState('ready');
+        return sdk;
+    }).catch(function (err) {
+        _setSpeechSdkUiState('error');
+        throw err;
+    });
+
+    return _speechSdkPromise;
+}
+
+/* Reflect SDK readiness on <body> so the mic buttons can show a safe
+   loading state and stay visually disabled until the SDK is ready. */
+function _setSpeechSdkUiState(state) {
+    if (typeof document === 'undefined' || !document.body) return;
+    var cls = document.body.classList;
+    cls.remove('speech-sdk-loading', 'speech-sdk-ready', 'speech-sdk-error');
+    cls.add('speech-sdk-' + state);
+}
+
+/* Kick off preloading as early as possible (and again on DOM ready in
+   case the body wasn't available yet for the UI-state class). */
+if (typeof window !== 'undefined') {
+    var _startSpeechSdkPreload = function () {
+        _setSpeechSdkUiState(_speechSdkReady() ? 'ready' : 'loading');
+        _ensureSpeechSDK().catch(function (e) {
+            console.warn('[SDK] preload failed (will retry on tap):', e && e.message);
+        });
+    };
+    if (typeof document !== 'undefined' && document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', _startSpeechSdkPreload);
+    } else {
+        _startSpeechSdkPreload();
+    }
+}
+
+/* ================================================================== */
 /*  Global recording guard (anti-spam)                                */
 /* ================================================================== */
 let _isRecording = false;
@@ -433,7 +597,7 @@ function playAudio(event) {
         .catch(err => {
             console.error('TTS error:', err);
             if (err.limitExceeded) {
-                _showPaywall();
+                _showPaywall(err.tier);
             } else {
                 alert('Audio yuklanmadi. Qayta urinib ko\'ring.');
             }
@@ -834,7 +998,18 @@ function checkPronunciation(event) {
 
             if (err.limitExceeded) {
                 showStatus('');
-                _showPaywall();
+                _showPaywall(err.tier);
+                return;
+            }
+
+            /* SDK still unavailable after every automatic retry/fallback —
+               this is now the ONLY path that mentions the SDK, and only after
+               we have genuinely exhausted the multi-CDN loader. */
+            if (err.sdkLoadFailed) {
+                showStatus("⚠️ Mikrofon tizimi yuklanmadi.\nInternetni tekshirib, qayta urinib ko‘ring.");
+                _animateFlashcardError();
+                _hapticError();
+                setTimeout(function () { showStatus(''); }, 4000);
                 return;
             }
 
@@ -1518,10 +1693,23 @@ async function _runPronunciationAssessment(referenceText) {
     }
     referenceText = referenceText.trim();
 
+    /* Ensure the Azure Speech SDK is loaded. Instead of failing instantly
+       with a hard alert (the old pre-launch bug), we wait for the resilient
+       multi-CDN loader to finish — it auto-retries before we ever surface an
+       error. checkPronunciation() already shows "Mikrofon tayyorlanmoqda…"
+       so the wait is covered by an existing status message. */
     var SpeechSDK = window.SpeechSDK;
-    if (!SpeechSDK) {
-        alert('Speech SDK yuklanmadi. Sahifani yangilang.');
-        throw new Error('Speech SDK not loaded');
+    if (!_speechSdkReady()) {
+        try {
+            SpeechSDK = await _ensureSpeechSDK();
+        } catch (sdkErr) {
+            console.error('[PRON] Speech SDK failed to load after retries:', sdkErr && sdkErr.message);
+            var le = new Error('Speech SDK yuklanmadi');
+            le.sdkLoadFailed = true;
+            throw le;
+        }
+    } else {
+        SpeechSDK = window.SpeechSDK;
     }
 
     /* ---- detect mobile ---- */
@@ -2765,6 +2953,16 @@ function _injectWordProgressCSS() {
         '.flashcard-error .flashcard-front,.flashcard-error .flashcard-back{animation:fcShake .5s ease;border:3px solid #ff4b4b!important}',
         '.flashcard-error{animation:fcShake .5s ease}',
 
+        /* ---- Speech SDK loading state (safe gate for the mic button) ----
+           While the SDK is still loading/retrying, the mic trigger buttons
+           are dimmed and show a "preparing" cursor so users get clear
+           feedback instead of a silent failure. The button stays tappable —
+           the recognition flow waits for the SDK and proceeds automatically
+           once it is ready (no hard error). */
+        'body.speech-sdk-loading .audio-button.pron-btn,body.speech-sdk-error .audio-button.pron-btn,body.speech-sdk-loading .mic-btn,body.speech-sdk-error .mic-btn{opacity:.55;cursor:progress}',
+        'body.speech-sdk-loading .audio-button.pron-btn::after{content:"⏳";margin-left:4px;font-size:13px}',
+        'body.speech-sdk-ready .audio-button.pron-btn,body.speech-sdk-ready .mic-btn{opacity:1}',
+
         /* ---- progress bar ---- */
         '.speech-progress-bar{flex:1;height:8px;background:rgba(255,255,255,.2);border-radius:4px;overflow:hidden;margin:0 16px;min-width:80px}',
         '.speech-progress-fill{height:100%;background:linear-gradient(90deg,#58cc02,#46a302);border-radius:4px;transition:width .4s ease;width:0}',
@@ -3213,7 +3411,20 @@ function _ensurePaywallStyles() {
     document.head.appendChild(s);
 }
 
-function _showPaywall() {
+function _showPaywall(tier) {
+    /* Access-control guard: the Premium upsell popup must appear ONLY for
+       users without an active subscription (demo / anonymous). An active
+       paid user (START / TURBO / PREMIUM) can only reach here by exhausting
+       their daily quota — for them we show a neutral "come back tomorrow"
+       toast instead of a "buy Premium" popup they have no reason to see.
+       Staff (admin/developer) never hit a limit server-side, so never reach
+       this at all. */
+    if (tier === 'paid') {
+        showStatus("📅 Bugungi limit tugadi.\nErtaga davom ettiring.");
+        setTimeout(function () { showStatus(''); }, 4000);
+        return;
+    }
+
     _ensurePaywallStyles();
 
     var overlay = document.getElementById(_PAYWALL_ID);
@@ -3703,7 +3914,7 @@ function _wwListen(btn) {
     _playTTS(word, null)
         .catch(function (err) {
             console.error('TTS error:', err);
-            if (err.limitExceeded) _showPaywall();
+            if (err.limitExceeded) _showPaywall(err.tier);
         })
         .finally(function () { btn.disabled = false; });
 }
@@ -3756,7 +3967,10 @@ function _wwSpeak(btn) {
             showStatus('');
             console.error('Pronunciation error:', err);
             if (err.limitExceeded) {
-                _showPaywall();
+                _showPaywall(err.tier);
+            } else if (err.sdkLoadFailed) {
+                showStatus("⚠️ Mikrofon tizimi yuklanmadi.\nInternetni tekshirib, qayta urinib ko‘ring.");
+                setTimeout(function () { showStatus(''); }, 4000);
             } else if (err.connectionFailed) {
                 /* G2: server-down verdict, same wording as the main flow. */
                 showStatus("\u26a0\ufe0f Speech server bilan aloqa yo\u2018q");
