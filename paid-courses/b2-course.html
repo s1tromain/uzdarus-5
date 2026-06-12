@@ -1286,8 +1286,37 @@
 
     <script>
         let currentUser = null;
+        let currentUserId = null;
         let userProgress = {};
         let hasSubscription = true;
+
+        // ISSUE #3 — B2 must persist completion + enforce sequential unlock just
+        // like A1/A2/B1. Source of truth = Firestore courses.B2.completedTopics
+        // (array of topic ids), mirrored to localStorage. `userProgress` stays as
+        // the in-memory view this page already renders from.
+        const B2_COURSE = 'B2';
+        function b2LocalKey() {
+            return currentUserId ? `b2_progress_${currentUserId}` : 'b2_progress_guest';
+        }
+        function b2CompletedArray() {
+            return Object.keys(userProgress)
+                .filter(k => userProgress[k] && userProgress[k].completed)
+                .map(k => parseInt(k, 10))
+                .filter(n => Number.isFinite(n))
+                .sort((a, b) => a - b);
+        }
+        function b2ApplyCompletedArray(arr) {
+            (Array.isArray(arr) ? arr : []).forEach(id => {
+                if (Number.isFinite(id)) {
+                    userProgress[id] = userProgress[id] || { completed: true, completedAt: null };
+                    userProgress[id].completed = true;
+                }
+            });
+        }
+        function b2IsPrivileged() {
+            const r = String((currentUser && currentUser.role) || '').toLowerCase();
+            return r === 'developer' || r === 'admin';
+        }
 
         // Burger Menu
         const burger = document.querySelector('.burger');
@@ -1299,38 +1328,85 @@
             });
         }
 
-        // Initialize course immediately (without waiting for Firebase)
+        // Render immediately so the page paints, then hydrate from Firestore.
         document.addEventListener('DOMContentLoaded', () => {
             initCourse();
         });
 
-        // Paid mode: Firebase and auth disabled
-        async function saveProgress(topicId) {
-            if (!currentUser) {
-                // Save locally even without Firebase
-                userProgress[topicId] = {
-                    completed: true,
-                    completedAt: new Date().toISOString()
-                };
-                updateProgressBar();
+        async function loadB2Progress() {
+            try {
+                const session = localStorage.getItem('currentUser');
+                if (session) {
+                    currentUser = JSON.parse(session);
+                    currentUserId = currentUser.id || currentUser.uid || null;
+                    window.currentUser = currentUser;
+                    window.currentUserId = currentUserId;
+                }
+            } catch (e) { /* ignore */ }
+
+            if (!currentUserId) {
+                // guest — local mirror only
+                try {
+                    const local = JSON.parse(localStorage.getItem(b2LocalKey()) || '[]');
+                    b2ApplyCompletedArray(local);
+                } catch (e) { /* ignore */ }
                 return;
             }
 
-            userProgress[topicId] = {
-                completed: true,
-                completedAt: new Date().toISOString()
-            };
-
-            // Try to save to Firebase if available
-            if (window.saveProgressFunc) {
-                try {
-                    await window.saveProgressFunc(topicId);
-                } catch (error) {
-                    console.error('Progressni saqlashda xato:', error);
-                }
+            // Wait briefly for paid-platform.js to install the real Firestore fns.
+            let attempts = 0;
+            while (!window.firebaseReady && attempts < 100) {
+                await new Promise(r => setTimeout(r, 50));
+                attempts++;
             }
-            
+
+            let loaded = false;
+            try {
+                if (window.getUserProgress) {
+                    const rp = await window.getUserProgress(currentUserId, B2_COURSE);
+                    if (rp && Array.isArray(rp.completedTopics)) {
+                        b2ApplyCompletedArray(rp.completedTopics);
+                        try { localStorage.setItem(b2LocalKey(), JSON.stringify(rp.completedTopics)); } catch (e) {}
+                        loaded = true;
+                    }
+                }
+            } catch (error) {
+                console.error('B2: Firestore load error, falling back to localStorage:', error);
+            }
+            if (!loaded) {
+                try { b2ApplyCompletedArray(JSON.parse(localStorage.getItem(b2LocalKey()) || '[]')); } catch (e) {}
+            }
+        }
+
+        // ISSUE #3 / #5 — persist completion to Firestore (monotonic union) so the
+        // next topic unlocks and stays unlocked across devices / Telegram restarts.
+        async function saveProgress(topicId) {
+            userProgress[topicId] = { completed: true, completedAt: new Date().toISOString() };
             updateProgressBar();
+
+            // local mirror first (offline-safe)
+            try { localStorage.setItem(b2LocalKey(), JSON.stringify(b2CompletedArray())); } catch (e) {}
+
+            if (!currentUserId || !window.saveUserProgress) return;
+
+            try {
+                let remote = [];
+                if (window.getUserProgress) {
+                    const rp = await window.getUserProgress(currentUserId, B2_COURSE);
+                    if (rp && Array.isArray(rp.completedTopics)) remote = rp.completedTopics;
+                }
+                const merged = Array.from(new Set([...remote, ...b2CompletedArray()]))
+                    .filter(n => Number.isFinite(n))
+                    .sort((a, b) => a - b);
+                b2ApplyCompletedArray(merged);
+                try { localStorage.setItem(b2LocalKey(), JSON.stringify(merged)); } catch (e) {}
+                await window.saveUserProgress(currentUserId, B2_COURSE, {
+                    completedTopics: merged,
+                    lastUpdated: new Date().toISOString()
+                });
+            } catch (error) {
+                console.error('B2: Firestore save error:', error);
+            }
         }
 
         function updateProgressBar() {
@@ -1864,8 +1940,11 @@
             }));
         }
 
-        function initCourse() {
-            renderTopics();
+        async function initCourse() {
+            renderTopics();            // paint immediately
+            updateProgressBar();
+            await loadB2Progress();    // hydrate completion from Firestore
+            renderTopics();            // re-render with unlock + completion state
             updateProgressBar();
         }
 
@@ -1875,7 +1954,11 @@
 
             courseData.topics.forEach(topic => {
                 const isCompleted = userProgress[topic.id]?.completed || false;
-                const isLocked = false;
+                // ISSUE #3 — sequential unlock: a customer must finish topic N-1
+                // before topic N opens. Completed topics and staff stay unlocked.
+                const prevCompleted = topic.id <= 1 ||
+                    !!(userProgress[topic.id - 1] && userProgress[topic.id - 1].completed);
+                const isLocked = !b2IsPrivileged() && !isCompleted && !prevCompleted;
                 
                 const topicBtn = document.createElement('button');
                 topicBtn.className = `topic-btn ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`;
@@ -1892,11 +1975,15 @@
                         </button>
                         ` : ''}
                     </div>
-                    ${isLocked ? `<div class="locked-overlay"><i class="fas fa-book-open"></i><p>Ochiq</p></div>` : ''}
+                    ${isLocked ? `<div class="locked-overlay"><i class="fas fa-lock"></i><p>Avval ${topic.id - 1}-mavzuni tugating</p></div>` : ''}
                 `;
 
                 if (!isLocked) {
                     topicBtn.addEventListener('click', () => loadTopic(topic.id));
+                } else {
+                    topicBtn.addEventListener('click', () => {
+                        alert(`Ushbu mavzuni ochish uchun avval ${topic.id - 1}-mavzuni tugatishingiz kerak!`);
+                    });
                 }
 
                 topicsGrid.appendChild(topicBtn);
@@ -1998,6 +2085,7 @@
                 return; // DO NOT save progress while incomplete
             }
             await saveProgress(topicId);
+            clearB2QuizDraft(topicId); // ISSUE #4 — topic done, drop the draft
             alert('Tabriklaymiz! Mavzu muvaffaqiyatli tugallandi!');
             renderTopics();
             document.getElementById('lessonContent').classList.remove('active');
@@ -2096,12 +2184,65 @@
         let currentQuestionIndex = 0;
         let userAnswers = [];
         let currentTopic = null;
+        let _b2QuizDraftTimer = 0;
+
+        // ===== ISSUE #4 — in-progress quiz draft (autosave/restore), fail-soft =====
+        function _b2QuizDraftKey(topicId) {
+            return `b2_quizdraft_${currentUserId || 'guest'}_${topicId}`;
+        }
+        function saveB2QuizDraft() {
+            try {
+                if (!currentTopic) return;
+                const blanks = {};
+                document.querySelectorAll('.blank-input-inline').forEach(inp => {
+                    if (inp.value) blanks[inp.id || inp.getAttribute('data-input-index')] = inp.value;
+                });
+                const draft = { mc: userAnswers, blanks, savedAt: Date.now() };
+                try { localStorage.setItem(_b2QuizDraftKey(currentTopic.id), JSON.stringify(draft)); } catch (e) {}
+                if (currentUserId && window.saveQuizResult) {
+                    clearTimeout(_b2QuizDraftTimer);
+                    _b2QuizDraftTimer = setTimeout(() => {
+                        window.saveQuizResult(currentUserId, currentTopic.id, { draft }, 'B2').catch(() => {});
+                    }, 600);
+                }
+            } catch (e) { /* fail-soft */ }
+        }
+        function loadB2QuizDraft(topicId) {
+            try {
+                const raw = localStorage.getItem(_b2QuizDraftKey(topicId));
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+        function clearB2QuizDraft(topicId) {
+            try { localStorage.removeItem(_b2QuizDraftKey(topicId)); } catch (e) {}
+            try {
+                if (currentUserId && window.saveQuizResult) {
+                    window.saveQuizResult(currentUserId, topicId, { draft: null }, 'B2').catch(() => {});
+                }
+            } catch (e) {}
+        }
 
         function initQuiz() {
             if (!currentTopic) return;
             currentQuestionIndex = 0;
             userAnswers = new Array(currentTopic.quiz.mcQuestions.length).fill(null);
+
+            // ISSUE #4 — restore a half-finished attempt (MC + blanks).
+            const draft = loadB2QuizDraft(currentTopic.id);
+            if (draft && Array.isArray(draft.mc)) {
+                for (let i = 0; i < userAnswers.length && i < draft.mc.length; i++) {
+                    if (draft.mc[i] !== null && draft.mc[i] !== undefined) userAnswers[i] = draft.mc[i];
+                }
+            }
             renderQuizQuestion();
+            if (draft && draft.blanks) {
+                setTimeout(() => {
+                    document.querySelectorAll('.blank-input-inline').forEach(inp => {
+                        const key = inp.id || inp.getAttribute('data-input-index');
+                        if (key in draft.blanks) inp.value = draft.blanks[key];
+                    });
+                }, 50);
+            }
         }
 
         function renderQuizQuestion() {
@@ -2114,7 +2255,7 @@
                     <div class="question-text">${question}</div>
                     <div class="quiz-options">
                         ${topic.quiz.mcOptions[index].map((option, optIndex) => `
-                            <div class="quiz-option" onclick="window.selectAnswer(${optIndex})" data-option="${optIndex}">
+                            <div class="quiz-option${userAnswers[index] === optIndex ? ' selected' : ''}" onclick="window.selectAnswer(${optIndex})" data-option="${optIndex}">
                                 ${option}
                             </div>
                         `).join('')}
@@ -2127,10 +2268,11 @@
 
         window.selectAnswer = function(optionIndex) {
             userAnswers[currentQuestionIndex] = optionIndex;
-            
+
             const options = document.querySelectorAll('.quiz-question.active .quiz-option');
             options.forEach(opt => opt.classList.remove('selected'));
             options[optionIndex].classList.add('selected');
+            saveB2QuizDraft(); // ISSUE #4 — autosave on every choice
         };
 
         window.nextQuestion = function() {
@@ -2198,7 +2340,7 @@
                 const questionWithInputs = question.replace(/___/g, () => {
                     const inputId = `blank_${qIndex}_${inputCounter}`;
                     inputCounter++;
-                    return `<input type="text" class="blank-input-inline" id="${inputId}" data-q-index="${qIndex}" data-input-index="${inputCounter - 1}" placeholder="..." />`;
+                    return `<input type="text" class="blank-input-inline" id="${inputId}" data-q-index="${qIndex}" data-input-index="${inputCounter - 1}" placeholder="..." oninput="saveB2QuizDraft()" />`;
                 });
                 
                 return `

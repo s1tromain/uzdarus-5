@@ -1141,17 +1141,14 @@
                         </div>
                         <span class="progress-badge">${percentage}%</span>
                     </div>
-                    ${topic.isLocked ? '<div class="locked-badge"><i class="fas fa-lock"></i> Obuna kerak</div>' : ''}
                 `;
 
-                if (!topic.isLocked) {
-                    card.addEventListener('click', () => openTopic(topic.id));
-                    card.style.cursor = 'pointer';
-                } else {
-                    card.addEventListener('click', () => {
-                        alert('Bu mavzu faqat obuna uchun! Obuna bo\'lish uchun kursga qayting.');
-                    });
-                }
+                // ISSUE #1 — NO PAYWALL IN VOCABULARY (demo dictionaries included).
+                // The "Obuna kerak" badge and the alert() upsell are removed.
+                // openTopic() safely no-ops for the teaser topics (words: []),
+                // so locked topics simply do nothing on click — no popup.
+                card.addEventListener('click', () => openTopic(topic.id));
+                card.style.cursor = 'pointer';
 
                 grid.appendChild(card);
             });

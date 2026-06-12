@@ -1041,10 +1041,16 @@
         let isFlipped = false;
         let learnedWords = {};
 
+        // ISSUE #2 — gate resume/save on the Firestore progress load.
+        let _vocabProgressReadyResolve;
+        const vocabProgressReady = new Promise(r => { _vocabProgressReadyResolve = r; });
+
         // ==================== INITIALIZATION ====================
         window.addEventListener('DOMContentLoaded', () => {
-            loadProgress();
-            renderTopics();
+            renderTopics(); // paint immediately
+            loadProgress()
+                .catch(e => console.log('VOCAB: load progress failed', e))
+                .finally(() => { try { _vocabProgressReadyResolve(); } catch (e) {} renderTopics(); });
 
             // Hide the loading screen quickly — topic content is already
             // rendered. The decorative background is built afterwards so it
@@ -1104,30 +1110,64 @@
             return { total, learned, percentage };
         }
 
-        function loadProgress() {
+        // ISSUE #2 / #5 — Firestore-backed load (was localStorage-only). Reads the
+        // authoritative resume counts from courses.B2.vocabulary.learnedWords, with
+        // a localStorage mirror as the offline fallback.
+        async function loadProgress() {
+            // local mirror first (instant paint / offline)
             try {
                 const saved = localStorage.getItem(getProgressStorageKey());
                 const parsed = saved ? JSON.parse(saved) : {};
                 learnedWords = parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (error) { learnedWords = {}; }
+
+            let user = null;
+            try { user = JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch (e) {}
+            if (!user || !user.id) return; // guest — local only
+
+            let attempts = 0;
+            while (!window.firebaseReady && attempts < 100) {
+                await new Promise(r => setTimeout(r, 50));
+                attempts++;
+            }
+            try {
+                if (window.getUserProgress) {
+                    const rp = await window.getUserProgress(user.id, 'B2');
+                    if (rp && rp.vocabulary && rp.vocabulary.learnedWords && typeof rp.vocabulary.learnedWords === 'object') {
+                        learnedWords = rp.vocabulary.learnedWords;
+                        try { localStorage.setItem(getProgressStorageKey(), JSON.stringify(learnedWords)); } catch (e) {}
+                    }
+                }
             } catch (error) {
-                console.log('Load progress error:', error);
-                learnedWords = {};
+                console.log('VOCAB: Firestore load error, using localStorage:', error);
             }
         }
 
-        function saveProgress() {
+        // ISSUE #2 / #6 — save after every word, isolated from lesson/XP via a nested
+        // dotted field path (courses.B2.vocabulary.learnedWords.topic_N).
+        async function saveProgress() {
             try {
                 const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
-                if (topic) {
+                if (topic && currentTopicId != null) {
                     const total = topic.words.length || 0;
                     const safeCurrent = clampProgressValue(currentCardIndex + 1, total);
                     const previous = clampProgressValue(learnedWords[`topic_${currentTopicId}`] || 0, total);
                     learnedWords[`topic_${currentTopicId}`] = Math.max(previous, safeCurrent);
                 }
 
-                localStorage.setItem(getProgressStorageKey(), JSON.stringify(learnedWords));
+                try { localStorage.setItem(getProgressStorageKey(), JSON.stringify(learnedWords)); } catch (e) {}
+
+                let user = null;
+                try { user = JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch (e) {}
+                if (!user || !user.id || currentTopicId == null || !window.saveUserProgress) return;
+
+                const value = Number(learnedWords[`topic_${currentTopicId}`] || 0);
+                await window.saveUserProgress(user.id, 'B2', {
+                    [`vocabulary.learnedWords.topic_${currentTopicId}`]: value,
+                    ['vocabulary.lastAccessed']: new Date().toISOString()
+                });
             } catch (error) {
-                console.log('Save progress error:', error);
+                console.log('VOCAB: Save progress error:', error);
             }
         }
 
@@ -1152,41 +1192,69 @@
                         </div>
                         <span class="progress-badge">${percentage}%</span>
                     </div>
-                    ${topic.isLocked ? '<div class="locked-badge"><i class="fas fa-book-open"></i> Ochiq</div>' : ''}
                 `;
 
-                if (!topic.isLocked) {
-                    card.addEventListener('click', () => openTopic(topic.id));
-                    card.style.cursor = 'pointer';
-                } else {
-                    card.addEventListener('click', () => {
-                        alert('Mavzu ochiq.');
-                    });
-                }
+                // ISSUE #1 — NO PAYWALL IN VOCABULARY. Every topic opens directly;
+                // the leftover badge and alert() have been removed.
+                card.addEventListener('click', () => openTopic(topic.id));
+                card.style.cursor = 'pointer';
 
                 grid.appendChild(card);
             });
         }
 
-        function openTopic(topicId) {
+        // ISSUE #2 — resume from the last word, with Continue/Restart + completed/replay.
+        async function openTopic(topicId) {
             const topic = vocabularyData.topics.find(t => t.id === topicId);
             if (!topic || topic.words.length === 0) return;
 
             currentTopicId = topicId;
             currentWords = [...topic.words];
-            currentCardIndex = 0;
-            window.currentWordIndex = currentCardIndex;
             isFlipped = false;
+            const total = topic.words.length;
 
             document.getElementById('topicSelection').classList.add('hidden');
             document.getElementById('flashcardScreen').classList.add('active');
 
-            /* init word progress tracking */
-            if (typeof initWordProgress === 'function') {
-                initWordProgress(topicId, topic.words.length);
+            try { await vocabProgressReady; } catch (e) { /* proceed */ }
+
+            const savedCount = Math.min(total, Math.max(0, Number(learnedWords[`topic_${topicId}`]) || 0));
+            let startIdx = 0;
+
+            if (total > 0 && savedCount >= total) {
+                const choice = (typeof window.vocabResumeChoice === 'function')
+                    ? await window.vocabResumeChoice({ mode: 'completed' })
+                    : 'replay';
+                if (choice === 'replay') {
+                    learnedWords[`topic_${topicId}`] = 0;
+                    if (typeof window.resetWordProgress === 'function') window.resetWordProgress(topicId, total);
+                    startIdx = 0;
+                } else {
+                    startIdx = total - 1;
+                }
+            } else if (savedCount > 0) {
+                const choice = (typeof window.vocabResumeChoice === 'function')
+                    ? await window.vocabResumeChoice({ mode: 'resume', wordNumber: savedCount })
+                    : 'continue';
+                if (choice === 'restart') {
+                    learnedWords[`topic_${topicId}`] = 0;
+                    if (typeof window.resetWordProgress === 'function') window.resetWordProgress(topicId, total);
+                    startIdx = 0;
+                } else {
+                    startIdx = Math.min(savedCount - 1, total - 1);
+                }
             }
-            
+
+            if (typeof window.seedWordProgress === 'function') {
+                window.seedWordProgress(topicId, total, startIdx);
+            } else if (typeof initWordProgress === 'function') {
+                initWordProgress(topicId, total);
+            }
+
+            currentCardIndex = startIdx;
+            window.currentWordIndex = currentCardIndex;
             updateCard();
+            saveProgress();
         }
 
         function updateCard() {
@@ -1281,21 +1349,30 @@
         }
 
         function showCompletionScreen() {
+            const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
+            // Mark complete so reopening offers replay/review (ISSUE #2).
+            if (topic) learnedWords[`topic_${currentTopicId}`] = topic.words.length;
             saveProgress();
             document.getElementById('flashcardScreen').classList.remove('active');
             document.getElementById('completionScreen').classList.add('active');
-            
-            const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
-            document.getElementById('completionMessage').textContent = 
-                `Siz "${topic.name}" mavzusidagi barcha so'zlarni ko'rib chiqdingiz!`;
+
+            const titleEl = document.querySelector('#completionScreen .completion-title');
+            if (titleEl) titleEl.textContent = 'Mavzu tugatildi!';
+            document.getElementById('completionMessage').textContent =
+                `✅ Mavzu tugatildi! "${topic.name}" — ${topic.words.length} ta so'z o'rganildi.`;
         }
 
         function restartTopic() {
+            const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
+            const total = topic ? topic.words.length : 0;
+            learnedWords[`topic_${currentTopicId}`] = 0;
+            if (total && typeof window.resetWordProgress === 'function') window.resetWordProgress(currentTopicId, total);
             currentCardIndex = 0;
             window.currentWordIndex = currentCardIndex;
             document.getElementById('completionScreen').classList.remove('active');
             document.getElementById('flashcardScreen').classList.add('active');
             updateCard();
+            saveProgress();
         }
 
         function backToTopics() {

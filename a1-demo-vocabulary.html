@@ -1287,25 +1287,13 @@
                         </span>
                         <span class="progress-badge">${percentage}%</span>
                     </div>
-                    ${topic.isLocked ? `
-                        <div class="locked-badge">
-                            <i class="fas fa-lock"></i> Premium
-                        </div>
-                    ` : ''}
                 `;
 
-                if (!topic.isLocked) {
-                    card.onclick = () => startTopic(topic.id);
-                    card.style.cursor = 'pointer';
-                } else {
-                    // Для заблокированных тем показываем сообщение при клике
-                    card.onclick = () => {
-                        if (confirm('Это Premium контент. Хотите оформить подписку?')) {
-                            window.location.href = 'tolov.html';
-                        }
-                    };
-                    card.style.cursor = 'pointer';
-                }
+                // ISSUE #1 — NO PAYWALL IN VOCABULARY (demo dictionaries included).
+                // The "Premium" lock badge and the purchase confirm()/redirect have
+                // been removed. Every demo topic opens directly; no popup ever fires.
+                card.onclick = () => startTopic(topic.id);
+                card.style.cursor = 'pointer';
 
                 grid.appendChild(card);
             });
@@ -1313,6 +1301,12 @@
 
         // ==================== START TOPIC ====================
         function startTopic(topicId) {
+            // ISSUE #1 — locked demo topics are empty teasers (no words). Opening
+            // one would show an empty/"completed" screen, so we simply do nothing.
+            // This keeps the click harmless after removing the old paywall popup.
+            var __chk = vocabularyData.topics.find(function (t) { return t.id === topicId; });
+            if (!__chk || !__chk.words || __chk.words.length === 0) return;
+
             currentTopicId = topicId;
             currentWordIndex = 0;
             window.currentWordIndex = currentWordIndex;

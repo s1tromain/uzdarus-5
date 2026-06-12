@@ -1971,28 +1971,20 @@
         
         // ==================== FIREBASE IMPORTS ====================
         // Асинхронная загрузка Firebase БЕЗ блокировки страницы
-        (async function loadFirebase() {
-            console.log('📦 Starting Firebase module import...');
-            try {
-                const saveQuizResult = async () => true;
-                const getUserQuizResults = async () => ({});
-                const saveUserProgress = async () => true;
-                const getUserProgress = async () => ({});
-                const logActivity = async () => true;
-                
-                // Делаем функции доступными глобально
-                window.saveQuizResult = saveQuizResult;
-                window.getUserQuizResults = getUserQuizResults;
-                window.saveUserProgress = saveUserProgress;
-                window.getUserProgress = getUserProgress;
-                window.logActivity = logActivity;
-                
-                console.log('✅ Firebase module loaded successfully');
-                window.firebaseReady = true;
-            } catch (error) {
-                console.log('⚠️ Firebase module not loaded, using localStorage fallback');
-                window.firebaseReady = true; // Ставим true чтобы не ждать
-            }
+        (function installProgressFallbacks() {
+            // ISSUE #3 / #5 — DO NOT clobber the real Firestore functions installed
+            // by paid-platform.js (loaded as a module BEFORE this inline module).
+            // Previously this overwrote them with no-op stubs so course completion
+            // never reached Firestore (unlock state lost on a new device / after
+            // logout / on Telegram restart). Only install a fallback when absent.
+            const noopTrue = async () => true;
+            const noopObj  = async () => ({});
+            window.saveQuizResult     = window.saveQuizResult     || noopTrue;
+            window.getUserQuizResults = window.getUserQuizResults || noopObj;
+            window.saveUserProgress   = window.saveUserProgress   || noopTrue;
+            window.getUserProgress    = window.getUserProgress    || noopObj;
+            window.logActivity        = window.logActivity        || noopTrue; // not provided by paid-platform.js
+            window.firebaseReady = true;
         })();
         
         // ==================== USER SESSION ====================
@@ -2002,7 +1994,8 @@
         // Делаем переменные доступными глобально
         window.currentUser = null;
         window.currentUserId = null;
-        window.firebaseReady = false; // Изначально false
+        // ISSUE #3 — do not force firebaseReady back to false (caused a 5s stall).
+        if (typeof window.firebaseReady !== 'boolean') window.firebaseReady = false;
 
         // Проверка авторизации
         function checkAuth() {
@@ -7205,8 +7198,22 @@
             }
 
             try {
+                // ISSUE #3 / #5 — RACE GUARD: completion is monotonic, so union with
+                // the authoritative remote copy before writing. A stale/timed-out
+                // in-memory array can never regress already-unlocked topics.
+                let remote = [];
+                if (window.getUserProgress) {
+                    const rp = await window.getUserProgress(window.currentUserId, 'B1');
+                    if (rp && Array.isArray(rp.completedTopics)) remote = rp.completedTopics;
+                }
+                const merged = Array.from(new Set([...remote, ...completedTopics]))
+                    .filter(n => Number.isFinite(n))
+                    .sort((a, b) => a - b);
+                completedTopics = merged;
+                try { localStorage.setItem(localKey, JSON.stringify(merged)); } catch (e) {}
+
                 await window.saveUserProgress(window.currentUserId, 'B1', {
-                    completedTopics,
+                    completedTopics: merged,
                     lastUpdated: new Date().toISOString()
                 });
                 return true;
@@ -7434,10 +7441,73 @@
         }
 
         // Load lesson content
+        // ================= ISSUE #4 — in-progress quiz draft (autosave/restore) =================
+        // Additive + fail-soft. Saves selected options + typed answers after every
+        // change (localStorage instantly + Firestore quizResults.draft cross-device)
+        // and re-applies them on reopen. Cleared on completion.
+        let _quizDraftTimer = 0;
+        function _quizDraftKey(topicId) {
+            let uid = window.currentUserId;
+            if (!uid) { try { uid = JSON.parse(localStorage.getItem('currentUser')).id; } catch (e) { uid = 'guest'; } }
+            return `b1_quizdraft_${uid}_${topicId}`;
+        }
+        function saveQuizDraft(topicId) {
+            try {
+                const mc = {};
+                document.querySelectorAll('#quizSection .quiz-options').forEach(cont => {
+                    const q = cont.getAttribute('data-question');
+                    const sel = cont.querySelector('.quiz-option.selected');
+                    if (q != null && sel) mc[q] = sel.getAttribute('data-option');
+                });
+                const blanks = {};
+                document.querySelectorAll('#quizSection input[data-blank]').forEach(inp => {
+                    if (inp.value) blanks[inp.getAttribute('data-blank')] = inp.value;
+                });
+                const draft = { mc, blanks, savedAt: Date.now() };
+                try { localStorage.setItem(_quizDraftKey(topicId), JSON.stringify(draft)); } catch (e) {}
+                if (window.currentUserId && window.saveQuizResult) {
+                    clearTimeout(_quizDraftTimer);
+                    _quizDraftTimer = setTimeout(() => {
+                        window.saveQuizResult(window.currentUserId, topicId, { draft }, 'B1').catch(() => {});
+                    }, 600);
+                }
+            } catch (e) { /* fail-soft */ }
+        }
+        function restoreQuizDraft(topicId) {
+            try {
+                let draft = null;
+                const fromFs = userQuizResults && userQuizResults[`topic_${topicId}`] && userQuizResults[`topic_${topicId}`].draft;
+                if (fromFs) draft = fromFs;
+                else { const raw = localStorage.getItem(_quizDraftKey(topicId)); if (raw) draft = JSON.parse(raw); }
+                if (!draft) return;
+                if (draft.mc) Object.keys(draft.mc).forEach(q => {
+                    const cont = document.querySelector(`#quizSection .quiz-options[data-question="${q}"]`);
+                    if (!cont) return;
+                    const opt = cont.querySelector(`.quiz-option[data-option="${draft.mc[q]}"]`);
+                    if (opt) {
+                        cont.querySelectorAll('.quiz-option').forEach(o => o.classList.remove('selected'));
+                        opt.classList.add('selected');
+                    }
+                });
+                if (draft.blanks) Object.keys(draft.blanks).forEach(b => {
+                    const inp = document.querySelector(`#quizSection input[data-blank="${b}"]`);
+                    if (inp) inp.value = draft.blanks[b];
+                });
+            } catch (e) { /* fail-soft */ }
+        }
+        function clearQuizDraft(topicId) {
+            try { localStorage.removeItem(_quizDraftKey(topicId)); } catch (e) {}
+            try {
+                if (window.currentUserId && window.saveQuizResult) {
+                    window.saveQuizResult(window.currentUserId, topicId, { draft: null }, 'B1').catch(() => {});
+                }
+            } catch (e) {}
+        }
+
         function loadLesson(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
-            
+
             // Логируем открытие темы
             if (currentUser && window.logActivity) {
                 window.logActivity(
@@ -7550,19 +7620,28 @@
                     const allOptions = questionContainer.querySelectorAll('.quiz-option');
                     allOptions.forEach(opt => opt.classList.remove('selected'));
                     this.classList.add('selected');
+                    saveQuizDraft(topicId); // ISSUE #4 — autosave on every choice
                 });
+            });
+
+            // ISSUE #4 — autosave typed (text/blank) answers as the user types.
+            document.querySelectorAll('#quizSection input[data-blank]').forEach(inp => {
+                inp.addEventListener('input', () => saveQuizDraft(topicId));
             });
 
             // Submit button event listener
             document.getElementById('submitQuiz').addEventListener('click', async () => {
                 await checkAnswers(topicId);
             });
-            
+
             // Если есть сохраненные результаты, показываем их
             if (topicResults) {
                 setTimeout(() => {
                     displaySavedResults(topic, topicResults, topicId);
                 }, 300);
+            } else {
+                // ISSUE #4 — restore a half-finished attempt (only if not graded).
+                setTimeout(() => restoreQuizDraft(topicId), 160);
             }
 
             // Load extra exercises for topic 3
@@ -8964,6 +9043,7 @@
                 completeBtn.onclick = async function () {
                     if (!completedTopics.includes(topicId)) {
                         completedTopics.push(topicId);
+                        clearQuizDraft(topicId); // ISSUE #4 — topic done, drop the draft
                         try { await saveProgressToFirebase(); } catch (e) { console.error(e); }
                         updateProgress();
                         loadTopics();
@@ -9484,7 +9564,8 @@
                     if (!completedTopics.includes(topicId)) {
                         console.log('✅ COMPLETING: Adding topic to completed list...', topicId);
                         completedTopics.push(topicId);
-                        
+                        clearQuizDraft(topicId); // ISSUE #4 — topic done, drop the draft
+
                         // Сохраняем прогресс в Firebase
                         console.log('💾 SAVING: Calling saveProgressToFirebase...');
                         const saved = await saveProgressToFirebase();

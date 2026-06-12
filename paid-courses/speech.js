@@ -466,117 +466,17 @@ function _showStatusSafe(text) {
 }
 
 function _goToDemoPricing() {
-    if (_redirecting) return;
-    _redirecting = true;
-
-    try {
-        var path = (window.location && window.location.pathname || '').toLowerCase();
-        if (!path || path === '/' || /\/index\.html$/.test(path)) {
-            var pricingEl = document.getElementById('pricing');
-            if (pricingEl && pricingEl.scrollIntoView) {
-                pricingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                setTimeout(function () {
-                    _redirecting = false;
-                }, 1000);
-                return;
-            }
-        }
-
-        window.location.href = '/index.html#pricing';
-        setTimeout(function () {
-            _redirecting = false;
-        }, 3000);
-    } catch (error) {
-        _redirecting = false;
-        console.debug('[PAYWALL ERROR]', error);
-    }
+    /* ISSUE #1 — demo pages must not push users to checkout. No redirect. */
 }
 
 function _handleDemoPaywall() {
-    try {
-        if (_redirecting || _demoPaywallRedirectTimer) return;
-
-        if (!_demoPaywallClicked) {
-            _demoPaywallClicked = true;
-
-            _showStatusSafe('\uD83D\uDD12 \u0422\u043E\u043B\u044C\u043A\u043E Premium\n\u041D\u0430\u0436\u043C\u0438\u0442\u0435 \u0435\u0449\u0451 \u0440\u0430\u0437');
-
-            clearTimeout(_demoPaywallResetTimer);
-            _demoPaywallResetTimer = setTimeout(function () {
-                _demoPaywallClicked = false;
-                _demoPaywallResetTimer = 0;
-            }, 2000);
-
-            return;
-        }
-
-        _demoPaywallClicked = false;
-        clearTimeout(_demoPaywallResetTimer);
-        _redirecting = true;
-
-        _showStatusSafe('\uD83D\uDD12 \u042D\u0442\u043E \u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E \u0432 Premium\n\u041F\u0435\u0440\u0435\u0445\u043E\u0434\u0438\u043C \u043A \u043E\u043F\u043B\u0430\u0442\u0435\u2026');
-
-        clearTimeout(_demoPaywallRedirectTimer);
-        _demoPaywallRedirectTimer = setTimeout(function () {
-            _demoPaywallRedirectTimer = 0;
-            try {
-                var path = (window.location && window.location.pathname || '').toLowerCase();
-                if (!path || path === '/' || /\/index\.html$/.test(path)) {
-                    var pricingEl = document.getElementById('pricing');
-                    if (pricingEl && pricingEl.scrollIntoView) {
-                        pricingEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        setTimeout(function () {
-                            _redirecting = false;
-                        }, 1000);
-                        return;
-                    }
-                }
-
-                window.location.href = '/index.html#pricing';
-                setTimeout(function () {
-                    _redirecting = false;
-                }, 3000);
-            } catch (error) {
-                _redirecting = false;
-                console.debug('[PAYWALL ERROR]', error);
-            }
-        }, 1200);
-    } catch (error) {
-        _redirecting = false;
-        console.debug('[PAYWALL ERROR]', error);
-    }
+    /* ISSUE #1 — NO PAYWALL IN VOCABULARY (demo dictionaries included).
+       Previously this showed a "Только Premium" prompt and then redirected
+       the user to the pricing page. That is a paywall trigger and must never
+       fire while studying words. The pronunciation mic stays visually gated
+       on demo-locked topics (cost protection for the paid Azure speech API),
+       but pressing it now does nothing intrusive — no popup, no redirect. */
 }
-
-/* ================================================================== */
-/*  Sound effects (fire-and-forget, safe if autoplay blocked)         */
-/* ================================================================== */
-function _playSound(src) {
-    try {
-        if (!src) return;
-        if (!_playSound._disabled) _playSound._disabled = new Set();
-        if (_playSound._disabled.has(src)) return;
-
-        var a = new Audio();
-        a.volume = 0.5;
-        a.onerror = function () {
-            _playSound._disabled.add(src);
-        };
-        a.src = src;
-        a.play().catch(function () { /* autoplay blocked — ignore */ });
-    } catch { /* Audio constructor unavailable — ignore */ }
-}
-
-function _playSoundSuccess() { _playSound('/sounds/success.mp3'); }
-function _playSoundError()   { _playSound('/sounds/error.mp3'); }
-
-/* ================================================================== */
-/*  Haptic feedback (vibrate API, safe no-op on unsupported)          */
-/* ================================================================== */
-function _haptic(ms) {
-    try { if (navigator.vibrate) navigator.vibrate(ms || 30); } catch {}
-}
-function _hapticSuccess() { _haptic(40); }
-function _hapticError()   { _haptic([30, 50, 30]); }
 
 /* ================================================================== */
 /*  TTS playback                                                      */
@@ -2724,6 +2624,113 @@ function isWordCompleted(topicId, wordIndex) {
 }
 
 /* ================================================================== */
+/*  ISSUE #2 — Vocabulary RESUME helpers                              */
+/*  ----------------------------------------------------------------  */
+/*  The vocabulary page persists the authoritative resume position to */
+/*  Firestore (courses.<COURSE>.vocabulary.learnedWords[topic_N]). On  */
+/*  topic open it seeds the per-word unlock array below so the learner */
+/*  resumes exactly where they left off, the progress bar matches, and */
+/*  `_isWordLocked` never blocks the already-studied words. These are  */
+/*  pure data ops — they do NOT move window.currentWordIndex (the page */
+/*  owns that), so the old desync that caused "random word" jumps is   */
+/*  gone.                                                              */
+/* ================================================================== */
+
+/**
+ * Seed the unlock array so words [0..startIdx] are accessible and the
+ * frontier (active word) is `startIdx`. Everything after stays locked.
+ */
+function seedWordProgress(topicId, wordCount, startIdx) {
+    if (!topicId || !wordCount || wordCount < 1) return;
+    var progress = _loadProgress();
+    var key = String(topicId);
+    var arr = new Array(wordCount).fill(false);
+    var frontier = Math.max(0, Math.min(wordCount - 1, startIdx | 0));
+    for (var i = 0; i <= frontier; i++) arr[i] = true;
+    progress[key] = arr;
+    _saveProgress(progress);
+    try { _applyWordProgressUI(topicId); } catch (e) { /* DOM not ready yet */ }
+    updateProgressBar(topicId, wordCount);
+}
+
+/** Reset a topic to the beginning (only word 0 unlocked). */
+function resetWordProgress(topicId, wordCount) {
+    if (!topicId || !wordCount || wordCount < 1) return;
+    var progress = _loadProgress();
+    progress[String(topicId)] = (function () {
+        var a = new Array(wordCount).fill(false);
+        a[0] = true;
+        return a;
+    })();
+    _saveProgress(progress);
+    try { _applyWordProgressUI(topicId); } catch (e) { /* ignore */ }
+    updateProgressBar(topicId, wordCount);
+}
+
+/**
+ * Lightweight async choice modal used on topic open.
+ *   opts.mode = 'resume'    -> "Davom etish" / "Boshidan boshlash"
+ *   opts.mode = 'completed' -> "Qayta o‘rganish" / "Ko‘rib chiqish"
+ * Resolves to: 'continue' | 'restart' | 'replay' | 'review'.
+ * Self-contained styling so it works on every vocabulary page.
+ */
+function vocabResumeChoice(opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+        var prior = document.getElementById('vocabResumeModal');
+        if (prior) prior.remove();
+
+        var completed = opts.mode === 'completed';
+        var wordNumber = Number(opts.wordNumber) || 0;
+
+        var ov = document.createElement('div');
+        ov.id = 'vocabResumeModal';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:10001;display:flex;align-items:center;'
+            + 'justify-content:center;background:rgba(10,15,35,.78);backdrop-filter:blur(4px);'
+            + '-webkit-backdrop-filter:blur(4px);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif';
+
+        var title = completed ? '✅ Mavzu tugatilgan' : '↩️ Davom etamizmi?';
+        var msg = completed
+            ? 'Siz bu mavzudagi barcha so‘zlarni o‘rgangansiz. Qaytadan o‘rganasizmi?'
+            : ('Siz ' + wordNumber + '-so‘zda to‘xtagansiz. Davom etasizmi yoki boshidan boshlaysizmi?');
+        var primaryLabel = completed ? 'Qayta o‘rganish' : 'Davom etish';
+        var primaryVal = completed ? 'replay' : 'continue';
+        var secondaryLabel = completed ? 'Ko‘rib chiqish' : 'Boshidan boshlash';
+        var secondaryVal = completed ? 'review' : 'restart';
+
+        ov.innerHTML =
+            '<div style="max-width:380px;width:90%;background:#fff;border-radius:22px;padding:28px 24px;'
+          +   'text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.35)">'
+          +   '<div style="font-size:1.2rem;font-weight:800;color:#1a1a2e;margin-bottom:8px">' + title + '</div>'
+          +   '<div style="font-size:.92rem;color:#555;line-height:1.5;margin-bottom:22px">' + msg + '</div>'
+          +   '<button data-val="' + primaryVal + '" style="display:block;width:100%;padding:14px 0;border:none;'
+          +     'border-radius:14px;font-size:1rem;font-weight:800;cursor:pointer;color:#fff;margin-bottom:10px;'
+          +     'background:linear-gradient(135deg,#667eea,#764ba2)">' + primaryLabel + '</button>'
+          +   '<button data-val="' + secondaryVal + '" style="display:block;width:100%;padding:13px 0;border:1px solid #ddd;'
+          +     'border-radius:14px;font-size:.95rem;font-weight:700;cursor:pointer;color:#555;background:#f5f6fa">'
+          +     secondaryLabel + '</button>'
+          + '</div>';
+
+        function done(val) {
+            ov.remove();
+            resolve(val);
+        }
+        ov.addEventListener('click', function (e) {
+            var btn = e.target.closest('button[data-val]');
+            if (btn) { done(btn.getAttribute('data-val')); return; }
+            if (e.target === ov) done(completed ? 'review' : 'continue');
+        });
+        document.body.appendChild(ov);
+    });
+}
+
+if (typeof window !== 'undefined') {
+    window.seedWordProgress = seedWordProgress;
+    window.resetWordProgress = resetWordProgress;
+    window.vocabResumeChoice = vocabResumeChoice;
+}
+
+/* ================================================================== */
 /*  Flashcard Animations (success / error)                            */
 /* ================================================================== */
 
@@ -3412,62 +3419,24 @@ function _ensurePaywallStyles() {
 }
 
 function _showPaywall(tier) {
-    /* Access-control guard: the Premium upsell popup must appear ONLY for
-       users without an active subscription (demo / anonymous). An active
-       paid user (START / TURBO / PREMIUM) can only reach here by exhausting
-       their daily quota — for them we show a neutral "come back tomorrow"
-       toast instead of a "buy Premium" popup they have no reason to see.
-       Staff (admin/developer) never hit a limit server-side, so never reach
-       this at all. */
+    /* ISSUE #1 — NO PAYWALL IN VOCABULARY.
+       The Premium purchase popup ("Premium olish / 99 000 so'm/oy") must
+       NEVER appear while using vocabulary. speech.js is loaded only on the
+       *-vocabulary.html pages, so the upsell card is no longer rendered here.
+       Real access is still enforced server-side (the TTS / speech endpoints
+       return 403 once a daily quota is reached) and by paid-platform.js —
+       this function only reacts to that 403 with a neutral, non-purchase
+       toast.
+         - tier 'paid' (active subscriber who exhausted a daily quota):
+           a neutral "come back tomorrow" note.
+         - demo / anonymous: a neutral note with NO price, NO buy button and
+           NO redirect to checkout. */
     if (tier === 'paid') {
-        showStatus("📅 Bugungi limit tugadi.\nErtaga davom ettiring.");
-        setTimeout(function () { showStatus(''); }, 4000);
-        return;
+        showStatus('📅 Bugungi limit tugadi.\nErtaga davom ettiring.');
+    } else {
+        showStatus('🔊 Ovoz funksiyasi to‘liq versiyada mavjud.');
     }
-
-    _ensurePaywallStyles();
-
-    var overlay = document.getElementById(_PAYWALL_ID);
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'pw-overlay';
-        overlay.id = _PAYWALL_ID;
-        overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) _closePaywall();
-        });
-        document.body.appendChild(overlay);
-    }
-
-    overlay.innerHTML =
-        '<div class="pw-card">'
-      +   '<div class="pw-ribbon">-50%</div>'
-      +   '<div class="pw-emoji-row">\uD83C\uDF93</div>'
-      +   '<div class="pw-title">Rus tilida erkin gaplashishni<br>xohlaysizmi?</div>'
-      +   '<div class="pw-subtitle">1000+ talaba allaqachon natijaga erishdi</div>'
-      +   '<ul class="pw-features">'
-      +     '<li><span class="pw-feat-icon">\uD83C\uDFA4</span><span class="pw-feat-text">Cheksiz talaffuz tekshiruvi</span></li>'
-      +     '<li><span class="pw-feat-icon">\uD83D\uDD0A</span><span class="pw-feat-text">Professional ovozlar</span></li>'
-      +     '<li><span class="pw-feat-icon">\uD83D\uDCC8</span><span class="pw-feat-text">Tez o\u2018sish tizimi (XP + level)</span></li>'
-      +     '<li><span class="pw-feat-icon">\uD83E\uDDE0</span><span class="pw-feat-text">Xatolarni tahlil qilish</span></li>'
-      +   '</ul>'
-      +   '<div class="pw-pricing">'
-      +     '<div class="pw-price-old">199 000 so\u2018m/oy</div>'
-      +     '<div class="pw-price-row">'
-      +       '<span class="pw-price-new">99 000</span>'
-      +       '<span class="pw-price-period">so\u2018m/oy</span>'
-      +     '</div>'
-      +     '<span class="pw-price-save">Bugun 50% chegirma \u{1F525}</span>'
-      +   '</div>'
-      +   '<button class="pw-btn-primary" onclick="_goToPremium()">Premium olish \u{2192}</button>'
-      +   '<div class="pw-btn-sub">Istalgan vaqtda bekor qilish mumkin</div>'
-      +   '<div class="pw-trust">'
-      +     '<span><span class="pw-trust-icon">\uD83D\uDD12</span>Xavfsiz to\u2018lov</span>'
-      +     '<span><span class="pw-trust-icon">\u2705</span>30 kun kafolat</span>'
-      +   '</div>'
-      +   '<button class="pw-dismiss" onclick="_closePaywall()">Keyinroq</button>'
-      + '</div>';
-
-    overlay.classList.add('active');
+    setTimeout(function () { showStatus(''); }, 4000);
 }
 
 function _closePaywall() {

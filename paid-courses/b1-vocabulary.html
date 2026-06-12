@@ -2710,10 +2710,16 @@
         let isFlipped = false;
         let learnedWords = {};
 
+        // ISSUE #2 — gate resume/save on the Firestore progress load.
+        let _vocabProgressReadyResolve;
+        const vocabProgressReady = new Promise(r => { _vocabProgressReadyResolve = r; });
+
         // ==================== INITIALIZATION ====================
         window.addEventListener('DOMContentLoaded', function() {
-            // Load user progress (async, but don't wait)
-            loadUserProgress().catch(err => console.log('Progress load failed:', err));
+            // Load user progress, then signal readiness (resume waits on this).
+            loadUserProgress()
+                .catch(err => console.log('Progress load failed:', err))
+                .finally(() => { try { _vocabProgressReadyResolve(); } catch (e) {} });
 
             // Always show topic selection (rendered synchronously)
             loadTopics();
@@ -2795,46 +2801,67 @@
                         </span>
                         <span class="progress-badge">${percentage}%</span>
                     </div>
-                    ${topic.isLocked ? `
-                        <div class="locked-badge">
-                            <i class="fas fa-book-open"></i> Ochiq
-                        </div>
-                    ` : ''}
                 `;
 
-                if (!topic.isLocked) {
-                    card.onclick = () => startTopic(topic.id);
-                    card.style.cursor = 'pointer';
-                } else {
-                    // Для заблокированных тем показываем сообщение при клике
-                    card.onclick = () => {
-                        if (confirm('Это Ochiq контент. Хотите оформить подписку?')) {
-                            window.location.href = '../tolov.html';
-                        }
-                    };
-                    card.style.cursor = 'pointer';
-                }
+                // ISSUE #1 — NO PAYWALL IN VOCABULARY. All vocabulary topics open
+                // directly; the leftover confirm()/redirect-to-checkout branch has
+                // been removed so no purchase popup can ever fire here.
+                card.onclick = () => startTopic(topic.id);
+                card.style.cursor = 'pointer';
 
                 grid.appendChild(card);
             });
         }
 
-        // ==================== START TOPIC ====================
-        function startTopic(topicId) {
+        // ==================== START TOPIC (ISSUE #2 — resume) ====================
+        async function startTopic(topicId) {
             currentTopicId = topicId;
-            currentWordIndex = 0;
-            window.currentWordIndex = currentWordIndex;
-            
+            const topic = vocabularyData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic) return;
+            const total = topic.words.length;
+
             document.getElementById('topicSelection').classList.add('hidden');
             document.getElementById('flashcardScreen').classList.add('active');
 
-            /* init word progress tracking */
-            var topic = vocabularyData.topics.find(function(t) { return t.id === topicId; });
-            if (topic && typeof initWordProgress === 'function') {
-                initWordProgress(topicId, topic.words.length);
+            try { await vocabProgressReady; } catch (e) { /* proceed */ }
+
+            const savedCount = Math.min(total, Math.max(0, Number(learnedWords[`topic_${topicId}`]) || 0));
+            let startIdx = 0;
+
+            if (total > 0 && savedCount >= total) {
+                const choice = (typeof window.vocabResumeChoice === 'function')
+                    ? await window.vocabResumeChoice({ mode: 'completed' })
+                    : 'replay';
+                if (choice === 'replay') {
+                    learnedWords[`topic_${topicId}`] = 0;
+                    if (typeof window.resetWordProgress === 'function') window.resetWordProgress(topicId, total);
+                    startIdx = 0;
+                } else {
+                    startIdx = total - 1;
+                }
+            } else if (savedCount > 0) {
+                const choice = (typeof window.vocabResumeChoice === 'function')
+                    ? await window.vocabResumeChoice({ mode: 'resume', wordNumber: savedCount })
+                    : 'continue';
+                if (choice === 'restart') {
+                    learnedWords[`topic_${topicId}`] = 0;
+                    if (typeof window.resetWordProgress === 'function') window.resetWordProgress(topicId, total);
+                    startIdx = 0;
+                } else {
+                    startIdx = Math.min(savedCount - 1, total - 1);
+                }
             }
-            
+
+            if (typeof window.seedWordProgress === 'function') {
+                window.seedWordProgress(topicId, total, startIdx);
+            } else if (typeof initWordProgress === 'function') {
+                initWordProgress(topicId, total);
+            }
+
+            currentWordIndex = startIdx;
+            window.currentWordIndex = currentWordIndex;
             loadCard();
+            saveProgress();
         }
 
         // ==================== LOAD CARD ====================
@@ -2885,11 +2912,12 @@
 
             currentWordIndex = nextIdx;
             window.currentWordIndex = currentWordIndex;
-            
+
             if (currentWordIndex >= topic.words.length) {
                 showCompletion();
             } else {
                 loadCard();
+                saveProgress(); // ISSUE #2 — persist after EVERY word
             }
         }
 
@@ -2931,25 +2959,33 @@
             };
         };
 
-        // ==================== COMPLETION ====================
+        // ==================== COMPLETION (ISSUE #2 — "Topic completed" + replay) ====================
         function showCompletion() {
             document.getElementById('flashcardScreen').classList.remove('active');
             document.getElementById('completionScreen').classList.add('active');
-            
+
             const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
-            document.getElementById('completionMessage').textContent = 
-                `Siz "${topic.name}" mavzusidan ${topic.words.length} ta so'zni ko'rib chiqdingiz!`;
-            
+            if (topic) learnedWords[`topic_${currentTopicId}`] = topic.words.length;
+            const titleEl = document.querySelector('#completionScreen .completion-title');
+            if (titleEl) titleEl.textContent = 'Mavzu tugatildi!';
+            document.getElementById('completionMessage').textContent =
+                `✅ Mavzu tugatildi! "${topic.name}" — ${topic.words.length} ta so'z o'rganildi.`;
+
             // Save progress
             saveProgress();
         }
 
         function restartTopic() {
+            const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
+            const total = topic ? topic.words.length : 0;
+            learnedWords[`topic_${currentTopicId}`] = 0;
+            if (total && typeof window.resetWordProgress === 'function') window.resetWordProgress(currentTopicId, total);
             currentWordIndex = 0;
             window.currentWordIndex = currentWordIndex;
             document.getElementById('completionScreen').classList.remove('active');
             document.getElementById('flashcardScreen').classList.add('active');
             loadCard();
+            saveProgress(); // persist the reset
         }
 
         function backToTopics() {
@@ -3052,16 +3088,14 @@
             }
         }
 
+        // ISSUE #2 / #6 — save after every word, isolated from lesson/XP data via a
+        // nested dotted field path (courses.B1.vocabulary.learnedWords.topic_N).
         async function saveProgress() {
             try {
                 const userSession = localStorage.getItem('currentUser');
-                if (!userSession) {
-                    console.log('📚 VOCAB: No user session, cannot save');
-                    return;
-                }
+                if (!userSession || currentTopicId == null) return;
                 const user = JSON.parse(userSession);
-                
-                // Update learned count
+
                 const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
                 if (topic && currentWordIndex >= 0) {
                     const total = topic.words.length || 0;
@@ -3069,62 +3103,17 @@
                     const previous = Math.min(total, Math.max(0, Number(learnedWords[`topic_${currentTopicId}`] || 0)));
                     learnedWords[`topic_${currentTopicId}`] = Math.max(previous, safeCurrent);
                 }
-                
-                // Always save to localStorage first with userId
-                localStorage.setItem(`b1_vocabulary_progress_${user.id}`, JSON.stringify(learnedWords));
-                console.log('✅ VOCAB: Progress saved to localStorage for user', user.id);
-                
-                console.log('📚 VOCAB: Saving progress to Firebase...', { 
-                    userId: user.id, 
-                    learnedWords,
-                    topicCount: Object.keys(learnedWords).length 
+
+                try { localStorage.setItem(`b1_vocabulary_progress_${user.id}`, JSON.stringify(learnedWords)); } catch (e) {}
+
+                if (!window.saveUserProgress) return;
+                const value = Number(learnedWords[`topic_${currentTopicId}`] || 0);
+                await window.saveUserProgress(user.id, 'B1', {
+                    [`vocabulary.learnedWords.topic_${currentTopicId}`]: value,
+                    ['vocabulary.lastAccessed']: new Date().toISOString()
                 });
-                
-                // Wait for Firebase if needed
-                if (!window.saveUserProgress) {
-                    console.log('⏳ VOCAB: Waiting for Firebase...');
-                    let attempts = 0;
-                    while (!window.firebaseReady && attempts < 100) {
-                        await new Promise(resolve => setTimeout(resolve, 50));
-                        attempts++;
-                    }
-                }
-                
-                if (window.saveUserProgress) {
-                    console.log('📚 VOCAB: Calling Firebase saveUserProgress for course B1...');
-                    
-                    // Load existing progress first to merge
-                    let existingProgress = {};
-                    if (window.getUserProgress) {
-                        existingProgress = await window.getUserProgress(user.id, 'B1') || {};
-                    }
-                    
-                    // Merge vocabulary progress
-                    const updatedProgress = {
-                        ...existingProgress,
-                        vocabulary: {
-                            learnedWords: learnedWords,
-                            lastAccessed: new Date().toISOString()
-                        }
-                    };
-                    
-                    await window.saveUserProgress(user.id, 'B1', updatedProgress);
-                    console.log('✅ VOCAB: Progress saved to Firebase successfully');
-                    
-                    // Verify save
-                    if (window.getUserProgress) {
-                        const verified = await window.getUserProgress(user.id, 'B1');
-                        console.log('🔍 VOCAB: Verification check:', verified?.vocabulary);
-                    }
-                } else {
-                    console.log('⚠️ VOCAB: Firebase not available, progress saved to localStorage only');
-                }
             } catch (error) {
                 console.error('❌ VOCAB: Error saving progress:', error);
-                console.error('❌ VOCAB: Error details:', {
-                    message: error.message,
-                    stack: error.stack
-                });
             }
         }
 
