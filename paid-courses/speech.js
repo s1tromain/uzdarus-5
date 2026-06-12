@@ -479,6 +479,37 @@ function _handleDemoPaywall() {
 }
 
 /* ================================================================== */
+/*  Sound effects (RESTORED — were accidentally removed alongside the  */
+/*  demo-paywall cleanup; pronunciation success/fail call these).      */
+/* ================================================================== */
+function _playSound(src) {
+    try {
+        if (!_playSound._disabled) _playSound._disabled = new Set();
+        if (_playSound._disabled.has(src)) return;
+        var a = new Audio();
+        a.volume = 0.5;
+        a.onerror = function () {
+            _playSound._disabled.add(src);
+        };
+        a.src = src;
+        a.play().catch(function () { /* autoplay blocked — ignore */ });
+    } catch (e) { /* Audio constructor unavailable — ignore */ }
+}
+
+function _playSoundSuccess() { _playSound('/sounds/success.mp3'); }
+function _playSoundError()   { _playSound('/sounds/error.mp3'); }
+
+/* ================================================================== */
+/*  Haptic feedback (RESTORED — vibrate API, safe no-op when absent)   */
+/* ================================================================== */
+function _haptic(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms || 30); } catch (e) { /* ignore */ }
+}
+function _hapticSuccess() { _haptic(40); }
+function _hapticError()   { _haptic([30, 50, 30]); }
+function _hapticWarning() { _haptic(20); }
+
+/* ================================================================== */
 /*  TTS playback                                                      */
 /* ================================================================== */
 const _ttsCache = new Map();
