@@ -118,6 +118,10 @@ export default async function handler(req, res) {
         });
     } catch (error) {
         if (createdUid) {
+            // `adminAuth` above is block-scoped to the try; re-grab the cached
+            // Admin instance here so the rollback can delete the orphaned Auth
+            // user instead of throwing a ReferenceError on the error path (M1).
+            const { adminAuth } = initAdmin();
             await adminAuth.deleteUser(createdUid).catch(() => null);
         }
         safeError(res, error);

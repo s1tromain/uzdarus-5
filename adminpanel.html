@@ -44,9 +44,6 @@
             </div>
         </header>
 
-        <div id="globalError" class="notice error"></div>
-        <div id="globalSuccess" class="notice success"></div>
-
         <section class="stats-grid" id="statsGrid">
             <article class="stat-card">
                 <span class="stat-label">Jami foydalanuvchi</span>
@@ -123,6 +120,13 @@
                     <h2>Customerlar ro‘yxati</h2>
                     <div class="card-controls">
                         <input type="search" id="usersSearchInput" placeholder="Login yoki ism bo‘yicha qidirish">
+                        <select id="usersStatusFilter" class="filter-select" aria-label="Status bo‘yicha filtr">
+                            <option value="all">Barchasi</option>
+                            <option value="active">Faol</option>
+                            <option value="expiring">Tugashga yaqin</option>
+                            <option value="blocked">Bloklangan</option>
+                            <option value="expired">Obuna tugagan</option>
+                        </select>
                         <button class="btn btn-ghost" id="refreshUsersBtn" type="button">Yangilash</button>
                     </div>
                 </div>
@@ -193,6 +197,24 @@
             </div>
         </section>
     </main>
+
+    <!-- Confirmation modal (PART 3): gates every destructive/admin action -->
+    <div id="adminModal" class="modal-overlay" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+            <h2 class="modal-title" id="adminModalTitle">Tasdiqlash</h2>
+            <p class="modal-question">Siz ushbu amalni bajarishga ishonchingiz komilmi?</p>
+            <p class="modal-action" id="adminModalAction"></p>
+            <form id="adminModalForm" class="modal-form"></form>
+            <div id="adminModalError" class="notice"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" id="adminModalCancel">Bekor qilish</button>
+                <button type="button" class="btn" id="adminModalConfirm">Tasdiqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications (PART 5) -->
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
     <script type="module" src="./adminpanel.js"></script>
 </body>

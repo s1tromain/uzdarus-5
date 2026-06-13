@@ -738,6 +738,31 @@ async function initDashboardPage() {
     const status = params.get('status');
     const paymentParam = params.get('payment');
     const privilegedRole = isPrivilegedRole(profile);
+    const activeSubscription = hasActiveSubscription(profile);
+
+    // The block banner is driven by the *live* profile state, never by a URL
+    // param alone. A `?status=blocked` query string is sticky across refreshes,
+    // so once an admin unblocks the account the banner must disappear on the
+    // next load even though the stale query string is still in the address bar.
+    const isBlocked = Boolean(profile.blocked) && !privilegedRole;
+    const BLOCK_BANNER_TEXT = 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.';
+
+    function setBlockBanner(visible) {
+        if (!blockBanner) {
+            return;
+        }
+
+        blockBanner.style.display = visible ? 'block' : 'none';
+        blockBanner.textContent = visible ? BLOCK_BANNER_TEXT : '';
+    }
+
+    // Strip transient status flags from the URL so a manual refresh cannot
+    // resurrect a banner after the underlying issue has already been resolved.
+    if (status) {
+        params.delete('status');
+        const query = params.toString();
+        history.replaceState(null, '', window.location.pathname + (query ? `?${query}` : ''));
+    }
 
     if (paymentParam === 'success') {
         showNotice(dashboardInfo, '\u2705 To\u2018lov muvaffaqiyatli! Obuna faollashtirilmoqda\u2026');
@@ -746,7 +771,7 @@ async function initDashboardPage() {
         // Re-check profile after short delay (webhook may take a moment)
         setTimeout(async () => {
             try {
-                const freshProfile = await getUserProfile(user.uid);
+                const freshProfile = await getUserProfile(user.uid, { forceRefresh: true });
                 if (freshProfile && hasActiveSubscription(freshProfile)) {
                     showNotice(dashboardInfo, '\u2705 Obuna faollashtirildi! Sahifa yangilanmoqda\u2026');
                     setTimeout(() => location.reload(), 1500);
@@ -755,19 +780,16 @@ async function initDashboardPage() {
         }, 3000);
     }
 
-    if (status === 'blocked' && !privilegedRole) {
-        showNotice(dashboardError, 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.');
-    }
-
-    if (status === 'expired' && !privilegedRole) {
+    // Status banners reflect the verified current state, not just the URL flag,
+    // so they never linger once the account is unblocked / re-subscribed. The
+    // blocked case is handled by the canonical block banner below.
+    if (status === 'expired' && !privilegedRole && !activeSubscription) {
         showNotice(dashboardError, 'Obuna muddati tugagan. Moderatsiyaga murojaat qiling.');
     }
 
-    if (status === 'no-access' && !privilegedRole) {
+    if (status === 'no-access' && !privilegedRole && !isBlocked) {
         showNotice(dashboardError, 'Sizda bu kursga ruxsat yo‘q.');
     }
-
-    const activeSubscription = hasActiveSubscription(profile);
 
     profileName.textContent = profile.displayName || profile.username || 'Foydalanuvchi';
     profileMeta.textContent = buildProfileMeta(profile, role, privilegedRole);
@@ -792,26 +814,16 @@ async function initDashboardPage() {
         privilegedRole
     );
 
-    if (profile.blocked && !privilegedRole) {
-        if (blockBanner) {
-            blockBanner.style.display = 'block';
-            blockBanner.textContent = 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.';
-        }
-    } else if (privilegedRole) {
-        if (blockBanner) {
-            blockBanner.style.display = 'none';
-            blockBanner.textContent = '';
-        }
-    }
+    // Canonical block banner: visible only while the account is genuinely
+    // blocked right now. Privileged accounts and freshly-unblocked users never
+    // see it, regardless of any leftover `?status=blocked` in the URL.
+    setBlockBanner(isBlocked);
 
-    if (!profile.blocked || privilegedRole) {
+    if (!isBlocked) {
         try {
             const registerResult = await registerCurrentDevice();
             if (registerResult?.blocked && !privilegedRole) {
-                if (blockBanner) {
-                    blockBanner.style.display = 'block';
-                    blockBanner.textContent = 'Akkaunt vaqtincha bloklangan, moderatsiyaga murojaat qiling.';
-                }
+                setBlockBanner(true);
             }
         } catch (error) {
             showNotice(dashboardError, error.message || 'Qurilma tekshiruvida xatolik yuz berdi.');
