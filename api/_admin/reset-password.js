@@ -10,6 +10,7 @@ import {
     safeError
 } from '../_lib/request.js';
 import { normalizeRole } from '../_lib/roles.js';
+import { writeAuditLog } from '../_lib/audit.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -55,6 +56,15 @@ export default async function handler(req, res) {
             updatedAt: FieldValue.serverTimestamp(),
             lastPasswordResetAt: FieldValue.serverTimestamp(),
             lastPasswordResetBy: session.uid
+        });
+
+        await writeAuditLog({
+            action: 'reset-password',
+            actorUid: session.uid,
+            actorRole: session.role,
+            targetUid: userId,
+            targetUsername: targetData.username || null,
+            details: { forcePasswordChange: true }
         });
 
         sendJson(res, 200, { ok: true });

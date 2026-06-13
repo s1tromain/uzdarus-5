@@ -63,6 +63,13 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // Admin audit trail. Written server-side via the Admin SDK only (which
+    // bypasses these rules); clients may never write. Staff may read for review.
+    match /adminAuditLogs/{logId} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

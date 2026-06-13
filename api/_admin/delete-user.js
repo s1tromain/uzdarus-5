@@ -10,6 +10,7 @@ import {
     safeError
 } from '../_lib/request.js';
 import { normalizeRole } from '../_lib/roles.js';
+import { writeAuditLog } from '../_lib/audit.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -47,6 +48,16 @@ export default async function handler(req, res) {
         const targetRole = normalizeRole(targetData.role);
 
         requireManagePermission(session, targetRole);
+
+        // Log before deletion so the target identity is still available.
+        await writeAuditLog({
+            action: 'delete-user',
+            actorUid: session.uid,
+            actorRole: session.role,
+            targetUid: userId,
+            targetUsername: targetData.username || null,
+            details: { deletedRole: targetRole }
+        });
 
         await adminDb.recursiveDelete(targetRef);
         await adminAuth.deleteUser(userId);

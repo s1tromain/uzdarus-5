@@ -11,6 +11,7 @@ import {
 } from '../_lib/request.js';
 import { normalizeRole } from '../_lib/roles.js';
 import { buildSubscription } from '../_lib/user-helpers.js';
+import { writeAuditLog } from '../_lib/audit.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -64,6 +65,15 @@ export default async function handler(req, res) {
 
         await adminAuth.setCustomUserClaims(userId, { role: newRole });
         await targetRef.update(updateData);
+
+        await writeAuditLog({
+            action: 'set-role',
+            actorUid: session.uid,
+            actorRole: session.role,
+            targetUid: userId,
+            targetUsername: targetData.username || null,
+            details: { previousRole: targetRole, newRole }
+        });
 
         sendJson(res, 200, { ok: true, role: newRole });
     } catch (error) {

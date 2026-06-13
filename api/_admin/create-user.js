@@ -11,6 +11,7 @@ import {
 } from '../_lib/request.js';
 import { normalizeRole } from '../_lib/roles.js';
 import { usernameToEmail, normalizeUsername, normalizePacks, buildSubscription } from '../_lib/user-helpers.js';
+import { writeAuditLog } from '../_lib/audit.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -95,6 +96,15 @@ export default async function handler(req, res) {
             createdBy: session.uid,
             createdAt: FieldValue.serverTimestamp(),
             updatedAt: FieldValue.serverTimestamp()
+        });
+
+        await writeAuditLog({
+            action: 'create-user',
+            actorUid: session.uid,
+            actorRole: session.role,
+            targetUid: created.uid,
+            targetUsername: username,
+            details: { role: targetRole, accessPacks: packs }
         });
 
         sendJson(res, 200, {
