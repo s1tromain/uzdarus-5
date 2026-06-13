@@ -3402,7 +3402,23 @@ function closePronResult(options) {
 /* ================================================================== */
 const _PAYWALL_ID = 'paywallOverlay';
 
+/* ISSUE #1 (requirement #7) — HARD VOCABULARY GUARD.
+   speech.js is loaded ONLY on the *-vocabulary.html pages, so every paywall /
+   checkout code path below is blocked here. This is the single chokepoint:
+   if we are on a vocabulary page, no paywall styles, no purchase popup and no
+   checkout redirect can ever execute. */
+function _isVocabularyPage() {
+    try {
+        var p = (window.location && window.location.pathname || '').toLowerCase();
+        if (/vocabulary/.test(p)) return true;
+        if (typeof window !== 'undefined' && typeof window.VOCAB_COURSE !== 'undefined') return true;
+        return false;
+    } catch (e) { return true; }
+}
+
 function _ensurePaywallStyles() {
+    /* ISSUE #1 — paywall CSS (.pw-card etc.) is NEVER injected on vocabulary. */
+    if (_isVocabularyPage()) return;
     if (document.getElementById('paywallCSS')) return;
     var s = document.createElement('style');
     s.id = 'paywallCSS';
@@ -3476,6 +3492,8 @@ function _closePaywall() {
 }
 
 function _goToPremium() {
+    /* ISSUE #1 (requirement #7) — never start a checkout from a vocabulary page. */
+    if (_isVocabularyPage()) return;
     var btn = document.querySelector('.pw-btn-primary');
     if (btn) {
         btn.disabled = true;
