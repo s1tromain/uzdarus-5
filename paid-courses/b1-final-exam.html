@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>B1 Yakuniy Imtihoni — UzdaRus PRO</title>
+    <link rel="icon" href="../images/shared/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="../images/shared/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="pro-toast.css">
+    <script defer src="pro-toast.js"></script>
+    <script type="module" src="paid-platform.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #FF9800;
+            --primary-dark: #F57C00;
+            --secondary: #FFD54F;
+            --light: #FFF8E1;
+            --dark: #333;
+            --gray: #666;
+            --light-gray: #f5f5f5;
+            --success: #4CAF50;
+            --error: #F44336;
+            --blue: #2196F3;
+            --exam-bg: #f8f9fb;
+            --exam-header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            background: var(--exam-bg);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* ====== EXAM HEADER ====== */
+        .exam-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--exam-header-bg);
+            color: #fff;
+            padding: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+
+        .exam-header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .exam-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .exam-header-trophy {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .exam-header-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .exam-header-sub {
+            font-size: 0.82rem;
+            opacity: 0.8;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .exam-header-center {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 8px 18px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .exam-timer i {
+            font-size: 1rem;
+            opacity: 0.85;
+        }
+
+        .exam-timer.warning {
+            background: rgba(255, 152, 0, 0.25);
+            border-color: rgba(255, 152, 0, 0.5);
+            color: #FFD54F;
+            animation: timerPulse 2s ease-in-out infinite;
+        }
+
+        .exam-timer.danger {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.6);
+            color: #ff8a80;
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+
+        .exam-progress-badge {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .exam-autosave-note {
+            font-size: 0.72rem;
+            opacity: 0.7;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        .exam-header-right {
+            flex-shrink: 0;
+        }
+
+        .exam-exit-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .exam-exit-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        /* ====== EXAM BODY ====== */
+        .exam-body {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 24px 140px;
+        }
+
+        .exam-intro {
+            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+            border: 2px solid var(--primary);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .exam-section-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 34px 0 16px;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #1a1a2e, #0f3460);
+            color: #fff;
+            border-radius: 14px;
+        }
+        .exam-section-head .esh-icon { font-size: 1.6rem; }
+        .exam-section-head .esh-title { font-size: 1.15rem; font-weight: 800; }
+        .exam-section-head .esh-sub { font-size: 0.8rem; opacity: 0.82; font-weight: 600; }
+
+        .exam-passage {
+            background: #fffdf7;
+            border: 2px dashed var(--primary);
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 18px;
+        }
+        .exam-passage-title {
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            font-size: 1.02rem;
+        }
+        .exam-passage p { margin: 0 0 8px; font-size: 0.96rem; color: #444; }
+        .exam-passage p:last-child { margin-bottom: 0; }
+
+        .exam-exercise-block {
+            background: #fff;
+            border-left: 4px solid var(--primary);
+            border-radius: 14px;
+            padding: 22px 20px;
+            margin-bottom: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .exam-q-row {
+            background: var(--light-gray);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--secondary);
+            transition: border-color 0.3s;
+        }
+
+        .exam-q-row.correct {
+            border-left-color: var(--success);
+            background: #f1f8e9;
+        }
+
+        .exam-q-row.incorrect {
+            border-left-color: var(--error);
+            background: #fce4ec;
+        }
+
+        .exam-q-text {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-size: 0.97rem;
+        }
+
+        .exam-q-text .exam-blank {
+            display: inline-block;
+            min-width: 60px;
+            border-bottom: 2px solid var(--primary);
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .exam-q-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .exam-q-chip {
+            display: inline-block;
+            padding: 9px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            background: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .exam-q-chip:hover {
+            border-color: var(--primary);
+            background: var(--light);
+        }
+
+        .exam-q-chip.selected {
+            border-color: var(--primary);
+            background: var(--secondary);
+            color: var(--dark);
+        }
+
+        .exam-q-chip.correct {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .exam-q-chip.incorrect {
+            border-color: var(--error);
+            background: #fce4ec;
+        }
+
+        .exam-q-input {
+            width: 100%;
+            max-width: 480px;
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .exam-q-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .exam-q-input.correct {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .exam-q-input.incorrect {
+            border-color: var(--error);
+            background: #fce4ec;
+        }
+
+        /* ====== RESULT BOX ====== */
+        .exam-result-box {
+            max-width: 640px;
+            margin: 32px auto;
+            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 36px 28px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(255,152,0,0.18);
+        }
+        .exam-result-box.passed { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); border-color: var(--success); }
+        .exam-result-box.failed { background: linear-gradient(135deg, #FFEBEE, #FFCDD2); border-color: var(--error); }
+
+        .exam-result-score {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+        .exam-result-box.passed .exam-result-score { color: #2e7d32; }
+        .exam-result-box.failed .exam-result-score { color: #c62828; }
+
+        .exam-result-details {
+            font-size: 1.05rem;
+            color: var(--gray);
+            margin: 10px 0;
+        }
+
+        .exam-result-status {
+            display: inline-block;
+            padding: 8px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+        .exam-result-status.pass { background: #c8e6c9; color: #2e7d32; }
+        .exam-result-status.fail { background: #ffcdd2; color: #c62828; }
+
+        .exam-result-headline {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin: 16px 0 4px;
+        }
+        .exam-result-box.passed .exam-result-headline { color: #2e7d32; }
+        .exam-result-box.failed .exam-result-headline { color: #c62828; }
+
+        .exam-result-cert-note {
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        .exam-result-time-info {
+            margin-top: 12px;
+            font-size: 0.92rem;
+            color: var(--gray);
+        }
+
+        .exam-detail-toggle {
+            display: inline-block;
+            margin-top: 18px;
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary-dark);
+            padding: 10px 28px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .exam-detail-toggle:hover {
+            background: var(--light);
+        }
+
+        .exam-detail-section {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .exam-detail-section.visible {
+            display: block;
+        }
+
+        .exam-detail-exercise {
+            margin-bottom: 16px;
+        }
+
+        .exam-detail-exercise-title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px 12px;
+            background: var(--light-gray);
+            border-radius: 8px;
+        }
+
+        .exam-detail-exercise-title:hover {
+            background: #eee;
+        }
+
+        .exam-detail-items {
+            display: none;
+            padding: 8px 0 0 12px;
+        }
+
+        .exam-detail-items.visible {
+            display: block;
+        }
+
+        .exam-detail-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .exam-detail-item:last-child { border-bottom: none; }
+        .exam-detail-item .edi-status { font-weight: 700; }
+        .exam-detail-item .edi-ok { color: var(--success); }
+        .exam-detail-item .edi-bad { color: var(--error); }
+
+        .exam-back-btn, .exam-retake-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 8px 0;
+            color: #fff;
+            border: none;
+            padding: 14px 36px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .exam-back-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 6px 20px rgba(255,152,0,0.35);
+        }
+        .exam-retake-btn {
+            background: linear-gradient(135deg, #607d8b, #455a64);
+            box-shadow: 0 6px 20px rgba(96,125,139,0.35);
+        }
+        .exam-back-btn:hover, .exam-retake-btn:hover { transform: translateY(-2px); }
+
+        /* ====== FOOTER ACTION BAR ====== */
+        .exam-footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: #fff;
+            border-top: 2px solid #eee;
+            padding: 14px 24px;
+            text-align: center;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+        }
+
+        .exam-footer-bar.hidden {
+            display: none;
+        }
+
+        .exam-submit-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #FF9800, #E65100);
+            color: white;
+            padding: 16px 52px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(255, 152, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .exam-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(255, 152, 0, 0.55);
+        }
+
+        .exam-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ====== TIME-UP OVERLAY ====== */
+        .time-up-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .time-up-overlay.show {
+            display: flex;
+        }
+
+        .time-up-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px 32px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+        }
+
+        .time-up-icon {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+        }
+
+        .time-up-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--error);
+            margin-bottom: 8px;
+        }
+
+        .time-up-text {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+
+        .time-up-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ====== RESPONSIVE ====== */
+        @media (max-width: 768px) {
+            .exam-header-inner {
+                padding: 10px 14px;
+                gap: 10px;
+            }
+            .exam-header-trophy { font-size: 1.5rem; }
+            .exam-header-title { font-size: 1rem; }
+            .exam-header-sub { font-size: 0.72rem; }
+            .exam-timer {
+                font-size: 1.1rem;
+                padding: 6px 12px;
+            }
+            .exam-progress-badge {
+                font-size: 0.78rem;
+                padding: 4px 10px;
+            }
+            .exam-autosave-note { display: none; }
+            .exam-exit-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            .exam-exit-btn span { display: none; }
+            .exam-body {
+                padding: 90px 14px 130px;
+            }
+            .exam-exercise-block {
+                padding: 16px 12px;
+            }
+            .exam-q-row {
+                padding: 12px;
+            }
+            .exam-q-chip {
+                padding: 8px 14px;
+                font-size: 0.9rem;
+            }
+            .exam-q-input { max-width: 100%; }
+            .exam-submit-btn {
+                padding: 14px 30px;
+                font-size: 1.05rem;
+                width: 100%;
+                max-width: 400px;
+            }
+            .exam-result-score { font-size: 2rem; }
+            .exam-section-head .esh-title { font-size: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            .exam-header-inner {
+                padding: 8px 10px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .exam-header-left { gap: 8px; }
+            .exam-header-trophy { font-size: 1.3rem; }
+            .exam-header-title { font-size: 0.92rem; }
+            .exam-header-sub { display: none; }
+            .exam-header-center {
+                gap: 8px;
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+            .exam-timer {
+                font-size: 1rem;
+                padding: 5px 10px;
+            }
+            .exam-body {
+                padding: 120px 10px 130px;
+            }
+            .exam-q-chip {
+                width: 100%;
+                text-align: center;
+            }
+            .exam-submit-btn {
+                width: 100%;
+            }
+            .exam-back-btn, .exam-retake-btn { width: 100%; margin: 8px 0 0; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- EXAM HEADER -->
+    <header class="exam-header">
+        <div class="exam-header-inner">
+            <div class="exam-header-left">
+                <span class="exam-header-trophy">🎓</span>
+                <div>
+                    <div class="exam-header-title">B1 Yakuniy Imtihoni</div>
+                    <div class="exam-header-sub">100 ball · 80% o'tish · 5 bo'lim</div>
+                </div>
+            </div>
+            <div class="exam-header-center">
+                <div>
+                    <div class="exam-timer" id="examTimer">
+                        <i class="fas fa-clock"></i>
+                        <span id="examTimerDisplay">02:00:00</span>
+                    </div>
+                    <div class="exam-autosave-note" id="examAutosaveNote"><i class="fas fa-cloud"></i> Avtosaqlash yoqilgan</div>
+                </div>
+                <div class="exam-progress-badge" id="examProgress">0 / 100</div>
+            </div>
+            <div class="exam-header-right">
+                <button class="exam-exit-btn" id="examExitBtn" type="button">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Chiqish</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- EXAM BODY -->
+    <main class="exam-body" id="examBody">
+        <div class="exam-intro">
+            Bu yakuniy imtihon B1 kursidagi barcha 20 ta mavzuni qamrab oladi. Jami 100 ta baholanadigan javob.
+            O'tish balli — 80%. Imtihon vaqti — 120 daqiqa. Javoblaringiz har 30 soniyada avtomatik saqlanadi.
+        </div>
+        <div id="examExercises"></div>
+        <div id="examFeedback"></div>
+    </main>
+
+    <!-- FOOTER ACTION BAR -->
+    <div class="exam-footer-bar" id="examFooterBar">
+        <button class="exam-submit-btn" id="examSubmitBtn" type="button">
+            <i class="fas fa-check-circle"></i> Imtihonni yakunlash va tekshirish
+        </button>
+    </div>
+
+    <!-- TIME-UP OVERLAY -->
+    <div class="time-up-overlay" id="timeUpOverlay">
+        <div class="time-up-card">
+            <div class="time-up-icon">⏰</div>
+            <div class="time-up-title">Vaqt tugadi!</div>
+            <div class="time-up-text">Imtihon vaqti tugadi. Sizning javoblaringiz avtomatik tekshirilmoqda.</div>
+            <button class="time-up-btn" id="timeUpOkBtn" type="button">Natijalarni ko'rish</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ========== USER / PERSISTENCE KEYS ==========
+        function getUid() {
+            try {
+                var u = JSON.parse(localStorage.getItem('currentUser'));
+                if (u && u.id) { window.currentUser = u; window.currentUserId = u.id; return u.id; }
+            } catch (e) {}
+            return 'guest';
+        }
+        var USER_ID = getUid();
+        var STATE_KEY = 'b1_finalexam_state_' + USER_ID;       // in-progress draft + deadline (survives refresh/close)
+        var COMPLETION_KEY = 'b1_completion_' + USER_ID;        // pass / certificate flags (read by b1-course.html)
+        var EXAM_TOPIC_ID = 'final_exam';                       // Firestore quizResults doc id (cross-device sync)
+        var COURSE = 'B1';
+
+        // ========== TEXT NORMALIZATION (identical to B1 course t1Norm/t1Match) ==========
+        function normalizeExamText(value) {
+            return String(value == null ? '' : value)
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'«»—–\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+        function examIsCorrect(userValue, expected) {
+            var nu = normalizeExamText(userValue);
+            if (!nu) return false;
+            if (Array.isArray(expected)) {
+                return expected.some(function (e) { return normalizeExamText(e) === nu; });
+            }
+            return normalizeExamText(expected) === nu;
+        }
+        function escHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function escAttr(s) { return escHtml(s).replace(/'/g, '&#39;'); }
+        function renderQ(q) {
+            var s = escHtml(q);
+            s = s.replace(/\n/g, '<br>');
+            s = s.replace(/_{3,}/g, '<span class="exam-blank">______</span>');
+            return s;
+        }
+
+        // ========== EXAM DATA — built entirely from real B1 course material (20 topics) ==========
+        var FINAL_EXAM_DATA = [{"section":"A","icon":"📝","title":"A bo'lim — Grammatika","subtitle":"20 ta mavzu grammatikasi · 40 ball","type":"mixed","items":[{"mode":"chip","q":"Я долго ___ русский язык.","opts":["учил","выучил"],"answer":"учил"},{"mode":"chip","q":"Вчера я ___ эту книгу.","opts":["читал","прочитал"],"answer":"прочитал"},{"mode":"chip","q":"Раньше я часто ___ в парк пешком.","opts":["ездил","ходил"],"answer":"ходил"},{"mode":"chip","q":"Когда я был маленьким, мы ___ в Самарканд на машине.","opts":["ходили","ездили"],"answer":"ездили"},{"mode":"chip","q":"Я учу русский язык, ___ работать за границей.","opts":["что","чтобы"],"answer":"чтобы"},{"mode":"chip","q":"Мы понимаем, ___ практика очень важна.","opts":["что","чтобы"],"answer":"что"},{"mode":"chip","q":"_____ вы изучаете русский язык?","opts":["Почему","Зачем","Поэтому"],"answer":"Зачем"},{"mode":"chip","q":"Я устал, _____ ушёл домой.","opts":["зачем","поэтому","почему"],"answer":"поэтому"},{"mode":"chip","q":"Я часто ___","opts":["волную","волнуюсь","волнует"],"answer":"волнуюсь"},{"mode":"chip","q":"Мы быстро ___","opts":["собираемся","собираем","собирается"],"answer":"собираемся"},{"mode":"chip","q":"Мне _______ больше отдыхать.","opts":["надо","нужно","нужен","нужна","нужны","следует"],"answer":"нужно"},{"mode":"chip","q":"Нам _______ витамины.","opts":["надо","нужно","нужен","нужна","нужны","следует"],"answer":"нужны"},{"mode":"chip","q":"Я каждый год ______ в Самарканд.","opts":["езжу","еду"],"answer":"езжу"},{"mode":"chip","q":"Сейчас мы ______ в аэропорт.","opts":["ходим","идём"],"answer":"идём"},{"mode":"chip","q":"Навруз ___ других праздников.","opts":["интересный","интереснее"],"answer":"интереснее"},{"mode":"chip","q":"Это ___ древний обычай.","opts":["самый","более"],"answer":"самый"},{"mode":"chip","q":"Мы общаемся ___ интернету.","opts":["в","по","на"],"answer":"по"},{"mode":"chip","q":"Она смотрит сериал ___ телевизору.","opts":["по","в","на"],"answer":"по"},{"mode":"chip","q":"Я всегда ___ перед экзаменом.","opts":["волнуюсь","радуюсь","смеюсь"],"answer":"волнуюсь"},{"mode":"chip","q":"Дети ___ подаркам.","opts":["боятся","радуются","злятся"],"answer":"радуются"},{"mode":"chip","q":"Эта книга ___ интересная.","opts":["очень","довольно","слишком"],"answer":"очень"},{"mode":"chip","q":"Этот телефон ___ дорогой, я не могу его купить.","opts":["очень","довольно","слишком"],"answer":"слишком"},{"mode":"chip","q":"Информация ___ через интернет.","opts":["получает","распространяется","отправляет"],"answer":"распространяется"},{"mode":"chip","q":"Смартфоны ___ во всём мире.","opts":["продаются","продаёт","продавать"],"answer":"продаются"},{"mode":"chip","q":"___, что спорт полезен.","opts":["Я думаю","Я делаю","Я иду"],"answer":"Я думаю"},{"mode":"chip","q":"___, фильм интересный.","opts":["По-моему","По-русски","По-этому"],"answer":"По-моему"},{"mode":"chip","q":"Завтра я ___ работать.","opts":["буду","был","есть"],"answer":"буду"},{"mode":"chip","q":"В следующем году мы ___ новый дом.","opts":["покупаем","купим","купили"],"answer":"купим"},{"mode":"chip","q":"___ дверь, пожалуйста. (вы)","opts":["Закрой","Закройте"],"answer":"Закройте"},{"mode":"chip","q":"___ мне, пожалуйста. (ты, do'stingga)","opts":["Помоги","Помогите"],"answer":"Помоги"},{"mode":"chip","q":"___ люди хотят быть счастливыми.","opts":["Все","Каждый","Многие"],"answer":"Все"},{"mode":"chip","q":"___ человек имеет свои права.","opts":["Каждый","Все","Многие"],"answer":"Каждый"},{"mode":"chip","q":"У меня нет ___.","opts":["деньги","денег","деньгам"],"answer":"денег"},{"mode":"chip","q":"У нас мало ___.","opts":["времени","время","временем"],"answer":"времени"},{"mode":"chip","q":"___ нужна помощь.","opts":["Мне","Я","Меня"],"answer":"Мне"},{"mode":"chip","q":"___ нужен паспорт.","opts":["Вам","Вы","Вас"],"answer":"Вам"},{"mode":"chip","q":"Здесь ___ парковаться. (mumkin)","opts":["можно","нельзя","запрещено"],"answer":"можно"},{"mode":"chip","q":"В библиотеке ___ шуметь. (mumkin emas)","opts":["можно","нельзя","разрешено"],"answer":"нельзя"},{"mode":"chip","q":"Машина сломалась, ___ мы опоздали.","opts":["потому что","поэтому"],"answer":"поэтому"},{"mode":"chip","q":"Мы остались дома, ___ шёл дождь.","opts":["потому что","поэтому"],"answer":"потому что"}]},{"section":"B","icon":"🌐","title":"B bo'lim — Tarjima","subtitle":"Har bir mavzudan tarjima · 20 ball","type":"mixed","items":[{"mode":"input","q":"Men rus tilini 3 yil o'rgandim.","answer":["Я учил русский язык три года","Я учил русский язык 3 года","Я изучал русский язык три года","Я изучал русский язык 3 года"]},{"mode":"input","q":"Bolaligimda men ko'p parkka borardim.","answer":["В детстве я часто ходил в парк","В детстве я часто ходила в парк","В детстве я много ходил в парк","В детстве я часто ходил в парк пешком"]},{"mode":"input","q":"Men grammatikani tushunish uchun video ko'ryapman.","answer":["Я смотрю видео чтобы понять грамматику","Я смотрю видео чтобы понимать грамматику"]},{"mode":"input","q":"Men nima uchun rus tilini o'rganayapman?","answer":["Зачем я изучаю русский язык"]},{"mode":"input","q":"Men doim xavotirlanaman.","answer":["Я всегда волнуюсь"]},{"mode":"input","q":"Men ko'proq suv ichishim kerak.","answer":["Мне нужно пить больше воды","Я должен пить больше воды","Мне надо пить больше воды"]},{"mode":"input","q":"Biz Toshkentga keldik.","answer":["Мы приехали в Ташкент"]},{"mode":"input","q":"Qanchalik katta oila bo'lsa, shunchalik quvnoq bo'ladi.","answer":["Чем больше семья тем веселее жизнь","Чем больше семья тем веселее"]},{"mode":"input","q":"Men internetda yangilik o'qiyman.","answer":["Я читаю новости в интернете"]},{"mode":"input","q":"Men imtihondan qo'rqaman.","answer":["Я боюсь экзамена"]},{"mode":"input","q":"yomon (qanday?)","answer":["плохо"]},{"mode":"input","q":"Telefon har kuni ishlatiladi.","answer":["Телефон используется каждый день"]},{"mode":"input","q":"Menimcha, sport foydali.","answer":["Я думаю, что спорт полезен"]},{"mode":"input","q":"Men shifokor bo'lishni xohlayman.","answer":["Я хочу стать врачом"]},{"mode":"input","q":"Я хочу пожаловаться, … (chunki xizmat yomon edi)","answer":["потому что обслуживание было плохим"]},{"mode":"input","q":"Har bir inson ta'limga huquqli.","answer":["Каждый человек имеет право на образование"]},{"mode":"input","q":"Mende pul yo'q.","answer":["У меня нет денег"]},{"mode":"input","q":"Menga yordam kerak.","answer":["Мне нужна помощь"]},{"mode":"input","q":"Bu yerda chekish mumkin emas.","answer":["Здесь нельзя курить"]},{"mode":"input","q":"Men telefonimni yo'qotdim.","answer":["Я потерял телефон","Я потеряла телефон"]}]},{"section":"C","icon":"📚","title":"C bo'lim — Lug'at","subtitle":"B1 kursi lug'ati · 10 ball","type":"mixed","items":[{"mode":"chip","q":"опыт","opts":["tajriba","martaba","lavozim"],"answer":"tajriba"},{"mode":"chip","q":"образование","opts":["ta'lim","rivojlanish","tajriba"],"answer":"ta'lim"},{"mode":"chip","q":"привычка","opts":["odat","sport","sog'liq"],"answer":"odat"},{"mode":"chip","q":"воспоминание","opts":["xotira","bolalik","kelajak"],"answer":"xotira"},{"mode":"chip","q":"настроение","opts":["kayfiyat","his","munosabat"],"answer":"kayfiyat"},{"mode":"chip","q":"общество","opts":["jamiyat","shaxs","muloqot"],"answer":"jamiyat"},{"mode":"chip","q":"расходы","opts":["xarajatlar","maosh","budjet"],"answer":"xarajatlar"},{"mode":"chip","q":"закон","opts":["qonun","qoida","majburiyat"],"answer":"qonun"},{"mode":"chip","q":"мечта","opts":["orzu","reja","maqsad"],"answer":"orzu"},{"mode":"chip","q":"безопасность","opts":["xavfsizlik","kasallik","kulfat"],"answer":"xavfsizlik"}]},{"section":"D","icon":"📖","title":"D bo'lim — O'qib tushunish","subtitle":"Matn bo'yicha savollar · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Алишер получает зарплату каждый месяц.","opts":["Правда","Ложь"],"answer":"Правда"},{"mode":"chip","q":"Алишер не планирует свои расходы.","opts":["Правда","Ложь"],"answer":"Ложь"},{"mode":"chip","q":"Сначала он платит за квартиру и коммунальные услуги.","opts":["Правда","Ложь"],"answer":"Правда"},{"mode":"chip","q":"Алишер не записывает свои расходы.","opts":["Правда","Ложь"],"answer":"Ложь"},{"mode":"chip","q":"Он тратит много денег на дорогую одежду.","opts":["Правда","Ложь"],"answer":"Ложь"},{"mode":"chip","q":"Каждый месяц он откладывает немного денег.","opts":["Правда","Ложь"],"answer":"Правда"},{"mode":"chip","q":"Алишер часто ходит на развлечения.","opts":["Правда","Ложь"],"answer":"Ложь"},{"mode":"chip","q":"Он копит деньги на машину и на отпуск.","opts":["Правда","Ложь"],"answer":"Правда"},{"mode":"chip","q":"Непредвиденные расходы иногда случаются.","opts":["Правда","Ложь"],"answer":"Правда"},{"mode":"chip","q":"Финансовое планирование помогает достигать целей.","opts":["Правда","Ложь"],"answer":"Правда"}],"passage":["Меня зовут Алишер. Каждый месяц я получаю зарплату и стараюсь правильно планировать свои расходы. Сначала я плачу за квартиру и коммунальные услуги. Потом я покупаю продукты и оплачиваю транспорт.","Я внимательно отношусь к деньгам и записываю все свои расходы. Каждый месяц я откладываю немного денег на сбережения. Я коплю деньги на машину и на отпуск.","Я не трачу деньги на дорогую одежду и редко хожу на развлечения. Иногда бывают непредвиденные расходы, но мои сбережения помогают решать такие проблемы. Я думаю, что финансовое планирование помогает достигать целей."],"passageTitle":"Мой бюджет и мои планы"},{"section":"E","icon":"💬","title":"E bo'lim — Muloqot va vaziyatlar","subtitle":"Dialog, rasmiy muomala, vaziyatlar · 20 ball","type":"mixed","items":[{"mode":"chip","q":"___ , где находится банк? (so'rab murojaat)","opts":["Скажите, пожалуйста","Извините","Спасибо"],"answer":"Скажите, пожалуйста"},{"mode":"chip","q":"___ вы помочь мне? (muloyim iltimos)","opts":["Не могли бы","Будьте добры","Разрешите"],"answer":"Не могли бы"},{"mode":"chip","q":"Вы мне очень помогли. ___ ! (minnatdorchilik)","opts":["Спасибо","Извините","Пожалуйста"],"answer":"Спасибо"},{"mode":"chip","q":"___ , я опоздал. (uzr)","opts":["Извините","Спасибо","Добрый день"],"answer":"Извините"},{"mode":"chip","q":"— Спасибо! — ___ ! (javob)","opts":["Пожалуйста","Извините","Спасибо"],"answer":"Пожалуйста"},{"mode":"chip","q":"___ день! (salomlashuv)","opts":["Добрый","Хорошего","Всего"],"answer":"Добрый"},{"mode":"chip","q":"Mahsulot nosoz chiqdi. Siz aytasiz:","opts":["Я хочу пожаловаться на товар.","Это не моё дело."],"answer":"Я хочу пожаловаться на товар."},{"mode":"chip","q":"Sizga xizmat yoqmadi:","opts":["Меня не устраивает обслуживание.","Мне всё нравится."],"answer":"Меня не устраивает обслуживание."},{"mode":"chip","q":"Muammoni hal qilishlarini xohlaysiz:","opts":["Решите, пожалуйста, проблему.","Ничего не делайте."],"answer":"Решите, пожалуйста, проблему."},{"mode":"chip","q":"Pulingizni qaytarishlarini so'raysiz:","opts":["Верните, пожалуйста, деньги.","Оставьте деньги себе."],"answer":"Верните, пожалуйста, деньги."},{"mode":"chip","q":"Qaror adolatsiz deb hisoblaysiz:","opts":["Я не согласен с этим решением.","Я полностью согласен."],"answer":"Я не согласен с этим решением."},{"mode":"chip","q":"— ___ спорт очень полезен для здоровья.","opts":["Я думаю, что","По-моему","Я согласен","Я не согласен","Потому что"],"answer":"Я думаю, что"},{"mode":"chip","q":"— Да, ___ с тобой полностью.","opts":["Я думаю, что","По-моему","Я согласен","Я не согласен","Потому что"],"answer":"Я согласен"},{"mode":"chip","q":"— ___ образование очень важно.","opts":["Я думаю, что","По-моему","Я согласен","Я не согласен","Потому что"],"answer":"Я думаю, что"},{"mode":"chip","q":"— Я тоже так считаю, ___ это нужно для работы.","opts":["Я думаю, что","По-моему","Я согласен","Я не согласен","Потому что"],"answer":"Потому что"},{"mode":"chip","q":"— ___, этот фильм очень интересный.","opts":["Я думаю, что","По-моему","Я согласен","Я не согласен","Потому что"],"answer":"По-моему"},{"mode":"input","q":"— Ты уже прочитал эту книгу?\n— Да, ...","answer":["я прочитал её","я её прочитал","я прочитал эту книгу","я уже прочитал","я уже прочитал эту книгу","прочитал","я прочитал","да я прочитал","да я прочитал её","да я прочитал эту книгу","я уже её прочитал","конечно прочитал"]},{"mode":"input","q":"— Ты когда-нибудь был в Москве?\n— Да, ...","answer":["я был в москве","я был там","был","я там был","я был в москве один раз","я был в москве несколько раз","да я был в москве","да я был там","конечно был","я был"]},{"mode":"input","q":"— Ты сделал домашнее задание?\n— Да, ...","answer":["я сделал домашнее задание","я его сделал","сделал","я сделал","я уже сделал","я уже сделал домашнее задание","да я сделал","да я сделал домашнее задание","конечно сделал"]},{"mode":"input","q":"— В детстве ты играл в футбол?\n— Да, ...","answer":["я играл в футбол","я часто играл в футбол","играл","я играл","я много играл в футбол","да я играл","да я играл в футбол","конечно играл"]}]}];
+
+        var TOTAL_QUESTIONS = 0;
+        FINAL_EXAM_DATA.forEach(function (s) { TOTAL_QUESTIONS += (s.items || []).length; });
+
+        // ========== TIMER (deadline-based, survives refresh / reload / browser close) ==========
+        var TOTAL_SECONDS = 120 * 60; // 120 minutes
+        var deadline = 0;             // epoch ms when the exam must end
+        var startedAt = 0;
+        var secondsLeft = TOTAL_SECONDS;
+        var timerInterval = null;
+        var examFinished = false;
+
+        function formatTime(seconds) {
+            seconds = Math.max(0, seconds);
+            var h = Math.floor(seconds / 3600);
+            var m = Math.floor((seconds % 3600) / 60);
+            var s = seconds % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+        function recomputeSecondsLeft() {
+            secondsLeft = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+            return secondsLeft;
+        }
+        function updateTimerDisplay() {
+            var display = document.getElementById('examTimerDisplay');
+            var timerEl = document.getElementById('examTimer');
+            if (display) display.textContent = formatTime(secondsLeft);
+            if (timerEl) {
+                timerEl.classList.remove('warning', 'danger');
+                if (secondsLeft <= 300) timerEl.classList.add('danger');
+                else if (secondsLeft <= 900) timerEl.classList.add('warning');
+            }
+        }
+        function startTimer() {
+            recomputeSecondsLeft();
+            updateTimerDisplay();
+            if (secondsLeft <= 0) { timeUp(); return; }
+            timerInterval = setInterval(function () {
+                if (examFinished) { clearInterval(timerInterval); return; }
+                recomputeSecondsLeft();
+                updateTimerDisplay();
+                if (secondsLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timeUp();
+                }
+            }, 1000);
+        }
+        function timeUp() {
+            if (examFinished) return;
+            var overlay = document.getElementById('timeUpOverlay');
+            if (overlay) overlay.classList.add('show');
+            finishExam(true);
+            var okBtn = document.getElementById('timeUpOkBtn');
+            if (okBtn) {
+                okBtn.addEventListener('click', function () {
+                    overlay.classList.remove('show');
+                    var resultBox = document.querySelector('.exam-result-box');
+                    if (resultBox) resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            }
+        }
+
+        // ========== RENDER EXAM ==========
+        function renderExam() {
+            var container = document.getElementById('examExercises');
+            if (!container) return;
+            var html = '';
+            var globalQ = 0;
+
+            FINAL_EXAM_DATA.forEach(function (section, sIdx) {
+                html += '<div class="exam-section-head">'
+                      + '<span class="esh-icon">' + (section.icon || '📝') + '</span>'
+                      + '<div><div class="esh-title">' + escHtml(section.title) + '</div>'
+                      + (section.subtitle ? '<div class="esh-sub">' + escHtml(section.subtitle) + '</div>' : '')
+                      + '</div></div>';
+
+                if (section.passage && section.passage.length) {
+                    html += '<div class="exam-passage">';
+                    if (section.passageTitle) html += '<div class="exam-passage-title">📄 ' + escHtml(section.passageTitle) + '</div>';
+                    section.passage.forEach(function (p) { html += '<p>' + escHtml(p) + '</p>'; });
+                    html += '</div>';
+                }
+
+                html += '<div class="exam-exercise-block">';
+                (section.items || []).forEach(function (item, qIdx) {
+                    var mode = item.mode || section.type;
+                    var key = sIdx + '-' + qIdx;
+                    globalQ++;
+                    html += '<div class="exam-q-row" data-exam-row="' + key + '">';
+                    html += '<div class="exam-q-text">' + globalQ + '. ' + renderQ(item.q) + '</div>';
+                    if (mode === 'chip') {
+                        html += '<div class="exam-q-options">';
+                        item.opts.forEach(function (opt) {
+                            html += '<button type="button" class="exam-q-chip" data-exam-chip="' + key + '" data-value="' + escAttr(opt) + '">' + escHtml(opt) + '</button>';
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<input type="text" class="exam-q-input" data-exam-input="' + key + '" placeholder="Javobni yozing" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />';
+                    }
+                    html += '</div>';
+                });
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+
+            container.querySelectorAll('.exam-q-chip').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    if (examFinished) return;
+                    var key = this.dataset.examChip;
+                    container.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]').forEach(function (c) {
+                        c.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    updateProgressCount();
+                    scheduleSave();
+                });
+            });
+            container.querySelectorAll('.exam-q-input').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    updateProgressCount();
+                    scheduleSave();
+                });
+            });
+        }
+
+        // ========== PROGRESS COUNTER ==========
+        function updateProgressCount() {
+            var chipGroups = new Set();
+            document.querySelectorAll('.exam-q-chip.selected').forEach(function (c) {
+                chipGroups.add(c.dataset.examChip);
+            });
+            var answered = chipGroups.size;
+            document.querySelectorAll('.exam-q-input').forEach(function (input) {
+                if (input.value.trim()) answered++;
+            });
+            var badge = document.getElementById('examProgress');
+            if (badge) badge.textContent = answered + ' / ' + TOTAL_QUESTIONS;
+        }
+
+        // ========== AUTOSAVE / RESTORE ==========
+        function collectAnswers() {
+            var answers = {};
+            document.querySelectorAll('.exam-q-chip.selected').forEach(function (c) {
+                answers[c.dataset.examChip] = c.dataset.value;
+            });
+            document.querySelectorAll('.exam-q-input').forEach(function (input) {
+                var v = input.value.trim();
+                if (v) answers[input.dataset.examInput] = v;
+            });
+            return answers;
+        }
+        function buildState() {
+            return { deadline: deadline, startedAt: startedAt, answers: collectAnswers(), savedAt: Date.now() };
+        }
+        function persistLocal() {
+            if (examFinished) return; // never resurrect a draft once the exam is finished
+            try { localStorage.setItem(STATE_KEY, JSON.stringify(buildState())); } catch (e) {}
+        }
+        var _fsTimer = 0;
+        function persistRemote() {
+            if (examFinished || USER_ID === 'guest' || !window.saveQuizResult) return;
+            clearTimeout(_fsTimer);
+            _fsTimer = setTimeout(function () {
+                if (examFinished) return;
+                try {
+                    window.saveQuizResult(USER_ID, EXAM_TOPIC_ID, { examDraft: buildState() }, COURSE).catch(function () {});
+                } catch (e) {}
+            }, 1200);
+        }
+        var _localTimer = 0;
+        var _autosaveInterval = 0;
+        function scheduleSave() {
+            if (examFinished) return;
+            clearTimeout(_localTimer);
+            _localTimer = setTimeout(function () { if (examFinished) return; persistLocal(); persistRemote(); flashAutosave(); }, 700);
+        }
+        function stopAutosave() {
+            clearTimeout(_localTimer);
+            clearTimeout(_fsTimer);
+            if (_autosaveInterval) { clearInterval(_autosaveInterval); _autosaveInterval = 0; }
+        }
+        function flashAutosave() {
+            var note = document.getElementById('examAutosaveNote');
+            if (!note) return;
+            note.innerHTML = '<i class="fas fa-check"></i> Saqlandi ' + new Date().toLocaleTimeString('ru-RU').slice(0, 5);
+        }
+        function applyAnswers(answers) {
+            if (!answers) return;
+            Object.keys(answers).forEach(function (key) {
+                var val = answers[key];
+                var chips = document.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]');
+                if (chips.length) {
+                    chips.forEach(function (c) {
+                        c.classList.toggle('selected', c.dataset.value === val);
+                    });
+                    return;
+                }
+                var input = document.querySelector('[data-exam-input="' + key + '"]');
+                if (input) input.value = val;
+            });
+            updateProgressCount();
+        }
+
+        // Poll for the Firestore-backed sync helpers (loaded by paid-platform.js).
+        function waitForSync(maxMs) {
+            return new Promise(function (resolve) {
+                if (window.getUserQuizResults) return resolve(true);
+                var waited = 0;
+                var iv = setInterval(function () {
+                    waited += 100;
+                    if (window.getUserQuizResults || waited >= maxMs) { clearInterval(iv); resolve(!!window.getUserQuizResults); }
+                }, 100);
+            });
+        }
+
+        async function loadSavedState() {
+            var local = null;
+            try { local = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); } catch (e) {}
+
+            var remote = null;
+            if (USER_ID !== 'guest') {
+                await waitForSync(3000);
+                if (window.getUserQuizResults) {
+                    try {
+                        var all = await window.getUserQuizResults(USER_ID, COURSE);
+                        var doc = all && all['topic_' + EXAM_TOPIC_ID];
+                        if (doc && doc.examDraft) remote = doc.examDraft;
+                    } catch (e) {}
+                }
+            }
+            // Prefer whichever copy was saved most recently (cross-device safe).
+            var chosen = local;
+            if (remote && (!local || (remote.savedAt || 0) > (local.savedAt || 0))) chosen = remote;
+            return chosen;
+        }
+
+        // ========== COMPLETION GATE — exam refuses to start unless the whole course is done ==========
+        var REQUIRED_TOPICS = 20;
+        var COURSE_PAGE = 'b1-course.html';
+        async function getCompletedTopicCount() {
+            var ids = [];
+            if (USER_ID !== 'guest') {
+                await waitForSync(3500);
+                if (window.getUserProgress) {
+                    try {
+                        var p = await window.getUserProgress(USER_ID, COURSE);
+                        if (p && Array.isArray(p.completedTopics)) ids = p.completedTopics;
+                    } catch (e) {}
+                }
+            }
+            // localStorage is only a fallback when Firebase progress is unavailable.
+            if (!ids.length) {
+                try { ids = JSON.parse(localStorage.getItem('b1_progress_' + USER_ID) || '[]'); } catch (e) { ids = []; }
+            }
+            return new Set((ids || []).filter(function (n) { return typeof n === 'number' && isFinite(n); })).size;
+        }
+        function showExamLocked() {
+            examFinished = true;     // stop timer / autosave / beforeunload prompt
+            stopAutosave();
+            if (timerInterval) clearInterval(timerInterval);
+            var footer = document.getElementById('examFooterBar'); if (footer) footer.classList.add('hidden');
+            var timer = document.getElementById('examTimer'); if (timer) timer.style.visibility = 'hidden';
+            var note = document.getElementById('examAutosaveNote'); if (note) note.style.display = 'none';
+            var body = document.getElementById('examExercises');
+            if (body) {
+                body.innerHTML = '<div class="exam-intro" style="border-color:#F44336;background:linear-gradient(135deg,#FFEBEE,#FFCDD2);">'
+                    + '<div style="font-size:2.4rem;margin-bottom:8px;">🔒</div>'
+                    + '<div style="font-size:1.12rem;font-weight:800;margin-bottom:6px;">Kursni to\'liq tugatgandan so\'ng yakuniy imtihon ochiladi.</div>'
+                    + '<div style="font-size:0.95rem;font-weight:600;">B1 kursidagi barcha 20 ta mavzuni tugating. Kurs sahifasiga yo\'naltirilmoqda…</div>'
+                    + '<div style="margin-top:16px;"><button type="button" onclick="window.location.href=\'' + COURSE_PAGE + '\'" style="background:linear-gradient(135deg,#FF9800,#E65100);color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Kursga qaytish</button></div>'
+                    + '</div>';
+            }
+            var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
+            setTimeout(function () { window.location.href = COURSE_PAGE; }, 3500);
+        }
+
+        // ========== FINISH EXAM ==========
+        async function finishExam(isAutoFinish) {
+            if (examFinished) return;
+            examFinished = true;
+            clearInterval(timerInterval);
+            stopAutosave();
+
+            var elapsedSeconds = Math.round((Date.now() - startedAt) / 1000);
+            var timeUsed = formatTime(Math.min(Math.max(elapsedSeconds, 0), TOTAL_SECONDS));
+
+            var results = [];
+            var totalCorrect = 0;
+
+            FINAL_EXAM_DATA.forEach(function (section, sIdx) {
+                (section.items || []).forEach(function (item, qIdx) {
+                    var key = sIdx + '-' + qIdx;
+                    var mode = item.mode || section.type;
+                    var expected = item.answer;
+                    var userValue = '';
+                    var row = document.querySelector('[data-exam-row="' + key + '"]');
+
+                    if (mode === 'chip') {
+                        var selected = document.querySelector('.exam-q-chip[data-exam-chip="' + key + '"].selected');
+                        userValue = selected ? selected.dataset.value : '';
+                        document.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]').forEach(function (c) {
+                            c.classList.remove('correct', 'incorrect');
+                            if (c.classList.contains('selected')) {
+                                c.classList.add(examIsCorrect(userValue, expected) ? 'correct' : 'incorrect');
+                            }
+                            c.style.pointerEvents = 'none';
+                        });
+                    } else {
+                        var input = document.querySelector('[data-exam-input="' + key + '"]');
+                        userValue = input ? input.value.trim() : '';
+                        if (input) {
+                            input.classList.remove('correct', 'incorrect');
+                            input.readOnly = true;
+                            if (userValue) input.classList.add(examIsCorrect(userValue, expected) ? 'correct' : 'incorrect');
+                        }
+                    }
+
+                    var correct = examIsCorrect(userValue, expected);
+                    if (correct) totalCorrect++;
+                    if (row) {
+                        row.classList.remove('correct', 'incorrect');
+                        if (userValue) row.classList.add(correct ? 'correct' : 'incorrect');
+                    }
+                    results.push({
+                        sIdx: sIdx, qIdx: qIdx, sectionTitle: section.title,
+                        question: item.q, userAnswer: userValue,
+                        correctAnswer: Array.isArray(expected) ? expected[0] : expected,
+                        isCorrect: correct
+                    });
+                });
+            });
+
+            var pct = Math.round((totalCorrect / TOTAL_QUESTIONS) * 100);
+            var finalScore = pct; // 100 questions -> score == percentage
+            var passed = pct >= 80;
+
+            await persistResult(finalScore, pct, totalCorrect, passed, isAutoFinish, timeUsed);
+            renderResult(results, finalScore, pct, totalCorrect, passed, isAutoFinish, timeUsed);
+        }
+
+        async function persistResult(finalScore, pct, totalCorrect, passed, isAutoFinish, timeUsed) {
+            var resultData = {
+                score: totalCorrect, total: TOTAL_QUESTIONS, finalScore: finalScore,
+                percentage: pct, passed: passed, autoFinished: !!isAutoFinish,
+                timeUsed: timeUsed, timestamp: new Date().toISOString()
+            };
+            // Completion integrity: certificate/course completion may only be granted
+            // when the learner BOTH passed (>=80%) AND has actually finished all 20 topics.
+            var completedOk = false;
+            try { completedOk = (await getCompletedTopicCount()) >= REQUIRED_TOPICS; } catch (e) { completedOk = false; }
+            var grantCompletion = passed && completedOk;
+
+            // Local completion flags (read by b1-course.html only as a fallback cache).
+            try {
+                if (grantCompletion) {
+                    localStorage.setItem(COMPLETION_KEY, JSON.stringify({
+                        finalExamPassed: true, courseCompleted: true, certificateUnlocked: true,
+                        finalExamScore: pct, finalExamCompletedAt: resultData.timestamp
+                    }));
+                }
+            } catch (e) {}
+            // In-progress draft is no longer needed.
+            try { localStorage.removeItem(STATE_KEY); } catch (e) {}
+
+            if (USER_ID === 'guest') return;
+            await waitForSync(3000);
+            // Save the exam result + clear the draft in Firestore.
+            try {
+                if (window.saveQuizResult) {
+                    await window.saveQuizResult(USER_ID, EXAM_TOPIC_ID, { examResult: resultData, examDraft: null }, COURSE);
+                }
+            } catch (e) {}
+            // On pass AND verified completion: store completion fields under courses.B1.
+            if (grantCompletion) {
+                try {
+                    if (window.saveUserProgress) {
+                        await window.saveUserProgress(USER_ID, COURSE, {
+                            finalExamPassed: true,
+                            courseCompleted: true,
+                            certificateUnlocked: true,
+                            finalExamScore: pct,
+                            finalExamCompletedAt: resultData.timestamp
+                        });
+                    }
+                } catch (e) {}
+                try {
+                    if (window.currentUser && window.logActivity) {
+                        window.logActivity(window.currentUser.email,
+                            (window.currentUser.name || 'Foydalanuvchi') + ' B1 yakuniy imtihonidan o\'tdi (' + pct + '%)',
+                            'course_visit').catch(function () {});
+                    }
+                } catch (e) {}
+            }
+        }
+
+        function renderResult(results, finalScore, pct, totalCorrect, passed, isAutoFinish, timeUsed) {
+            var fbHtml = '<div class="exam-result-box ' + (passed ? 'passed' : 'failed') + '">';
+            fbHtml += '<div class="exam-result-score">' + finalScore + ' / 100</div>';
+            fbHtml += '<div class="exam-result-details">' + totalCorrect + ' / ' + TOTAL_QUESTIONS + " to'g'ri javob (" + pct + '%)</div>';
+            fbHtml += '<div class="exam-result-status ' + (passed ? 'pass' : 'fail') + '">' + (passed ? "O'tdingiz ✓" : "O'tmadingiz ✗") + '</div>';
+            if (passed) {
+                fbHtml += '<div class="exam-result-headline">🎉 B1 kursi muvaffaqiyatli tugatildi</div>';
+                fbHtml += '<div class="exam-result-cert-note"><i class="fas fa-certificate"></i> Tabriklaymiz! B1 sertifikatingiz ochildi. Uni kurs sahifasidan ko\'rishingiz mumkin.</div>';
+            } else {
+                fbHtml += '<div class="exam-result-headline">Imtihondan o\'tmadingiz. Qayta urinib ko\'ring.</div>';
+                fbHtml += '<div class="exam-result-details">O\'tish uchun kamida 80 ball (80%) kerak.</div>';
+            }
+            if (isAutoFinish) fbHtml += '<div class="exam-result-time-info">⏰ Imtihon vaqti tugagani uchun avtomatik yakunlandi</div>';
+            else fbHtml += '<div class="exam-result-time-info">⏱ Sarflangan vaqt: ' + timeUsed + '</div>';
+            fbHtml += '<br><button type="button" class="exam-detail-toggle" id="examDetailToggleBtn">Batafsil natijalarni ko\'rish</button>';
+            fbHtml += '</div>';
+
+            fbHtml += '<div class="exam-detail-section" id="examDetailSection">';
+            var groups = {};
+            results.forEach(function (r) {
+                if (!groups[r.sIdx]) groups[r.sIdx] = { title: r.sectionTitle, items: [] };
+                groups[r.sIdx].items.push(r);
+            });
+            Object.keys(groups).forEach(function (k) {
+                var group = groups[k];
+                var c = group.items.filter(function (r) { return r.isCorrect; }).length;
+                fbHtml += '<div class="exam-detail-exercise">';
+                fbHtml += '<div class="exam-detail-exercise-title" data-exam-detail-toggle="' + k + '">';
+                fbHtml += escHtml(group.title) + ' — ' + c + '/' + group.items.length;
+                fbHtml += '</div>';
+                fbHtml += '<div class="exam-detail-items" id="examDetailItems' + k + '">';
+                group.items.forEach(function (r, i) {
+                    var cls = r.isCorrect ? 'edi-ok' : 'edi-bad';
+                    var icon = r.isCorrect ? '✓' : '✗';
+                    fbHtml += '<div class="exam-detail-item">';
+                    fbHtml += '<span class="edi-status ' + cls + '">' + icon + '</span> ';
+                    fbHtml += '<strong>' + (i + 1) + '.</strong> ' + renderQ(r.question) + ' ';
+                    fbHtml += 'Javob: <em>' + escHtml(r.userAnswer || '(kiritilmagan)') + '</em>';
+                    if (!r.isCorrect) fbHtml += ' → To\'g\'ri: <strong>' + escHtml(r.correctAnswer) + '</strong>';
+                    fbHtml += '</div>';
+                });
+                fbHtml += '</div></div>';
+            });
+            fbHtml += '</div>';
+
+            fbHtml += '<div style="text-align:center; margin-top: 24px;">';
+            fbHtml += '<button class="exam-back-btn" id="examBackBtn" type="button"><i class="fas fa-arrow-left"></i> B1 kursga qaytish</button>';
+            if (!passed) fbHtml += '<button class="exam-retake-btn" id="examRetakeBtn" type="button"><i class="fas fa-redo"></i> Qayta urinib ko\'rish</button>';
+            fbHtml += '</div>';
+
+            var feedbackDiv = document.getElementById('examFeedback');
+            if (feedbackDiv) {
+                feedbackDiv.innerHTML = fbHtml;
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                var toggleBtn = document.getElementById('examDetailToggleBtn');
+                var detailSection = document.getElementById('examDetailSection');
+                if (toggleBtn && detailSection) {
+                    toggleBtn.addEventListener('click', function () {
+                        detailSection.classList.toggle('visible');
+                        this.textContent = detailSection.classList.contains('visible')
+                            ? 'Batafsil natijalarni yashirish' : "Batafsil natijalarni ko'rish";
+                    });
+                }
+                feedbackDiv.querySelectorAll('[data-exam-detail-toggle]').forEach(function (title) {
+                    title.addEventListener('click', function () {
+                        var items = document.getElementById('examDetailItems' + this.dataset.examDetailToggle);
+                        if (items) items.classList.toggle('visible');
+                    });
+                });
+                var backBtn = document.getElementById('examBackBtn');
+                if (backBtn) backBtn.addEventListener('click', function () { window.location.href = 'b1-course.html#finalExamEntry'; });
+                var retakeBtn = document.getElementById('examRetakeBtn');
+                if (retakeBtn) retakeBtn.addEventListener('click', function () {
+                    try { localStorage.removeItem(STATE_KEY); } catch (e) {}
+                    window.location.reload();
+                });
+            }
+
+            var footerBar = document.getElementById('examFooterBar');
+            if (footerBar) footerBar.classList.add('hidden');
+        }
+
+        // ========== BEFOREUNLOAD WARNING ==========
+        window.addEventListener('beforeunload', function (e) {
+            if (!examFinished) {
+                // Make sure the latest answers + deadline are flushed before leaving.
+                persistLocal();
+                e.preventDefault();
+                e.returnValue = 'Imtihonni tark etmoqchimisiz? Javoblaringiz saqlanadi va keyin davom ettirishingiz mumkin.';
+                return e.returnValue;
+            }
+        });
+
+        // ========== EXIT BUTTON ==========
+        document.getElementById('examExitBtn').addEventListener('click', function () {
+            if (examFinished) { window.location.href = 'b1-course.html#finalExamEntry'; return; }
+            if (confirm("Imtihondan chiqmoqchimisiz? Javoblaringiz saqlanadi va vaqt davom etadi. Keyin davom ettirishingiz mumkin.")) {
+                persistLocal();
+                examFinished = true; // prevent beforeunload prompt on intentional exit
+                window.location.href = 'b1-course.html#finalExamEntry';
+            }
+        });
+
+        // ========== SUBMIT BUTTON ==========
+        document.getElementById('examSubmitBtn').addEventListener('click', function () {
+            if (confirm('Imtihonni yakunlash va javoblarni tekshirishni xohlaysizmi? Yakunlangandan keyin javoblarni o\'zgartirib bo\'lmaydi.')) {
+                finishExam(false);
+            }
+        });
+
+        // ========== PERIODIC AUTOSAVE (every 30s) ==========
+        _autosaveInterval = setInterval(function () { if (!examFinished) { persistLocal(); persistRemote(); flashAutosave(); } }, 30000);
+
+        // ========== INIT ==========
+        (async function init() {
+            // Gate: refuse to render / start the exam unless ALL 20 topics are completed.
+            var doneCount = await getCompletedTopicCount();
+            if (doneCount < REQUIRED_TOPICS) { showExamLocked(); return; }
+
+            renderExam();
+
+            var saved = await loadSavedState();
+            if (saved && saved.deadline && saved.deadline > Date.now()) {
+                // Resume an in-progress exam.
+                deadline = saved.deadline;
+                startedAt = saved.startedAt || Date.now();
+                applyAnswers(saved.answers);
+            } else if (saved && saved.deadline && saved.deadline <= Date.now()) {
+                // The clock already ran out while away — restore answers and auto-submit.
+                deadline = saved.deadline;
+                startedAt = saved.startedAt || (saved.deadline - TOTAL_SECONDS * 1000);
+                applyAnswers(saved.answers);
+                updateProgressCount();
+                startTimer(); // will detect <=0 and call timeUp()
+                return;
+            } else {
+                // Fresh exam.
+                startedAt = Date.now();
+                deadline = startedAt + TOTAL_SECONDS * 1000;
+                persistLocal();
+            }
+
+            updateProgressCount();
+            startTimer();
+        })();
+
+    })();
+    </script>
+</body>
+</html>

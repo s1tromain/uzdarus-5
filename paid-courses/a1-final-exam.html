@@ -688,6 +688,60 @@
             } catch(e) {}
         })();
 
+        // ========== COMPLETION GATE — exam refuses to start unless the whole A1 course is done ==========
+        var GATE_REQUIRED = 12;
+        var GATE_COURSE = 'A1';
+        var GATE_PAGE = 'a1-course.html';
+        function gateUid() {
+            try { var u = JSON.parse(localStorage.getItem('currentUser')); if (u && u.id) return u.id; } catch (e) {}
+            return 'guest';
+        }
+        function waitForProgressFn(maxMs) {
+            return new Promise(function (resolve) {
+                if (window.getUserProgress) return resolve(true);
+                var waited = 0;
+                var iv = setInterval(function () {
+                    waited += 100;
+                    if (window.getUserProgress || waited >= maxMs) { clearInterval(iv); resolve(!!window.getUserProgress); }
+                }, 100);
+            });
+        }
+        async function getCompletedTopicCount() {
+            var uid = gateUid();
+            var ids = [];
+            if (uid !== 'guest') {
+                await waitForProgressFn(3500);
+                if (window.getUserProgress) {
+                    try {
+                        var p = await window.getUserProgress(uid, GATE_COURSE);
+                        if (p && Array.isArray(p.completedTopics)) ids = p.completedTopics;
+                    } catch (e) {}
+                }
+            }
+            // localStorage is only a fallback when Firebase progress is unavailable.
+            if (!ids.length) {
+                try { ids = JSON.parse(localStorage.getItem('a1_progress_' + uid) || '[]'); } catch (e) { ids = []; }
+            }
+            return new Set((ids || []).filter(function (n) { return typeof n === 'number' && isFinite(n); })).size;
+        }
+        function showExamLocked() {
+            examFinished = true;     // stop timer + suppress beforeunload prompt
+            if (timerInterval) clearInterval(timerInterval);
+            var footer = document.getElementById('examFooterBar'); if (footer) footer.classList.add('hidden');
+            var timer = document.getElementById('examTimer'); if (timer) timer.style.visibility = 'hidden';
+            var body = document.getElementById('examExercises');
+            if (body) {
+                body.innerHTML = '<div class="exam-intro" style="border-color:#F44336;background:linear-gradient(135deg,#FFEBEE,#FFCDD2);">'
+                    + '<div style="font-size:2.4rem;margin-bottom:8px;">🔒</div>'
+                    + '<div style="font-size:1.12rem;font-weight:800;margin-bottom:6px;">Kursni to\'liq tugatgandan so\'ng yakuniy imtihon ochiladi.</div>'
+                    + '<div style="font-size:0.95rem;font-weight:600;">A1 kursidagi barcha 12 ta mavzuni tugating. Kurs sahifasiga yo\'naltirilmoqda…</div>'
+                    + '<div style="margin-top:16px;"><button type="button" onclick="window.location.href=\'' + GATE_PAGE + '\'" style="background:linear-gradient(135deg,#FF9800,#E65100);color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Kursga qaytish</button></div>'
+                    + '</div>';
+            }
+            var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
+            setTimeout(function () { window.location.href = GATE_PAGE; }, 3500);
+        }
+
         // ========== EXAM DATA (120 QUESTIONS) ==========
         var FINAL_EXAM_DATA = [
             {
@@ -1255,9 +1309,14 @@
         });
 
         // ========== INIT ==========
-        renderExam();
-        startTimer();
-        updateProgressCount();
+        (async function init() {
+            // Gate: refuse to render / start the exam unless ALL 12 topics are completed.
+            var doneCount = await getCompletedTopicCount();
+            if (doneCount < GATE_REQUIRED) { showExamLocked(); return; }
+            renderExam();
+            startTimer();
+            updateProgressCount();
+        })();
 
     })();
     </script>

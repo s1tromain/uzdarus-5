@@ -1849,6 +1849,116 @@
                 font-size: 0.95rem;
             }
         }
+
+        /* ====== FINAL EXAM ENTRY + CERTIFICATE ====== */
+        .final-exam-entry {
+            max-width: 720px;
+            margin: 50px auto 30px;
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 50%, #FFD54F 100%);
+            border: 3px solid var(--primary, #FF9800);
+            border-radius: 24px;
+            padding: 40px 32px;
+            text-align: center;
+            box-shadow: 0 12px 40px rgba(255, 152, 0, 0.25), 0 0 0 4px rgba(255, 152, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .final-exam-entry.locked {
+            background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%);
+            border-color: #b0bec5;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+        }
+        .final-exam-entry.completed {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 60%, #A5D6A7 100%);
+            border-color: #4CAF50;
+            box-shadow: 0 12px 40px rgba(76, 175, 80, 0.25), 0 0 0 4px rgba(76, 175, 80, 0.08);
+        }
+        .final-exam-trophy { font-size: 3.5rem; margin-bottom: 12px; display: block; }
+        .final-exam-entry-title { font-size: 1.8rem; font-weight: 800; color: var(--primary-dark, #F57C00); margin-bottom: 6px; }
+        .final-exam-entry.locked .final-exam-entry-title { color: #607d8b; }
+        .final-exam-entry.completed .final-exam-entry-title { color: #2e7d32; }
+        .final-exam-entry-subtitle { font-size: 1.05rem; color: var(--gray, #666); font-weight: 600; margin-bottom: 16px; }
+        .final-exam-entry-desc { font-size: 0.97rem; color: var(--dark, #333); line-height: 1.7; margin-bottom: 18px; }
+        .final-exam-info-list { list-style: none; padding: 0; margin: 0 auto 22px; display: inline-block; text-align: left; }
+        .final-exam-info-list li { font-size: 0.97rem; color: var(--dark, #333); padding: 4px 0; font-weight: 600; }
+        .final-exam-progress-line { font-size: 0.95rem; font-weight: 700; color: #607d8b; margin-bottom: 18px; }
+        .final-exam-start-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary, #FF9800), var(--primary-dark, #F57C00));
+            color: white; padding: 16px 48px; border: none; border-radius: 50px;
+            font-size: 1.2rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 8px 28px rgba(255, 152, 0, 0.4); transition: all 0.3s ease; letter-spacing: 0.3px;
+        }
+        .final-exam-start-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(255, 152, 0, 0.55); }
+        .final-exam-start-btn.locked { background: #b0bec5; cursor: not-allowed; box-shadow: none; }
+        .final-exam-start-btn.locked:hover { transform: none; box-shadow: none; }
+        .final-exam-cert-btn {
+            display: inline-block; background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white; padding: 16px 48px; border: none; border-radius: 50px;
+            font-size: 1.15rem; font-weight: 700; cursor: pointer; margin-top: 6px;
+            box-shadow: 0 8px 28px rgba(76, 175, 80, 0.4); transition: all 0.3s ease;
+        }
+        .final-exam-cert-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(76, 175, 80, 0.55); }
+        .final-exam-badge {
+            display: inline-block; background: linear-gradient(135deg, #FFD54F, #FF9800);
+            color: #333; padding: 4px 14px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+            margin-bottom: 14px; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .final-exam-entry.completed .final-exam-badge { background: linear-gradient(135deg, #A5D6A7, #4CAF50); color: #fff; }
+
+        /* Certificate modal */
+        .b1-cert-overlay {
+            display: none; position: fixed; inset: 0; z-index: 100000;
+            background: rgba(10, 15, 35, 0.8); backdrop-filter: blur(3px);
+            justify-content: center; align-items: center; padding: 20px; overflow-y: auto;
+        }
+        .b1-cert-overlay.show { display: flex; }
+        .b1-cert {
+            background: #fffdf5; width: 100%; max-width: 720px; border-radius: 16px;
+            padding: 48px 44px; position: relative;
+            border: 10px double #C9A227; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            text-align: center; font-family: 'Georgia', 'Segoe UI', serif;
+        }
+        .b1-cert-logo { font-size: 1.4rem; font-weight: 800; color: #0f3460; letter-spacing: 1px; }
+        .b1-cert-logo span { color: #08617f; }
+        .b1-cert-kicker { margin-top: 8px; font-size: 0.85rem; letter-spacing: 3px; color: #C9A227; text-transform: uppercase; font-weight: 700; }
+        .b1-cert-title { font-size: 2.1rem; font-weight: 800; color: #1a1a2e; margin: 18px 0 6px; }
+        .b1-cert-sub { font-size: 0.95rem; color: #666; margin-bottom: 22px; }
+        .b1-cert-name { font-size: 1.7rem; font-weight: 800; color: #0f3460; border-bottom: 2px solid #C9A227; display: inline-block; padding: 0 18px 6px; margin-bottom: 18px; }
+        .b1-cert-body { font-size: 1rem; color: #333; line-height: 1.7; margin-bottom: 16px; }
+        .b1-cert-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 26px; font-size: 0.9rem; color: #444; }
+        .b1-cert-meta b { display: block; color: #0f3460; }
+        .b1-cert-seal { position: absolute; bottom: 26px; right: 34px; font-size: 3rem; opacity: 0.9; }
+        .b1-cert-actions { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .b1-cert-actions button {
+            border: none; border-radius: 50px; padding: 12px 28px; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .b1-cert-print { background: linear-gradient(135deg, #FF9800, #F57C00); color: #fff; }
+        .b1-cert-close { background: #eceff1; color: #455a64; }
+
+        @media (max-width: 768px) {
+            .final-exam-entry { margin: 30px 12px 20px; padding: 28px 18px; }
+            .final-exam-entry-title { font-size: 1.4rem; }
+            .final-exam-trophy { font-size: 2.8rem; }
+            .final-exam-start-btn, .final-exam-cert-btn { padding: 14px 34px; font-size: 1.05rem; }
+            .b1-cert { padding: 30px 20px; }
+            .b1-cert-title { font-size: 1.5rem; }
+            .b1-cert-name { font-size: 1.3rem; }
+            .b1-cert-seal { font-size: 2.2rem; bottom: 16px; right: 18px; }
+        }
+        @media (max-width: 480px) {
+            .final-exam-entry { margin: 20px 6px 16px; padding: 22px 12px; }
+            .final-exam-entry-title { font-size: 1.2rem; }
+            .b1-cert-meta { flex-direction: column; }
+        }
+        @media print {
+            body * { visibility: hidden !important; }
+            .b1-cert-overlay, .b1-cert-overlay * { visibility: visible !important; }
+            .b1-cert-overlay { position: absolute; inset: 0; background: #fff; display: block; }
+            .b1-cert { box-shadow: none; max-width: 100%; }
+            .b1-cert-actions { display: none !important; }
+        }
     </style>
 </head>
 
@@ -1957,6 +2067,40 @@
             </div>
         </div>
     </section>
+
+    <!-- ====== FINAL EXAM ENTRY (rendered by JS only after ALL 20 topics completed) ====== -->
+    <section class="content-section" id="finalExamEntry" style="display:none;">
+        <div class="container">
+            <div class="final-exam-entry" id="finalExamEntryCard">
+                <!-- Filled by renderFinalExamEntry() -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== B1 CERTIFICATE MODAL ====== -->
+    <div class="b1-cert-overlay" id="b1CertOverlay">
+        <div class="b1-cert" id="b1CertCard">
+            <div class="b1-cert-logo"><span style="color:#0f3460;">Uzda</span><span>Rus</span> PRO</div>
+            <div class="b1-cert-kicker">Sertifikat / Сертификат</div>
+            <div class="b1-cert-title">B1 Daraja — Rus tili</div>
+            <div class="b1-cert-sub">Ushbu sertifikat quyidagi shaxsga berildi:</div>
+            <div class="b1-cert-name" id="b1CertName">Foydalanuvchi</div>
+            <div class="b1-cert-body">
+                B1 «O'rta daraja» rus tili kursini muvaffaqiyatli yakunlab,
+                20 ta mavzu va yakuniy imtihonni topshirgani uchun taqdirlanadi.
+            </div>
+            <div class="b1-cert-meta">
+                <div>Yakuniy ball<b id="b1CertScore">—</b></div>
+                <div>Sana<b id="b1CertDate">—</b></div>
+                <div>Sertifikat ID<b id="b1CertId">—</b></div>
+            </div>
+            <div class="b1-cert-seal">🏅</div>
+            <div class="b1-cert-actions">
+                <button class="b1-cert-print" id="b1CertPrintBtn" type="button"><i class="fas fa-print"></i> Chop etish / PDF</button>
+                <button class="b1-cert-close" id="b1CertCloseBtn" type="button">Yopish</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer class="footer">
@@ -7096,6 +7240,37 @@
         let currentScore = 0;
         const PASSING_SCORE = 7;
         let userQuizResults = {};
+        // B1 final-exam / certificate completion state (written by b1-final-exam.html).
+        // `fbConfirmed` is true ONLY when the Firebase progress record itself confirms a
+        // passed exam — localStorage alone must never be enough to unlock the certificate.
+        let b1Completion = { finalExamPassed: false, courseCompleted: false, certificateUnlocked: false, finalExamScore: null, finalExamCompletedAt: null, fbConfirmed: false };
+        function readLocalB1Completion() {
+            try {
+                const uid = window.currentUserId || (JSON.parse(localStorage.getItem('currentUser') || 'null') || {}).id || 'guest';
+                const raw = localStorage.getItem('b1_completion_' + uid);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+        function mergeB1Completion(src, fromFirebase) {
+            if (!src) return;
+            if (src.finalExamPassed) b1Completion.finalExamPassed = true;
+            if (src.courseCompleted) b1Completion.courseCompleted = true;
+            if (src.certificateUnlocked) b1Completion.certificateUnlocked = true;
+            if (src.finalExamScore != null) b1Completion.finalExamScore = src.finalExamScore;
+            if (src.finalExamCompletedAt) b1Completion.finalExamCompletedAt = src.finalExamCompletedAt;
+            // Certificate trust: only a Firebase-sourced pass counts as confirmed.
+            if (fromFirebase && src.finalExamPassed) b1Completion.fbConfirmed = true;
+        }
+        // True only when ALL topics are completed (server-preferred completedTopics).
+        function b1AllTopicsCompleted() {
+            const ids = courseData.topics.map(t => t.id);
+            return ids.length > 0 && ids.every(id => completedTopics.includes(id));
+        }
+        // Certificate / course-completed state — requires BOTH a Firebase-confirmed pass
+        // AND every topic finished. Prevents localStorage tampering and inconsistent state.
+        function b1CertificateUnlocked() {
+            return b1AllTopicsCompleted() && b1Completion.finalExamPassed && b1Completion.fbConfirmed;
+        }
 
         // ==================== FIREBASE HELPER FUNCTIONS ====================
         // Ожидание загрузки Firebase
@@ -7129,6 +7304,7 @@
             if (!userSession) {
                 completedTopics = JSON.parse(localStorage.getItem('b1_progress_guest') || '[]');
                 userQuizResults = {};
+                mergeB1Completion(readLocalB1Completion(), false);
                 console.log('ℹ️ DATA: Guest mode progress loaded from localStorage');
                 return;
             }
@@ -7153,6 +7329,7 @@
                     } else {
                         completedTopics = JSON.parse(localStorage.getItem(`b1_progress_${currentUserId}`) || '[]');
                     }
+                    mergeB1Completion(savedProgress, true);
 
                     userQuizResults = await window.getUserQuizResults(currentUserId, 'B1') || {};
                 } else {
@@ -7162,6 +7339,9 @@
                 console.error('❌ DATA: Error loading progress, fallback to localStorage:', error);
                 completedTopics = JSON.parse(localStorage.getItem(`b1_progress_${currentUserId}`) || '[]');
             }
+            // localStorage completion flags act as a fast fallback CACHE only — they can
+            // populate score/date for display but never set fbConfirmed (no cert from cache).
+            mergeB1Completion(readLocalB1Completion(), false);
         }
 
         async function saveQuizResultToFirebase(topicId, quizData) {
@@ -9639,7 +9819,114 @@
                 completedFreeCount: completedFreeTopics.length,
                 progressPercent: Math.round(progress) + '%'
             });
+
+            renderFinalExamEntry();
         }
+
+        // ====== FINAL EXAM ENTRY (locked / available / completed) ======
+        function renderFinalExamEntry() {
+            const section = document.getElementById('finalExamEntry');
+            const card = document.getElementById('finalExamEntryCard');
+            if (!section || !card) return;
+
+            const allTopicIds = courseData.topics.map(t => t.id);
+            const doneCount = allTopicIds.filter(id => completedTopics.includes(id)).length;
+            const totalCount = allTopicIds.length;
+            const allCompleted = totalCount > 0 && doneCount === totalCount;
+            // Certificate / completed state requires a Firebase-confirmed pass AND all topics.
+            const certUnlocked = b1CertificateUnlocked();
+
+            // The final-exam block is always present at the bottom of the course.
+            section.style.display = '';
+
+            // LOCKED — not all topics completed yet (and certificate not legitimately unlocked).
+            if (!allCompleted && !certUnlocked) {
+                card.className = 'final-exam-entry locked';
+                card.innerHTML =
+                    '<span class="final-exam-badge"><i class="fas fa-lock"></i> QULFLANGAN</span>' +
+                    '<span class="final-exam-trophy">🔒</span>' +
+                    '<div class="final-exam-entry-title">B1 Yakuniy Imtihoni</div>' +
+                    '<div class="final-exam-entry-subtitle">Imtihon hali ochilmagan</div>' +
+                    '<div class="final-exam-entry-desc">Yakuniy imtihonni boshlash uchun avval B1 kursidagi barcha 20 ta mavzuni tugatishingiz kerak.</div>' +
+                    '<div class="final-exam-progress-line"><i class="fas fa-tasks"></i> ' + doneCount + ' / ' + totalCount + ' mavzu tugatilgan</div>' +
+                    '<button class="final-exam-start-btn locked" type="button" disabled><i class="fas fa-lock"></i> Yakuniy Imtihon (qulflangan)</button>';
+                return;
+            }
+
+            if (certUnlocked) {
+                card.className = 'final-exam-entry completed';
+                const scoreTxt = (b1Completion.finalExamScore != null) ? (b1Completion.finalExamScore + ' ball') : '';
+                card.innerHTML =
+                    '<span class="final-exam-badge"><i class="fas fa-check-circle"></i> KURS TUGATILDI</span>' +
+                    '<span class="final-exam-trophy">🎓</span>' +
+                    '<div class="final-exam-entry-title">B1 kursi muvaffaqiyatli tugatildi</div>' +
+                    '<div class="final-exam-entry-subtitle">Tabriklaymiz! Yakuniy imtihondan o\'tdingiz' + (scoreTxt ? ' — ' + scoreTxt : '') + '</div>' +
+                    '<div class="final-exam-entry-desc">B1 sertifikatingiz ochildi. Uni ko\'rishingiz, yuklab olishingiz yoki chop etishingiz mumkin.</div>' +
+                    '<button class="final-exam-cert-btn" id="b1ShowCertBtn" type="button"><i class="fas fa-certificate"></i> Sertifikatni ko\'rish</button>' +
+                    '<div style="margin-top:14px;"><button class="final-exam-start-btn" id="b1RetakeExamBtn" type="button" style="background:linear-gradient(135deg,#607d8b,#455a64);font-size:0.95rem;padding:12px 30px;"><i class="fas fa-redo"></i> Imtihonni qayta topshirish</button></div>';
+                const certBtn = document.getElementById('b1ShowCertBtn');
+                if (certBtn) certBtn.onclick = showB1Certificate;
+                const retakeBtn = document.getElementById('b1RetakeExamBtn');
+                if (retakeBtn) retakeBtn.onclick = () => { window.location.href = 'b1-final-exam.html'; };
+                return;
+            }
+
+            // All topics completed but exam not yet passed → exam available.
+            card.className = 'final-exam-entry';
+            card.innerHTML =
+                '<span class="final-exam-badge"><i class="fas fa-crown"></i> YAKUNIY IMTIHON</span>' +
+                '<span class="final-exam-trophy">🎓</span>' +
+                '<div class="final-exam-entry-title">B1 Yakuniy Imtihoni</div>' +
+                '<div class="final-exam-entry-subtitle">20 ta mavzu bo\'yicha yakuniy sinov</div>' +
+                '<div class="final-exam-entry-desc">Ushbu imtihon B1 kursidagi barcha mavzular bo\'yicha bilimlaringizni tekshiradi. ' +
+                'Imtihon 100 ta baholanadigan javobdan iborat. O\'tish balli — 80%.</div>' +
+                '<ul class="final-exam-info-list">' +
+                '<li>• Grammatika — 40 ball</li>' +
+                '<li>• Tarjima — 20 ball</li>' +
+                '<li>• Lug\'at — 10 ball</li>' +
+                '<li>• O\'qib tushunish — 10 ball</li>' +
+                '<li>• Muloqot va vaziyatlar — 20 ball</li>' +
+                '<li>• ⏱ Imtihon vaqti: 120 daqiqa · 💾 Avtosaqlash yoqilgan</li>' +
+                '</ul>' +
+                '<button class="final-exam-start-btn" id="b1StartExamBtn" type="button"><i class="fas fa-play-circle"></i> 🎓 Yakuniy Imtihonni Boshlash</button>';
+            const startBtn = document.getElementById('b1StartExamBtn');
+            if (startBtn) startBtn.onclick = () => { window.location.href = 'b1-final-exam.html'; };
+        }
+
+        // ====== B1 CERTIFICATE ======
+        function showB1Certificate() {
+            // Defense-in-depth: never open the certificate unless it is legitimately unlocked
+            // (Firebase-confirmed pass + all 20 topics completed).
+            if (!b1CertificateUnlocked()) return;
+            const overlay = document.getElementById('b1CertOverlay');
+            if (!overlay) return;
+            const nameEl = document.getElementById('b1CertName');
+            const scoreEl = document.getElementById('b1CertScore');
+            const dateEl = document.getElementById('b1CertDate');
+            const idEl = document.getElementById('b1CertId');
+            const user = currentUser || (function () { try { return JSON.parse(localStorage.getItem('currentUser')); } catch (e) { return null; } })();
+            if (nameEl) nameEl.textContent = (user && (user.name || user.username)) || 'Foydalanuvchi';
+            if (scoreEl) scoreEl.textContent = (b1Completion.finalExamScore != null) ? (b1Completion.finalExamScore + ' / 100') : '—';
+            let dateStr = '—';
+            if (b1Completion.finalExamCompletedAt) {
+                const d = new Date(b1Completion.finalExamCompletedAt);
+                if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('ru-RU');
+            }
+            if (dateEl) dateEl.textContent = dateStr;
+            if (idEl) {
+                const uid = (user && user.id) ? String(user.id).slice(0, 6).toUpperCase() : 'GUEST';
+                idEl.textContent = 'B1-' + uid;
+            }
+            overlay.classList.add('show');
+        }
+        (function bindCertModal() {
+            const overlay = document.getElementById('b1CertOverlay');
+            const closeBtn = document.getElementById('b1CertCloseBtn');
+            const printBtn = document.getElementById('b1CertPrintBtn');
+            if (closeBtn) closeBtn.onclick = () => overlay.classList.remove('show');
+            if (printBtn) printBtn.onclick = () => window.print();
+            if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
+        })();
 
         // Subscription function
         function subscribeNow() {
