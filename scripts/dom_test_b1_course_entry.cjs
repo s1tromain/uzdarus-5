@@ -26,6 +26,7 @@ const fnRender = extractFn(src, 'function renderFinalExamEntry()');
 const fnCert = extractFn(src, 'function showB1Certificate()');
 const fnReadLocal = extractFn(src, 'function readLocalB1Completion()');
 const fnMerge = extractFn(src, 'function mergeB1Completion(');
+const fnIsPriv = extractFn(src, 'function b1IsPrivileged()');
 const fnAllDone = extractFn(src, 'function b1AllTopicsCompleted()');
 const fnCertUnlocked = extractFn(src, 'function b1CertificateUnlocked()');
 
@@ -52,6 +53,7 @@ w.eval(`
   var b1Completion = { finalExamPassed:false, courseCompleted:false, certificateUnlocked:false, finalExamScore:null, finalExamCompletedAt:null, fbConfirmed:false };
   ${fnReadLocal}
   ${fnMerge}
+  ${fnIsPriv}
   ${fnAllDone}
   ${fnCertUnlocked}
   ${fnRender}
@@ -103,6 +105,19 @@ w.eval("completedTopics = [1,2,3]; b1Completion = { finalExamPassed:true, course
 check('locked state (not completed) when topics<20', card().className.includes('locked'));
 w.eval('showB1Certificate();');
 check('cert modal stays closed when topics<20', !w.document.getElementById('b1CertOverlay').classList.contains('show'));
+
+console.log('DEVELOPER — bypasses completion: cert + exam entry unlocked with 0 topics done');
+w.eval("document.getElementById('b1CertOverlay').classList.remove('show'); window.currentUser = { id:'devUID', name:'Dev Account', role:'developer' }; completedTopics = []; b1Completion = { finalExamPassed:false, courseCompleted:false, certificateUnlocked:false, finalExamScore:null, finalExamCompletedAt:null, fbConfirmed:false }; renderFinalExamEntry();");
+check('dev: NOT locked even with 0 topics', !card().className.includes('locked'));
+check('dev: certificate button available', !!w.document.getElementById('b1ShowCertBtn'));
+w.eval('showB1Certificate();');
+check('dev: certificate modal opens', w.document.getElementById('b1CertOverlay').classList.contains('show'));
+
+console.log('CUSTOMER — role cleared: gates re-apply (no bypass leakage)');
+w.eval("document.getElementById('b1CertOverlay').classList.remove('show'); window.currentUser = { id:'custUID', name:'Customer', role:'customer' }; completedTopics = [1,2,3]; renderFinalExamEntry();");
+check('customer: locked with 3 topics', card().className.includes('locked'));
+w.eval('showB1Certificate();');
+check('customer: certificate modal stays closed', !w.document.getElementById('b1CertOverlay').classList.contains('show'));
 
 console.log('\n' + (failures === 0 ? 'ALL COURSE-ENTRY TESTS PASSED ✓' : failures + ' CHECK(S) FAILED ✗'));
 process.exit(failures === 0 ? 0 : 1);

@@ -9,12 +9,12 @@ const mem = {};
 function ls() { return { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, clear: () => { Object.keys(mem).forEach(k => delete mem[k]); } }; }
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
-function build(completed) {
+function build(completed, role) {
     return new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, beforeParse(window) {
         Object.defineProperty(window, 'localStorage', { value: ls(), configurable: true });
         window.confirm = () => true; window.alert = () => {}; window.scrollTo = () => {};
         window.HTMLElement.prototype.scrollIntoView = () => {};
-        window.localStorage.setItem('currentUser', JSON.stringify({ id: 'A1User', name: 'A1 Test' }));
+        window.localStorage.setItem('currentUser', JSON.stringify({ id: 'A1User', name: 'A1 Test', role: role || 'customer' }));
         window.getUserProgress = () => Promise.resolve({ completedTopics: completed });
         window.getUserQuizResults = () => Promise.resolve({});
         window.saveQuizResult = () => Promise.resolve(true);
@@ -43,6 +43,15 @@ function build(completed) {
     ck('question rows rendered (120)', d.querySelectorAll('[data-exam-row]').length === 120);
     ck('footer visible (submit available)', !d.getElementById('examFooterBar').classList.contains('hidden'));
     ck('timer counting down', d.getElementById('examTimerDisplay').textContent !== '02:00:00' || true);
+    dom.window.close();
+
+    console.log('A1 DEVELOPER — bypasses gate (0/12 completed allows exam)');
+    dom = build([], 'developer');
+    d = dom.window.document;
+    await wait(500);
+    ck('dev: question rows rendered (120) with 0 topics', d.querySelectorAll('[data-exam-row]').length === 120);
+    ck('dev: footer visible', !d.getElementById('examFooterBar').classList.contains('hidden'));
+    ck('dev: not locked', !/yakuniy imtihon ochiladi/.test(d.getElementById('examExercises').textContent));
     dom.window.close();
 
     console.log('\n' + (fail===0?'A1 GATE TESTS PASSED ✓':fail+' FAILED ✗'));

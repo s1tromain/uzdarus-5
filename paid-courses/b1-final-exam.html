@@ -1021,6 +1021,13 @@
         // ========== COMPLETION GATE — exam refuses to start unless the whole course is done ==========
         var REQUIRED_TOPICS = 20;
         var COURSE_PAGE = 'b1-course.html';
+        // Developer/Admin accounts bypass ALL completion gates (customers unaffected).
+        function isPrivilegedUser() {
+            try {
+                var r = String(((window.currentUser) || JSON.parse(localStorage.getItem('currentUser') || 'null') || {}).role || '').toLowerCase();
+                return r === 'developer' || r === 'admin';
+            } catch (e) { return false; }
+        }
         async function getCompletedTopicCount() {
             var ids = [];
             if (USER_ID !== 'guest') {
@@ -1294,8 +1301,11 @@
         // ========== INIT ==========
         (async function init() {
             // Gate: refuse to render / start the exam unless ALL 20 topics are completed.
-            var doneCount = await getCompletedTopicCount();
-            if (doneCount < REQUIRED_TOPICS) { showExamLocked(); return; }
+            // Developer/Admin bypass the gate entirely; customers are unaffected.
+            if (!isPrivilegedUser()) {
+                var doneCount = await getCompletedTopicCount();
+                if (doneCount < REQUIRED_TOPICS) { showExamLocked(); return; }
+            }
 
             renderExam();
 

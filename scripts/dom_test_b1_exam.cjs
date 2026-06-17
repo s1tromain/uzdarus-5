@@ -178,6 +178,20 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     check('no timer running (still 02:00:00)', d5.getElementById('examTimerDisplay').textContent === '02:00:00');
     dom.window.close();
 
+    // ---------- TEST 6: developer bypasses the gate (0 topics done -> exam opens) ----------
+    console.log('TEST 6 — developer: gate bypassed, exam opens immediately with 0 topics done');
+    delete memStore[stateKey];
+    dom = build((w) => {
+        w.__completed = []; // developer has completed nothing
+        w.localStorage.setItem('currentUser', JSON.stringify({ id: 'devUser', name: 'Dev', role: 'developer' }));
+    });
+    const d6 = dom.window.document;
+    await wait(500);
+    check('renders 100 question rows for developer', d6.querySelectorAll('[data-exam-row]').length === 100);
+    check('footer (submit) visible for developer', !d6.getElementById('examFooterBar').classList.contains('hidden'));
+    check('not showing locked message', !/yakuniy imtihon ochiladi/.test(d6.getElementById('examExercises').textContent));
+    dom.window.close();
+
     console.log('\n' + (failures === 0 ? 'ALL DOM TESTS PASSED ✓' : failures + ' DOM CHECK(S) FAILED ✗'));
     process.exit(failures === 0 ? 0 : 1);
 })().catch(e => { console.error(e); process.exit(2); });

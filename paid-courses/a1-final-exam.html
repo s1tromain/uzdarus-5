@@ -692,6 +692,13 @@
         var GATE_REQUIRED = 12;
         var GATE_COURSE = 'A1';
         var GATE_PAGE = 'a1-course.html';
+        // Developer/Admin accounts bypass ALL completion gates (customers unaffected).
+        function isPrivilegedUser() {
+            try {
+                var r = String(((window.currentUser) || JSON.parse(localStorage.getItem('currentUser') || 'null') || {}).role || '').toLowerCase();
+                return r === 'developer' || r === 'admin';
+            } catch (e) { return false; }
+        }
         function gateUid() {
             try { var u = JSON.parse(localStorage.getItem('currentUser')); if (u && u.id) return u.id; } catch (e) {}
             return 'guest';
@@ -1311,8 +1318,11 @@
         // ========== INIT ==========
         (async function init() {
             // Gate: refuse to render / start the exam unless ALL 12 topics are completed.
-            var doneCount = await getCompletedTopicCount();
-            if (doneCount < GATE_REQUIRED) { showExamLocked(); return; }
+            // Developer/Admin bypass the gate entirely; customers are unaffected.
+            if (!isPrivilegedUser()) {
+                var doneCount = await getCompletedTopicCount();
+                if (doneCount < GATE_REQUIRED) { showExamLocked(); return; }
+            }
             renderExam();
             startTimer();
             updateProgressCount();

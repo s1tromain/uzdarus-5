@@ -7261,14 +7261,22 @@
             // Certificate trust: only a Firebase-sourced pass counts as confirmed.
             if (fromFirebase && src.finalExamPassed) b1Completion.fbConfirmed = true;
         }
+        // Developer/Admin accounts bypass ALL completion gates (customers unaffected).
+        function b1IsPrivileged() {
+            const r = String((window.currentUser && window.currentUser.role) || '').toLowerCase();
+            return r === 'developer' || r === 'admin';
+        }
         // True only when ALL topics are completed (server-preferred completedTopics).
         function b1AllTopicsCompleted() {
+            if (b1IsPrivileged()) return true;
             const ids = courseData.topics.map(t => t.id);
             return ids.length > 0 && ids.every(id => completedTopics.includes(id));
         }
         // Certificate / course-completed state — requires BOTH a Firebase-confirmed pass
         // AND every topic finished. Prevents localStorage tampering and inconsistent state.
+        // Developer/Admin always have certificate access for testing.
         function b1CertificateUnlocked() {
+            if (b1IsPrivileged()) return true;
             return b1AllTopicsCompleted() && b1Completion.finalExamPassed && b1Completion.fbConfirmed;
         }
 
@@ -9832,7 +9840,8 @@
             const allTopicIds = courseData.topics.map(t => t.id);
             const doneCount = allTopicIds.filter(id => completedTopics.includes(id)).length;
             const totalCount = allTopicIds.length;
-            const allCompleted = totalCount > 0 && doneCount === totalCount;
+            // Developer/Admin are treated as having finished the course (customers unaffected).
+            const allCompleted = b1IsPrivileged() || (totalCount > 0 && doneCount === totalCount);
             // Certificate / completed state requires a Firebase-confirmed pass AND all topics.
             const certUnlocked = b1CertificateUnlocked();
 
