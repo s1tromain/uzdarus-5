@@ -1175,6 +1175,8 @@
             var totalQ = 120;
             var pct = Math.round((totalCorrect / totalQ) * 100);
             var finalScore = Math.round((totalCorrect / totalQ) * 100);
+            // Certificate pass gate — identical 80% threshold to B1 (Part 2).
+            var passed = finalScore >= 80;
             var statusLabel, statusClass;
             if (finalScore >= 90) { statusLabel = "A'lo"; statusClass = 'alo'; }
             else if (finalScore >= 75) { statusLabel = 'Yaxshi'; statusClass = 'yaxshi'; }
@@ -1185,6 +1187,12 @@
             fbHtml += '<div class="exam-result-score">' + finalScore + ' / 100</div>';
             fbHtml += '<div class="exam-result-details">' + totalCorrect + ' / ' + totalQ + " to'g'ri javob (" + pct + '%)</div>';
             fbHtml += '<div class="exam-result-status ' + statusClass + '">' + statusLabel + '</div>';
+            if (passed) {
+                fbHtml += '<div style="margin-top:14px;font-size:1.15rem;font-weight:700;color:#2e7d32;">🎉 A1 kursi muvaffaqiyatli tugatildi</div>';
+                fbHtml += '<div style="margin-top:10px;padding:10px 14px;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:10px;color:#2e7d32;font-weight:600;"><i class="fas fa-certificate"></i> Tabriklaymiz! A1 sertifikatingiz ochildi. Uni kurs sahifasidan ko\'rishingiz mumkin.</div>';
+            } else {
+                fbHtml += '<div style="margin-top:12px;padding:10px 14px;background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;color:#e65100;font-weight:600;">Sertifikat olish uchun kamida 80 ball (80%) kerak. Qayta urinib ko\'ring.</div>';
+            }
             if (isAutoFinish) {
                 fbHtml += '<div class="exam-result-time-info">⏰ Imtihon vaqti tugagani uchun avtomatik yakunlandi</div>';
             } else {
@@ -1283,6 +1291,52 @@
                 timestamp: new Date().toISOString()
             };
             saveQuizResultToFirebase('final_exam_a1', examResultData);
+
+            // Completion integrity (Part 2 — mirrors b1-final-exam.html):
+            // certificate / course completion is granted ONLY when the learner
+            // BOTH passed (>=80%) AND finished all 12 A1 topics. The flag is then
+            // written to Firestore (courses.A1) so it is tamper-proof and the
+            // certificate can be issued server-side from it.
+            persistA1Completion(passed, pct, examResultData);
+        }
+
+        async function persistA1Completion(passed, pct, resultData) {
+            var completedOk = false;
+            try { completedOk = (await getCompletedTopicCount()) >= GATE_REQUIRED; } catch (e) { completedOk = false; }
+            var grantCompletion = passed && completedOk;
+            var uid = gateUid();
+
+            // Local completion cache (read by a1-course.html only as a fallback).
+            try {
+                if (grantCompletion) {
+                    localStorage.setItem('a1_completion_' + uid, JSON.stringify({
+                        finalExamPassed: true, courseCompleted: true, certificateUnlocked: true,
+                        finalExamScore: pct, finalExamCompletedAt: resultData.timestamp
+                    }));
+                }
+            } catch (e) {}
+
+            if (uid === 'guest') return;
+
+            // Cross-device exam result sync (best-effort).
+            try {
+                if (window.saveQuizResult) {
+                    await window.saveQuizResult(uid, 'final_exam', { examResult: resultData }, 'A1');
+                }
+            } catch (e) {}
+
+            // On a verified pass: persist completion flags under courses.A1.
+            if (grantCompletion && window.saveUserProgress) {
+                try {
+                    await window.saveUserProgress(uid, 'A1', {
+                        finalExamPassed: true,
+                        courseCompleted: true,
+                        certificateUnlocked: true,
+                        finalExamScore: pct,
+                        finalExamCompletedAt: resultData.timestamp
+                    });
+                } catch (e) {}
+            }
         }
 
         // ========== BEFOREUNLOAD WARNING ==========

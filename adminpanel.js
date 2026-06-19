@@ -599,6 +599,7 @@ function renderCustomers() {
                         <div class="actions-row">
                             <button class="btn btn-ghost" data-action="reset" data-uid="${user.uid}" type="button">Reset parol</button>
                             ${canEditSubscription() ? `<button class="btn btn-ghost" data-action="subscription" data-uid="${user.uid}" type="button">Obuna</button>` : ''}
+                            <button class="btn btn-ghost" data-action="certificates" data-uid="${user.uid}" type="button">Sertifikatlar</button>
                             <button class="btn btn-ghost" data-action="unblock" data-uid="${user.uid}" type="button">Unblock</button>
                             ${state.role === 'developer' ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${user.uid}" type="button">Delete</button>` : ''}
                             ${dayAdjustControls}
@@ -814,6 +815,17 @@ async function initGate() {
     });
 }
 
+function setActiveTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((node) => {
+        node.classList.toggle('active', node.dataset.tab === tab);
+    });
+    document.querySelectorAll('.tab-panel').forEach((node) => node.classList.remove('active'));
+    const panel = document.getElementById(`tab-${tab}`);
+    if (panel) {
+        panel.classList.add('active');
+    }
+}
+
 function initTabs() {
     tabsNav.addEventListener('click', (event) => {
         const button = event.target.closest('[data-tab]');
@@ -821,15 +833,7 @@ function initTabs() {
             return;
         }
 
-        const tab = button.dataset.tab;
-        document.querySelectorAll('.tab-btn').forEach((node) => node.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach((node) => node.classList.remove('active'));
-
-        button.classList.add('active');
-        const panel = document.getElementById(`tab-${tab}`);
-        if (panel) {
-            panel.classList.add('active');
-        }
+        setActiveTab(button.dataset.tab);
     });
 }
 
@@ -1131,6 +1135,170 @@ async function deleteFlow(userId, button) {
     }
 }
 
+/* ================= CERTIFICATES (Part 8/9/10) ================= */
+let certRows = [];
+
+function certCourseLabel(cert) {
+    const course = cert.course || '';
+    return cert.level && cert.level !== course ? `${course} (${cert.level})` : course;
+}
+
+function renderCertRows(rows, metaText) {
+    certRows = Array.isArray(rows) ? rows : [];
+    const body = document.getElementById('certSearchBody');
+    const meta = document.getElementById('certSearchMeta');
+
+    if (meta) {
+        meta.textContent = metaText || `${certRows.length} ta sertifikat`;
+    }
+    if (!body) {
+        return;
+    }
+
+    if (!certRows.length) {
+        body.innerHTML = '<tr><td colspan="6" class="table-empty">Sertifikat topilmadi</td></tr>';
+        return;
+    }
+
+    body.innerHTML = certRows
+        .map((c, i) => {
+            const owner = [c.userName, c.username ? `@${c.username}` : '', c.email]
+                .filter(Boolean)
+                .join(' · ');
+            return `
+                <tr>
+                    <td data-label="Raqam">${escapeHtml(c.certificateNumber || '-')}</td>
+                    <td data-label="Egasi">${escapeHtml(owner || '-')}</td>
+                    <td data-label="Kurs">${escapeHtml(certCourseLabel(c))}</td>
+                    <td data-label="Sana">${escapeHtml(formatDate(c.issueDate))}</td>
+                    <td data-label="Status">${escapeHtml(c.status || 'active')}</td>
+                    <td data-label="Amallar"><button class="btn btn-ghost btn-small" data-cert-view="${i}" type="button">Ko‘rish</button></td>
+                </tr>
+            `;
+        })
+        .join('');
+}
+
+function buildAdminCertHtml(cert) {
+    const owner = cert.userName || '-';
+    const number = cert.certificateNumber || '-';
+    const course = certCourseLabel(cert);
+    const date = formatDate(cert.issueDate);
+    const score = (cert.score != null) ? `${cert.score} / 100` : '—';
+    const extra = [cert.username ? `@${cert.username}` : '', cert.email].filter(Boolean).join(' · ');
+
+    return `
+        <div style="background:#fffdf5;border:8px double #C9A227;border-radius:14px;padding:28px 24px;text-align:center;font-family:Georgia,'Segoe UI',serif;">
+            <div style="font-weight:800;color:#0f3460;letter-spacing:1px;">Uzda<span style="color:#08617f;">Rus</span> PRO</div>
+            <div style="font-size:.78rem;letter-spacing:3px;color:#C9A227;text-transform:uppercase;font-weight:700;margin-top:6px;">Sertifikat</div>
+            <div style="font-size:1.4rem;font-weight:800;color:#1a1a2e;margin:14px 0 4px;">${escapeHtml(course)} — Rus tili</div>
+            <div style="font-size:1.3rem;font-weight:800;color:#0f3460;border-bottom:2px solid #C9A227;display:inline-block;padding:0 16px 6px;margin:8px 0 4px;">${escapeHtml(owner)}</div>
+            ${extra ? `<div style="font-size:.82rem;color:#666;margin:6px 0 0;">${escapeHtml(extra)}</div>` : ''}
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:18px;font-size:.85rem;color:#444;text-align:left;">
+                <div style="flex:1;min-width:120px;">Yakuniy ball<b style="display:block;color:#0f3460;">${escapeHtml(score)}</b></div>
+                <div style="flex:1;min-width:120px;">Sana<b style="display:block;color:#0f3460;">${escapeHtml(date)}</b></div>
+                <div style="flex:1;min-width:120px;">Raqam<b style="display:block;color:#0f3460;word-break:break-word;">${escapeHtml(number)}</b></div>
+                <div style="flex:1;min-width:120px;">Status<b style="display:block;color:#0f3460;">${escapeHtml(cert.status || 'active')}</b></div>
+            </div>
+        </div>
+    `;
+}
+
+function openCertDetail(cert) {
+    const overlay = document.getElementById('certDetailOverlay');
+    const body = document.getElementById('certDetailBody');
+    if (!overlay || !body) {
+        return;
+    }
+    body.innerHTML = buildAdminCertHtml(cert);
+    overlay.hidden = false;
+    document.body.classList.add('modal-open');
+}
+
+function closeCertDetail() {
+    const overlay = document.getElementById('certDetailOverlay');
+    if (overlay) {
+        overlay.hidden = true;
+    }
+    document.body.classList.remove('modal-open');
+}
+
+async function runCertSearch() {
+    const input = document.getElementById('certSearchInput');
+    const meta = document.getElementById('certSearchMeta');
+    const q = String(input?.value || '').trim();
+
+    if (!q) {
+        renderCertRows([], 'Qidiruv so‘zini kiriting.');
+        return;
+    }
+
+    if (meta) {
+        meta.textContent = 'Qidirilmoqda...';
+    }
+
+    try {
+        const result = await callApi(`/api/admin?action=search-certificates&q=${encodeURIComponent(q)}`, 'GET');
+        const rows = result.results || [];
+        renderCertRows(rows, `${rows.length} ta natija`);
+    } catch (error) {
+        renderCertRows([], mapApiError(error, 'Qidiruvda xatolik.'));
+    }
+}
+
+async function viewUserCertificates(userId) {
+    try {
+        const result = await callApi(`/api/admin?action=list-user-certificates&userId=${encodeURIComponent(userId)}`, 'GET');
+        const rows = result.certificates || [];
+        setActiveTab('certificates');
+        renderCertRows(rows, `${rows.length} ta sertifikat`);
+    } catch (error) {
+        showError(mapApiError(error, 'Sertifikatlarni yuklab bo‘lmadi.'));
+    }
+}
+
+function initCertificates() {
+    const searchBtn = document.getElementById('certSearchBtn');
+    const searchInput = document.getElementById('certSearchInput');
+    const body = document.getElementById('certSearchBody');
+    const overlay = document.getElementById('certDetailOverlay');
+    const closeBtn = document.getElementById('certDetailClose');
+
+    if (searchBtn) {
+        searchBtn.addEventListener('click', runCertSearch);
+    }
+    if (searchInput) {
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                runCertSearch();
+            }
+        });
+    }
+    if (body) {
+        body.addEventListener('click', (event) => {
+            const btn = event.target.closest('[data-cert-view]');
+            if (!btn) {
+                return;
+            }
+            const cert = certRows[Number(btn.dataset.certView)];
+            if (cert) {
+                openCertDetail(cert);
+            }
+        });
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeCertDetail);
+    }
+    if (overlay) {
+        overlay.addEventListener('click', (event) => {
+            if (event.target === overlay) {
+                closeCertDetail();
+            }
+        });
+    }
+}
+
 function initRowActions() {
     async function handleAction(event) {
         const button = event.target.closest('[data-action]');
@@ -1157,6 +1325,9 @@ function initRowActions() {
                 if (performed && input) {
                     input.value = '';
                 }
+            } else if (action === 'certificates') {
+                await viewUserCertificates(userId);
+                performed = false;
             } else if (action === 'unblock') {
                 performed = await unblockFlow(userId, button);
             } else if (action === 'set-role') {
@@ -1222,4 +1393,5 @@ initCreateCustomer();
 initCreateStaff();
 initRowActions();
 initActions();
+initCertificates();
 initGate();

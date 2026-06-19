@@ -2096,7 +2096,6 @@
             </div>
             <div class="b1-cert-seal">🏅</div>
             <div class="b1-cert-actions">
-                <button class="b1-cert-print" id="b1CertPrintBtn" type="button"><i class="fas fa-print"></i> Chop etish / PDF</button>
                 <button class="b1-cert-close" id="b1CertCloseBtn" type="button">Yopish</button>
             </div>
         </div>
@@ -7243,7 +7242,8 @@
         // B1 final-exam / certificate completion state (written by b1-final-exam.html).
         // `fbConfirmed` is true ONLY when the Firebase progress record itself confirms a
         // passed exam — localStorage alone must never be enough to unlock the certificate.
-        let b1Completion = { finalExamPassed: false, courseCompleted: false, certificateUnlocked: false, finalExamScore: null, finalExamCompletedAt: null, fbConfirmed: false };
+        let b1Completion = { finalExamPassed: false, courseCompleted: false, certificateUnlocked: false, finalExamScore: null, finalExamCompletedAt: null, certificateNumber: null, fbConfirmed: false };
+        let b1CertIssueRequested = false;
         function readLocalB1Completion() {
             try {
                 const uid = window.currentUserId || (JSON.parse(localStorage.getItem('currentUser') || 'null') || {}).id || 'guest';
@@ -7258,8 +7258,35 @@
             if (src.certificateUnlocked) b1Completion.certificateUnlocked = true;
             if (src.finalExamScore != null) b1Completion.finalExamScore = src.finalExamScore;
             if (src.finalExamCompletedAt) b1Completion.finalExamCompletedAt = src.finalExamCompletedAt;
+            if (src.certificateNumber) b1Completion.certificateNumber = src.certificateNumber;
             // Certificate trust: only a Firebase-sourced pass counts as confirmed.
             if (fromFirebase && src.finalExamPassed) b1Completion.fbConfirmed = true;
+        }
+        // Issue (or fetch the already-issued) B1 certificate server-side. Idempotent.
+        function updateB1CertIdField() {
+            const idEl = document.getElementById('b1CertId');
+            if (idEl && b1Completion.certificateNumber) idEl.textContent = b1Completion.certificateNumber;
+        }
+        async function ensureB1CertificateIssued() {
+            if (b1Completion.certificateNumber) { updateB1CertIdField(); return; }
+            if (b1CertIssueRequested) return;
+            b1CertIssueRequested = true;
+            try {
+                if (typeof window.issueCertificate === 'function') {
+                    const cert = await window.issueCertificate('B1');
+                    if (cert && cert.certificateNumber) {
+                        b1Completion.certificateNumber = cert.certificateNumber;
+                        if (!b1Completion.finalExamCompletedAt && cert.certificateData && cert.certificateData.date) {
+                            b1Completion.finalExamCompletedAt = cert.certificateData.date;
+                        }
+                        updateB1CertIdField();
+                    }
+                }
+            } catch (e) {
+                // fail soft
+            } finally {
+                if (!b1Completion.certificateNumber) b1CertIssueRequested = false;
+            }
         }
         // Developer/Admin accounts bypass ALL completion gates (customers unaffected).
         function b1IsPrivileged() {
@@ -9865,6 +9892,7 @@
             }
 
             if (certUnlocked) {
+                ensureB1CertificateIssued();
                 card.className = 'final-exam-entry completed';
                 const scoreTxt = (b1Completion.finalExamScore != null) ? (b1Completion.finalExamScore + ' ball') : '';
                 card.innerHTML =
@@ -9872,7 +9900,7 @@
                     '<span class="final-exam-trophy">🎓</span>' +
                     '<div class="final-exam-entry-title">B1 kursi muvaffaqiyatli tugatildi</div>' +
                     '<div class="final-exam-entry-subtitle">Tabriklaymiz! Yakuniy imtihondan o\'tdingiz' + (scoreTxt ? ' — ' + scoreTxt : '') + '</div>' +
-                    '<div class="final-exam-entry-desc">B1 sertifikatingiz ochildi. Uni ko\'rishingiz, yuklab olishingiz yoki chop etishingiz mumkin.</div>' +
+                    '<div class="final-exam-entry-desc">B1 sertifikatingiz ochildi. Uni ko\'rishingiz mumkin.</div>' +
                     '<button class="final-exam-cert-btn" id="b1ShowCertBtn" type="button"><i class="fas fa-certificate"></i> Sertifikatni ko\'rish</button>' +
                     '<div style="margin-top:14px;"><button class="final-exam-start-btn" id="b1RetakeExamBtn" type="button" style="background:linear-gradient(135deg,#607d8b,#455a64);font-size:0.95rem;padding:12px 30px;"><i class="fas fa-redo"></i> Imtihonni qayta topshirish</button></div>';
                 const certBtn = document.getElementById('b1ShowCertBtn');
@@ -9924,18 +9952,14 @@
                 if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('ru-RU');
             }
             if (dateEl) dateEl.textContent = dateStr;
-            if (idEl) {
-                const uid = (user && user.id) ? String(user.id).slice(0, 6).toUpperCase() : 'GUEST';
-                idEl.textContent = 'B1-' + uid;
-            }
+            if (idEl) idEl.textContent = b1Completion.certificateNumber || 'Tayyorlanmoqda...';
             overlay.classList.add('show');
+            ensureB1CertificateIssued();
         }
         (function bindCertModal() {
             const overlay = document.getElementById('b1CertOverlay');
             const closeBtn = document.getElementById('b1CertCloseBtn');
-            const printBtn = document.getElementById('b1CertPrintBtn');
             if (closeBtn) closeBtn.onclick = () => overlay.classList.remove('show');
-            if (printBtn) printBtn.onclick = () => window.print();
             if (overlay) overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.classList.remove('show'); });
         })();
 

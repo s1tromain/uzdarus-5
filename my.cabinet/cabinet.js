@@ -17,7 +17,10 @@ import {
     clearLocalUser,
     getOrCreateDeviceId,
     sha256Hex,
-    callApi
+    callApi,
+    invalidateUserProfileCache,
+    collection,
+    getDocs
 } from '../firebase-client.js';
 
 const COURSE_TOTAL_TOPICS = Object.freeze({
@@ -712,6 +715,163 @@ function escapeText(value) {
         .replace(/>/g, '&gt;');
 }
 
+// First-login agreement. Source of truth is Firestore (`agreementAccepted` on
+// the user doc), so once accepted it never reappears on any device. We only
+// show the modal when the live profile has NOT yet accepted.
+function showFirstLoginAgreement(user, profile) {
+    const overlay = document.getElementById('agreementOverlay');
+    if (!overlay || !user) {
+        return;
+    }
+
+    if (profile && profile.agreementAccepted === true) {
+        return;
+    }
+
+    const checkbox = document.getElementById('agreementCheckbox');
+    const acceptBtn = document.getElementById('agreementAcceptBtn');
+    if (!checkbox || !acceptBtn) {
+        return;
+    }
+
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    // Button stays disabled until the user confirms they read the rules.
+    checkbox.addEventListener('change', () => {
+        acceptBtn.disabled = !checkbox.checked;
+    });
+
+    acceptBtn.addEventListener('click', async () => {
+        if (!checkbox.checked) {
+            return;
+        }
+
+        acceptBtn.disabled = true;
+        const prevText = acceptBtn.textContent;
+        acceptBtn.textContent = 'Saqlanmoqda...';
+
+        try {
+            await updateDoc(doc(db, 'users', user.uid), {
+                agreementAccepted: true,
+                agreementAcceptedAt: serverTimestamp()
+            });
+            invalidateUserProfileCache(user.uid);
+        } catch (error) {
+            // Persisting failed (network/permission) — do not trap the user.
+            // The modal simply reappears on the next login until it saves.
+            console.warn('agreement: save failed', error?.message || error);
+        }
+
+        acceptBtn.textContent = prevText;
+        overlay.hidden = true;
+        document.body.style.overflow = '';
+    });
+}
+
+// ===== My certificates (Part 6/10) — read-only, no print/download =====
+function buildCertificateDocHtml(cert) {
+    const d = cert.certificateData || {};
+    const name = d.name || cert.userName || 'Foydalanuvchi';
+    const courseTitle = d.courseTitle || `${cert.course || ''} Daraja — Rus tili`;
+    const number = cert.certificateNumber || d.number || '—';
+    const score = (cert.score != null) ? cert.score : (d.score != null ? d.score : null);
+    let dateStr = formatDate(cert.issueDate);
+    if ((!dateStr || dateStr === '-') && d.date) {
+        const parsed = new Date(d.date);
+        if (!Number.isNaN(parsed.getTime())) dateStr = parsed.toLocaleDateString('uz-UZ');
+    }
+    const levelLabel = d.levelLabel || cert.level || '';
+
+    return `
+        <div class="cert-doc">
+            <div class="cert-doc-logo">Uzda<span>Rus</span> PRO</div>
+            <div class="cert-doc-kicker">Sertifikat / Сертификат</div>
+            <div class="cert-doc-title">${escapeText(courseTitle)}</div>
+            <div class="cert-doc-sub">Ushbu sertifikat quyidagi shaxsga berildi:</div>
+            <div class="cert-doc-name">${escapeText(name)}</div>
+            <div class="cert-doc-body">${escapeText(levelLabel)} rus tili kursini muvaffaqiyatli yakunlab, yakuniy imtihonni topshirgani uchun taqdirlanadi.</div>
+            <div class="cert-doc-meta">
+                <div>Yakuniy ball<b>${score != null ? escapeText(`${score} / 100`) : '—'}</b></div>
+                <div>Sana<b>${escapeText(dateStr || '—')}</b></div>
+                <div>Sertifikat raqami<b>${escapeText(number)}</b></div>
+            </div>
+            <div class="cert-doc-seal">🏅</div>
+        </div>
+    `;
+}
+
+function openCertificatePreview(cert) {
+    const overlay = document.getElementById('certPreviewOverlay');
+    const body = document.getElementById('certPreviewBody');
+    if (!overlay || !body) return;
+
+    body.innerHTML = buildCertificateDocHtml(cert);
+    overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+}
+
+function createCertificateCard(cert) {
+    const card = document.createElement('article');
+    card.className = 'cert-card';
+
+    const number = cert.certificateNumber || '—';
+    const courseTitle = (cert.certificateData && cert.certificateData.courseTitle) || `${cert.course || ''} Daraja`;
+    const level = cert.level || cert.course || '';
+    const dateStr = formatDate(cert.issueDate);
+
+    card.innerHTML = `
+        <div class="cert-card-top">
+            <span class="cert-card-ribbon"><i class="fas fa-certificate"></i></span>
+            <span class="cert-card-level">${escapeText(level)}</span>
+        </div>
+        <h4 class="cert-card-title">${escapeText(courseTitle)}</h4>
+        <p class="cert-card-meta"><span>Raqam</span><b>${escapeText(number)}</b></p>
+        <p class="cert-card-meta"><span>Berilgan sana</span><b>${escapeText(dateStr)}</b></p>
+        <button class="btn cert-card-btn" type="button">Ko‘rish</button>
+    `;
+
+    const btn = card.querySelector('.cert-card-btn');
+    if (btn) btn.addEventListener('click', () => openCertificatePreview(cert));
+    return card;
+}
+
+async function renderMyCertificates(uid) {
+    const grid = document.getElementById('certificatesGrid');
+    if (!grid) return;
+
+    // Bind the preview close handlers once.
+    const overlay = document.getElementById('certPreviewOverlay');
+    const closeBtn = document.getElementById('certPreviewClose');
+    if (overlay && closeBtn && !overlay.dataset.bound) {
+        overlay.dataset.bound = '1';
+        const close = () => { overlay.hidden = true; document.body.style.overflow = ''; };
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
+    }
+
+    const certs = [];
+    try {
+        const snap = await getDocs(collection(db, 'users', uid, 'certificates'));
+        snap.forEach((docSnap) => certs.push(docSnap.data()));
+    } catch (error) {
+        console.warn('certificates: load failed', error?.message || error);
+    }
+
+    certs.sort((a, b) => String(a.certificateNumber || '').localeCompare(String(b.certificateNumber || '')));
+
+    grid.innerHTML = '';
+    if (!certs.length) {
+        const empty = document.createElement('p');
+        empty.className = 'cert-empty';
+        empty.textContent = 'Hozircha sertifikatlaringiz yo‘q. Kursni yakunlab, yakuniy imtihondan o‘ting.';
+        grid.appendChild(empty);
+        return;
+    }
+
+    certs.forEach((cert) => grid.appendChild(createCertificateCard(cert)));
+}
+
 async function initDashboardPage() {
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
@@ -725,6 +885,11 @@ async function initDashboardPage() {
     const adminPanelBtn = document.getElementById('adminPanelBtn');
 
     const { user, profile } = await ensureAuthenticated();
+
+    // Show the one-time foydalanish qoidalari agreement on first login.
+    // Source of truth is Firestore (profile.agreementAccepted).
+    showFirstLoginAgreement(user, profile);
+
     const role = normalizeRole(profile.role);
     const canOpenAdminPanel = ['developer', 'admin', 'moderator'].includes(role);
 
@@ -813,6 +978,9 @@ async function initDashboardPage() {
         profile,
         privilegedRole
     );
+
+    // My certificates — loaded from Firestore (cross-device, view-only).
+    renderMyCertificates(user.uid);
 
     // Canonical block banner: visible only while the account is genuinely
     // blocked right now. Privileged accounts and freshly-unblocked users never

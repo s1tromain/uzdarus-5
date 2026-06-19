@@ -1131,6 +1131,449 @@
                 margin: 0 5px;
             }
         }
+
+        /* =========================================================
+           UX POLISH — Task 2/5/7/8/9 additions
+           ========================================================= */
+
+        /* --- Task 9: more visible profile / login button --- */
+        .nav-login-btn {
+            background: linear-gradient(135deg, #ffffff, #fff3dc) !important;
+            color: var(--primary-dark) !important;
+            border: 2px solid #ffffff;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+            position: relative;
+            animation: loginPulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes loginPulse {
+            0%, 100% { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18); }
+            50% { box-shadow: 0 6px 22px rgba(255, 255, 255, 0.55); }
+        }
+
+        .nav-login-btn i {
+            font-size: 1.05rem;
+        }
+
+        /* --- Section intro description (under section titles) --- */
+        .section-subtitle {
+            text-align: center;
+            max-width: 640px;
+            margin: -30px auto 50px;
+            color: var(--gray);
+            font-size: 1.08rem;
+            line-height: 1.6;
+        }
+
+        /* --- Task 8: Account CTA block --- */
+        .account-cta {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            padding: 70px 0;
+        }
+
+        .account-cta-inner {
+            max-width: 760px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            padding: 48px 30px;
+            text-align: center;
+            color: #fff;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(4px);
+        }
+
+        .account-cta-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.9rem;
+            color: var(--primary-dark);
+            background: linear-gradient(135deg, var(--secondary), var(--primary));
+            box-shadow: 0 8px 20px rgba(255, 152, 0, 0.4);
+        }
+
+        .account-cta-inner h2 {
+            font-size: 2rem;
+            margin-bottom: 14px;
+        }
+
+        .account-cta-inner p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 520px;
+            margin: 0 auto 28px;
+        }
+
+        .account-cta-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            padding: 16px 44px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.15rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 28px rgba(255, 152, 0, 0.45);
+        }
+
+        .account-cta-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 34px rgba(255, 152, 0, 0.55);
+        }
+
+        /* --- Task 2: Contact section redesign --- */
+        .contact {
+            background: linear-gradient(180deg, #fff8e1 0%, #ffffff 100%);
+        }
+
+        .contact-layout {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 30px;
+            align-items: stretch;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .contact-card {
+            background: #fff;
+            border-radius: 22px;
+            padding: 36px 32px;
+            box-shadow: 0 20px 45px rgba(136, 160, 197, 0.18);
+            border: 1px solid rgba(255, 152, 0, 0.12);
+        }
+
+        .contact-card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .contact-card-sub {
+            color: var(--gray);
+            font-size: 0.98rem;
+            margin-bottom: 26px;
+        }
+
+        .input-icon-group {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .input-icon-group i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+
+        .input-icon-group.textarea i {
+            top: 22px;
+            transform: none;
+        }
+
+        .input-icon-group input,
+        .input-icon-group textarea {
+            width: 100%;
+            padding: 14px 16px 14px 46px;
+            border: 2px solid #eef0f4;
+            border-radius: 14px;
+            font-size: 1rem;
+            background: #fbfcfe;
+            transition: all 0.25s ease;
+        }
+
+        .input-icon-group textarea {
+            height: 130px;
+            resize: vertical;
+        }
+
+        .input-icon-group input:focus,
+        .input-icon-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(255, 152, 0, 0.12);
+        }
+
+        .contact-submit-btn {
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            padding: 15px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1.05rem;
+            margin-top: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 24px rgba(255, 152, 0, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .contact-submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(255, 152, 0, 0.45);
+        }
+
+        .contact-submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .contact-info-panel {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 22px;
+            padding: 36px 30px;
+            color: #fff;
+            box-shadow: 0 20px 45px rgba(245, 124, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .contact-info-panel h3 {
+            font-size: 1.35rem;
+            margin-bottom: 8px;
+        }
+
+        .contact-info-panel > p {
+            opacity: 0.92;
+            font-size: 0.95rem;
+            margin-bottom: 26px;
+        }
+
+        .contact-info-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .contact-info-list li {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .contact-info-list a,
+        .contact-info-list span {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.98rem;
+            word-break: break-word;
+        }
+
+        .contact-info-list a:hover {
+            text-decoration: underline;
+        }
+
+        .contact-info-ico {
+            flex-shrink: 0;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+        }
+
+        .contact-info-socials {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+            padding-top: 26px;
+        }
+
+        .contact-info-socials a {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 1.1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .contact-info-socials a:hover {
+            background: #fff;
+            color: var(--primary-dark);
+            transform: translateY(-3px);
+        }
+
+        /* --- Task 7: Demo warning modal --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 28, 45, 0.65);
+            backdrop-filter: blur(3px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-card {
+            background: #fff;
+            border-radius: 22px;
+            max-width: 460px;
+            width: 100%;
+            padding: 36px 30px 30px;
+            text-align: center;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
+            transform: translateY(20px) scale(0.97);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-icon {
+            width: 76px;
+            height: 76px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 10px 24px rgba(255, 152, 0, 0.4);
+        }
+
+        .modal-card h3 {
+            font-size: 1.5rem;
+            color: var(--dark);
+            margin-bottom: 14px;
+        }
+
+        .modal-card p {
+            color: var(--gray);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 26px;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1.02rem;
+            cursor: pointer;
+            text-decoration: none;
+            border: none;
+            transition: all 0.25s ease;
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(255, 152, 0, 0.35);
+        }
+
+        .modal-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(255, 152, 0, 0.45);
+        }
+
+        .modal-btn-secondary {
+            background: #f1f4f9;
+            color: #374f73;
+            border: 2px solid #e2e7f0;
+        }
+
+        .modal-btn-secondary:hover {
+            background: #e7ecf5;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.6rem;
+            line-height: 1;
+            color: #aaa;
+            cursor: pointer;
+        }
+
+        /* --- Footer social brand colors on hover (Task 5) --- */
+        .social-links a[data-net="telegram"]:hover { color: #0088cc; }
+        .social-links a[data-net="instagram"]:hover { color: #e1306c; }
+        .social-links a[data-net="youtube"]:hover { color: #ff0000; }
+
+        /* --- Responsive for new sections --- */
+        @media (max-width: 860px) {
+            .contact-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .account-cta-inner h2 { font-size: 1.6rem; }
+            .account-cta-inner { padding: 38px 22px; }
+            .nav-login-btn {
+                margin-top: 10px;
+                padding: 12px 28px !important;
+                font-size: 1.1rem !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .contact-card,
+            .contact-info-panel { padding: 28px 20px; }
+            .account-cta-inner h2 { font-size: 1.4rem; }
+            .account-cta-btn { padding: 14px 32px; font-size: 1.05rem; width: 100%; justify-content: center; }
+            .modal-card { padding: 30px 22px 24px; }
+            .modal-card h3 { font-size: 1.3rem; }
+        }
     </style>
 </head>
 
@@ -1146,10 +1589,8 @@
             <ul class="nav-links">
                 <li><a href="#home">Bosh sahifa</a></li>
                 <li><a href="#about">Biz haqimizda</a></li>
-                <li><a href="#courses">Darslar</a></li>
+                <li><a href="#courses">Demo Darslar</a></li>
                 <li><a href="#pricing">Tariflar</a></li>
-                <li><a href="#discounts">Kuratorlar</a></li>
-                <li><a href="#blog">Natijalar</a></li>
                 <li><a href="#contact">Qayta aloqa</a></li>
                 <li class="nav-login-item" id="navLoginItem">
                     <a href="my.cabinet/index.html" class="nav-login-btn" id="navLoginBtn">
@@ -1204,10 +1645,27 @@
         </div>
     </section>
 
+    <!-- Account CTA Block (Task 8) -->
+    <section class="account-cta" id="account-cta">
+        <div class="container">
+            <div class="account-cta-inner">
+                <div class="account-cta-icon">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h2>Sizda akkaunt mavjudmi?</h2>
+                <p>Agar sizda allaqachon akkaunt bo'lsa, shaxsiy kabinetingiz orqali tizimga kiring va PRO darslardan foydalaning.</p>
+                <a href="my.cabinet/index.html" class="account-cta-btn">
+                    <i class="fas fa-right-to-bracket"></i> Kabinetga kirish
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Courses Section -->
     <section class="courses" id="courses">
         <div class="container">
-            <h2 class="section-title">Darslar</h2>
+            <h2 class="section-title">Demo Darslar</h2>
+            <p class="section-subtitle">Kurslarning bepul demo versiyasi bilan tanishing. To'liq PRO darslar shaxsiy kabinetda mavjud.</p>
             <div class="courses-carousel">
                 <div class="carousel-wrapper">
                     <button class="carousel-btn prev" aria-label="Oldingi kurslar">
@@ -1391,44 +1849,65 @@
         </div>
     </section>
 
-    <!-- Discounts Section -->
-    <section class="discounts" id="discounts">
-        <div class="container">
-            <h2 class="section-title">Kuratorlar</h2>
-            <p style="text-align: center; max-width: 800px; margin: 0 auto; font-size: 1.1rem;">
-                Coming soon...
-            </p>
-        </div>
-    </section>
-
-    <!-- Blog Section -->
-    <section class="blog" id="blog">
-        <div class="container">
-            <h2 class="section-title">Natijalar</h2>
-            <p style="text-align: center; max-width: 800px; margin: 0 auto; font-size: 1.1rem;">
-                Coming soon...
-            </p>
-        </div>
-    </section>
-
     <!-- Contact Section -->
     <section class="contact" id="contact">
         <div class="container">
             <h2 class="section-title">Qayta aloqa</h2>
-            <div class="contact-form">
-                <div class="form-group">
-                    <input type="text" placeholder="Ismingiz" id="name">
+            <p class="section-subtitle">Savollaringiz bormi? Bizga yozing — jamoamiz tez orada siz bilan bog'lanadi.</p>
+            <div class="contact-layout">
+                <!-- Form Card -->
+                <div class="contact-card">
+                    <div class="contact-card-title"><i class="fas fa-paper-plane"></i> Xabar yuborish</div>
+                    <p class="contact-card-sub">Quyidagi shaklni to'ldiring va biz siz bilan bog'lanamiz.</p>
+
+                    <div class="input-icon-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" placeholder="Ismingiz" id="name" autocomplete="name">
+                    </div>
+                    <div class="input-icon-group">
+                        <i class="fas fa-phone"></i>
+                        <input type="tel" placeholder="Telefon raqamingiz (+998901234567)" id="phone"
+                            autocomplete="tel" inputmode="tel">
+                    </div>
+                    <div class="input-icon-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" placeholder="Email manzilingiz" id="email" autocomplete="email">
+                    </div>
+                    <div class="input-icon-group textarea">
+                        <i class="fas fa-comment-dots"></i>
+                        <textarea placeholder="Xabaringiz" id="message"></textarea>
+                    </div>
+
+                    <button class="contact-submit-btn" id="contactSubmit">
+                        <i class="fas fa-paper-plane"></i> Yuborish
+                    </button>
+                    <div class="form-message" id="contactMessage" role="status" aria-live="polite"></div>
                 </div>
-                <div class="form-group">
-                    <input type="email" placeholder="Email manzilingiz" id="email">
+
+                <!-- Info Card -->
+                <div class="contact-info-panel">
+                    <h3>Biz bilan bog'laning</h3>
+                    <p>Quyidagi kanallar orqali ham biz bilan bog'lanishingiz mumkin.</p>
+                    <ul class="contact-info-list">
+                        <li>
+                            <span class="contact-info-ico"><i class="fas fa-phone"></i></span>
+                            <a href="tel:+998950721135">+998 95-072-11-35</a>
+                        </li>
+                        <li>
+                            <span class="contact-info-ico"><i class="fas fa-envelope"></i></span>
+                            <a href="mailto:uzdaruswebplatform@gmail.com">uzdaruswebplatform@gmail.com</a>
+                        </li>
+                        <li>
+                            <span class="contact-info-ico"><i class="fas fa-map-marker-alt"></i></span>
+                            <span>Mustaqillik shoh ko'chasi 88,<br>Toshkent, Toshkent</span>
+                        </li>
+                    </ul>
+                    <div class="contact-info-socials">
+                        <a href="https://t.me/Ruschasiga" target="_blank" rel="noopener" aria-label="Telegram"><i class="fab fa-telegram-plane"></i></a>
+                        <a href="https://www.instagram.com/ruschasiga" target="_blank" rel="noopener" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.youtube.com/@ruschasiga" target="_blank" rel="noopener" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <textarea placeholder="Xabaringiz" id="message"></textarea>
-                </div>
-                <button class="btn"
-                    style="width: 100%; background: linear-gradient(135deg, var(--primary), var(--white)); border: none; margin-top: 10px;"
-                    id="contactSubmit">Yuborish</button>
-                <div class="form-message" id="contactMessage" role="status" aria-live="polite"></div>
             </div>
         </div>
     </section>
@@ -1444,30 +1923,28 @@
                         Barcha darajalar uchun professional kurslar.
                     </p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-telegram"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-youtube"></i></a>
+                        <a href="https://t.me/Ruschasiga" target="_blank" rel="noopener" data-net="telegram" aria-label="Telegram"><i class="fab fa-telegram-plane"></i></a>
+                        <a href="https://www.instagram.com/ruschasiga" target="_blank" rel="noopener" data-net="instagram" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.youtube.com/@ruschasiga" target="_blank" rel="noopener" data-net="youtube" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">
-                    <h3>Kurslar</h3>
+                    <h3>Demo Darslar</h3>
                     <ul class="footer-links">
-                        <li><a href="a1-course.html"><i class="fas fa-chevron-right"></i> A1 - "BOSHLANG'ICH"</a></li>
-                        <li><a href="a2-course.html"><i class="fas fa-chevron-right"></i> A2 - "ASOSIY"</a></li>
-                        <li><a href="b1-course.html"><i class="fas fa-chevron-right"></i> B1 - "O'RTA"</a></li>
-                        <li><a href="b2-course.html"><i class="fas fa-chevron-right"></i> B2 - "O'RTA YUQORI"</a></li>
-                        <li><a href="c1-course.html"><i class="fas fa-chevron-right"></i> C1 - "YUQORI"</a></li>
+                        <li><a href="#courses"><i class="fas fa-chevron-right"></i> A1 - "BOSHLANG'ICH"</a></li>
+                        <li><a href="#courses"><i class="fas fa-chevron-right"></i> A2 - "ASOSIY"</a></li>
+                        <li><a href="#courses"><i class="fas fa-chevron-right"></i> B1 - "O'RTA"</a></li>
+                        <li><a href="#courses"><i class="fas fa-chevron-right"></i> B2 - "O'RTA YUQORI"</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
                     <h3>Foydali havolalar</h3>
                     <ul class="footer-links">
                         <li><a href="#about"><i class="fas fa-chevron-right"></i> Biz haqimizda</a></li>
-                        <li><a href="#pricing"><i class="fas fa-chevron-right"></i>Tariflar</a></li>
-                        <li><a href="#discounts"><i class="fas fa-chevron-right"></i>Kuratorlar</a></li>
-                        <li><a href="#blog"><i class="fas fa-chevron-right"></i>Natijalar</a></li>
-                        <li><a href="#contact"><i class="fas fa-chevron-right"></i>Qayta Aloqa</a></li>
+                        <li><a href="#pricing"><i class="fas fa-chevron-right"></i> Tariflar</a></li>
+                        <li><a href="#contact"><i class="fas fa-chevron-right"></i> Qayta Aloqa</a></li>
+                        <li><a href="my.cabinet/index.html"><i class="fas fa-chevron-right"></i> Kabinetga kirish</a></li>
+                        <li><a href="verify-certificate.html"><i class="fas fa-chevron-right"></i> Sertifikatni tekshirish</a></li>
                     </ul>
                 </div>
                 <div class="footer-section">
@@ -1475,19 +1952,19 @@
                     <ul class="contact-info">
                         <li>
                             <i class="fas fa-map-marker-alt"></i>
-                            <span>Toshkent, O'zbekiston</span>
+                            <span>Mustaqillik shoh ko'chasi 88, Toshkent, Toshkent</span>
                         </li>
                         <li>
                             <i class="fas fa-phone"></i>
-                            <span>+998 (90) 123-45-67</span>
+                            <a href="tel:+998950721135" style="color: rgba(255,255,255,0.85); text-decoration: none;">+998 95-072-11-35</a>
                         </li>
                         <li>
                             <i class="fas fa-envelope"></i>
-                            <span>info@ruschasiga.uz</span>
+                            <a href="mailto:uzdaruswebplatform@gmail.com" style="color: rgba(255,255,255,0.85); text-decoration: none; word-break: break-word;">uzdaruswebplatform@gmail.com</a>
                         </li>
                         <li>
-                            <i class="fas fa-clock"></i>
-                            <span>Du-Sha: 9:00 - 18:00</span>
+                            <i class="fab fa-youtube"></i>
+                            <a href="https://www.youtube.com/@ruschasiga" target="_blank" rel="noopener" style="color: rgba(255,255,255,0.85); text-decoration: none;">@ruschasiga</a>
                         </li>
                     </ul>
                 </div>
@@ -1497,6 +1974,28 @@
             </div>
         </div>
     </footer>
+
+    <!-- Demo Course Warning Modal (Task 7) -->
+    <div class="modal-overlay" id="demoModal" role="dialog" aria-modal="true" aria-labelledby="demoModalTitle">
+        <div class="modal-card">
+            <button class="modal-close" id="demoModalClose" aria-label="Yopish">&times;</button>
+            <div class="modal-icon"><i class="fas fa-circle-info"></i></div>
+            <h3 id="demoModalTitle">Demo versiyaga kirmoqdasiz</h3>
+            <p>
+                Siz darsning demo versiyasiga kirmoqdasiz.<br>
+                Agar siz kursni allaqachon sotib olgan bo'lsangiz va akkauntingiz bo'lsa,
+                iltimos shaxsiy kabinetingiz orqali kiring va PRO versiyada o'qing.
+            </p>
+            <div class="modal-actions">
+                <a href="my.cabinet/index.html" class="modal-btn modal-btn-primary">
+                    <i class="fas fa-right-to-bracket"></i> Shaxsiy kabinetga kirish
+                </a>
+                <button type="button" class="modal-btn modal-btn-secondary" id="demoContinueBtn">
+                    <i class="fas fa-play"></i> Demo kursni davom ettirish
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Navigation burger menu
@@ -1540,12 +2039,12 @@
         }
 
         // БЕЗОПАСНАЯ отправка сообщения через API (токены на сервере!)
-        async function sendToTelegram(name, email, message) {
+        async function sendToTelegram(name, phone, email, message) {
             try {
                 const response = await fetch('/api/send-contact', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, message })
+                    body: JSON.stringify({ name, phone, email, message })
                 });
 
                 const result = await response.json().catch(() => ({ success: false }));
@@ -1556,14 +2055,32 @@
             }
         }
 
+        // Normalize Uzbekistan phone numbers (accepts spaces/dashes/brackets).
+        // Valid result form: +998XXXXXXXXX (9 digits after +998).
+        function normalizeUzPhone(value) {
+            let phone = String(value || '').replace(/[\s\-()]/g, '');
+            if (/^998\d{9}$/.test(phone)) {
+                phone = '+' + phone;
+            }
+            return phone;
+        }
+
+        const UZ_PHONE_RE = /^\+998\d{9}$/;
+
         // Обработчик формы обратной связи
         document.getElementById('contactSubmit').addEventListener('click', async function () {
             const name = document.getElementById('name').value.trim();
+            const phone = normalizeUzPhone(document.getElementById('phone').value);
             const email = document.getElementById('email').value.trim();
             const message = document.getElementById('message').value.trim();
 
-            if (!name || !email || !message) {
+            if (!name || !phone || !email || !message) {
                 showContactMessage('Iltimos, barcha maydonlarni to\'ldiring.', 'error');
+                return;
+            }
+
+            if (!UZ_PHONE_RE.test(phone)) {
+                showContactMessage('Telefon raqamini to\'g\'ri kiriting. Masalan: +998901234567', 'error');
                 return;
             }
 
@@ -1578,11 +2095,12 @@
             this.disabled = true;
 
             try {
-                const sent = await sendToTelegram(name, email, message);
+                const sent = await sendToTelegram(name, phone, email, message);
 
                 if (sent) {
                     showContactMessage('Xabaringiz yuborildi. Tez orada siz bilan bog\'lanamiz.', 'success');
                     document.getElementById('name').value = '';
+                    document.getElementById('phone').value = '';
                     document.getElementById('email').value = '';
                     document.getElementById('message').value = '';
                 } else {
@@ -1772,10 +2290,47 @@
             }, 150);
         });
 
-        // Auth Guard for Courses
+        // Demo course warning modal (Task 7)
+        const demoModal = document.getElementById('demoModal');
+        const demoModalClose = document.getElementById('demoModalClose');
+        const demoContinueBtn = document.getElementById('demoContinueBtn');
+        let pendingDemoUrl = null;
+
+        function openDemoModal(url) {
+            pendingDemoUrl = url;
+            demoModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDemoModal() {
+            demoModal.classList.remove('active');
+            document.body.style.overflow = '';
+            pendingDemoUrl = null;
+        }
+
+        if (demoModalClose) demoModalClose.addEventListener('click', closeDemoModal);
+        if (demoContinueBtn) {
+            demoContinueBtn.addEventListener('click', () => {
+                if (pendingDemoUrl) {
+                    window.location.href = pendingDemoUrl;
+                }
+            });
+        }
+        if (demoModal) {
+            demoModal.addEventListener('click', (e) => {
+                if (e.target === demoModal) closeDemoModal();
+            });
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && demoModal.classList.contains('active')) {
+                closeDemoModal();
+            }
+        });
+
+        // Show the demo warning before opening any demo course
         function handleCourseClick(e, url) {
             e.preventDefault();
-            window.location.href = url;
+            openDemoModal(url);
         }
 
         // Auto slide

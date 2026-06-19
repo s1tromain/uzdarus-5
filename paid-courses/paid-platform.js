@@ -188,6 +188,31 @@ window.saveQuizResult = firestoreSaveQuizResult;
 window.getUserQuizResults = firestoreGetUserQuizResults;
 window.firebaseReady = true;
 
+/* ================================================================
+   CERTIFICATE ISSUANCE (server-side, idempotent)
+   ----------------------------------------------------------------
+   Course pages call window.issueCertificate('A1' | 'B1') once the
+   certificate is legitimately unlocked. Issuance is performed by the
+   Admin SDK on the server (atomic unique number); calling it on every
+   load is safe — the server returns the already-issued record.
+   Fails soft: returns null on any error so the page never breaks.
+   ================================================================ */
+async function issueUserCertificate(course) {
+    if (!course) {
+        return null;
+    }
+    try {
+        await authReady();
+        const result = await callApi('/api/certificate?action=issue', 'POST', { course });
+        return (result && result.certificate) ? result.certificate : null;
+    } catch (error) {
+        console.warn('certificate: issue fallback', error?.message || error);
+        return null;
+    }
+}
+
+window.issueCertificate = issueUserCertificate;
+
 function showOverlayMessage(text) {
     const wrapper = document.createElement('div');
     wrapper.style.position = 'fixed';

@@ -5,34 +5,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UZDARUS PRO | Kirish</title>
+    <link rel="icon" href="../images/shared/logo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./styles.css">
 </head>
 
 <body data-page="login">
-    <main class="cabinet-shell">
-        <header class="cabinet-header">
-            <h1>UZDARUS PRO kabineti</h1>
-            <p>Login va vaqtinchalik parol orqali tizimga kiring</p>
-        </header>
+    <main class="cabinet-shell login-shell">
+        <div class="login-brand">
+            <img src="../images/shared/logo.png" alt="UzdaRus" class="login-logo">
+            <span class="login-brand-name">Uzda<span>Rus</span> PRO</span>
+            <p class="login-brand-tag">Shaxsiy o'quv kabineti</p>
+        </div>
 
-        <section class="cabinet-body">
+        <section class="cabinet-body login-card-body">
+            <h1 class="login-title">Xush kelibsiz!</h1>
+            <p class="login-sub">Kabinetingizga kirish uchun login va vaqtinchalik parolingizni kiriting.</p>
+
             <div class="notice error" id="loginError"></div>
             <form id="loginForm">
                 <div class="form-group">
                     <label for="username">Login</label>
-                    <input id="username" name="username" placeholder="Masalan: ali.valiyev" autocomplete="username" required>
+                    <div class="input-wrap">
+                        <i class="fas fa-user"></i>
+                        <input id="username" name="username" placeholder="Masalan: ali.valiyev" autocomplete="username" required>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label for="password">Vaqtinchalik parol</label>
-                    <input id="password" name="password" type="password" autocomplete="current-password" required>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input id="password" name="password" type="password" autocomplete="current-password" required>
+                        <button type="button" class="pw-toggle" id="pwToggle" aria-label="Parolni ko'rsatish">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
 
-                <button class="btn" id="loginBtn" type="submit">Kirish</button>
+                <button class="btn" id="loginBtn" type="submit">
+                    <i class="fas fa-right-to-bracket"></i> Kirish
+                </button>
             </form>
+
+            <div class="login-secure"><i class="fas fa-shield-halved"></i> Ma'lumotlaringiz xavfsiz himoyalangan</div>
+            <a class="login-back" href="../index.html"><i class="fas fa-arrow-left"></i> Bosh sahifaga qaytish</a>
         </section>
     </main>
 
+    <script>
+        // Password visibility toggle (UI only — no auth logic touched)
+        (function () {
+            const toggle = document.getElementById('pwToggle');
+            const input = document.getElementById('password');
+            if (!toggle || !input) return;
+            toggle.addEventListener('click', function () {
+                const showing = input.type === 'text';
+                input.type = showing ? 'password' : 'text';
+                toggle.innerHTML = showing
+                    ? '<i class="fas fa-eye"></i>'
+                    : '<i class="fas fa-eye-slash"></i>';
+                toggle.setAttribute('aria-label', showing ? "Parolni ko'rsatish" : 'Parolni yashirish');
+            });
+        })();
+    </script>
     <script type="module" src="./cabinet.js"></script>
 </body>
 

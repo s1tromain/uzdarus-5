@@ -5,6 +5,17 @@ import { rateLimit } from './_lib/rate-limit.js';
 const limiter = rateLimit({ max: 5, windowSec: 60, prefix: 'send-contact' });
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UZ_PHONE_RE = /^\+998\d{9}$/;
+
+/* Normalize an Uzbekistan phone number: strip spaces/dashes/brackets and
+ * prefix the country code with "+" when the user omitted it. */
+function normalizeUzPhone(value) {
+    let phone = String(value || '').replace(/[\s\-()]/g, '');
+    if (/^998\d{9}$/.test(phone)) {
+        phone = '+' + phone;
+    }
+    return phone;
+}
 
 /* Telegram parse_mode=HTML only requires &, <, > to be escaped in text nodes.
  * Escaping these makes any user input safe and never breaks formatting. */
@@ -55,11 +66,17 @@ export default async function handler(req, res) {
     }
 
     const name = escapeHtml(body.name || '');
+    const phoneNormalized = normalizeUzPhone(body.phone || '');
+    const phone = escapeHtml(phoneNormalized);
     const email = escapeHtml(body.email || '');
     const message = escapeHtml(body.message || '');
 
-    if (!name || !email || !message) {
+    if (!name || !phone || !email || !message) {
         return sendJson(res, 400, { success: false, error: 'Barcha maydonlar majburiy' });
+    }
+
+    if (!UZ_PHONE_RE.test(phoneNormalized)) {
+        return sendJson(res, 400, { success: false, error: 'Telefon raqami noto‘g‘ri' });
     }
 
     if (!EMAIL_RE.test(email)) {
@@ -71,6 +88,7 @@ export default async function handler(req, res) {
     const text =
         `📩 <b>Yangi murojaat (Qayta aloqa)</b>\n\n` +
         `👤 <b>Ism:</b> ${name}\n` +
+        `📞 <b>Telefon:</b> ${phone}\n` +
         `📧 <b>Email:</b> ${email}\n` +
         `📝 <b>Xabar:</b> ${message}\n\n` +
         `🕐 <b>Sana:</b> ${escapeHtml(date)}`;

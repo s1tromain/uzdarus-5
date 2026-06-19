@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UZDARUS PRO | Dashboard</title>
+    <link rel="icon" href="../images/shared/logo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="./styles.css">
 </head>
 
@@ -35,6 +37,11 @@
             <h3 class="section-heading">Mening kurslarim</h3>
             <div class="pack-grid course-grid" id="courseProgressGrid"></div>
 
+            <h3 class="section-heading">Mening sertifikatlarim</h3>
+            <div class="cert-grid" id="certificatesGrid">
+                <p class="cert-empty" id="certificatesEmpty">Yuklanmoqda...</p>
+            </div>
+
             <h3 class="section-heading">Paketlar</h3>
             <div class="pack-grid" id="packGrid"></div>
 
@@ -45,6 +52,50 @@
             </div>
         </section>
     </main>
+
+    <!-- Certificate preview (view-only — no print/download) -->
+    <div class="cert-preview-overlay" id="certPreviewOverlay" role="dialog" aria-modal="true" hidden>
+        <div class="cert-preview-shell">
+            <button class="cert-preview-close" id="certPreviewClose" type="button" aria-label="Yopish">&times;</button>
+            <div id="certPreviewBody"></div>
+        </div>
+    </div>
+
+    <!-- First-login agreement modal (Tasks 11-13) -->
+    <div class="agreement-overlay" id="agreementOverlay" role="dialog" aria-modal="true"
+        aria-labelledby="agreementTitle" hidden>
+        <div class="agreement-card">
+            <div class="agreement-head">
+                <div class="agreement-icon"><i class="fas fa-file-shield"></i></div>
+                <h2 id="agreementTitle">Foydalanish qoidalari</h2>
+                <p>Platformadan foydalanishni boshlashdan oldin quyidagi qoidalar bilan tanishing.</p>
+            </div>
+
+            <div class="agreement-warning">
+                <i class="fas fa-triangle-exclamation"></i>
+                <span>Qoidalarga rioya qilmaslik akkauntning bloklanishiga olib kelishi mumkin.</span>
+            </div>
+
+            <ol class="agreement-rules">
+                <li>Akkaunt faqat bitta foydalanuvchi uchun mo'ljallangan.</li>
+                <li>Akkaunt ma'lumotlarini boshqa shaxslarga berish taqiqlanadi.</li>
+                <li>Bir akkauntdan ommaviy foydalanish taqiqlanadi.</li>
+                <li>Platforma materiallarini nusxalash va tarqatish taqiqlanadi.</li>
+                <li>Tizimdan noqonuniy foydalanish taqiqlanadi.</li>
+                <li>Qoidalar buzilgan taqdirda akkaunt vaqtincha yoki doimiy bloklanishi mumkin.</li>
+                <li>Platformadan foydalanish maxfiylik siyosati va xizmat qoidalariga muvofiq amalga oshiriladi.</li>
+            </ol>
+
+            <label class="agreement-check">
+                <input type="checkbox" id="agreementCheckbox">
+                <span>Men qoidalar bilan tanishdim va ularga roziman.</span>
+            </label>
+
+            <button class="btn agreement-btn" id="agreementAcceptBtn" type="button" disabled>
+                Davom etish
+            </button>
+        </div>
+    </div>
 
     <script type="module" src="./cabinet.js"></script>
 </body>

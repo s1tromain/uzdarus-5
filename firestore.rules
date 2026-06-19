@@ -32,7 +32,9 @@ service cloud.firestore {
         "completedTopics",
         "forcePasswordChange",
         "lastPasswordChangeAt",
-        "updatedAt"
+        "updatedAt",
+        "agreementAccepted",
+        "agreementAcceptedAt"
       ];
     }
 
@@ -48,6 +50,15 @@ service cloud.firestore {
 
       match /quizResults/{resultId} {
         allow read, write: if isOwner(userId);
+      }
+
+      // Certificates registry (per user). Issued ONLY server-side via the Admin
+      // SDK (which bypasses these rules), so they can never be forged or altered
+      // from the client. The owner — and staff — may read their own records;
+      // clients may never write.
+      match /certificates/{certificateId} {
+        allow read: if isOwner(userId) || isStaff();
+        allow write: if false;
       }
 
       match /{document=**} {
@@ -68,6 +79,18 @@ service cloud.firestore {
     match /adminAuditLogs/{logId} {
       allow read: if isStaff();
       allow write: if false;
+    }
+
+    // Global certificate registry + monotonic number counters. Written and read
+    // ONLY by the Admin SDK (server). The verification page and admin search go
+    // through server endpoints, never directly — so clients have no access and
+    // sequential numbers cannot be enumerated from the client.
+    match /certificateRegistry/{certificateNumber} {
+      allow read, write: if false;
+    }
+
+    match /counters/{counterId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

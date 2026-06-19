@@ -65,6 +65,7 @@
 
         <nav class="tabs" id="tabsNav">
             <button class="tab-btn active" data-tab="customers" type="button">Customers</button>
+            <button class="tab-btn" data-tab="certificates" type="button">Sertifikatlar</button>
             <button class="tab-btn" data-tab="admin" id="adminTabBtn" type="button">Administration</button>
         </nav>
 
@@ -150,6 +151,33 @@
             </div>
         </section>
 
+        <section class="tab-panel" id="tab-certificates">
+            <div class="card">
+                <h2>Sertifikatlarni qidirish</h2>
+                <p class="table-meta">Ism, email yoki sertifikat raqami bo‘yicha qidiring (masalan: UZD-B1-2026-000123)</p>
+                <div class="card-controls">
+                    <input type="search" id="certSearchInput" placeholder="Ism / email / sertifikat raqami">
+                    <button class="btn" id="certSearchBtn" type="button">Qidirish</button>
+                </div>
+                <p class="table-meta" id="certSearchMeta">Qidiruvni boshlang.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Raqam</th>
+                                <th>Egasi</th>
+                                <th>Kurs</th>
+                                <th>Berilgan sana</th>
+                                <th>Status</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="certSearchBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <section class="tab-panel" id="tab-admin">
             <div class="card" id="createStaffCard">
                 <h2>Staff foydalanuvchi yaratish</h2>
@@ -209,6 +237,17 @@
             <div class="modal-actions">
                 <button type="button" class="btn btn-ghost" id="adminModalCancel">Bekor qilish</button>
                 <button type="button" class="btn" id="adminModalConfirm">Tasdiqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Certificate detail (view-only) -->
+    <div id="certDetailOverlay" class="modal-overlay" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="certDetailTitle">
+            <h2 class="modal-title" id="certDetailTitle">Sertifikat</h2>
+            <div id="certDetailBody"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-ghost" id="certDetailClose">Yopish</button>
             </div>
         </div>
     </div>

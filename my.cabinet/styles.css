@@ -471,3 +471,451 @@ select:focus {
     opacity: .6;
     cursor: not-allowed;
 }
+
+/* =========================================================
+   LOGIN PAGE REDESIGN (Task 10) — scoped to .login-shell
+   ========================================================= */
+.login-shell {
+    width: min(440px, 100%);
+    border-radius: 22px;
+}
+
+.login-brand {
+    background: linear-gradient(135deg, #2c3e50, #4a6491);
+    color: #fff;
+    padding: 34px 24px 28px;
+    text-align: center;
+}
+
+.login-logo {
+    height: 56px;
+    width: auto;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.login-brand-name {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+}
+
+.login-brand-name span {
+    color: var(--primary);
+}
+
+.login-brand-tag {
+    margin-top: 4px;
+    font-size: 0.88rem;
+    opacity: 0.85;
+}
+
+.login-card-body {
+    padding: 30px 28px 26px;
+}
+
+.login-title {
+    font-size: 1.45rem;
+    color: var(--dark);
+    margin-bottom: 6px;
+}
+
+.login-sub {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-bottom: 22px;
+}
+
+.input-wrap {
+    position: relative;
+}
+
+.input-wrap > i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--primary);
+    font-size: 0.98rem;
+    pointer-events: none;
+}
+
+.input-wrap input {
+    padding-left: 42px;
+    border-radius: 12px;
+}
+
+.pw-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 8px 10px;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.pw-toggle:hover {
+    color: var(--primary);
+}
+
+.login-card-body .btn {
+    margin-top: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 16px;
+    font-size: 1rem;
+    box-shadow: 0 10px 24px rgba(255, 152, 0, 0.3);
+}
+
+.login-secure {
+    margin-top: 18px;
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+.login-back {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.login-back:hover {
+    color: var(--primary-dark);
+}
+
+@media (max-width: 480px) {
+    .login-card-body {
+        padding: 24px 20px 22px;
+    }
+
+    .login-brand {
+        padding: 28px 20px 24px;
+    }
+}
+
+/* =========================================================
+   FIRST-LOGIN AGREEMENT MODAL (Tasks 11-13)
+   ========================================================= */
+.agreement-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 28, 45, 0.72);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 3000;
+}
+
+.agreement-overlay[hidden] {
+    display: none;
+}
+
+.agreement-card {
+    background: #fff;
+    width: min(540px, 100%);
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 22px;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.4);
+    animation: agreementIn 0.3s ease;
+}
+
+@keyframes agreementIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.agreement-head {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    padding: 28px 26px 24px;
+    text-align: center;
+    border-radius: 22px 22px 0 0;
+}
+
+.agreement-icon {
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+}
+
+.agreement-head h2 {
+    font-size: 1.4rem;
+    margin-bottom: 6px;
+}
+
+.agreement-head p {
+    font-size: 0.92rem;
+    opacity: 0.92;
+    line-height: 1.5;
+}
+
+.agreement-warning {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 24px 0;
+    padding: 12px 14px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-left: 4px solid var(--primary);
+    border-radius: 10px;
+    color: #9a3412;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.agreement-warning i {
+    color: var(--primary-dark);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.agreement-rules {
+    margin: 18px 24px 0;
+    padding-left: 22px;
+    color: #374151;
+}
+
+.agreement-rules li {
+    margin-bottom: 12px;
+    font-size: 0.93rem;
+    line-height: 1.5;
+    padding-left: 4px;
+}
+
+.agreement-rules li::marker {
+    color: var(--primary-dark);
+    font-weight: 700;
+}
+
+.agreement-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 22px 24px 0;
+    padding: 14px;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.4;
+}
+
+.agreement-check input {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.agreement-btn {
+    width: auto;
+    display: block;
+    margin: 18px 24px 26px;
+    width: calc(100% - 48px);
+    padding: 14px 16px;
+    font-size: 1rem;
+}
+
+.agreement-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@media (max-width: 480px) {
+    .agreement-head { padding: 24px 20px 20px; }
+    .agreement-warning,
+    .agreement-rules,
+    .agreement-check { margin-left: 18px; margin-right: 18px; }
+    .agreement-btn { margin-left: 18px; margin-right: 18px; width: calc(100% - 36px); }
+}
+
+/* =========================================================
+   MY CERTIFICATES (Part 6) + read-only preview (Part 10)
+   ========================================================= */
+.cert-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    margin: 16px 0;
+}
+
+.cert-empty {
+    grid-column: 1 / -1;
+    color: var(--muted);
+    font-size: 0.92rem;
+    padding: 10px 2px;
+}
+
+.cert-card {
+    border: 1px solid #f0e6d2;
+    border-radius: 14px;
+    padding: 16px;
+    background: linear-gradient(135deg, #fffdf7, #fff6e6);
+    box-shadow: 0 4px 14px rgba(255, 152, 0, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cert-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cert-card-ribbon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.cert-card-level {
+    font-weight: 800;
+    color: var(--primary-dark);
+    background: #fff3dc;
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: 0.82rem;
+}
+
+.cert-card-title {
+    font-size: 1.02rem;
+    color: #1f2937;
+    margin: 2px 0;
+}
+
+.cert-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.cert-card-meta b {
+    color: #1f2937;
+    font-weight: 700;
+    word-break: break-word;
+    text-align: right;
+}
+
+.cert-card-btn {
+    margin-top: 6px;
+    padding: 11px 14px;
+    font-size: 0.92rem;
+}
+
+/* ---- Preview overlay (view-only) ---- */
+.cert-preview-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.78);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    z-index: 4000;
+    overflow-y: auto;
+}
+
+.cert-preview-overlay[hidden] {
+    display: none;
+}
+
+.cert-preview-shell {
+    position: relative;
+    width: min(720px, 100%);
+}
+
+.cert-preview-close {
+    position: absolute;
+    top: -14px;
+    right: -8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #fff;
+    color: #455a64;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+/* ---- The rendered certificate document ---- */
+.cert-doc {
+    background: #fffdf5;
+    border: 10px double #C9A227;
+    border-radius: 16px;
+    padding: 44px 40px;
+    position: relative;
+    text-align: center;
+    font-family: 'Georgia', 'Segoe UI', serif;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.cert-doc-logo { font-size: 1.4rem; font-weight: 800; color: #0f3460; letter-spacing: 1px; }
+.cert-doc-logo span { color: #08617f; }
+.cert-doc-kicker { margin-top: 8px; font-size: 0.85rem; letter-spacing: 3px; color: #C9A227; text-transform: uppercase; font-weight: 700; }
+.cert-doc-title { font-size: 2rem; font-weight: 800; color: #1a1a2e; margin: 18px 0 6px; }
+.cert-doc-sub { font-size: 0.95rem; color: #666; margin-bottom: 20px; }
+.cert-doc-name { font-size: 1.6rem; font-weight: 800; color: #0f3460; border-bottom: 2px solid #C9A227; display: inline-block; padding: 0 18px 6px; margin-bottom: 16px; }
+.cert-doc-body { font-size: 1rem; color: #333; line-height: 1.7; margin-bottom: 16px; }
+.cert-doc-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 24px; font-size: 0.9rem; color: #444; }
+.cert-doc-meta > div { flex: 1; min-width: 120px; }
+.cert-doc-meta b { display: block; color: #0f3460; word-break: break-word; }
+.cert-doc-seal { position: absolute; bottom: 22px; right: 30px; font-size: 2.8rem; opacity: 0.9; }
+
+@media (max-width: 560px) {
+    .cert-doc { padding: 30px 20px; }
+    .cert-doc-title { font-size: 1.5rem; }
+    .cert-doc-name { font-size: 1.25rem; }
+    .cert-doc-meta { flex-direction: column; gap: 8px; }
+    .cert-doc-seal { font-size: 2rem; bottom: 14px; right: 16px; }
+}

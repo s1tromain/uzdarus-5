@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UzdaRus | Sertifikatni tekshirish</title>
+    <link rel="icon" href="./images/shared/logo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root { --primary: #FF9800; --primary-dark: #F57C00; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: #1f2937;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 28px 16px 60px;
+        }
+        .verify-shell { width: min(640px, 100%); }
+        .verify-brand { text-align: center; color: #fff; margin-bottom: 22px; }
+        .verify-brand img { height: 54px; filter: drop-shadow(0 4px 10px rgba(0,0,0,.3)); }
+        .verify-brand h1 { font-size: 1.5rem; font-weight: 800; margin-top: 10px; }
+        .verify-brand h1 span { color: var(--primary); }
+        .verify-brand p { opacity: .9; font-size: .95rem; margin-top: 4px; }
+
+        .verify-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px 24px;
+            box-shadow: 0 18px 48px rgba(0,0,0,.28);
+        }
+        .verify-card h2 { font-size: 1.2rem; margin-bottom: 6px; color: var(--primary-dark); }
+        .verify-card .hint { color: #6b7280; font-size: .9rem; margin-bottom: 18px; }
+
+        .verify-form { display: flex; gap: 10px; flex-wrap: wrap; }
+        .verify-input {
+            flex: 1 1 220px;
+            border: 2px solid #eef0f4;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-size: 1rem;
+            background: #fbfcfe;
+            text-transform: uppercase;
+        }
+        .verify-input:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(255,152,0,.12); }
+        .verify-btn {
+            border: none; cursor: pointer;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff; font-weight: 700; font-size: 1rem;
+            padding: 14px 26px; border-radius: 12px;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .verify-btn:disabled { opacity: .65; cursor: not-allowed; }
+
+        .verify-result { margin-top: 22px; }
+        .result-status {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px 16px; border-radius: 12px; font-weight: 700; margin-bottom: 16px;
+        }
+        .result-status.ok { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+        .result-status.bad { background: #fdecea; color: #c62828; border: 1px solid #f5c6cb; }
+        .result-status i { font-size: 1.4rem; }
+
+        .cert-doc {
+            background: #fffdf5; border: 8px double #C9A227; border-radius: 14px;
+            padding: 30px 24px; position: relative; text-align: center; font-family: 'Georgia', serif;
+        }
+        .cert-doc-logo { font-weight: 800; color: #0f3460; letter-spacing: 1px; }
+        .cert-doc-logo span { color: #08617f; }
+        .cert-doc-kicker { font-size: .78rem; letter-spacing: 3px; color: #C9A227; text-transform: uppercase; font-weight: 700; margin-top: 6px; }
+        .cert-doc-title { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; margin: 14px 0 6px; }
+        .cert-doc-name { font-size: 1.35rem; font-weight: 800; color: #0f3460; border-bottom: 2px solid #C9A227; display: inline-block; padding: 0 16px 6px; margin-bottom: 14px; }
+        .cert-doc-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 18px; font-size: .88rem; color: #444; text-align: left; }
+        .cert-doc-meta > div { flex: 1; min-width: 130px; }
+        .cert-doc-meta b { display: block; color: #0f3460; word-break: break-word; margin-top: 2px; }
+        .cert-doc-badge { display: inline-block; margin-top: 14px; padding: 5px 14px; border-radius: 999px; font-size: .78rem; font-weight: 700; background: #e8f5e9; color: #2e7d32; }
+
+        .verify-back { display: inline-flex; align-items: center; gap: 8px; margin-top: 20px; color: #fff; text-decoration: none; font-weight: 600; opacity: .92; }
+        .verify-back:hover { text-decoration: underline; }
+
+        @media (max-width: 480px) {
+            .cert-doc-meta { flex-direction: column; }
+            .verify-btn { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="verify-shell">
+        <div class="verify-brand">
+            <img src="./images/shared/logo.png" alt="UzdaRus">
+            <h1>Uzda<span>Rus</span> — Sertifikatni tekshirish</h1>
+            <p>Sertifikat haqiqiyligini raqami orqali tekshiring</p>
+        </div>
+
+        <div class="verify-card">
+            <h2>Sertifikat raqamini kiriting</h2>
+            <p class="hint">Masalan: <strong>UZD-B1-2026-000123</strong></p>
+            <form class="verify-form" id="verifyForm">
+                <input class="verify-input" id="certNumber" placeholder="UZD-XX-YYYY-NNNNNN" autocomplete="off" required>
+                <button class="verify-btn" id="verifyBtn" type="submit">
+                    <i class="fas fa-magnifying-glass"></i> Tekshirish
+                </button>
+            </form>
+
+            <div class="verify-result" id="verifyResult" hidden></div>
+        </div>
+
+        <a class="verify-back" href="./index.html"><i class="fas fa-arrow-left"></i> Bosh sahifaga qaytish</a>
+    </div>
+
+    <script>
+        const form = document.getElementById('verifyForm');
+        const input = document.getElementById('certNumber');
+        const btn = document.getElementById('verifyBtn');
+        const resultEl = document.getElementById('verifyResult');
+
+        function esc(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '—';
+            const d = new Date(iso);
+            return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('uz-UZ');
+        }
+
+        function renderFound(cert) {
+            const score = (cert.score != null) ? `${esc(cert.score)} / 100` : '—';
+            resultEl.innerHTML = `
+                <div class="result-status ok"><i class="fas fa-circle-check"></i> Sertifikat haqiqiy</div>
+                <div class="cert-doc">
+                    <div class="cert-doc-logo">Uzda<span>Rus</span> PRO</div>
+                    <div class="cert-doc-kicker">Sertifikat / Сертификат</div>
+                    <div class="cert-doc-title">${esc(cert.level || cert.course)} Daraja — Rus tili</div>
+                    <div class="cert-doc-name">${esc(cert.userName || 'Foydalanuvchi')}</div>
+                    <div class="cert-doc-meta">
+                        <div>Kurs<b>${esc(cert.course || '')}${cert.level && cert.level !== cert.course ? ' (' + esc(cert.level) + ')' : ''}</b></div>
+                        <div>Yakuniy ball<b>${score}</b></div>
+                        <div>Berilgan sana<b>${esc(formatDate(cert.issueDate))}</b></div>
+                        <div>Sertifikat raqami<b>${esc(cert.certificateNumber)}</b></div>
+                    </div>
+                    <span class="cert-doc-badge">Status: ${esc((cert.status || 'active') === 'active' ? 'Faol' : cert.status)}</span>
+                </div>
+            `;
+            resultEl.hidden = false;
+        }
+
+        function renderNotFound() {
+            resultEl.innerHTML = `
+                <div class="result-status bad"><i class="fas fa-circle-xmark"></i> Sertifikat topilmadi</div>
+                <p style="color:#6b7280;font-size:.92rem;">Kiritilgan raqam bo‘yicha sertifikat topilmadi. Raqamni tekshirib, qayta urinib ko‘ring.</p>
+            `;
+            resultEl.hidden = false;
+        }
+
+        function renderError(message) {
+            resultEl.innerHTML = `
+                <div class="result-status bad"><i class="fas fa-triangle-exclamation"></i> ${esc(message || 'Xatolik yuz berdi')}</div>
+            `;
+            resultEl.hidden = false;
+        }
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const number = input.value.trim().toUpperCase();
+            if (!number) return;
+
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tekshirilmoqda...';
+            resultEl.hidden = true;
+
+            try {
+                const response = await fetch('/api/certificate?action=verify&number=' + encodeURIComponent(number), {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json().catch(() => ({}));
+
+                if (response.ok && data.found) {
+                    renderFound(data.certificate);
+                } else if (response.ok) {
+                    renderNotFound();
+                } else {
+                    renderError(data.error || 'Tekshirib bo‘lmadi. Keyinroq urinib ko‘ring.');
+                }
+            } catch (error) {
+                renderError('Internet aloqasini tekshiring va qayta urinib ko‘ring.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        });
+    </script>
+</body>
+
+</html>

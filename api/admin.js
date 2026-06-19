@@ -18,6 +18,9 @@ const ACTIONS = {
     'set-subscription':         () => import('./_admin/set-subscription.js'),
     'stats':                    () => import('./_admin/stats.js'),
     'unblock-user':             () => import('./_admin/unblock-user.js'),
+    'list-user-certificates':   () => import('./_admin/list-user-certificates.js'),
+    'search-certificates':      () => import('./_admin/search-certificates.js'),
+    'migrate-certificates':     () => import('./_admin/migrate-certificates.js'),
 };
 
 export default async function handler(req, res) {
