@@ -28,6 +28,34 @@
             --button-color: #374f73;
         }
 
+        /* Inline contact-form notification (replaces browser alerts) */
+        .form-message {
+            margin-top: 14px;
+            padding: 0 16px;
+            max-height: 0;
+            overflow: hidden;
+            border-radius: 10px;
+            font-weight: 600;
+            text-align: center;
+            opacity: 0;
+            transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+        }
+        .form-message.show {
+            max-height: 240px;
+            padding: 12px 16px;
+            opacity: 1;
+        }
+        .form-message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #a5d6a7;
+        }
+        .form-message.error {
+            background: #fdecea;
+            color: #c62828;
+            border: 1px solid #f5c6cb;
+        }
+
         body {
             background-color: var(--light);
             color: var(--dark);
@@ -1400,6 +1428,7 @@
                 <button class="btn"
                     style="width: 100%; background: linear-gradient(135deg, var(--primary), var(--white)); border: none; margin-top: 10px;"
                     id="contactSubmit">Yuborish</button>
+                <div class="form-message" id="contactMessage" role="status" aria-live="polite"></div>
             </div>
         </div>
     </section>
@@ -1483,7 +1512,9 @@
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
                 navLinks.classList.remove('active');
-                const target = document.querySelector(this.getAttribute('href'));
+                const href = this.getAttribute('href');
+                if (!href || href === '#') return;
+                const target = document.querySelector(href);
                 if (target) {
                     target.scrollIntoView({
                         behavior: 'smooth',
@@ -1493,70 +1524,76 @@
             });
         });
 
+        // Inline form notification (no browser alerts) — uses existing site design
+        const contactMessageEl = document.getElementById('contactMessage');
+        let contactMessageTimer = null;
+        function showContactMessage(text, type) {
+            if (!contactMessageEl) return;
+            contactMessageEl.textContent = text;
+            contactMessageEl.className = 'form-message show ' + type;
+            if (contactMessageTimer) clearTimeout(contactMessageTimer);
+            if (type === 'success') {
+                contactMessageTimer = setTimeout(() => {
+                    contactMessageEl.className = 'form-message';
+                }, 6000);
+            }
+        }
+
         // БЕЗОПАСНАЯ отправка сообщения через API (токены на сервере!)
         async function sendToTelegram(name, email, message) {
             try {
-                const response = await fetch('http://localhost:3000/api/send-contact', {
+                const response = await fetch('/api/send-contact', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, message })
                 });
 
-                const result = await response.json();
-                return result.success;
+                const result = await response.json().catch(() => ({ success: false }));
+                return Boolean(result.success);
             } catch (error) {
                 console.error('API error:', error);
                 return false;
             }
         }
 
-        // Обновленный обработчик формы
+        // Обработчик формы обратной связи
         document.getElementById('contactSubmit').addEventListener('click', async function () {
             const name = document.getElementById('name').value.trim();
             const email = document.getElementById('email').value.trim();
             const message = document.getElementById('message').value.trim();
 
-            if (name && email && message) {
-                // Валидация email
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    alert('Iltimos, to\'g\'ri email manzilini kiriting.');
-                    return;
+            if (!name || !email || !message) {
+                showContactMessage('Iltimos, barcha maydonlarni to\'ldiring.', 'error');
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showContactMessage('Iltimos, to\'g\'ri email manzilini kiriting.', 'error');
+                return;
+            }
+
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
+            this.disabled = true;
+
+            try {
+                const sent = await sendToTelegram(name, email, message);
+
+                if (sent) {
+                    showContactMessage('Xabaringiz yuborildi. Tez orada siz bilan bog\'lanamiz.', 'success');
+                    document.getElementById('name').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('message').value = '';
+                } else {
+                    showContactMessage('Xabar yuborilmadi. Qayta urinib ko\'ring.', 'error');
                 }
-
-                // Сохраняем оригинальный текст кнопки
-                const originalText = this.innerHTML;
-
-                // Показываем загрузку
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
-                this.disabled = true;
-
-                try {
-                    // Отправляем в Telegram
-                    const sent = await sendToTelegram(name, email, message);
-
-                    if (sent) {
-                        alert('✅ Xabaringiz muvaffaqiyatli yuborildi! Tez orada siz bilan bog\'lanamiz.');
-
-                        // Очищаем форму
-                        document.getElementById('name').value = '';
-                        document.getElementById('email').value = '';
-                        document.getElementById('message').value = '';
-                    } else {
-                        alert('❌ Xatolik yuz berdi. Iltimos, qaytadan urinib ko\'ring yoki Telegram orqali bog\'laning.');
-                    }
-                } catch (error) {
-                    alert('❌ Xatolik yuz berdi. Internet aloqasini tekshiring.');
-                    console.error('Forma yuborish xatosi:', error);
-                } finally {
-                    // Восстанавливаем кнопку
-                    this.innerHTML = originalText;
-                    this.disabled = false;
-                }
-            } else {
-                alert('Iltimos, barcha maydonlarni to\'ldiring.');
+            } catch (error) {
+                console.error('Forma yuborish xatosi:', error);
+                showContactMessage('Xabar yuborilmadi. Internet aloqasini tekshiring.', 'error');
+            } finally {
+                this.innerHTML = originalText;
+                this.disabled = false;
             }
         });
 

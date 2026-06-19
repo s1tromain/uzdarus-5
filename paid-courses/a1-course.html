@@ -4743,7 +4743,9 @@
                     if (navLinks) {
                         navLinks.classList.remove('active');
                     }
-                    const target = document.querySelector(this.getAttribute('href'));
+                    const href = this.getAttribute('href');
+                    if (!href || href === '#') return;
+                    const target = document.querySelector(href);
                     if (target) {
                         target.scrollIntoView({
                             behavior: 'smooth',

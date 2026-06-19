@@ -1007,7 +1007,7 @@
             const course = formData.get('course');
 
             try {
-                const response = await fetch('http://localhost:3000/api/send-payment', {
+                const response = await fetch('/api/send-payment', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
