@@ -256,6 +256,40 @@ select:focus {
     font-weight: 700;
     color: #1f2937;
     letter-spacing: 0.01em;
+    scroll-margin-top: 16px;
+}
+
+/* ---- Dashboard quick shortcuts (navigation) ---- */
+.dash-shortcuts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 6px 0 18px;
+}
+.dash-shortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    background: var(--light);
+    color: var(--primary-dark);
+    border: 1px solid #ffe0a3;
+    border-radius: 50px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+.dash-shortcut:hover {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 124, 0, 0.3);
+}
+.dash-shortcut .ic { font-size: 1.05rem; line-height: 1; }
+@media (max-width: 600px) {
+    .dash-shortcuts { gap: 8px; }
+    .dash-shortcut { flex: 1 1 auto; justify-content: center; min-height: 46px; }
 }
 
 /* ---- Subscription summary card (Phase 8) ---- */

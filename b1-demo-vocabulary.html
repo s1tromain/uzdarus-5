@@ -894,7 +894,7 @@
     <!-- Topic Selection Screen -->
     <div class="topic-selection" id="topicSelection">
         <div class="vocab-header">
-            <a href="B1-demo.html" class="back-to-course">
+            <a href="b1-demo.html" class="back-to-course">
                 <i class="fas fa-arrow-left"></i><span class="back-to-course-text"> Kursga qaytish</span>
             </a>
             <h1 class="vocab-title">B1 Kursi - Lug'at</h1>
@@ -1825,6 +1825,16 @@
             }
         }
     </script>
+    <!-- Global navigation: universal Orqaga + contextual return (navigation only) -->
+    <script>
+    window.UZN_NAV = {
+        back: "b1-demo.html",
+        buttons: [
+            { label: "Bosh sahifa", icon: "🏠", href: "index.html" }
+        ]
+    };
+    </script>
+    <script defer src="global-nav.js"></script>
 </body>
 
 </html>

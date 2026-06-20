@@ -609,6 +609,37 @@
                 width: 100%;
             }
         }
+        /* ====== EXIT CONFIRMATION MODAL + INTRO NAV (navigation only) ====== */
+        .exam-intro-nav { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .exam-intro-link {
+            display: inline-flex; align-items: center; gap: 7px; text-decoration: none;
+            background: rgba(245, 124, 0, 0.12); color: #E65100;
+            border: 1px solid rgba(245, 124, 0, 0.35); border-radius: 50px;
+            padding: 9px 16px; font-size: 0.95rem; font-weight: 700; transition: all 0.2s ease;
+        }
+        .exam-intro-link:hover { background: rgba(245, 124, 0, 0.22); transform: translateY(-1px); }
+        .exam-exit-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+            z-index: 100000; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .exam-exit-overlay.show { display: flex; }
+        .exam-exit-card {
+            background: #fff; border-radius: 18px; max-width: 420px; width: 100%;
+            padding: 28px 24px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+        .exam-exit-icon { font-size: 46px; line-height: 1; margin-bottom: 10px; }
+        .exam-exit-title { font-size: 1.3rem; font-weight: 800; color: #c62828; margin-bottom: 8px; }
+        .exam-exit-text { color: #555; font-size: 1rem; line-height: 1.5; margin-bottom: 22px; }
+        .exam-exit-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .exam-exit-actions button {
+            border: none; border-radius: 50px; padding: 13px 26px; font-size: 1rem;
+            font-weight: 700; cursor: pointer; min-width: 130px; font-family: inherit;
+        }
+        .exam-exit-cancel { background: #eee; color: #333; }
+        .exam-exit-cancel:hover { background: #e0e0e0; }
+        .exam-exit-confirm { background: linear-gradient(135deg, #F44336, #c62828); color: #fff; }
+        .exam-exit-confirm:hover { filter: brightness(1.06); }
+        @media (max-width: 600px) { .exam-exit-actions button { flex: 1; min-width: 0; } }
     </style>
 </head>
 <body>
@@ -643,6 +674,10 @@
     <main class="exam-body" id="examBody">
         <div class="exam-intro">
             Bu yakuniy imtihon A1 kursidagi barcha 12 ta mavzuni qamrab oladi. Barcha savollarga javob bering. Imtihon vaqti — 2 soat.
+            <div class="exam-intro-nav">
+                <a class="exam-intro-link" href="a1-course.html#finalExamEntry" data-exam-exit><i class="fas fa-arrow-left"></i> Kursga qaytish</a>
+                <a class="exam-intro-link" href="../my.cabinet/dashboard.html" data-exam-exit><i class="fas fa-home"></i> Shaxsiy kabinet</a>
+            </div>
         </div>
         <div id="examExercises"></div>
         <div id="examFeedback"></div>
@@ -653,6 +688,19 @@
         <button class="exam-submit-btn" id="examSubmitBtn" type="button">
             <i class="fas fa-check-circle"></i> Imtihonni yakunlash va tekshirish
         </button>
+    </div>
+
+    <!-- EXIT CONFIRMATION MODAL (navigation safety — back button / exit) -->
+    <div class="exam-exit-overlay" id="examExitOverlay" role="dialog" aria-modal="true" aria-labelledby="examExitTitle">
+        <div class="exam-exit-card">
+            <div class="exam-exit-icon">⚠️</div>
+            <div class="exam-exit-title" id="examExitTitle">Imtihondan chiqmoqchimisiz?</div>
+            <div class="exam-exit-text">Imtihon hali yakunlanmagan. Chiqsangiz, saqlanmagan javoblar yo'qolishi mumkin.</div>
+            <div class="exam-exit-actions">
+                <button class="exam-exit-cancel" id="examExitCancel" type="button">Bekor qilish</button>
+                <button class="exam-exit-confirm" id="examExitConfirm" type="button">Chiqish</button>
+            </div>
+        </div>
     </div>
 
     <!-- TIME-UP OVERLAY -->
@@ -1348,18 +1396,47 @@
             }
         });
 
-        // ========== EXIT BUTTON ==========
-        document.getElementById('examExitBtn').addEventListener('click', function() {
-            if (examFinished) {
-                window.location.href = 'a1-course.html#finalExamEntry';
-                return;
-            }
-            var confirmed = confirm('Imtihonni tark etmoqchimisiz? Saqlanmagan javoblar yo\'qolishi mumkin.');
-            if (confirmed) {
-                examFinished = true; // prevent beforeunload
-                window.location.href = 'a1-course.html#finalExamEntry';
-            }
+        // ========== EXIT / BACK CONFIRMATION (styled modal) ==========
+        var COURSE_RETURN_URL = 'a1-course.html#finalExamEntry';
+        var pendingExitUrl = COURSE_RETURN_URL;
+        var examExitOverlay = document.getElementById('examExitOverlay');
+
+        function requestExit(url) {
+            pendingExitUrl = url || COURSE_RETURN_URL;
+            if (examFinished) { window.location.href = pendingExitUrl; return; }
+            if (examExitOverlay) examExitOverlay.classList.add('show');
+        }
+
+        document.getElementById('examExitCancel').addEventListener('click', function () {
+            if (examExitOverlay) examExitOverlay.classList.remove('show');
         });
+        document.getElementById('examExitConfirm').addEventListener('click', function () {
+            examFinished = true; // intentional exit — suppress the beforeunload prompt
+            window.location.href = pendingExitUrl;
+        });
+
+        // Header "Chiqish" button -> styled confirmation modal.
+        document.getElementById('examExitBtn').addEventListener('click', function () {
+            requestExit(COURSE_RETURN_URL);
+        });
+
+        // Intro navigation links ("Kursga qaytish" / "Shaxsiy kabinet").
+        Array.prototype.forEach.call(document.querySelectorAll('[data-exam-exit]'), function (el) {
+            el.addEventListener('click', function (ev) {
+                ev.preventDefault();
+                requestExit(el.getAttribute('href'));
+            });
+        });
+
+        // Browser BACK button -> intercept while the exam is active and confirm first.
+        function armBackGuard() {
+            try { history.pushState({ uznExamGuard: true }, ''); } catch (e) { return; }
+            window.addEventListener('popstate', function () {
+                if (examFinished) return; // exam done — allow normal navigation
+                try { history.pushState({ uznExamGuard: true }, ''); } catch (e) {}
+                requestExit(COURSE_RETURN_URL);
+            });
+        }
 
         // ========== SUBMIT BUTTON ==========
         document.getElementById('examSubmitBtn').addEventListener('click', function() {
@@ -1380,6 +1457,7 @@
             renderExam();
             startTimer();
             updateProgressCount();
+            armBackGuard();
         })();
 
     })();
