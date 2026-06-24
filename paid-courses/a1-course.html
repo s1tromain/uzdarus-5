@@ -2942,11 +2942,11 @@
                                 "Это … город", "Это … работа", "Это … родители", "Это … квартира", "Где … ребёнок?"
                             ],
                             answers: [
-                                "ваша", "ваша", "ваши", "ваш", "ваши",
-                                "ваша", "ваша", "ваши", "ваш", "ваши",
-                                "ваша", "ваша", "ваши", "ваш", "ваши",
-                                "ваша", "ваша", "ваши", "ваш", "ваши",
-                                "ваш", "ваши", "ваша", "ваши", "ваша"
+                                "моя", "мой", "моё", "мои", "моя",
+                                "мой", "мой", "моя", "мои", "моя",
+                                "моя", "мой", "моя", "мои", "мой",
+                                "моя", "мои", "моё", "мой", "мои",
+                                "мой", "моя", "мои", "моя", "мой"
                             ]
                         },
                         section2: {
@@ -2954,7 +2954,7 @@
                             questions: [
                                 "Где … мама?", "Это … телефон?", "Где … документы?", "Это … комната?", "Какие … друзья!",
                                 "Это … ребёнок?", "Где … книги?", "Это … квартира?", "… родители дома?", "Где … деньги?",
-                                "Где … работа?", "Это … идея?", "Где … друзья?", "Это … класс?", "Где … ключи?",
+                                "Это … машина?", "Где … брат?", "Это … сестра?", "Где … вещи?", "Это … школа?",
                                 "Где … ключи?", "Это … идея?", "… планы интересные", "Где … документы?", "Это … учитель?",
                                 "Это … работа?", "Где … ноутбук?", "Это … родители?", "Где … дети?", "Это … письмо?"
                             ],
@@ -2969,7 +2969,7 @@
                         section3: {
                             title: "III. наш / наша / наше / наши",
                             questions: [
-                                "Это … офис", "Это … коллеги", "Это … учёба", "Это … мечта", "Это … цель",
+                                "Это … класс", "Это … школа", "Это … учителя", "Это … страна", "Это … дом",
                                 "Это … семья", "Это … дети", "Это … идея", "Это … проблема", "Это … решение",
                                 "Это … город", "Это … университет", "Это … директор", "Это … команда", "Это … проект",
                                 "Это … офис", "Это … коллеги", "Это … учёба", "Это … мечта", "Это … цель",
@@ -4752,6 +4752,73 @@
                 return false;
             }
         }
+
+        /* Completion hook for exercise-only topics (6–12) whose `quiz` arrays are
+           empty. The native checkAnswers() gate (quiz score ≥ PASSING_SCORE) can
+           never pass for them, so it left the complete button stuck on
+           "Mavzu tugatilmadi". course-global-fixes.js scores the real exercises
+           and calls this hook to actually finish the topic, reusing the same
+           progress machinery as the quiz path. */
+        window.__uzCompleteTopic = async function (topicId) {
+            if (!completedTopics.includes(topicId)) {
+                completedTopics.push(topicId);
+                try { clearQuizDraft(topicId); } catch (e) { /* ignore */ }
+                try { await saveProgressToFirebase(); } catch (e) { console.error('❌ complete-hook save error:', e); }
+                try { updateProgress(); } catch (e) { /* ignore */ }
+                try { loadTopics(); } catch (e) { /* ignore */ }
+                if (currentUser && window.logActivity) {
+                    const t = courseData.topics.find((x) => x.id === topicId);
+                    window.logActivity(currentUser.email,
+                        `${currentUser.name} завершил тему ${topicId}: "${t ? t.title : ''}" в курсе A1`,
+                        'course_visit').catch(() => {});
+                }
+            }
+            const rs = document.getElementById('resultsSection');
+            if (rs) rs.classList.remove('show');
+            const tc = document.getElementById('topics') || document.getElementById('topicsContainer');
+            if (tc) tc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        /* Drives the shared results block (#scoreDisplay / #completeBtn) for the
+           exercise-only topics 6–12 from their REAL exercise score, replacing the
+           native quiz scorer's bogus 0/0 + permanently-failed completion button.
+           Called at the end of each checkTopic{6..12}Exercises with that topic's
+           authoritative totalCorrect / totalQuestions. Pass threshold = 60%. */
+        window.__uzFinalizeExerciseTopic = function (topicId, correct, total) {
+            if (!Number.isFinite(total) || total <= 0) return;
+            const pct = Math.round((correct / total) * 100);
+            const passNeeded = Math.max(1, Math.ceil(total * 0.6));
+            const passed = correct >= passNeeded;
+
+            const scoreEl = document.getElementById('scoreDisplay');
+            if (scoreEl) scoreEl.textContent = `Sizning natijangiz: ${correct}/${total} (${pct}%)`;
+            const msgEl = document.getElementById('resultsMessage');
+            if (msgEl) {
+                msgEl.innerHTML = passed
+                    ? (pct >= 90 ? "Ajoyib natija! Siz mavzuni mukammal o'zlashtirdingiz."
+                                 : "Yaxshi natija! Endi mavzuni tugatishingiz mumkin.")
+                    : `Mavzuni tugatish uchun kamida ${passNeeded} ta to'g'ri javob kerak. Javoblaringizni qayta ko'rib chiqing.`;
+            }
+            if (resultsSection) resultsSection.classList.add('show');
+
+            if (completeBtn) {
+                if (passed) {
+                    completeBtn.textContent = 'Mavzuni tugatish';
+                    completeBtn.className = 'complete-btn';
+                    completeBtn.style.display = 'block';
+                    if (retryBtn) retryBtn.style.display = 'none';
+                    completeBtn.onclick = () => { window.__uzCompleteTopic(topicId); };
+                } else {
+                    completeBtn.textContent = 'Mavzu tugatilmadi';
+                    completeBtn.className = 'complete-btn failed';
+                    completeBtn.style.display = 'block';
+                    if (retryBtn) retryBtn.style.display = 'block';
+                    completeBtn.onclick = () => {
+                        alert(`Mavzuni tugatish uchun kamida ${passNeeded} ta to'g'ri javob berishingiz kerak.`);
+                    };
+                }
+            }
+        };
 
         const topicsContainer = document.getElementById('topicsContainer');
         const lessonContent = document.getElementById('lessonContent');
@@ -7119,6 +7186,8 @@
                     ? 'Yaxshi natija! Yana bir bor mashq qilsangiz yanada mustahkam bo\'ladi.'
                     : 'Mashqlarni qayta ko\'rib chiqing va yana bir marta tekshirib ko\'ring.';
 
+            window.__uzFinalizeExerciseTopic(topicId, totalCorrect, totalQuestions);
+
             const feedbackDiv = document.getElementById('topic6Feedback');
             if (feedbackDiv) {
                 feedbackDiv.innerHTML = `
@@ -7779,6 +7848,8 @@
                 : percentage >= 70
                     ? 'Yaxshi natija! Kelishiklarni yana bir bor mashq qilsangiz yanada mustahkam bo\'ladi.'
                     : 'Mashqlarni yana bir bor ko\'rib chiqing va keyin qayta tekshiring.';
+
+            window.__uzFinalizeExerciseTopic(topicId, totalCorrect, totalQuestions);
 
             const feedbackDiv = document.getElementById('topic7Feedback');
             if (feedbackDiv) {
@@ -8505,6 +8576,8 @@
                     ? 'Yaxshi natija! Носить va надевать farqini yana bir bor mashq qilsangiz, yanada mustahkam bo\'ladi.'
                     : 'Mashqlarni yana bir bor ko\'rib chiqing va keyin qayta tekshiring.';
 
+            window.__uzFinalizeExerciseTopic(topicId, totalCorrect, totalQuestions);
+
             const feedbackDiv = document.getElementById('topic8Feedback');
             if (feedbackDiv) {
                 feedbackDiv.innerHTML = `
@@ -8888,6 +8961,8 @@
                 : percentage >= 70
                     ? 'Yaxshi natija! Predloglarni yana bir bor mashq qilsangiz, yanada mustahkam bo\'ladi.'
                     : 'Mashqlarni yana bir bor ko\'rib chiqing va keyin qayta tekshiring.';
+
+            window.__uzFinalizeExerciseTopic(topicId, totalCorrect, totalQuestions);
 
             const feedbackDiv = document.getElementById('topic9Feedback');
             if (feedbackDiv) {
@@ -9546,6 +9621,8 @@
             userQuizResults[`topic_${topicId}_practice`] = resultData;
 
             // Render detailed feedback
+            window.__uzFinalizeExerciseTopic(topicId, totalCorrect, totalQuestions);
+
             const feedbackDiv = document.getElementById('topic10Feedback');
             if (feedbackDiv) {
                 const pct = Math.round((totalCorrect / totalQuestions) * 100);
@@ -10086,6 +10163,8 @@
             userQuizResults[`topic_${topicId}_practice`] = resultData;
 
             // Render detailed feedback
+            window.__uzFinalizeExerciseTopic(topicId, totalCorrect, totalQuestions);
+
             const feedbackDiv = document.getElementById('topic11Feedback');
             if (feedbackDiv) {
                 const pct = Math.round((totalCorrect / totalQuestions) * 100);
@@ -10605,6 +10684,8 @@
             userQuizResults[`topic_${topicId}_practice`] = resultData;
 
             // Render detailed feedback
+            window.__uzFinalizeExerciseTopic(topicId, totalCorrect, totalQuestions);
+
             const feedbackDiv = document.getElementById('topic12Feedback');
             if (feedbackDiv) {
                 const pct = Math.round((totalCorrect / totalQuestions) * 100);

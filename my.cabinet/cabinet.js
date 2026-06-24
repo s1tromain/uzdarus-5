@@ -1017,46 +1017,8 @@ async function initDashboardPage() {
     packGrid.innerHTML = '';
     cards.forEach((card) => packGrid.appendChild(createPackCard(card)));
 
-    /* show Premium button if no active subscription */
-    if (!activeSubscription && !privilegedRole) {
-        const premiumBox = document.createElement('div');
-        premiumBox.className = 'premium-cta-box';
-        premiumBox.innerHTML =
-            '<div class="premium-cta-inner">'
-          +   '<h3>\uD83D\uDE80 Premium obunaga o\u2018ting</h3>'
-          +   '<p>Cheksiz talaffuz tekshiruvi, professional ovozlar, XP tizimi</p>'
-          +   '<div class="premium-cta-price"><span class="premium-cta-old">199 000</span> <span class="premium-cta-new">99 000 so\u2018m/oy</span></div>'
-          +   '<button class="btn btn-premium" id="premiumCheckoutBtn">\u2B50 Premium olish</button>'
-          + '</div>';
-        packGrid.parentNode.insertBefore(premiumBox, packGrid);
-
-        const checkoutBtn = document.getElementById('premiumCheckoutBtn');
-        if (checkoutBtn) {
-            checkoutBtn.addEventListener('click', async () => {
-                checkoutBtn.disabled = true;
-                checkoutBtn.textContent = 'Yuklanmoqda\u2026';
-                try {
-                    const token = await user.getIdToken();
-                    const resp = await fetch('/api/checkout', {
-                        method: 'POST',
-                        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    });
-                    const data = await resp.json();
-                    if (data.ok && data.paymentUrl) {
-                        window.location.href = data.paymentUrl;
-                    } else {
-                        showNotice(dashboardError, data.error || 'To\u2018lov sessiyasini yaratishda xatolik.');
-                        checkoutBtn.disabled = false;
-                        checkoutBtn.textContent = '\u2B50 Premium olish';
-                    }
-                } catch (err) {
-                    showNotice(dashboardError, 'Tarmoq xatoligi. Qayta urinib ko\u2018ring.');
-                    checkoutBtn.disabled = false;
-                    checkoutBtn.textContent = '\u2B50 Premium olish';
-                }
-            });
-        }
-    }
+    // Expired / unsubscribed users simply lose access \u2014 no upsell card, banner,
+    // or premium promotion is rendered here by design.
 
     saveLocalUser(user, profile);
 

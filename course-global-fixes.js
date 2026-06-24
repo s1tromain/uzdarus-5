@@ -703,6 +703,27 @@
         feedback.classList.remove('hidden');
         feedback.classList.add('show');
 
+        /* Display-only safety net for the legacy "Sizning natijangiz: 0/0" block.
+           The native checkAnswers() derives its total from quiz.mcQuestions +
+           quiz.blankQuestions only, so an exercise-only topic rendered a false
+           "0/0". We only step in when the displayed DENOMINATOR is still 0:
+           courses/topics that drive their own exercise-aware score (denominator
+           > 0 — A1 topics 6–12 via __uzFinalizeExerciseTopic, B1 via
+           checkTopicNExercises) keep their own score AND completion gate intact.
+           This net just prevents a stray 0/0 from ever being the final state. */
+        try {
+            var scoreEl = document.getElementById('scoreDisplay');
+            if (scoreEl) {
+                var denomMatch = scoreEl.textContent.match(/\/\s*(\d+)/);
+                var denom = denomMatch ? parseInt(denomMatch[1], 10) : 0;
+                if (!denom && total > 0) {
+                    scoreEl.textContent = 'Sizning natijangiz: ' + correct + '/' + total + ' (' + pct + '%)';
+                    var msgEl = document.getElementById('resultsMessage');
+                    if (msgEl) msgEl.innerHTML = escapeHtml(msg);
+                }
+            }
+        } catch (e) { /* ignore — legacy score block is optional */ }
+
         try { feedback.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
     }
 

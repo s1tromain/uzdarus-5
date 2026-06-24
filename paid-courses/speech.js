@@ -29,15 +29,58 @@ console.log("\uD83D\uDE80 SPEECH.JS LOADED");
 /* ================================================================== */
 /*  Auth helper — send Bearer token when Firebase user is signed in   */
 /* ================================================================== */
+/* Resolves once Firebase has restored the persisted session (or confirmed
+   there is none). Without this, a tap that happens during the brief window
+   before onAuthStateChanged fires sees currentUser === null and the request
+   goes out unauthenticated — the server then treats a PAID user as anonymous,
+   trips the low demo/IP daily limit and returns a 403 that surfaces the
+   "Ovoz funksiyasi to'liq versiyada mavjud" demo message inside a paid course. */
+let _authReadyPromise = null;
+function _whenAuthReady() {
+    if (_authReadyPromise) return _authReadyPromise;
+    _authReadyPromise = new Promise((resolve) => {
+        try {
+            const fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
+            if (!fbAuth) { resolve(null); return; }
+            if (fbAuth.currentUser) { resolve(fbAuth.currentUser); return; }
+            const unsub = fbAuth.onAuthStateChanged((u) => {
+                try { unsub(); } catch { /* ignore */ }
+                resolve(u || null);
+            });
+            // Safety net: never block a tap forever if Firebase stalls.
+            setTimeout(() => resolve(fbAuth.currentUser || null), 4000);
+        } catch { resolve(null); }
+    });
+    return _authReadyPromise;
+}
+
+/* Async, race-free auth headers: waits for auth readiness, then attaches a
+   FRESH ID token (getIdToken returns the cached token while valid, refreshing
+   only when needed). This guarantees a logged-in paid user is never mistaken
+   for an anonymous/demo caller. Anonymous users still work (empty headers). */
+async function _authHeaders() {
+    const headers = {};
+    try {
+        const user = await _whenAuthReady();
+        if (user) {
+            let token = window._uzdaIdToken;
+            try { token = await user.getIdToken(); window._uzdaIdToken = token; }
+            catch { /* network/refresh failed — fall back to any cached token */ }
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+        }
+    } catch { /* ignore — works without auth too */ }
+    return headers;
+}
+
+/* Synchronous best-effort headers (used by fire-and-forget, non-gating calls).
+   Prefer _authHeaders() for anything that must not be mistaken for anonymous. */
 function _getAuthHeaders() {
     const headers = {};
     try {
         const fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
         const user = fbAuth && fbAuth.currentUser;
-        if (user) {
-            if (window._uzdaIdToken) {
-                headers['Authorization'] = `Bearer ${window._uzdaIdToken}`;
-            }
+        if (user && window._uzdaIdToken) {
+            headers['Authorization'] = `Bearer ${window._uzdaIdToken}`;
         }
     } catch { /* ignore — works without auth too */ }
     return headers;
@@ -593,7 +636,7 @@ async function _playTTS(text, topicId) {
         if (!blobUrl) {
             const res = await fetch('/api/tts', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ..._getAuthHeaders() },
+                headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
                 body: JSON.stringify({ text, voice: localStorage.getItem('tts_voice') || 'male' }),
             });
 
@@ -659,7 +702,7 @@ async function _getSpeechToken() {
     console.log('[PRON][TOKEN] fetching /api/speech-token …');
     var res;
     try {
-        res = await fetch('/api/speech-token', { headers: _getAuthHeaders() });
+        res = await fetch('/api/speech-token', { headers: await _authHeaders() });
     } catch (netErr) {
         console.error('[PRON][TOKEN] network error:', netErr && netErr.message);
         var ne = new Error("Speech server bilan aloqa yo‘q");
