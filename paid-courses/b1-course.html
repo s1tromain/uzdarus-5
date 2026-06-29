@@ -8733,6 +8733,23 @@
             return t1Norm(expected) === nu;
         }
 
+        // An item is "open-ended" when it has no checkable answer key: either it
+        // is explicitly flagged free:true, or its answer is blank ("" / [""] /
+        // null). Some open writing prompts (e.g. "Я думаю, что …", "to'liq javob
+        // yozing") ship with answer:[""] and were NOT flagged free, which made
+        // them impossible to score correct — capping those topics below 100% and
+        // marking every open answer red. Treat both the same: a meaningful answer
+        // (>= 3 words) is accepted. This keeps ONE scoring rule for open items.
+        function t1IsOpenAnswer(item) {
+            if (item && item.free) return true;
+            var a = item ? item.answer : null;
+            if (a == null) return true;
+            if (Array.isArray(a)) {
+                return a.every(function (x) { return String(x == null ? "" : x).trim() === ""; });
+            }
+            return String(a).trim() === "";
+        }
+
         function t1EscHtml(s) {
             return String(s == null ? "" : s)
                 .replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -9216,9 +9233,10 @@
                     } else {
                         var inp = quizSection.querySelector('[data-t1-input="' + key + '"]');
                         uv = inp ? inp.value.trim() : "";
-                        // Free completion items: meaningful answer = non-empty and
-                        // at least 3 words. Exact match is not required.
-                        var okI = item.free
+                        // Open-ended items (free:true OR a blank answer key):
+                        // meaningful answer = non-empty and at least 3 words.
+                        // Exact match is not required.
+                        var okI = t1IsOpenAnswer(item)
                             ? (uv.split(/\s+/).filter(Boolean).length >= 3)
                             : t1Match(uv, item.answer);
                         if (inp) {
@@ -9298,330 +9316,26 @@
         window.checkTopic8Exercises = window.checkTopic1Exercises;
         window.checkTopic9Exercises = window.checkTopic1Exercises;
         window.checkTopic10Exercises = window.checkTopic1Exercises;
-        // Topic 11 requires EVERY answer (exercises + matching) to be correct
-        // before completion is allowed. It reuses the shared scorer for all
-        // marking / feedback / saving, then tightens the completion gate to
-        // 100% — without touching the shared checkTopic1Exercises used by
-        // Topics 1–10.
-        window.checkTopic11Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic11Exercises) return;
-
-            var total = 0;
-            (topic.topic11Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var matchingOk = true;
-            if (topic.quiz && topic.quiz.matchingGame && Array.isArray(topic.quiz.matchingGame.pairs)) {
-                var need = topic.quiz.matchingGame.pairs.length;
-                var st = (typeof matchingState !== "undefined") ? matchingState : null;
-                matchingOk = !!(st && Array.isArray(st.matches) && st.matches.length === need
-                    && st.matches.every(function (m) { return m && m.left === m.right; }));
-            }
-
-            // currentScore was set by the shared scorer = number of correct items.
-            var allCorrect = (currentScore >= total) && matchingOk;
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar va juftliklar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 12 also requires EVERY answer to be correct before completion
-        // is allowed (no matching game in this topic). Reuses the shared
-        // scorer for marking / feedback / saving, then tightens the gate.
-        window.checkTopic12Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic12Exercises) return;
-
-            var total = 0;
-            (topic.topic12Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var allCorrect = (currentScore >= total);
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 13 — same 100%-completion gate. Exercise 2 items are marked
-        // `free:true`, so the shared scorer counts them correct when the
-        // learner writes a meaningful answer (>= 3 words); every other item
-        // still needs an exact match.
-        window.checkTopic13Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic13Exercises) return;
-
-            var total = 0;
-            (topic.topic13Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var allCorrect = (currentScore >= total);
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 14 — same 100%-completion gate. Exercises 2 and 8 are
-        // `free:true` (open answers, >= 4 words handled by the items' own
-        // wording; the shared scorer's free branch needs >= 3 words and a
-        // non-empty answer). Every other item needs an exact match.
-        window.checkTopic14Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic14Exercises) return;
-
-            var total = 0;
-            (topic.topic14Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var allCorrect = (currentScore >= total);
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 15 — same 100%-completion gate (no free items). Every item
-        // needs an exact / accepted-variant match; Exercise 6 item 2 accepts
-        // two valid answers (Давайте решим… / Пусть решат…).
-        window.checkTopic15Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic15Exercises) return;
-
-            var total = 0;
-            (topic.topic15Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var allCorrect = (currentScore >= total);
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 16 — same 100%-completion gate, plus the matching game (Ex.2)
-        // must be fully and correctly matched. Reuses the shared scorer for
-        // marking / feedback / saving, then tightens the completion gate.
-        window.checkTopic16Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic16Exercises) return;
-
-            var total = 0;
-            (topic.topic16Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var matchingOk = true;
-            if (topic.quiz && topic.quiz.matchingGame && Array.isArray(topic.quiz.matchingGame.pairs)) {
-                var need = topic.quiz.matchingGame.pairs.length;
-                var st = (typeof matchingState !== "undefined") ? matchingState : null;
-                matchingOk = !!(st && Array.isArray(st.matches) && st.matches.length === need
-                    && st.matches.every(function (m) { return m && m.left === m.right; }));
-            }
-
-            var allCorrect = (currentScore >= total) && matchingOk;
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar va juftliklar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar va juftliklar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 17 — same 100%-completion gate, plus the matching game (Ex.4)
-        // must be fully and correctly matched. Reuses the shared scorer for
-        // marking / feedback / saving, then tightens the completion gate.
-        window.checkTopic17Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic17Exercises) return;
-
-            var total = 0;
-            (topic.topic17Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var matchingOk = true;
-            if (topic.quiz && topic.quiz.matchingGame && Array.isArray(topic.quiz.matchingGame.pairs)) {
-                var need = topic.quiz.matchingGame.pairs.length;
-                var st = (typeof matchingState !== "undefined") ? matchingState : null;
-                matchingOk = !!(st && Array.isArray(st.matches) && st.matches.length === need
-                    && st.matches.every(function (m) { return m && m.left === m.right; }));
-            }
-
-            var allCorrect = (currentScore >= total) && matchingOk;
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar va juftliklar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar va juftliklar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 18 — same 100%-completion gate, plus the matching game (Ex.8)
-        // must be fully and correctly matched. Open answers (Ex.7) are
-        // free:true and count correct when the learner writes >= 3 words.
-        window.checkTopic18Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic18Exercises) return;
-
-            var total = 0;
-            (topic.topic18Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var matchingOk = true;
-            if (topic.quiz && topic.quiz.matchingGame && Array.isArray(topic.quiz.matchingGame.pairs)) {
-                var need = topic.quiz.matchingGame.pairs.length;
-                var st = (typeof matchingState !== "undefined") ? matchingState : null;
-                matchingOk = !!(st && Array.isArray(st.matches) && st.matches.length === need
-                    && st.matches.every(function (m) { return m && m.left === m.right; }));
-            }
-
-            var allCorrect = (currentScore >= total) && matchingOk;
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar va juftliklar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar va juftliklar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 19 — same 100%-completion gate, plus the matching game (Ex.9)
-        // must be fully and correctly matched. Open answers (Ex.10) are
-        // free:true and count correct when the learner writes >= 3 words.
-        window.checkTopic19Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic19Exercises) return;
-
-            var total = 0;
-            (topic.topic19Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var matchingOk = true;
-            if (topic.quiz && topic.quiz.matchingGame && Array.isArray(topic.quiz.matchingGame.pairs)) {
-                var need = topic.quiz.matchingGame.pairs.length;
-                var st = (typeof matchingState !== "undefined") ? matchingState : null;
-                matchingOk = !!(st && Array.isArray(st.matches) && st.matches.length === need
-                    && st.matches.every(function (m) { return m && m.left === m.right; }));
-            }
-
-            var allCorrect = (currentScore >= total) && matchingOk;
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar va juftliklar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar va juftliklar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
-
-        // Topic 20 — same 100%-completion gate. No matching game in this topic.
-        // Open answers (Ex.3 uses accepted-variant arrays; Ex.8/9/10 are
-        // free:true) count correct per the shared scorer's rules.
-        window.checkTopic20Exercises = async function (topicId) {
-            await window.checkTopic1Exercises(topicId);
-
-            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
-            if (!topic || !topic.topic20Exercises) return;
-
-            var total = 0;
-            (topic.topic20Exercises.exercises || []).forEach(function (g) {
-                total += (g.items || []).length;
-            });
-
-            var allCorrect = (currentScore >= total);
-            if (allCorrect || !completeBtn) return;
-
-            completeBtn.textContent = "Mavzu tugatilmadi";
-            completeBtn.className = "complete-btn failed";
-            completeBtn.style.display = "block";
-            if (retryBtn) retryBtn.style.display = "none";
-            completeBtn.onclick = function () {
-                alert("Mavzuni tugatish uchun barcha javoblar to'g'ri bo'lishi kerak.");
-            };
-            var msgEl = document.getElementById("resultsMessage");
-            if (msgEl) msgEl.innerHTML = "Mavzuni yakunlash uchun barcha mashqlar to'g'ri bajarilishi kerak. Xato javoblarni qayta ko'rib chiqing.";
-        };
+        // Topics 11-20 use the SAME single completion flow as Topics 1-10.
+        // (Unified 2026-06 — critical-bug fix.) Each topic previously layered a
+        // SECOND completion gate on top of the shared scorer that ANDed in a
+        // separate matching-game / 100%-exact requirement. That requirement is
+        // NOT part of the graded score shown to the learner (#scoreDisplay), so a
+        // perfect graded result (e.g. 80/80 = 100%) was silently flipped back to
+        // "Mavzu tugatilmadi" and the topic could never complete. There is now
+        // exactly ONE reliable completion flow: window.checkTopic1Exercises,
+        // which scores the exercises, drives #scoreDisplay/#completeBtn, saves to
+        // Firebase, updates progress, unlocks the next topic and refreshes the UI.
+        window.checkTopic11Exercises = window.checkTopic1Exercises;
+        window.checkTopic12Exercises = window.checkTopic1Exercises;
+        window.checkTopic13Exercises = window.checkTopic1Exercises;
+        window.checkTopic14Exercises = window.checkTopic1Exercises;
+        window.checkTopic15Exercises = window.checkTopic1Exercises;
+        window.checkTopic16Exercises = window.checkTopic1Exercises;
+        window.checkTopic17Exercises = window.checkTopic1Exercises;
+        window.checkTopic18Exercises = window.checkTopic1Exercises;
+        window.checkTopic19Exercises = window.checkTopic1Exercises;
+        window.checkTopic20Exercises = window.checkTopic1Exercises;
 
         injectTopic1Styles();
 
