@@ -29,28 +29,85 @@ console.log("\uD83D\uDE80 SPEECH.JS LOADED");
 /* ================================================================== */
 /*  Auth helper — send Bearer token when Firebase user is signed in   */
 /* ================================================================== */
-/* Resolves once Firebase has restored the persisted session (or confirmed
-   there is none). Without this, a tap that happens during the brief window
-   before onAuthStateChanged fires sees currentUser === null and the request
-   goes out unauthenticated — the server then treats a PAID user as anonymous,
-   trips the low demo/IP daily limit and returns a 403 that surfaces the
-   "Ovoz funksiyasi to'liq versiyada mavjud" demo message inside a paid course. */
-let _authReadyPromise = null;
-function _whenAuthReady() {
-    if (_authReadyPromise) return _authReadyPromise;
-    _authReadyPromise = new Promise((resolve) => {
+/* SINGLE SOURCE OF TRUTH for identity on the audio endpoints.
+   The paid platform uses the MODULAR Firebase SDK (firebase-client.js), which
+   publishes a small, stable bridge on window.uzAuthBridge for classic scripts
+   like this one. speech.js MUST use that same session so a paid user's
+   TTS/pronunciation requests are authenticated — otherwise the server treats
+   them as anonymous, applies the demo/IP quota and returns a 403 that surfaces
+   the "Ovoz funksiyasi to'liq versiyada mavjud" message inside a paid course.
+
+   speech.js used to read a COMPAT global `firebase.auth()` that is never loaded
+   on the paid platform, so the token was NEVER attached and EVERY premium user
+   was billed as anonymous. The compat path below is kept only as a defensive
+   fallback for any page that might load the compat SDK. */
+
+/** The modular auth bridge published by firebase-client.js, if present. */
+function _getAuthBridge() {
+    return (typeof window !== 'undefined' && window.uzAuthBridge) || null;
+}
+
+/* Wait (briefly) for the auth bridge to appear. speech.js is a classic <script>
+   that runs before the deferred paid-platform.js module, so on the very first
+   calls the bridge may not exist yet; real taps happen long after load, by
+   which point it is always present. Resolves null if it never appears. */
+function _waitForAuthBridge(timeoutMs) {
+    return new Promise((resolve) => {
+        var bridge = _getAuthBridge();
+        if (bridge) { resolve(bridge); return; }
+        var start = Date.now();
+        var iv = setInterval(function () {
+            var b = _getAuthBridge();
+            if (b) { clearInterval(iv); resolve(b); }
+            else if (Date.now() - start >= timeoutMs) { clearInterval(iv); resolve(null); }
+        }, 100);
+    });
+}
+
+/* Resolve the signed-in user from the modular bridge (preferred) or the compat
+   SDK (fallback). Never blocks a tap forever. Demo pages have no Firebase
+   session by design, so they resolve null quickly and stay anonymous. */
+async function _resolveAuthUser() {
+    /* Demo pages never carry a Firebase session — stay anonymous, no waiting. */
+    if (_isDemoSpeechPage()) {
         try {
-            const fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
-            if (!fbAuth) { resolve(null); return; }
-            if (fbAuth.currentUser) { resolve(fbAuth.currentUser); return; }
-            const unsub = fbAuth.onAuthStateChanged((u) => {
+            var fb0 = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
+            return (fb0 && fb0.currentUser) || null;
+        } catch { return null; }
+    }
+
+    var bridge = await _waitForAuthBridge(4000);
+    if (bridge) {
+        try {
+            var user = await Promise.race([
+                Promise.resolve(bridge.ready),
+                new Promise(function (r) { setTimeout(function () { r(bridge.getUser()); }, 4000); })
+            ]);
+            return user || bridge.getUser() || null;
+        } catch {
+            return bridge.getUser ? bridge.getUser() : null;
+        }
+    }
+
+    /* Compat SDK fallback (only if a page ever loads the compat namespace). */
+    try {
+        var fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
+        if (!fbAuth) return null;
+        if (fbAuth.currentUser) return fbAuth.currentUser;
+        return await new Promise(function (resolve) {
+            var unsub = fbAuth.onAuthStateChanged(function (u) {
                 try { unsub(); } catch { /* ignore */ }
                 resolve(u || null);
             });
-            // Safety net: never block a tap forever if Firebase stalls.
-            setTimeout(() => resolve(fbAuth.currentUser || null), 4000);
-        } catch { resolve(null); }
-    });
+            setTimeout(function () { resolve(fbAuth.currentUser || null); }, 4000);
+        });
+    } catch { return null; }
+}
+
+let _authReadyPromise = null;
+function _whenAuthReady() {
+    if (_authReadyPromise) return _authReadyPromise;
+    _authReadyPromise = _resolveAuthUser();
     return _authReadyPromise;
 }
 
@@ -63,10 +120,16 @@ async function _authHeaders() {
     try {
         const user = await _whenAuthReady();
         if (user) {
-            let token = window._uzdaIdToken;
-            try { token = await user.getIdToken(); window._uzdaIdToken = token; }
-            catch { /* network/refresh failed — fall back to any cached token */ }
-            if (token) headers['Authorization'] = `Bearer ${token}`;
+            let token = null;
+            const bridge = _getAuthBridge();
+            try {
+                if (bridge && bridge.getIdToken) token = await bridge.getIdToken();
+                else if (typeof user.getIdToken === 'function') token = await user.getIdToken();
+            } catch { token = window._uzdaIdToken || null; }
+            if (token) {
+                window._uzdaIdToken = token;
+                headers['Authorization'] = `Bearer ${token}`;
+            }
         }
     } catch { /* ignore — works without auth too */ }
     return headers;
@@ -77,32 +140,51 @@ async function _authHeaders() {
 function _getAuthHeaders() {
     const headers = {};
     try {
-        const fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
-        const user = fbAuth && fbAuth.currentUser;
-        if (user && window._uzdaIdToken) {
+        const bridge = _getAuthBridge();
+        const hasUser = bridge
+            ? !!bridge.getUser()
+            : !!(typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser);
+        if (hasUser && window._uzdaIdToken) {
             headers['Authorization'] = `Bearer ${window._uzdaIdToken}`;
         }
     } catch { /* ignore — works without auth too */ }
     return headers;
 }
 
-/** Refresh and cache the Firebase ID token (call once on page load) */
+/** Refresh and cache the Firebase ID token (keeps the sync path attributed). */
 async function _refreshAuthToken() {
     try {
-        const fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
-        const user = fbAuth && fbAuth.currentUser;
-        if (user) {
-            window._uzdaIdToken = await user.getIdToken();
+        const bridge = _getAuthBridge();
+        let token = null;
+        if (bridge && bridge.getIdToken) {
+            token = await bridge.getIdToken();
+        } else {
+            const fbAuth = typeof firebase !== 'undefined' && firebase.auth && firebase.auth();
+            const user = fbAuth && fbAuth.currentUser;
+            if (user) token = await user.getIdToken();
+        }
+        if (token) {
+            window._uzdaIdToken = token;
             setTimeout(_refreshAuthToken, 50 * 60 * 1000);
         }
     } catch { /* ignore */ }
 }
 
-// kick off token caching when the module loads
-if (typeof firebase !== 'undefined' && firebase.auth) {
-    firebase.auth().onAuthStateChanged(user => {
-        if (user) _refreshAuthToken();
-        else window._uzdaIdToken = null;
+/* Kick off token caching once the auth session is known. Uses the modular
+   bridge when available and falls back to the compat SDK otherwise. */
+if (typeof window !== 'undefined') {
+    _waitForAuthBridge(8000).then(function (bridge) {
+        if (bridge && bridge.onChange) {
+            bridge.onChange(function (user) {
+                if (user) _refreshAuthToken();
+                else window._uzdaIdToken = null;
+            });
+        } else if (typeof firebase !== 'undefined' && firebase.auth) {
+            firebase.auth().onAuthStateChanged(function (user) {
+                if (user) _refreshAuthToken();
+                else window._uzdaIdToken = null;
+            });
+        }
     });
 }
 

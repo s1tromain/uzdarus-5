@@ -35,6 +35,52 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+/* ------------------------------------------------------------------ *
+ *  Auth bridge for classic (non-module) scripts — speech.js          *
+ *  ----------------------------------------------------------------  *
+ *  speech.js (TTS + pronunciation) is loaded as a plain <script> and *
+ *  cannot import the modular SDK. It historically read a COMPAT       *
+ *  global `firebase.auth()` that is NEVER loaded on the paid          *
+ *  platform, so every /api/tts and /api/speech-token call went out    *
+ *  WITHOUT a Bearer token. The server then saw a paid user as         *
+ *  anonymous, applied the demo/IP quota and returned 403 — the client *
+ *  showed "Ovoz funksiyasi to'liq versiyada mavjud." to Premium       *
+ *  users.                                                             *
+ *                                                                    *
+ *  This bridge exposes the SAME modular auth session (the single      *
+ *  source of truth) so speech.js authenticates as the real signed-in  *
+ *  user. Do not add a second auth path — everything reads from here.  *
+ * ------------------------------------------------------------------ */
+if (typeof window !== 'undefined') {
+    let authRestored = false;
+    const readyPromise = new Promise((resolve) => {
+        const unsub = onAuthStateChanged(auth, (user) => {
+            authRestored = true;
+            try { unsub(); } catch (e) { /* ignore */ }
+            resolve(user || null);
+        });
+        // Never block audio forever if auth is slow to restore.
+        setTimeout(() => resolve(auth.currentUser || null), 5000);
+    });
+
+    window.uzAuthBridge = {
+        /** Resolves with the signed-in user (or null) once auth is restored. */
+        ready: readyPromise,
+        /** Best-effort synchronous current user (may be null before restore). */
+        getUser: () => auth.currentUser || null,
+        /** True once onAuthStateChanged has fired at least once. */
+        isRestored: () => authRestored,
+        /** Fresh Firebase ID token for the current user, or null if signed out. */
+        getIdToken: async (forceRefresh = false) => {
+            const user = auth.currentUser;
+            if (!user) return null;
+            return user.getIdToken(forceRefresh);
+        },
+        /** Subscribe to auth-state changes. Returns an unsubscribe fn. */
+        onChange: (cb) => onAuthStateChanged(auth, cb)
+    };
+}
+
 const USER_LOCAL_KEY = 'currentUser';
 const DEVICE_ID_KEY = 'uzdarus_device_id';
 const PROFILE_CACHE_TTL_MS = 15000;

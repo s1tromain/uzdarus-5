@@ -1,16 +1,28 @@
 /* ============================================================================
-   PROOF: premium vocabulary audio auth fix (Bug #3)
+   PROOF: premium vocabulary audio auth fix (root cause: SDK mismatch)
    ----------------------------------------------------------------------------
-   Extracts the REAL _whenAuthReady / _authHeaders / _getAuthHeaders from
-   paid-courses/speech.js and reproduces the race that made paid users look
-   anonymous to the server (→ 403 → "Ovoz funksiyasi to'liq versiyada mavjud").
+   ROOT CAUSE
+     paid-courses/speech.js authenticated the TTS / pronunciation endpoints
+     through a COMPAT Firebase global (`firebase.auth()`). The paid platform
+     only ever loads the MODULAR SDK (firebase-client.js), which does NOT create
+     that global. So `typeof firebase === 'undefined'` on every paid page, the
+     Authorization header was NEVER attached, and the server billed a paid user
+     as anonymous → demo/IP quota → 403 → the client showed
+     "Ovoz funksiyasi to'liq versiyada mavjud." to Premium users.
 
-   Scenario: a logged-in PAID user taps Tinglash/Talaffuz BEFORE the cached
-   token (window._uzdaIdToken) has been populated.
-     - OLD sync _getAuthHeaders(): returns NO Authorization header  -> server
-       sees anonymous -> demo/IP limit -> 403 -> demo message.  (reproduces bug)
-     - NEW async _authHeaders(): awaits auth readiness + a fresh getIdToken and
-       DOES attach the Bearer token.  (bug fixed)
+   FIX
+     firebase-client.js now publishes a stable auth bridge on
+     window.uzAuthBridge, and speech.js reads the signed-in user + fresh ID
+     token from that SAME modular session (compat kept only as a fallback).
+
+   This script extracts the REAL auth helpers from speech.js and exercises them
+   in a PRODUCTION-LIKE sandbox: the compat `firebase` global is undefined, and
+   the modular bridge is (or isn't) present. It proves:
+     A) paid page + bridge + signed-in paid user  -> Bearer token attached (FIX)
+     B) paid page + NO bridge (the old broken prod) -> NO token (reproduces bug)
+     C) demo page (no bridge by design)             -> anonymous, resolves fast
+     D) bridge present + signed-out user            -> anonymous (empty headers)
+   Note: `firebase` is intentionally never defined here — exactly as in prod.
    ========================================================================== */
 'use strict';
 const fs = require('fs');
@@ -22,47 +34,75 @@ function extract(re, name) {
     if (!m) { console.error('could not extract ' + name); process.exit(3); }
     return m[0];
 }
-const readySrc    = extract(/let _authReadyPromise = null;[\s\S]*?\n}/, '_whenAuthReady');
-const authSrc     = extract(/async function _authHeaders\(\)[\s\S]*?\n}/, '_authHeaders');
-const legacySrc   = extract(/function _getAuthHeaders\(\)[\s\S]*?\n}/, '_getAuthHeaders');
+const bridgeSrc  = extract(/function _getAuthBridge\(\)[\s\S]*?\n}/, '_getAuthBridge');
+const waitSrc    = extract(/function _waitForAuthBridge\(timeoutMs\)[\s\S]*?\n}/, '_waitForAuthBridge');
+const resolveSrc = extract(/async function _resolveAuthUser\(\)[\s\S]*?\n}/, '_resolveAuthUser');
+const readySrc   = extract(/let _authReadyPromise = null;[\s\S]*?\n}/, '_whenAuthReady');
+const authSrc    = extract(/async function _authHeaders\(\)[\s\S]*?\n}/, '_authHeaders');
+const legacySrc  = extract(/function _getAuthHeaders\(\)[\s\S]*?\n}/, '_getAuthHeaders');
 
 let pass = 0, fail = 0;
 const ok = (n, c, extra) => { c ? (pass++, console.log('  ✓ ' + n)) : (fail++, console.log('  ✗ ' + n + (extra ? '  ' + extra : ''))); };
 
-// Build a logged-in firebase mock whose auth state restores asynchronously
-// (the real race) and whose getIdToken resolves a fresh token.
-function makeEnv(loggedIn) {
+/* Build the real speech.js auth helpers in a sandbox. `firebase` (compat) is
+   NEVER provided — `typeof firebase` resolves to 'undefined', exactly as on the
+   live paid pages. The modular session is provided via window.uzAuthBridge. */
+function makeApi({ hasBridge, loggedIn, isDemo }) {
     const user = loggedIn ? { getIdToken: async () => 'FRESH_TOKEN' } : null;
-    const fb = {
-        auth: () => ({
-            currentUser: null, // <- not yet restored at tap time (the race)
-            onAuthStateChanged: (cb) => { setTimeout(() => cb(user), 5); return () => {}; },
-        }),
+    const win = { _uzdaIdToken: null };
+    if (hasBridge) {
+        win.uzAuthBridge = {
+            ready: Promise.resolve(user),
+            getUser: () => user,
+            isRestored: () => true,
+            getIdToken: async () => (user ? 'FRESH_TOKEN' : null),
+            onChange: () => () => {},
+        };
+    }
+    const _isDemoSpeechPage = () => !!isDemo;
+    const factory = new Function(
+        'window', 'setTimeout', 'setInterval', 'clearInterval', 'Date', 'Promise', '_isDemoSpeechPage',
+        [bridgeSrc, waitSrc, resolveSrc, readySrc, authSrc, legacySrc].join('\n') +
+        '\nreturn { _authHeaders, _getAuthHeaders, _whenAuthReady };'
+    );
+    return {
+        api: factory(win, setTimeout, setInterval, clearInterval, Date, Promise, _isDemoSpeechPage),
+        win,
     };
-    const win = { _uzdaIdToken: null }; // <- token NOT cached yet (the race)
-    const factory = new Function('window', 'firebase', 'setTimeout',
-        readySrc + '\n' + authSrc + '\n' + legacySrc +
-        '\nreturn { _authHeaders, _getAuthHeaders };');
-    return { api: factory(win, fb, setTimeout), win };
 }
 
 (async () => {
-    console.log('[A] PAID user, token not cached yet (the production race)');
+    console.log('[A] PAID page + modular bridge + signed-in PAID user (the fix)');
     {
-        const { api } = makeEnv(true);
-        const legacy = api._getAuthHeaders();
-        ok('OLD sync _getAuthHeaders sends NO token (reproduces the bug)',
-            !legacy.Authorization, JSON.stringify(legacy));
-        const fixed = await api._authHeaders();
-        ok('NEW _authHeaders attaches Bearer token (bug fixed)',
-            fixed.Authorization === 'Bearer FRESH_TOKEN', JSON.stringify(fixed));
+        const { api } = makeApi({ hasBridge: true, loggedIn: true, isDemo: false });
+        const h = await api._authHeaders();
+        ok('_authHeaders attaches Bearer token from the modular session',
+            h.Authorization === 'Bearer FRESH_TOKEN', JSON.stringify(h));
     }
 
-    console.log('\n[B] Anonymous visitor (no user) still works without auth');
+    console.log('\n[B] PAID page + NO bridge, compat undefined (reproduces the OLD bug)');
     {
-        const { api } = makeEnv(false);
-        const fixed = await api._authHeaders();
-        ok('no user -> empty headers (anonymous allowed)', !fixed.Authorization);
+        const { api } = makeApi({ hasBridge: false, loggedIn: true, isDemo: false });
+        const h = await api._authHeaders();   // waits out the bridge timeout, then null
+        ok('without the bridge NO token is sent -> server sees anonymous (the bug)',
+            !h.Authorization, JSON.stringify(h));
+    }
+
+    console.log('\n[C] DEMO page (no Firebase session by design)');
+    {
+        const { api } = makeApi({ hasBridge: false, loggedIn: false, isDemo: true });
+        const t0 = Date.now();
+        const h = await api._authHeaders();
+        const dt = Date.now() - t0;
+        ok('demo page resolves anonymous with NO token', !h.Authorization, JSON.stringify(h));
+        ok('demo page does NOT stall waiting for a bridge (<1s)', dt < 1000, dt + 'ms');
+    }
+
+    console.log('\n[D] Bridge present but user signed OUT');
+    {
+        const { api } = makeApi({ hasBridge: true, loggedIn: false, isDemo: false });
+        const h = await api._authHeaders();
+        ok('signed-out user -> empty headers (anonymous allowed)', !h.Authorization);
     }
 
     console.log('\n=== RESULT: ' + pass + ' passed, ' + fail + ' failed ===');
