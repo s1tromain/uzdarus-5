@@ -100,6 +100,13 @@ async function firestoreGetUserProgress(userId, course) {
     }
 }
 
+/* Emit a learning-analytics event (fails soft; tracker self-disables on
+   demo/guest and buffers/batches to /api/analytics). */
+function trackEvent(type, data) {
+    try { if (window.uzTrack) window.uzTrack(type, data); } catch (e) { /* never break saves */ }
+}
+const _lastTopicPass = {}; // course -> highest completed topic already announced
+
 async function firestoreSaveUserProgress(userId, course, progressData) {
     if (!userId) {
         return false;
@@ -130,6 +137,16 @@ async function firestoreSaveUserProgress(userId, course, progressData) {
                 lastActivity: serverTimestamp()
             });
         }
+        // Timeline: announce topic completion ONCE, when a new highest topic
+        // is reached (dedup avoids re-emitting on every progress re-save).
+        if (!Array.isArray(course) && progressData && Array.isArray(progressData.completedTopics)) {
+            const nums = progressData.completedTopics.filter((n) => Number.isFinite(n));
+            const max = nums.length ? Math.max(...nums) : 0;
+            if (max > (_lastTopicPass[course] || 0)) {
+                _lastTopicPass[course] = max;
+                trackEvent('topic_pass', { course, topic: max });
+            }
+        }
         return true;
     } catch (error) {
         console.warn('progress-sync: saveUserProgress fallback', error?.message || error);
@@ -149,6 +166,25 @@ async function firestoreSaveQuizResult(userId, topicId, quizData, course = '') {
             course,
             updatedAt: serverTimestamp()
         }, { merge: true });
+        // Timeline: exercise / exam completion (answers themselves are reused
+        // from this very quizResults doc — no duplication).
+        const idStr = String(topicId);
+        const topicNum = parseInt(idStr, 10);
+        const scoreNum = Number(quizData && quizData.score);
+        const totalNum = Number(quizData && quizData.total);
+        const pct = (Number.isFinite(scoreNum) && Number.isFinite(totalNum) && totalNum > 0)
+            ? Math.round((scoreNum / totalNum) * 100) : null;
+        if (/final|exam/i.test(idStr)) {
+            trackEvent(pct != null && pct >= 60 ? 'exam_pass' : 'exam_fail',
+                { course, level: course, topic: Number.isFinite(topicNum) ? topicNum : undefined, score: pct });
+        } else {
+            trackEvent('ex_done', {
+                course,
+                topic: Number.isFinite(topicNum) ? topicNum : undefined,
+                score: Number.isFinite(scoreNum) ? scoreNum : undefined,
+                total: Number.isFinite(totalNum) ? totalNum : undefined,
+            });
+        }
         return true;
     } catch (error) {
         console.warn('progress-sync: saveQuizResult fallback', error?.message || error);

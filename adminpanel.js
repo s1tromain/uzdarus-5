@@ -15,7 +15,13 @@ const state = {
     role: 'customer',
     users: [],
     customerSearch: '',
-    customerStatusFilter: 'all'
+    customerStatusFilter: 'all',
+    // Analytics filters (Part 8) + per-uid overview rows from students-overview
+    overview: {},
+    courseFilter: 'all',
+    progressFilter: 'all',
+    activityFilter: 'all',
+    achievementFilter: 'all'
 };
 
 const ADMIN_ROLES = new Set(['developer', 'admin', 'moderator']);
@@ -528,14 +534,50 @@ function getCustomerRows() {
         customers = customers.filter((user) => getCustomerStatus(user).category === filter);
     }
 
+    // Analytics filters (Part 8) — driven by the cheap students-overview rows.
+    const ov = (u) => state.overview[u.uid] || null;
+    if (state.courseFilter !== 'all') {
+        customers = customers.filter((u) => {
+            const c = ov(u)?.courses?.find((x) => x.code === state.courseFilter);
+            return c && c.completedTopics > 0;
+        });
+    }
+    if (state.progressFilter !== 'all') {
+        customers = customers.filter((u) => {
+            const p = ov(u)?.overallProgress ?? 0;
+            switch (state.progressFilter) {
+                case '0': return p === 0;
+                case '1-49': return p >= 1 && p <= 49;
+                case '50-99': return p >= 50 && p <= 99;
+                case '100': return p >= 100;
+                default: return true;
+            }
+        });
+    }
+    if (state.activityFilter === 'today') {
+        customers = customers.filter((u) => ov(u)?.activeToday);
+    } else if (state.activityFilter === 'inactive') {
+        const cutoff = Date.now() - 7 * 86400000;
+        customers = customers.filter((u) => {
+            const la = ov(u)?.lastActivity;
+            return !la || la < cutoff;
+        });
+    }
+    if (state.achievementFilter === 'exam') {
+        customers = customers.filter((u) => (ov(u)?.examsPassed || 0) > 0);
+    } else if (state.achievementFilter === 'cert') {
+        customers = customers.filter((u) => (ov(u)?.certificates || 0) > 0);
+    }
+
     if (!q) {
         return customers;
     }
 
     return customers.filter((user) => {
-        const login = user.username || '';
-        const name = user.displayName || '';
-        return login.includes(q) || name.toLowerCase().includes(q);
+        const login = (user.username || '').toLowerCase();
+        const name = (user.displayName || '').toLowerCase();
+        const email = (user.email || '').toLowerCase();
+        return login.includes(q) || name.includes(q) || email.includes(q);
     });
 }
 
@@ -597,6 +639,7 @@ function renderCustomers() {
                     <td data-label="Status"><span class="${status.cls}">${escapeHtml(status.label)}</span></td>
                     <td data-label="Amallar" class="actions-cell">
                         <div class="actions-row">
+                            <button class="btn btn-analytics" data-action="analytics" data-uid="${user.uid}" type="button">📊 Analitika</button>
                             <button class="btn btn-ghost" data-action="reset" data-uid="${user.uid}" type="button">Reset parol</button>
                             ${canEditSubscription() ? `<button class="btn btn-ghost" data-action="subscription" data-uid="${user.uid}" type="button">Obuna</button>` : ''}
                             <button class="btn btn-ghost" data-action="certificates" data-uid="${user.uid}" type="button">Sertifikatlar</button>
@@ -704,8 +747,23 @@ async function loadStats() {
     }
 }
 
+async function loadOverview() {
+    try {
+        const result = await callApi('/api/admin?action=students-overview', 'GET');
+        const rows = Array.isArray(result.students) ? result.students : [];
+        const map = {};
+        rows.forEach((r) => { if (r && r.uid) map[r.uid] = r; });
+        state.overview = map;
+    } catch (error) {
+        // Analytics overview is best-effort; the customer list still works.
+        console.warn('students-overview load failed:', error?.message || error);
+    }
+}
+
 async function refreshData() {
-    await Promise.all([loadUsers(), loadStats()]);
+    await Promise.all([loadUsers(), loadStats(), loadOverview()]);
+    // Re-render once the overview map is in so analytics filters/badges apply.
+    renderCustomers();
 }
 
 function applyRoleUi() {
@@ -1328,6 +1386,9 @@ function initRowActions() {
             } else if (action === 'certificates') {
                 await viewUserCertificates(userId);
                 performed = false;
+            } else if (action === 'analytics') {
+                await openStudentAnalytics(userId);
+                performed = false;
             } else if (action === 'unblock') {
                 performed = await unblockFlow(userId, button);
             } else if (action === 'set-role') {
@@ -1385,6 +1446,22 @@ function initActions() {
             renderCustomers();
         });
     }
+
+    // Analytics filters (Part 8)
+    [
+        ['usersCourseFilter', 'courseFilter'],
+        ['usersProgressFilter', 'progressFilter'],
+        ['usersActivityFilter', 'activityFilter'],
+        ['usersAchievementFilter', 'achievementFilter'],
+    ].forEach(([elId, stateKey]) => {
+        const el = document.getElementById(elId);
+        if (el) {
+            el.addEventListener('change', (event) => {
+                state[stateKey] = String(event.target.value || 'all');
+                renderCustomers();
+            });
+        }
+    });
 }
 
 initModal();
@@ -1394,4 +1471,411 @@ initCreateStaff();
 initRowActions();
 initActions();
 initCertificates();
+initStudentAnalytics();
 initGate();
+
+/* ==================================================================
+ *  STUDENT ANALYTICS DASHBOARD (Stage 2)
+ *  Full learning-analytics view rendered inside the existing admin
+ *  panel. Data comes from GET /api/admin?action=student-analytics&uid=…
+ *  (staff-only, server-verified). No raw JSON — a professional dashboard.
+ * ================================================================== */
+let _saOverlay = null;
+let _saData = null;
+let _saTab = 'overview';
+
+function saDur(ms) {
+    ms = Number(ms) || 0;
+    const min = Math.round(ms / 60000);
+    if (min < 1) return '0 daq';
+    if (min < 60) return `${min} daq`;
+    const h = Math.floor(min / 60), m = min % 60;
+    return `${h} soat${m ? ' ' + m + ' daq' : ''}`;
+}
+function saDateTime(ms) { return ms ? new Date(ms).toLocaleString('uz-UZ') : '—'; }
+function saDate(ms) { return ms ? new Date(ms).toLocaleDateString('uz-UZ') : '—'; }
+function saTime(ms) {
+    if (!ms) return '';
+    const d = new Date(ms);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+function saStars(n) { n = Math.max(0, Math.min(5, Number(n) || 0)); return '★'.repeat(n) + '☆'.repeat(5 - n); }
+function saBar(pct, cls) {
+    pct = Math.max(0, Math.min(100, Number(pct) || 0));
+    return `<div class="sa-bar"><div class="sa-bar-fill ${cls || ''}" style="width:${pct}%"></div></div>`;
+}
+function saStat(label, value, sub) {
+    return `<div class="sa-stat"><div class="sa-stat-val">${value}</div><div class="sa-stat-lbl">${escapeHtml(label)}</div>${sub ? `<div class="sa-stat-sub">${escapeHtml(sub)}</div>` : ''}</div>`;
+}
+function saNum(v, dash) { return (v === null || v === undefined) ? (dash || '—') : String(v); }
+
+function initStudentAnalytics() {
+    if (document.getElementById('studentAnalyticsOverlay')) {
+        _saOverlay = document.getElementById('studentAnalyticsOverlay');
+        return;
+    }
+    injectAnalyticsStyles();
+    const ov = document.createElement('div');
+    ov.id = 'studentAnalyticsOverlay';
+    ov.className = 'sa-overlay';
+    ov.innerHTML = `
+        <div class="sa-panel" role="dialog" aria-modal="true" aria-label="Talaba analitikasi">
+            <div class="sa-head">
+                <div class="sa-head-main" id="saHeadMain"></div>
+                <button class="sa-close" id="saClose" type="button" aria-label="Yopish">✕</button>
+            </div>
+            <div class="sa-tabs" id="saTabs"></div>
+            <div class="sa-body" id="saBody"></div>
+        </div>`;
+    document.body.appendChild(ov);
+    _saOverlay = ov;
+    ov.addEventListener('click', (e) => { if (e.target === ov) closeStudentAnalytics(); });
+    document.getElementById('saClose').addEventListener('click', closeStudentAnalytics);
+    document.getElementById('saTabs').addEventListener('click', (e) => {
+        const b = e.target.closest('[data-sa-tab]');
+        if (!b) return;
+        _saTab = b.dataset.saTab;
+        renderAnalyticsTabs();
+        renderAnalyticsBody();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && _saOverlay && _saOverlay.classList.contains('open')) closeStudentAnalytics();
+    });
+}
+
+async function openStudentAnalytics(uid) {
+    initStudentAnalytics();
+    _saTab = 'overview';
+    _saData = null;
+    _saOverlay.classList.add('open');
+    document.getElementById('saHeadMain').innerHTML = '<div class="sa-title">Yuklanmoqda…</div>';
+    document.getElementById('saTabs').innerHTML = '';
+    document.getElementById('saBody').innerHTML = '<div class="sa-loading">📊 Ma’lumotlar yuklanmoqda…</div>';
+    try {
+        const res = await callApi('/api/admin?action=student-analytics&uid=' + encodeURIComponent(uid), 'GET');
+        _saData = res.dashboard;
+        renderAnalyticsHead();
+        renderAnalyticsTabs();
+        renderAnalyticsBody();
+    } catch (error) {
+        document.getElementById('saBody').innerHTML =
+            `<div class="sa-error">${escapeHtml(mapApiError(error, 'Analitikani yuklab bo‘lmadi.'))}</div>`;
+    }
+}
+
+function closeStudentAnalytics() {
+    if (_saOverlay) _saOverlay.classList.remove('open');
+}
+
+function renderAnalyticsHead() {
+    const p = _saData.profile;
+    const online = p.online
+        ? '<span class="sa-dot online"></span> Onlayn'
+        : '<span class="sa-dot"></span> Oflayn';
+    document.getElementById('saHeadMain').innerHTML = `
+        <div class="sa-avatar">${escapeHtml((p.username || '?').slice(0, 2).toUpperCase())}</div>
+        <div class="sa-head-info">
+            <div class="sa-title">${escapeHtml(p.displayName || p.username || '—')}</div>
+            <div class="sa-sub">@${escapeHtml(p.username || '')}${p.email ? ' · ' + escapeHtml(p.email) : ''} · <b>${escapeHtml(p.role || 'customer')}</b></div>
+            <div class="sa-sub sa-meta">${online} · Qurilmalar: ${saNum(p.deviceCount, '0')} · Ro‘yxatdan: ${saDate(p.registeredAt)} · Oxirgi faollik: ${saDateTime(p.lastActivity)}</div>
+        </div>`;
+}
+
+function renderAnalyticsTabs() {
+    const tabs = [
+        ['overview', 'Umumiy'], ['timeline', 'Timeline'], ['exercises', 'Mashqlar'],
+        ['pronunciation', 'Talaffuz'], ['vocabulary', 'Lug‘at'],
+    ];
+    document.getElementById('saTabs').innerHTML = tabs.map(([k, l]) =>
+        `<button class="sa-tab ${_saTab === k ? 'active' : ''}" data-sa-tab="${k}" type="button">${l}</button>`).join('');
+}
+
+function renderAnalyticsBody() {
+    const el = document.getElementById('saBody');
+    if (!_saData) { el.innerHTML = '<div class="sa-loading">…</div>'; return; }
+    let html = '';
+    if (_saTab === 'overview') html = renderSAOverview(_saData);
+    else if (_saTab === 'timeline') html = renderSATimeline(_saData);
+    else if (_saTab === 'exercises') html = renderSAExercises(_saData);
+    else if (_saTab === 'pronunciation') html = renderSAPron(_saData);
+    else if (_saTab === 'vocabulary') html = renderSAVocab(_saData);
+    el.innerHTML = html;
+    el.scrollTop = 0;
+}
+
+function renderSAOverview(d) {
+    const sub = d.subscription || {};
+    const subCls = sub.active ? 'ok' : 'warn';
+    const subText = sub.active
+        ? `${escapeHtml(sub.tariff || 'FAOL')} · ${sub.daysLeft != null ? sub.daysLeft + ' kun qoldi' : ''}`
+        : 'Obuna yo‘q / tugagan';
+    const cur = d.current || {};
+    const st = d.stats || {};
+    const lt = st.learningTime || {};
+
+    const courseCards = (d.courses || []).map((c) => {
+        const cert = c.certificate ? `<span class="sa-pill ok">🎓 #${escapeHtml(String(c.certificate.number || '✓'))}</span>` : '';
+        const exam = c.examStatus === 'passed' ? '<span class="sa-pill ok">Imtihon ✓</span>'
+            : c.examStatus === 'failed' ? '<span class="sa-pill bad">Imtihon ✗</span>'
+            : '<span class="sa-pill">Imtihon —</span>';
+        return `
+            <div class="sa-course">
+                <div class="sa-course-top"><b>${c.code}</b><span>${c.progressPercent}%</span></div>
+                ${saBar(c.progressPercent, c.progressPercent >= 100 ? 'green' : '')}
+                <div class="sa-course-meta">${c.completedTopics}/${c.totalTopics} mavzu · ${c.remaining} qoldi</div>
+                <div class="sa-course-meta">📚 ${c.vocabLearned} so‘z</div>
+                <div class="sa-chips">${exam} ${cert}</div>
+            </div>`;
+    }).join('');
+
+    const curCard = `
+        <div class="sa-card sa-current">
+            <div class="sa-card-h">📍 Hozirgi holat</div>
+            <div class="sa-cur-grid">
+                <div><span>Kurs</span><b>${escapeHtml(cur.course || '—')}</b></div>
+                <div><span>Mavzu</span><b>${saNum(cur.topic)}</b></div>
+                <div><span>Lug‘at kartasi</span><b>${cur.vocabCard ? `${saNum(cur.vocabCard.card)}${cur.vocabCard.total ? '/' + cur.vocabCard.total : ''}` : '—'}</b></div>
+                <div><span>Imtihon</span><b>${cur.exam ? escapeHtml((cur.exam.level || '') + ' ' + (cur.exam.score != null ? cur.exam.score + '%' : '')) : '—'}</b></div>
+            </div>
+            <div class="sa-cur-activity">Oxirgi harakat: ${escapeHtml(cur.activity || '—')}</div>
+        </div>`;
+
+    return `
+        <div class="sa-grid-2">
+            <div class="sa-card sa-hero">
+                <div class="sa-hero-pct">${d.overallProgress}%</div>
+                <div class="sa-hero-lbl">Umumiy kurs progressi</div>
+                ${saBar(d.overallProgress)}
+                <div class="sa-hero-sub">${(d.totals && d.totals.words) || 0} so‘z · ${st.topicsCompleted || 0} mavzu · ${st.examsPassed || 0} imtihon</div>
+            </div>
+            <div class="sa-card sa-subcard ${subCls}">
+                <div class="sa-card-h">💳 Obuna</div>
+                <div class="sa-sub-status ${subCls}">${escapeHtml(subText)}</div>
+                <div class="sa-sub-meta">Tugash sanasi: ${saDate(sub.endAt)}</div>
+            </div>
+        </div>
+        ${curCard}
+        <div class="sa-card">
+            <div class="sa-card-h">📊 Statistika</div>
+            <div class="sa-stats">
+                ${saStat('Bugun', saDur(lt.today))}
+                ${saStat('Bu hafta', saDur(lt.week))}
+                ${saStat('Bu oy', saDur(lt.month))}
+                ${saStat('Jami vaqt', saDur(lt.total))}
+                ${saStat('O‘rt. talaffuz', st.avgPronunciation != null ? st.avgPronunciation + '%' : '—')}
+                ${saStat('O‘rt. mashq', st.avgExercise != null ? st.avgExercise + '%' : '—')}
+                ${saStat('Muvaffaqiyat', st.successRate != null ? st.successRate + '%' : '—')}
+                ${saStat('Imtihon o‘tish', st.examPassRate != null ? st.examPassRate + '%' : '—')}
+                ${saStat('So‘z o‘rgandi', st.wordsLearned || 0)}
+                ${saStat('Mavzu tugatdi', st.topicsCompleted || 0)}
+                ${saStat('Talaffuz urinish', (d.totals && d.totals.pron) || 0)}
+                ${saStat('Mashq bajardi', (d.totals && d.totals.exercises) || 0)}
+                ${saStat('Imtihon o‘tdi', st.examsPassed || 0)}
+                ${saStat('Sertifikatlar', (d.certificates || []).length)}
+            </div>
+        </div>
+        <div class="sa-card">
+            <div class="sa-card-h">🎯 Kurslar bo‘yicha progress</div>
+            <div class="sa-courses">${courseCards}</div>
+        </div>
+        ${(d.certificates || []).length ? `
+        <div class="sa-card">
+            <div class="sa-card-h">🎓 Sertifikatlar</div>
+            <div class="sa-chips">${d.certificates.map(c => `<span class="sa-pill ok">${escapeHtml(String(c.course || ''))} · #${escapeHtml(String(c.number || '—'))} · ${saDate(c.issuedAt)}</span>`).join('')}</div>
+        </div>` : ''}`;
+}
+
+function renderSATimeline(d) {
+    const items = d.timeline || [];
+    if (!items.length) return '<div class="sa-empty">Hozircha faoliyat qayd etilmagan.</div>';
+    // group by day
+    const groups = {};
+    items.forEach((e) => {
+        const day = e.ts ? new Date(e.ts).toLocaleDateString('uz-UZ') : '—';
+        (groups[day] = groups[day] || []).push(e);
+    });
+    return '<div class="sa-timeline">' + Object.entries(groups).map(([day, evs]) => `
+        <div class="sa-tl-day">${escapeHtml(day)}</div>
+        ${evs.map(e => `
+            <div class="sa-tl-row">
+                <div class="sa-tl-time">${saTime(e.ts)}</div>
+                <div class="sa-tl-dot ${saTlClass(e.type)}"></div>
+                <div class="sa-tl-label">${escapeHtml(e.label || e.type)}${e.course ? ` <span class="sa-tl-course">${escapeHtml(e.course)}</span>` : ''}</div>
+            </div>`).join('')}
+    `).join('') + '</div>';
+}
+function saTlClass(type) {
+    if (type === 'pron') return 'p';
+    if (type === 'exam_pass' || type === 'topic_pass' || type === 'vocab_done' || type === 'ex_done') return 'g';
+    if (type === 'exam_fail') return 'r';
+    return '';
+}
+
+function renderSAExercises(d) {
+    const ex = (d.exercises || []).filter(e => e.kind === 'exercise' || e.kind === 'exam');
+    if (!ex.length) return '<div class="sa-empty">Mashq/imtihon natijalari yo‘q.</div>';
+    return '<div class="sa-exlist">' + ex.map((e) => {
+        const cls = e.passed === true ? 'ok' : e.passed === false ? 'bad' : '';
+        const answers = (e.answers || []).length
+            ? `<div class="sa-answers">${e.answers.map(a => `
+                <div class="sa-ans">
+                    <span class="sa-ans-q">${escapeHtml(a.section ? a.section + ' · ' : '')}${escapeHtml(a.question || '')}</span>
+                    <span class="sa-ans-a">${escapeHtml(a.answer || '')}</span>
+                </div>`).join('')}</div>`
+            : '<div class="sa-answers sa-muted">Javoblar saqlanmagan.</div>';
+        return `
+            <details class="sa-ex">
+                <summary>
+                    <span class="sa-ex-title">${escapeHtml(e.id || '')} <span class="sa-tag ${e.kind === 'exam' ? 'exam' : ''}">${e.kind === 'exam' ? 'Imtihon' : 'Mashq'}</span></span>
+                    <span class="sa-ex-score sa-pill ${cls}">${e.percent != null ? e.percent + '%' : '—'} (${saNum(e.score, '0')}/${saNum(e.total, '?')})</span>
+                    <span class="sa-ex-date">${saDateTime(e.timestamp)}</span>
+                </summary>
+                ${answers}
+            </details>`;
+    }).join('') + '</div>';
+}
+
+function renderSAPron(d) {
+    const pr = d.pronunciation || [];
+    if (!pr.length) return '<div class="sa-empty">Talaffuz urinishlari qayd etilmagan.</div>';
+    return `
+        <div class="sa-card"><div class="sa-card-h">🎤 Talaffuz tarixi (${pr.length})</div>
+        <div class="sa-pron-list">${pr.map((a) => {
+            const cls = a.pass ? 'ok' : 'bad';
+            return `
+            <div class="sa-pron ${cls}">
+                <div class="sa-pron-top">
+                    <span class="sa-pron-stars">${saStars(a.stars)}</span>
+                    <span class="sa-pron-score">${a.score != null ? a.score + '%' : '—'}</span>
+                    <span class="sa-pill ${cls}">${a.pass ? 'O‘tdi' : 'O‘tmadi'}</span>
+                    <span class="sa-pron-date">${saDateTime(a.ts)}</span>
+                </div>
+                <div class="sa-pron-words">
+                    <span class="sa-pron-exp">Kutilgan: «${escapeHtml(a.expected || '—')}»</span>
+                    <span class="sa-pron-rec">Eshitildi: «${escapeHtml(a.recognized || '—')}»</span>
+                </div>
+                <div class="sa-pron-metrics">
+                    <span>Accuracy: <b>${saNum(a.accuracy)}</b></span>
+                    <span>Completeness: <b>${saNum(a.completeness)}</b></span>
+                    <span>Fluency: <b>${saNum(a.fluency)}</b></span>
+                    <span>Confidence: <b>${a.confidence != null ? a.confidence : '—'}</b></span>
+                </div>
+                ${a.feedback ? `<div class="sa-pron-fb">${escapeHtml(a.feedback)}</div>` : ''}
+            </div>`;
+        }).join('')}</div></div>`;
+}
+
+function renderSAVocab(d) {
+    const cur = d.current || {};
+    const cards = (d.courses || []).map(c => `
+        <div class="sa-course">
+            <div class="sa-course-top"><b>${c.code}</b><span>${c.vocabLearned} so‘z</span></div>
+            ${saBar(c.progressPercent)}
+            <div class="sa-course-meta">${c.completedTopics}/${c.totalTopics} mavzu</div>
+        </div>`).join('');
+    return `
+        <div class="sa-card sa-current">
+            <div class="sa-card-h">📖 Hozirgi lug‘at holati</div>
+            <div class="sa-cur-grid">
+                <div><span>Kurs</span><b>${escapeHtml(cur.course || '—')}</b></div>
+                <div><span>Mavzu</span><b>${saNum(cur.topic)}</b></div>
+                <div><span>Karta</span><b>${cur.vocabCard ? `${saNum(cur.vocabCard.card)}${cur.vocabCard.total ? '/' + cur.vocabCard.total : ''}` : '—'}</b></div>
+                <div><span>Talaffuz urinishlari</span><b>${(d.totals && d.totals.pron) || 0}</b></div>
+                <div><span>Tinglash soni</span><b>${(d.totals && d.totals.listens) || 0}</b></div>
+            </div>
+        </div>
+        <div class="sa-card">
+            <div class="sa-card-h">📚 Kurslar bo‘yicha lug‘at</div>
+            <div class="sa-courses">${cards}</div>
+        </div>`;
+}
+
+function injectAnalyticsStyles() {
+    if (document.getElementById('saStyles')) return;
+    const s = document.createElement('style');
+    s.id = 'saStyles';
+    s.textContent = `
+.sa-overlay{position:fixed;inset:0;background:rgba(12,15,32,.72);backdrop-filter:blur(4px);z-index:11000;display:none;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
+.sa-overlay.open{display:flex}
+.sa-panel{background:#f6f8fc;color:#1a1f36;width:100%;max-width:1080px;border-radius:20px;box-shadow:0 30px 90px rgba(0,0,0,.4);overflow:hidden;display:flex;flex-direction:column;max-height:94vh}
+.sa-head{display:flex;align-items:center;gap:14px;padding:18px 22px;background:linear-gradient(135deg,#5b6ef5,#7d4fe0);color:#fff}
+.sa-head-main{display:flex;align-items:center;gap:14px;flex:1;min-width:0}
+.sa-avatar{width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;flex:0 0 auto}
+.sa-title{font-size:1.25rem;font-weight:800;line-height:1.2}
+.sa-sub{font-size:.82rem;opacity:.92;margin-top:2px;word-break:break-word}
+.sa-meta{opacity:.8}
+.sa-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#9aa3c7;margin-right:2px}
+.sa-dot.online{background:#4ade80;box-shadow:0 0 0 3px rgba(74,222,128,.3)}
+.sa-close{background:rgba(255,255,255,.16);border:none;color:#fff;width:38px;height:38px;border-radius:10px;font-size:1.1rem;cursor:pointer;flex:0 0 auto}
+.sa-close:hover{background:rgba(255,255,255,.28)}
+.sa-tabs{display:flex;gap:4px;padding:10px 16px 0;background:#eef1f8;overflow-x:auto}
+.sa-tab{border:none;background:transparent;padding:10px 16px;font-weight:700;font-size:.9rem;color:#5b6480;cursor:pointer;border-radius:10px 10px 0 0;white-space:nowrap}
+.sa-tab.active{background:#f6f8fc;color:#5b6ef5}
+.sa-body{padding:18px;overflow:auto;flex:1}
+.sa-loading,.sa-empty,.sa-error{padding:40px;text-align:center;color:#7a83a3;font-weight:600}
+.sa-error{color:#e2444b}
+.sa-card{background:#fff;border-radius:16px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 10px rgba(20,30,80,.05)}
+.sa-card-h{font-weight:800;font-size:.98rem;margin-bottom:12px}
+.sa-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.sa-hero{display:flex;flex-direction:column;gap:6px}
+.sa-hero-pct{font-size:2.6rem;font-weight:900;color:#5b6ef5;line-height:1}
+.sa-hero-lbl{font-weight:700;color:#5b6480;font-size:.86rem}
+.sa-hero-sub{font-size:.8rem;color:#8791b0;margin-top:4px}
+.sa-subcard .sa-sub-status{font-size:1.05rem;font-weight:800;margin-bottom:6px}
+.sa-subcard.ok .sa-sub-status{color:#12b76a}.sa-subcard.warn .sa-sub-status{color:#f79009}
+.sa-sub-meta{font-size:.82rem;color:#8791b0}
+.sa-bar{height:9px;background:#e8ebf5;border-radius:6px;overflow:hidden;margin:4px 0}
+.sa-bar-fill{height:100%;background:linear-gradient(90deg,#5b6ef5,#7d4fe0);border-radius:6px;transition:width .5s}
+.sa-bar-fill.green{background:linear-gradient(90deg,#12b76a,#0e9f5b)}
+.sa-current .sa-cur-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.sa-cur-grid>div{background:#f4f6fc;border-radius:10px;padding:10px}
+.sa-cur-grid span{display:block;font-size:.72rem;color:#8791b0;font-weight:600}
+.sa-cur-grid b{font-size:1.05rem}
+.sa-cur-activity{margin-top:10px;font-size:.84rem;color:#5b6480;background:#f4f6fc;padding:8px 12px;border-radius:10px}
+.sa-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.sa-stat{background:#f4f6fc;border-radius:12px;padding:12px;text-align:center}
+.sa-stat-val{font-size:1.3rem;font-weight:800;color:#3a4266}
+.sa-stat-lbl{font-size:.74rem;color:#8791b0;font-weight:600;margin-top:2px}
+.sa-courses{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.sa-course{background:#f4f6fc;border-radius:12px;padding:12px}
+.sa-course-top{display:flex;justify-content:space-between;font-size:.95rem;margin-bottom:4px}
+.sa-course-meta{font-size:.76rem;color:#8791b0;margin-top:4px}
+.sa-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.sa-pill{display:inline-block;padding:3px 9px;border-radius:8px;font-size:.72rem;font-weight:700;background:#e8ebf5;color:#5b6480}
+.sa-pill.ok{background:#d6f5e3;color:#0e9f5b}.sa-pill.bad{background:#ffe0e0;color:#e2444b}.sa-pill.warn{background:#fff0d6;color:#b7791f}
+.sa-timeline{position:relative}
+.sa-tl-day{font-weight:800;font-size:.82rem;color:#8791b0;margin:14px 0 8px;text-transform:uppercase}
+.sa-tl-row{display:flex;align-items:center;gap:12px;padding:5px 0}
+.sa-tl-time{width:48px;font-size:.8rem;color:#8791b0;font-weight:700;flex:0 0 auto;text-align:right}
+.sa-tl-dot{width:10px;height:10px;border-radius:50%;background:#c3cae0;flex:0 0 auto;position:relative}
+.sa-tl-dot.g{background:#12b76a}.sa-tl-dot.r{background:#e2444b}.sa-tl-dot.p{background:#7d4fe0}
+.sa-tl-label{font-size:.9rem;color:#2b3255}
+.sa-tl-course{font-size:.7rem;background:#eef1f8;color:#5b6ef5;padding:1px 6px;border-radius:6px;font-weight:700}
+.sa-exlist,.sa-pron-list{display:flex;flex-direction:column;gap:8px}
+.sa-ex{background:#f4f6fc;border-radius:12px;overflow:hidden}
+.sa-ex>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;flex-wrap:wrap}
+.sa-ex>summary::-webkit-details-marker{display:none}
+.sa-ex-title{font-weight:700;flex:1;min-width:120px}
+.sa-tag{font-size:.68rem;background:#e8ebf5;color:#5b6480;padding:1px 7px;border-radius:6px;margin-left:4px}
+.sa-tag.exam{background:#efe4ff;color:#7d4fe0}
+.sa-ex-date{font-size:.74rem;color:#8791b0}
+.sa-answers{padding:0 14px 12px;display:flex;flex-direction:column;gap:4px}
+.sa-ans{display:flex;justify-content:space-between;gap:12px;font-size:.82rem;padding:5px 10px;background:#fff;border-radius:8px}
+.sa-ans-q{color:#8791b0}.sa-ans-a{font-weight:600}
+.sa-muted{color:#a7afca;font-size:.8rem;font-style:italic}
+.sa-pron{background:#f4f6fc;border-radius:12px;padding:12px 14px;border-left:4px solid #c3cae0}
+.sa-pron.ok{border-left-color:#12b76a}.sa-pron.bad{border-left-color:#e2444b}
+.sa-pron-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.sa-pron-stars{color:#ffc400;font-size:1rem;letter-spacing:1px}
+.sa-pron-score{font-weight:800}
+.sa-pron-date{font-size:.74rem;color:#8791b0;margin-left:auto}
+.sa-pron-words{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;margin-bottom:6px}
+.sa-pron-exp{color:#5b6480}.sa-pron-rec{color:#2b3255;font-weight:600}
+.sa-pron-metrics{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:#8791b0}
+.sa-pron-fb{margin-top:6px;font-size:.82rem;color:#5b6ef5;font-weight:600}
+.btn-analytics{background:linear-gradient(135deg,#5b6ef5,#7d4fe0);color:#fff;border:none}
+.btn-analytics:hover{filter:brightness(1.08)}
+@media(max-width:720px){.sa-grid-2{grid-template-columns:1fr}.sa-current .sa-cur-grid{grid-template-columns:repeat(2,1fr)}}
+`;
+    document.head.appendChild(s);
+}

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UzdaRus · Pronunciation Fixture Recorder</title>
+<style>
+  :root { --bg:#0f1226; --card:#1a1f3d; --fg:#e8ecff; --mut:#98a0c8; --acc:#667eea; --ok:#58cc02; --bad:#ff4b4b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--fg); padding:16px; }
+  h1 { font-size:1.15rem; margin:0 0 4px; }
+  p.sub { color:var(--mut); margin:0 0 16px; font-size:.85rem; }
+  .card { background:var(--card); border-radius:14px; padding:16px; margin-bottom:14px; }
+  label { display:block; font-size:.78rem; color:var(--mut); margin:10px 0 4px; font-weight:600; }
+  input, select, textarea { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2d3566; background:#0d1030; color:var(--fg); font-size:.95rem; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .row > div { flex:1; min-width:130px; }
+  button { border:none; border-radius:12px; padding:13px 18px; font-size:1rem; font-weight:700; cursor:pointer; color:#fff; }
+  .btn-rec { background:var(--acc); width:100%; margin-top:14px; }
+  .btn-rec:disabled { opacity:.5; }
+  .btn-sec { background:#2d3566; }
+  .btn-dl { background:var(--ok); }
+  .btn-clr { background:#3a2036; color:#ffb4b4; }
+  .status { text-align:center; font-weight:700; margin:12px 0; min-height:22px; }
+  pre { background:#0d1030; border-radius:10px; padding:12px; overflow:auto; font-size:.78rem; color:#bfe3ff; max-height:210px; }
+  table { width:100%; border-collapse:collapse; font-size:.8rem; }
+  th,td { text-align:left; padding:6px 8px; border-bottom:1px solid #2d3566; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:8px; font-size:.72rem; font-weight:700; }
+  .muted { color:var(--mut); font-size:.78rem; }
+  .warn { color:#ffcf6b; }
+</style>
+</head>
+<body>
+<h1>🎤 Pronunciation Fixture Recorder</h1>
+<p class="sub">Capture real Azure Pronunciation Assessment output from native / learner speakers, then feed it to the automated validation suite for production calibration. Uses the exact same Azure config as <code>speech.js</code> (ru-RU, HundredMark, Phoneme).</p>
+
+<div class="card">
+  <strong>1 · Azure credentials</strong>
+  <p class="muted">On the deployed site (logged in as staff) leave "Source" on <em>server token</em>. Otherwise paste an Azure region + key/token.</p>
+  <label>Source</label>
+  <select id="src">
+    <option value="server">Server token (/api/speech-token)</option>
+    <option value="key">Azure subscription key + region</option>
+    <option value="token">Azure authorization token + region</option>
+  </select>
+  <div id="manualCreds" style="display:none">
+    <div class="row">
+      <div><label>Region</label><input id="region" placeholder="e.g. westeurope"></div>
+      <div><label id="secretLabel">Key / Token</label><input id="secret" placeholder="paste here"></div>
+    </div>
+  </div>
+  <label>Bearer (optional, for server token when not on-site)</label>
+  <input id="bearer" placeholder="Firebase ID token (optional)">
+</div>
+
+<div class="card">
+  <strong>2 · What are you recording?</strong>
+  <label>Reference word / phrase (Russian)</label>
+  <input id="ref" value="делать" placeholder="делать">
+  <div class="row">
+    <div>
+      <label>Ground-truth label</label>
+      <select id="label">
+        <option value="correct">correct</option>
+        <option value="slight-mistake">slight-mistake</option>
+        <option value="strong-accent">strong-accent</option>
+        <option value="wrong-stress">wrong-stress</option>
+        <option value="multiform">multiform</option>
+        <option value="wrong-russian">wrong-russian</option>
+        <option value="uzbek-word">uzbek-word</option>
+        <option value="english-word">english-word</option>
+        <option value="silence">silence</option>
+        <option value="mic-noise">mic-noise</option>
+        <option value="incomplete">incomplete</option>
+        <option value="wrong-ending">wrong-ending</option>
+        <option value="partial-phrase">partial-phrase</option>
+        <option value="low-confidence">low-confidence</option>
+        <option value="transcript-mismatch">transcript-mismatch</option>
+        <option value="random-echo">random-echo</option>
+      </select>
+    </div>
+    <div>
+      <label>Speaker</label>
+      <select id="speaker">
+        <option value="native-ru">native-ru</option>
+        <option value="uzbek-learner">uzbek-learner</option>
+        <option value="other">other</option>
+      </select>
+    </div>
+  </div>
+  <label>Expected to PASS? (leave "auto" to use the label default)</label>
+  <select id="expect">
+    <option value="auto">auto (label default)</option>
+    <option value="true">true — should advance</option>
+    <option value="false">false — should be rejected</option>
+  </select>
+  <button id="recBtn" class="btn-rec">● Record &amp; assess</button>
+  <div class="status" id="status">Ready.</div>
+</div>
+
+<div class="card">
+  <strong>3 · Captured fixtures (<span id="count">0</span>)</strong>
+  <div style="margin:10px 0;" class="row">
+    <button class="btn-dl" id="dlBtn" style="flex:2">⬇ Download all as JSON</button>
+    <button class="btn-sec" id="copyBtn" style="flex:1">Copy</button>
+    <button class="btn-clr" id="clrBtn" style="flex:1">Clear</button>
+  </div>
+  <p class="muted">Save the file into <code>tests/pronunciation/fixtures/real/</code> then run <code>npm run validate:speech</code>.</p>
+  <table id="tbl"><thead><tr><th>#</th><th>label</th><th>ref → recognized</th><th>acc/flu/comp</th><th>conf</th></tr></thead><tbody></tbody></table>
+  <label style="margin-top:12px">Last raw fixture</label>
+  <pre id="raw">—</pre>
+</div>
+
+<script src="https://aka.ms/csspeech/jsbrowserpackageraw"></script>
+<script>
+const $ = id => document.getElementById(id);
+const fixtures = [];
+
+$('src').addEventListener('change', () => {
+  const v = $('src').value;
+  $('manualCreds').style.display = v === 'server' ? 'none' : 'block';
+  $('secretLabel').textContent = v === 'key' ? 'Subscription key' : 'Authorization token';
+});
+
+async function getSpeechConfig(SpeechSDK) {
+  const src = $('src').value;
+  if (src === 'key') {
+    return SpeechSDK.SpeechConfig.fromSubscription($('secret').value.trim(), $('region').value.trim());
+  }
+  if (src === 'token') {
+    return SpeechSDK.SpeechConfig.fromAuthorizationToken($('secret').value.trim(), $('region').value.trim());
+  }
+  // server token
+  const headers = {};
+  const b = $('bearer').value.trim();
+  if (b) headers['Authorization'] = 'Bearer ' + b;
+  const r = await fetch('/api/speech-token', { headers });
+  if (!r.ok) throw new Error('speech-token ' + r.status + ' (log in as staff or use manual credentials)');
+  const { token, region } = await r.json();
+  return SpeechSDK.SpeechConfig.fromAuthorizationToken(token, region);
+}
+
+function setStatus(t, cls) { const el = $('status'); el.textContent = t; el.style.color = cls || 'var(--fg)'; }
+
+$('recBtn').addEventListener('click', async () => {
+  const SpeechSDK = window.SpeechSDK;
+  if (!SpeechSDK) return setStatus('Azure SDK not loaded (check network).', 'var(--bad)');
+  const referenceText = $('ref').value.trim();
+  if (!referenceText) return setStatus('Enter a reference word.', 'var(--bad)');
+  $('recBtn').disabled = true;
+  setStatus('🎙 Listening… speak now', 'var(--acc)');
+  try {
+    const speechConfig = await getSpeechConfig(SpeechSDK);
+    speechConfig.speechRecognitionLanguage = 'ru-RU';
+    const pronConfig = new SpeechSDK.PronunciationAssessmentConfig(
+      referenceText,
+      SpeechSDK.PronunciationAssessmentGradingSystem.HundredMark,
+      SpeechSDK.PronunciationAssessmentGranularity.Phoneme,
+      false
+    );
+    const audioConfig = SpeechSDK.AudioConfig.fromDefaultMicrophoneInput();
+    const recognizer = new SpeechSDK.SpeechRecognizer(speechConfig, audioConfig);
+    pronConfig.applyTo(recognizer);
+    recognizer.recognizeOnceAsync(result => {
+      try { capture(SpeechSDK, result, referenceText); }
+      catch (e) { setStatus('Parse error: ' + e.message, 'var(--bad)'); }
+      finally { try { recognizer.close(); } catch(_){} $('recBtn').disabled = false; }
+    }, err => { setStatus('Recognition error: ' + err, 'var(--bad)'); $('recBtn').disabled = false; try{recognizer.close();}catch(_){} });
+  } catch (e) {
+    setStatus('Error: ' + e.message, 'var(--bad)');
+    $('recBtn').disabled = false;
+  }
+});
+
+function capture(SpeechSDK, result, referenceText) {
+  let data = null;
+  try {
+    const json = result.properties.getProperty(SpeechSDK.PropertyId.SpeechServiceResponse_JsonResult);
+    if (json) data = JSON.parse(json);
+  } catch (_) {}
+  const nb = data && data.NBest && data.NBest[0];
+  const pa = nb && nb.PronunciationAssessment;
+  const expectSel = $('expect').value;
+  const fx = {
+    id: `real-${$('speaker').value}-${referenceText.replace(/\s+/g,'_')}-${Date.now()}`,
+    label: $('label').value,
+    speaker: $('speaker').value,
+    referenceText,
+    recognizedText: (data && data.DisplayText) || (result.text || ''),
+    azure: {
+      accuracy:     pa ? pa.AccuracyScore : null,
+      fluency:      pa ? pa.FluencyScore : null,
+      completeness: pa ? pa.CompletenessScore : null,
+      confidence:   nb ? nb.Confidence : null,
+    },
+    words: nb && nb.Words ? nb.Words.map(w => ({
+      word: w.Word,
+      accuracy: w.PronunciationAssessment ? w.PronunciationAssessment.AccuracyScore : null,
+      error: w.PronunciationAssessment ? w.PronunciationAssessment.ErrorType : 'None',
+    })) : [],
+    capturedAt: new Date().toISOString(),
+  };
+  if (expectSel !== 'auto') fx.expectPass = (expectSel === 'true');
+  fixtures.push(fx);
+  render();
+  const a = fx.azure;
+  setStatus(`✓ "${fx.recognizedText}"  acc=${a.accuracy} conf=${a.confidence}`, 'var(--ok)');
+  $('raw').textContent = JSON.stringify(fx, null, 2);
+}
+
+function render() {
+  $('count').textContent = fixtures.length;
+  const tb = $('tbl').querySelector('tbody');
+  tb.innerHTML = fixtures.map((f, i) => {
+    const a = f.azure;
+    return `<tr><td>${i+1}</td><td><span class="pill">${f.label}</span></td>
+      <td>${f.referenceText} → <b>${f.recognizedText || '∅'}</b></td>
+      <td>${a.accuracy}/${a.fluency}/${a.completeness}</td><td>${a.confidence}</td></tr>`;
+  }).join('');
+}
+
+$('dlBtn').addEventListener('click', () => {
+  if (!fixtures.length) return;
+  const blob = new Blob([JSON.stringify(fixtures, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fixtures-${$('speaker').value}-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+$('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(JSON.stringify(fixtures, null, 2)).then(() => setStatus('Copied.', 'var(--ok)'));
+});
+$('clrBtn').addEventListener('click', () => { fixtures.length = 0; render(); $('raw').textContent = '—'; setStatus('Cleared.'); });
+</script>
+</body>
+</html>

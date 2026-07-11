@@ -81,6 +81,39 @@ if (typeof window !== 'undefined') {
     };
 }
 
+/* ------------------------------------------------------------------ *
+ *  Learning-analytics tracker bootstrap                              *
+ *  Injects the buffered event tracker (classic global window.uzTrack) *
+ *  on real (non-demo) pages, and emits a single `login` event once    *
+ *  auth is restored. The tracker self-disables for demo/guest users   *
+ *  (no Firebase token → nothing is sent) and batches writes to        *
+ *  /api/analytics, so Firestore cost stays minimal.                   *
+ * ------------------------------------------------------------------ */
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    const isDemoPage = /-demo/.test((window.location?.pathname || '').toLowerCase());
+    if (!isDemoPage && !window.__uzTrackerInjected) {
+        window.__uzTrackerInjected = true;
+        try {
+            const s = document.createElement('script');
+            s.src = '/analytics-tracker.js';
+            s.async = true;
+            (document.head || document.documentElement).appendChild(s);
+        } catch (e) { /* ignore */ }
+
+        let loginLogged = false;
+        onAuthStateChanged(auth, (user) => {
+            if (!user || loginLogged) return;
+            loginLogged = true;
+            let tries = 0;
+            const emit = () => {
+                if (window.uzTrack) { try { window.uzTrack('login'); } catch (e) { /* ignore */ } }
+                else if (tries++ < 12) setTimeout(emit, 700);
+            };
+            emit();
+        });
+    }
+}
+
 const USER_LOCAL_KEY = 'currentUser';
 const DEVICE_ID_KEY = 'uzdarus_device_id';
 const PROFILE_CACHE_TTL_MS = 15000;

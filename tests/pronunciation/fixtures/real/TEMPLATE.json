@@ -1,0 +1,38 @@
+[
+  {
+    "id": "real-native-ru-delat-0001",
+    "label": "correct",
+    "speaker": "native-ru",
+    "referenceText": "делать",
+    "recognizedText": "делать",
+    "azure": {
+      "accuracy": 96,
+      "fluency": 94,
+      "completeness": 100,
+      "confidence": 0.93
+    },
+    "words": [
+      { "word": "делать", "accuracy": 96, "error": "None" }
+    ],
+    "expectPass": true,
+    "capturedAt": "2026-07-11T10:00:00.000Z"
+  },
+  {
+    "id": "real-uzbek-learner-delat-0002",
+    "label": "strong-accent",
+    "speaker": "uzbek-learner",
+    "referenceText": "делать",
+    "recognizedText": "делать",
+    "azure": {
+      "accuracy": 67,
+      "fluency": 58,
+      "completeness": 100,
+      "confidence": 0.71
+    },
+    "words": [
+      { "word": "делать", "accuracy": 67, "error": "None" }
+    ],
+    "expectPass": true,
+    "capturedAt": "2026-07-11T10:01:00.000Z"
+  }
+]

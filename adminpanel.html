@@ -120,13 +120,37 @@
                 <div class="card-title-row">
                     <h2>Customerlar ro‘yxati</h2>
                     <div class="card-controls">
-                        <input type="search" id="usersSearchInput" placeholder="Login yoki ism bo‘yicha qidirish">
+                        <input type="search" id="usersSearchInput" placeholder="Login / ism / email bo‘yicha qidirish">
                         <select id="usersStatusFilter" class="filter-select" aria-label="Status bo‘yicha filtr">
                             <option value="all">Barchasi</option>
                             <option value="active">Faol</option>
                             <option value="expiring">Tugashga yaqin</option>
                             <option value="blocked">Bloklangan</option>
                             <option value="expired">Obuna tugagan</option>
+                        </select>
+                        <select id="usersCourseFilter" class="filter-select" aria-label="Kurs bo‘yicha filtr">
+                            <option value="all">Barcha kurslar</option>
+                            <option value="A1">A1</option>
+                            <option value="A2">A2</option>
+                            <option value="B1">B1</option>
+                            <option value="B2">B2</option>
+                        </select>
+                        <select id="usersProgressFilter" class="filter-select" aria-label="Progress bo‘yicha filtr">
+                            <option value="all">Barcha progress</option>
+                            <option value="0">Boshlamagan (0%)</option>
+                            <option value="1-49">1–49%</option>
+                            <option value="50-99">50–99%</option>
+                            <option value="100">Tugatgan (100%)</option>
+                        </select>
+                        <select id="usersActivityFilter" class="filter-select" aria-label="Faollik bo‘yicha filtr">
+                            <option value="all">Faollik: barchasi</option>
+                            <option value="today">Bugun faol</option>
+                            <option value="inactive">Nofaol (7+ kun)</option>
+                        </select>
+                        <select id="usersAchievementFilter" class="filter-select" aria-label="Yutuqlar bo‘yicha filtr">
+                            <option value="all">Yutuqlar: barchasi</option>
+                            <option value="exam">Imtihon topshirgan</option>
+                            <option value="cert">Sertifikat olgan</option>
                         </select>
                         <button class="btn btn-ghost" id="refreshUsersBtn" type="button">Yangilash</button>
                     </div>

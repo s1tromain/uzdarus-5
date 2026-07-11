@@ -61,6 +61,17 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Learning analytics event stream + aggregates. Written ONLY server-side
+      // via the Admin SDK (POST /api/analytics?action=track), read ONLY server
+      // side by staff endpoints. Students may never read or write analytics —
+      // not even their own — so no learner can enumerate or forge activity.
+      match /events/{eventId} {
+        allow read, write: if false;
+      }
+      match /analytics/{docId} {
+        allow read, write: if false;
+      }
+
       match /{document=**} {
         allow read, write: if false;
       }

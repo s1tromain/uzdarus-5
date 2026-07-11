@@ -340,6 +340,9 @@ function _setSpeechSdkUiState(state) {
    case the body wasn't available yet for the UI-state class). */
 if (typeof window !== 'undefined') {
     var _startSpeechSdkPreload = function () {
+        /* Pronunciation disabled on this page (demo / A1 / B1) → never
+           load or initialize the speech recognition SDK. */
+        if (!_pronEnabled()) return;
         _setSpeechSdkUiState(_speechSdkReady() ? 'ready' : 'loading');
         _ensureSpeechSDK().catch(function (e) {
             console.warn('[SDK] preload failed (will retry on tap):', e && e.message);
@@ -395,6 +398,9 @@ function _setDemoPronunciationLockState(locked) {
 }
 
 function _syncDemoPronunciationLockState() {
+    /* Re-apply the Premium note in case the flashcard controls re-rendered
+       (idempotent — guarded by a data attribute on the mic button). */
+    try { _applyPronPolicyUI(); } catch (e) { /* ignore */ }
     var word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
     var topicId = word && word.topicId != null ? word.topicId : null;
     _setDemoPronunciationLockState(_isDemoLocked(topicId));
@@ -406,6 +412,80 @@ function _scheduleDemoPronunciationLockSync() {
         _demoPronUiSyncTimer = 0;
         _syncDemoPronunciationLockState();
     }, 0);
+}
+
+/* ================================================================== */
+/*  PRONUNCIATION AVAILABILITY POLICY  (platform rules, 2026)         */
+/*  ---------------------------------------------------------------- */
+/*  SINGLE SOURCE OF TRUTH for WHERE the pronunciation (mic) feature   */
+/*  is available. Fully data-driven from the page path — no per-file   */
+/*  config, no hardcoded word lists:                                   */
+/*    • Demo vocabulary pages -> DISABLED (Premium-only lock message)  */
+/*    • A1 paid vocabulary    -> DISABLED (available from A2)          */
+/*    • B1 paid vocabulary    -> DISABLED (available from B2)          */
+/*    • A2 / B2 paid          -> FULL pronunciation                    */
+/*    • any other page        -> enabled (unchanged legacy behaviour)  */
+/*                                                                      */
+/*  When a page is DISABLED: speech recognition is NEVER initialized,  */
+/*  the microphone is NEVER requested, the Azure SDK is NOT preloaded, */
+/*  and no speech token is ever fetched. Listening (TTS) is untouched. */
+/* ================================================================== */
+function _pronPolicy() {
+    /* Demos: pronunciation must NEVER work (cost + Premium gating). */
+    if (_isDemoSpeechPage()) {
+        return {
+            enabled: false,
+            kind: 'demo',
+            message: '🔒 Talaffuz faqat Premium obuna bilan mavjud.'
+        };
+    }
+    /* Paid courses: only A2 and B2 expose pronunciation. */
+    var lvl = _detectLevel();
+    if (lvl === 'a1' || lvl === 'b1') {
+        var nextLevel = lvl === 'a1' ? 'A2' : 'B2';
+        return {
+            enabled: false,
+            kind: 'level',
+            message: '🎤 Talaffuz funksiyasi ' + nextLevel + ' kursidan boshlab mavjud.'
+        };
+    }
+    return { enabled: true, kind: 'ok', message: '' };
+}
+
+/* Convenience guard used by every entry point that could touch the mic. */
+function _pronEnabled() { return _pronPolicy().enabled; }
+
+/* Replace the vocabulary-card mic button with a Premium information
+   block on pages where pronunciation is disabled. Idempotent — the
+   card is a single re-usable flashcard, so this runs once but is safe
+   to call repeatedly (e.g. after a re-render). */
+function _applyPronPolicyUI() {
+    var pol = _pronPolicy();
+    if (pol.enabled) return;
+    var btns = document.querySelectorAll('.audio-button.pron-btn');
+    btns.forEach(function (btn) {
+        if (!btn || btn.getAttribute('data-pron-policy-applied')) return;
+        btn.setAttribute('data-pron-policy-applied', '1');
+        btn.style.display = 'none';
+        btn.setAttribute('aria-hidden', 'true');
+        btn.tabIndex = -1;
+        var controls = btn.closest('.audio-controls') || btn.parentNode;
+        if (!controls || !controls.parentNode) return;
+        if (controls.parentNode.querySelector('.pron-premium-note')) return;
+        var note = document.createElement('div');
+        note.className = 'pron-premium-note pron-premium-' + pol.kind;
+        note.setAttribute('role', 'note');
+        note.innerHTML = '<span class="pron-premium-text">' + _escHtml(pol.message) + '</span>';
+        controls.parentNode.insertBefore(note, controls.nextSibling);
+    });
+}
+
+/* Friendly feedback if a disabled mic button is somehow activated. */
+function _showPronPolicyMessage(pol) {
+    pol = pol || _pronPolicy();
+    if (pol.enabled) return;
+    try { showStatus(pol.message); } catch (e) { /* ignore */ }
+    setTimeout(function () { try { showStatus(''); } catch (e) {} }, 3000);
 }
 
 /* ================================================================== */
@@ -646,6 +726,9 @@ function playAudio(event) {
     const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
     if (!word || !word.ru) return;
 
+    // Analytics: listening usage + current vocabulary card position.
+    _trackVocabCard(word, 'listen');
+
     btn.disabled = true;
     btn.classList.add('loading');
 
@@ -835,6 +918,15 @@ function checkPronunciation(event) {
         window._isPronRunning = false;
     }
 
+    /* Policy gate — pronunciation is disabled on demo / A1 / B1 pages.
+       Never initialize recognition, request the mic, or fetch a token. */
+    var _pol = _pronPolicy();
+    if (!_pol.enabled) {
+        releasePronRunLock();
+        _showPronPolicyMessage(_pol);
+        return;
+    }
+
     if (_isRecording || _pronBusy) {
         releasePronRunLock();
         console.warn('[PRON] BLOCKED: busy');
@@ -883,6 +975,9 @@ function checkPronunciation(event) {
     }
 
     var topicId = word.topicId != null ? word.topicId : null;
+
+    // Analytics: current vocabulary card at the moment of a pronunciation try.
+    _trackVocabCard(word, 'pron');
 
     if (_isDemoLocked(topicId)) {
         releasePronRunLock();
@@ -951,8 +1046,10 @@ function checkPronunciation(event) {
                the next word. "O‘rtacha" (average), "Aniqroq gapiring"
                (unclear) and "Hech narsa eshitilmadi" (empty) do NOT pass. */
             var verdict = result.verdict || _getCategory(score);
-            var didPass = result.pass === true
-                && (verdict === 'excellent' || verdict === 'good');
+            /* PASS = final score >= 70 (⭐⭐⭐ Yaxshi or better). The engine
+               already applied the anti-false-positive ceilings, so this is
+               the single source of truth. */
+            var didPass = result.pass === true;
 
             /* Optional grading diagnostics — set window.SPEECH_DEBUG = true
                in the console to inspect transcript / word states / verdict. */
@@ -1001,8 +1098,8 @@ function checkPronunciation(event) {
                     };
                 }
 
-            /* ============ TRY AGAIN: O\u2018rtacha (average) \u2014 does NOT pass ============ */
-            } else if (verdict === 'average') {
+            /* ====== TRY AGAIN: \u2B50\u2B50 Qoniqarli / low-confidence \u2014 no pass ====== */
+            } else if (verdict === 'fair' || verdict === 'low_confidence') {
                 showStatus('\uD83D\uDCAA Yana urinib ko\'ring');
                 _animateFlashcardError();
                 _haptic(30);
@@ -1179,37 +1276,38 @@ function _clampRange(value, min, max) {
 }
 
 /* ==================================================================
- *  SPEECH VERDICT ENGINE  —  deterministic, word-quality based
- *  (rebuilt May 2026)
+ *  SPEECH VERDICT ENGINE  —  multi-criteria, 5-star (rebuilt 2026)
  *
  *  PIPELINE
- *    recognizedText + referenceText
+ *    recognizedText + referenceText + Azure metrics
  *      -> _normalizeSpeechText()   lowercase, yo->ye, strip punctuation
  *      -> _classifyWords()         each reference word: GREEN/YELLOW/RED
- *      -> _evaluateVerdict()       counts -> one of 5 verdicts
- *      -> _packageGrade()          verdict -> score / reason / UI data
+ *      -> _textScore()             classification -> 0..100 (text signal)
+ *      -> _azureBlend()            accuracy+completeness+fluency -> 0..100
+ *      -> _combineScore()          blend + anti-false-positive ceilings
+ *      -> _scoreToVerdict()        0..100 -> 5-star verdict
+ *      -> _packageGrade()          -> score / stars / reason / UI data
  *
- *  The verdict and the word colors depend ONLY on word-level text
- *  similarity, so the same speech input ALWAYS yields the same result
- *  (no Azure-accuracy noise, no random yellow/red, fully deterministic).
+ *  Text similarity catches WRONG words (Azure returns the real, different
+ *  transcript). Azure's phoneme AccuracyScore is a HARD CEILING that
+ *  catches ECHOES / random speech / noise (Azure returns the reference
+ *  text but with poor audio metrics). A low ASR Confidence short-circuits
+ *  to "ask to repeat". Together these make a false "Ajoyib" ~impossible.
  *
- *  WORD STATES
- *    short words (<= 3 letters)  STRICT:
- *        edit distance 0  -> GREEN
- *        edit distance 1  -> YELLOW
- *        else             -> RED
- *    long words  (> 3 letters):
- *        similarity >= 0.88 -> GREEN
- *        similarity >= 0.68 -> YELLOW  (must also share a prefix/suffix)
- *        else               -> RED
+ *  WORD STATES (text signal)
+ *    short words (<= 3 letters)  STRICT: dist 0 GREEN / 1 YELLOW / else RED
+ *    long words  (> 3 letters):  sim >= 0.88 GREEN; sim >= 0.68 + shared
+ *        affix YELLOW; clean prefix/suffix of ref YELLOW (dropped ending);
+ *        else RED
  *
- *  VERDICT RULES  (G/Y/R = green/yellow/red counts, T = total ref words)
- *    HECH NARSA ESHITILMADI  no speech captured
- *    ANIQROQ GAPIRING        R >= 3   OR   coverage < 60%
- *    O'RTACHA                R = 1..2   OR   Y > ceil(T/2)   (too many yellow)
- *    AJOYIB                  R = 0  AND  (Y = 0  OR  (Y <= 1 AND T >= 3))
- *    YAXSHI                  R = 0  AND  Y <= ceil(T/2)
- *    coverage = (G + Y) / T
+ *  5-STAR SCORE -> VERDICT
+ *    >= 95  ⭐⭐⭐⭐⭐  excellent (Ajoyib)
+ *    >= 85  ⭐⭐⭐⭐   great     (Juda yaxshi)
+ *    >= 70  ⭐⭐⭐    good      (Yaxshi)   <- pass / advance
+ *    >= 50  ⭐⭐     fair      (Qoniqarli)
+ *    >=  1  ⭐      poor      (Qayta urinib ko'ring)
+ *      0            empty     (Hech narsa eshitilmadi)
+ *    confidence < 0.35 -> low_confidence (Ovoz aniq eshitilmadi)
  * ================================================================== */
 
 var SPEECH_GREEN_THRESHOLD = 0.88;   /* long word similarity -> GREEN  */
@@ -1290,6 +1388,16 @@ function _classifyWord(refForm, candForm, sim, dist) {
     /* LONG WORD MODE */
     if (sim >= SPEECH_GREEN_THRESHOLD) return 'green';
     if (sim >= SPEECH_YELLOW_THRESHOLD && _sharesAffix(refForm, candForm)) return 'yellow';
+    /* Partial word: the recognized token is a clean prefix or suffix of the
+       reference (>= 3 letters). This is an INCOMPLETE pronunciation — e.g.
+       "дела" for "делать" (missing "ть") — not a random/wrong word. It earns
+       YELLOW (partial credit) so a dropped ending scores "needs improvement"
+       instead of a total miss. "читать" for "делать" is NOT contained, so it
+       still falls through to RED. */
+    if (candForm && candForm.length >= 3 && candForm.length < refForm.length &&
+        (refForm.indexOf(candForm) === 0 || refForm.slice(-candForm.length) === candForm)) {
+        return 'yellow';
+    }
     return 'red';
 }
 
@@ -1383,29 +1491,117 @@ function _classifyWords(recognized, reference) {
     };
 }
 
-/* Word-state counts -> one of the five verdicts. Pure, deterministic. */
-function _evaluateVerdict(cls) {
-    var total = cls.total;
-    if (total === 0) return 'empty';
+/* ==================================================================
+ *  MULTI-CRITERIA SCORING CORE  (rebuilt 2026 — premium-grade)
+ *  ------------------------------------------------------------------
+ *  The verdict is NO LONGER a single text-similarity bucket. It is a
+ *  continuous 0..100 score blended from independent signals and then
+ *  mapped to a 5-star rating:
+ *
+ *    • textScore   — recognized-vs-expected word match (Levenshtein /
+ *                    word similarity / missing / extra / order)
+ *    • azureBlend  — Azure pronunciation assessment (AccuracyScore +
+ *                    CompletenessScore + FluencyScore = phoneme quality)
+ *    • confidence  — ASR confidence gate (unclear audio → ask to repeat)
+ *
+ *  ANTI-FALSE-POSITIVE (the whole point):
+ *    Azure sometimes ECHOES the reference text even for random speech,
+ *    so textScore alone can be fooled. Azure's phoneme AccuracyScore is
+ *    therefore a HARD CEILING (_accuracyCeiling): an echo with poor
+ *    audio can never reach a passing tier. A weak text match likewise
+ *    caps the score so a "wrong word" (Azure returns the real, different
+ *    transcript) cannot pass either. Random RU/UZ/EN words, silence,
+ *    noise and music all fail through one of these gates.
+ * ================================================================== */
 
-    var y = cls.counts.yellow;
-    var r = cls.counts.red;
+/* 5-star thresholds (inclusive lower bound). */
+var SPEECH_STAR5_MIN = 95;   /* ⭐⭐⭐⭐⭐ Ajoyib          */
+var SPEECH_STAR4_MIN = 85;   /* ⭐⭐⭐⭐  Juda yaxshi      */
+var SPEECH_STAR3_MIN = 70;   /* ⭐⭐⭐   Yaxshi (pass)     */
+var SPEECH_STAR2_MIN = 50;   /* ⭐⭐    Qoniqarli         */
+var SPEECH_PASS_SCORE = 70;  /* >= this advances the word */
+var SPEECH_CONF_MIN = 0.35;  /* below this ASR confidence -> ask to repeat */
 
-    /* RED >= 3  OR  coverage too low -> the learner must speak again. */
-    if (r >= 3 || cls.coverage < SPEECH_MIN_COVERAGE) return 'unclear';
-    /* 1-2 RED words -> average. */
-    if (r >= 1) return 'average';
+var _VERDICT_SCORE  = { excellent: 97, great: 90, good: 77, fair: 60, poor: 30, empty: 0, low_confidence: 0 };
+var _STAR_COUNT     = { excellent: 5,  great: 4,  good: 3,  fair: 2,  poor: 1,  empty: 0, low_confidence: 0 };
+var _VERDICT_REASON = { excellent: 'excellent', great: 'great', good: 'good', fair: 'fair', poor: 'poor', empty: 'no_speech', low_confidence: 'low_confidence' };
 
-    /* From here RED === 0. */
-    var yellowLimit = Math.ceil(total / 2);
-    if (y > yellowLimit) return 'average';                 /* too many yellow */
-    if (y === 0 || (y <= 1 && total >= 3)) return 'excellent';
-    return 'good';
+function _numOrNull(v) {
+    if (v === null || v === undefined) return null;
+    var n = Number(v);
+    return Number.isFinite(n) ? n : null;
 }
 
-/* verdict -> display score and verdict -> reason code. */
-var _VERDICT_SCORE = { excellent: 96, good: 82, average: 64, unclear: 32, empty: 0 };
-var _VERDICT_REASON = { excellent: 'excellent', good: 'good', average: 'average', unclear: 'unclear_speech', empty: 'no_speech' };
+/* Continuous 0..100 from the word classification (green = full credit,
+   yellow = partial, extra words penalised). */
+function _textScore(cls) {
+    if (!cls || cls.total === 0) return 0;
+    var c = cls.counts;
+    var raw = (c.green * 1.0 + c.yellow * 0.55) / cls.total;
+    var extraPen = Math.min(0.30, (cls.extraWords || 0) * 0.10);
+    /* Each MISSING / WRONG reference word is penalised beyond simply not
+       counting, so a dropped word in a phrase (e.g. the negation "не" in
+       "я не согласен", or a missing word in "как тебя зовут") cannot pass
+       on the strength of the words that were said. */
+    var redPen = Math.min(0.45, (c.red || 0) * 0.20);
+    return Math.max(0, Math.min(100, Math.round((raw - extraPen - redPen) * 100)));
+}
+
+/* Azure pronunciation quality blended to 0..100, or null when Azure did
+   not return an AccuracyScore (accuracy is the anchor metric). */
+function _azureBlend(azure) {
+    if (!azure) return null;
+    var acc = _numOrNull(azure.accuracy);
+    if (acc === null) return null;
+    var comp = _numOrNull(azure.completeness);
+    var flu  = _numOrNull(azure.fluency);
+    var num = 0.65 * acc, w = 0.65;
+    if (comp !== null) { num += 0.20 * comp; w += 0.20; }
+    if (flu  !== null) { num += 0.15 * flu;  w += 0.15; }
+    return Math.round(num / w);
+}
+
+/* Azure phoneme accuracy → maximum achievable final score. This is what
+   makes an echoed transcript with poor audio impossible to pass. */
+function _accuracyCeiling(acc) {
+    if (acc === null) return 100;
+    if (acc >= 90) return 100;
+    if (acc >= 80) return 94;
+    if (acc >= 70) return 88;
+    if (acc >= 60) return 80;
+    if (acc >= 50) return 62;
+    if (acc >= 40) return 45;
+    return 32;
+}
+
+/* Blend text + Azure into the final 0..100 score, applying the
+   anti-false-positive ceilings. */
+function _combineScore(textScore, blend, azure) {
+    var acc = azure ? _numOrNull(azure.accuracy) : null;
+    if (blend === null) {
+        /* No Azure quality signal — trust the transcript, but never award
+           5★ (can't verify phonemes) and require a real text match to pass. */
+        var s = Math.min(textScore, 84);
+        if (textScore < 50) s = Math.min(s, 69);
+        return Math.max(0, s);
+    }
+    var combined = Math.round(0.45 * textScore + 0.55 * blend);
+    combined = Math.min(combined, _accuracyCeiling(acc));      /* echo / noise guard */
+    if (textScore < 50) combined = Math.min(combined, 69);      /* wrong-word guard */
+    if (textScore < 25) combined = Math.min(combined, Math.max(textScore, 20));
+    return Math.max(0, Math.min(100, combined));
+}
+
+/* Final score → verdict key. */
+function _scoreToVerdict(score) {
+    var s = Number(score) || 0;
+    if (s >= SPEECH_STAR5_MIN) return 'excellent';
+    if (s >= SPEECH_STAR4_MIN) return 'great';
+    if (s >= SPEECH_STAR3_MIN) return 'good';
+    if (s >= SPEECH_STAR2_MIN) return 'fair';
+    if (s >= 1) return 'poor';
+    return 'empty';
+}
 
 /* reference-word feedback list (consumed by hint builders). */
 function _statesToFeedback(cls) {
@@ -1421,24 +1617,60 @@ function _statesToFeedback(cls) {
     return fb;
 }
 
-/* verdict + classification -> a complete result payload. */
-function _packageGrade(verdict, cls, reasonOverride) {
-    var score = _VERDICT_SCORE[verdict] != null ? _VERDICT_SCORE[verdict] : 0;
-    var counts = (cls && cls.counts) || { green: 0, yellow: 0, red: 0 };
+/* classification + Azure metrics -> a complete, scored result payload.
+   opts: { azure, reason, forceVerdict } */
+function _packageGrade(cls, opts) {
+    opts = opts || {};
+    var counts   = (cls && cls.counts) || { green: 0, yellow: 0, red: 0 };
     var coverage = (cls && cls.coverage) || 0;
+    var states   = (cls && cls.states) || [];
+    var azure    = opts.azure || null;
+    var textScore = _textScore(cls);
+    var blend     = _azureBlend(azure);
+    var acc  = azure ? _numOrNull(azure.accuracy) : null;
+    var flu  = azure ? _numOrNull(azure.fluency) : null;
+    var comp = azure ? _numOrNull(azure.completeness) : null;
+
+    var verdict, finalScore, reason;
+    if (opts.forceVerdict === 'empty' || (cls && cls.total === 0)) {
+        verdict = 'empty'; finalScore = 0; reason = 'no_speech';
+    } else if (opts.forceVerdict === 'low_confidence') {
+        verdict = 'low_confidence'; finalScore = 0; reason = 'low_confidence';
+    } else if (opts.reason === 'fake_match') {
+        verdict = 'poor'; finalScore = Math.min(30, textScore); reason = 'fake_match';
+    } else {
+        finalScore = _combineScore(textScore, blend, azure);
+        /* Pedagogical cap: if NOT ONE reference word was pronounced correctly
+           (every word only partial or missing — e.g. the wrong verb ending
+           "работают" for "работать"), the attempt must not advance the card,
+           no matter how confident Azure's phoneme scores are. */
+        if (counts.green === 0 && cls && cls.total >= 1 && finalScore > 62) {
+            finalScore = 62;
+        }
+        verdict = _scoreToVerdict(finalScore);
+        reason = _VERDICT_REASON[verdict] || 'bad';
+    }
+
+    var completeness = comp !== null ? comp : Math.round(coverage * 100);
+
     return {
         verdict: verdict,
-        pass: verdict === 'excellent' || verdict === 'good',
-        finalScore: score,
-        pronunciationScore: score,
-        aniqlik: score,
-        ravonlik: score,
-        toliqlik: score,
-        reason: reasonOverride || _VERDICT_REASON[verdict] || 'bad',
-        wordStates: (cls && cls.states) || [],
+        stars: _STAR_COUNT[verdict] != null ? _STAR_COUNT[verdict] : 0,
+        pass: finalScore >= SPEECH_PASS_SCORE && verdict !== 'low_confidence' && verdict !== 'empty',
+        finalScore: finalScore,
+        pronunciationScore: finalScore,
+        textScore: textScore,
+        aniqlik: acc !== null ? acc : finalScore,
+        ravonlik: flu !== null ? flu : finalScore,
+        toliqlik: completeness,
+        accuracyScore: acc,
+        fluencyScore: flu,
+        confidence: azure ? _numOrNull(azure.confidence) : null,
+        reason: reason,
+        wordStates: states,
         wordCounts: counts,
         coverage: coverage,
-        completenessScore: Math.round(coverage * 100),
+        completenessScore: completeness,
         matchRatio: coverage,
         wordFeedback: _statesToFeedback(cls)
     };
@@ -1568,35 +1800,51 @@ function _referenceVariants(raw) {
 }
 
 /* Rank verdicts so we can keep the BEST one across reference variants. */
-var _VERDICT_RANK = { excellent: 4, good: 3, average: 2, unclear: 1, empty: 0 };
+var _VERDICT_RANK = { excellent: 6, great: 5, good: 4, fair: 3, poor: 2, low_confidence: 1, empty: 0 };
 
 /* AUTHORITATIVE GRADER -- the single source of truth for the verdict.
    Grades the recognized speech against every acceptable reference
    variant and keeps the best result, so multi-form cards
    ("Друг / Друзья", "уверен(а)", "он/она говорит") and optional
-   particles ("пожалуйста") never cause a false failure. */
+   particles ("пожалуйста") never cause a false failure.
+
+   opts.azure = { accuracy, fluency, completeness, confidence } — the
+   Azure pronunciation metrics (utterance-level, identical for every
+   variant). opts.fakeMatch = Azure echoed the reference without clean
+   audio. */
 function _gradeSpeech(recognizedText, referenceText, opts) {
     opts = opts || {};
     var ref = referenceText || '';
+    var azure = opts.azure || null;
 
     /* No speech captured -> Hech narsa eshitilmadi. */
     if (!_normalizeSpeechText(recognizedText)) {
-        return _packageGrade('empty', _classifyWords('', ref), 'no_speech');
+        return _packageGrade(_classifyWords('', ref), { azure: azure, forceVerdict: 'empty' });
+    }
+
+    /* Confidence gate — recognition too uncertain to judge pronunciation.
+       Do NOT evaluate; ask the learner to repeat. Applied once (confidence
+       is utterance-level), before any variant scoring. */
+    var conf = azure ? _numOrNull(azure.confidence) : null;
+    if (conf !== null && conf < SPEECH_CONF_MIN && !opts.fakeMatch) {
+        return _packageGrade(_classifyWords(recognizedText, ref),
+            { azure: azure, forceVerdict: 'low_confidence' });
+    }
+
+    /* Anti-cheat: Azure echoed the reference text without real, clean
+       audio behind it -> never allowed to pass. */
+    if (opts.fakeMatch) {
+        return _packageGrade(_classifyWords(recognizedText, ref),
+            { azure: azure, reason: 'fake_match' });
     }
 
     var variants = _referenceVariants(ref);
     var best = null;
     for (var i = 0; i < variants.length; i++) {
         var cls = _classifyWords(recognizedText, variants[i]);
-
-        /* Anti-cheat: Azure echoed the reference text without real, clean
-           audio behind it -> never allowed to pass. */
-        if (opts.fakeMatch) {
-            return _packageGrade('unclear', cls, 'fake_match');
-        }
-
-        var graded = _packageGrade(_evaluateVerdict(cls), cls);
-        if (!best || _VERDICT_RANK[graded.verdict] > _VERDICT_RANK[best.verdict]) {
+        var graded = _packageGrade(cls, { azure: azure });
+        if (!best || _VERDICT_RANK[graded.verdict] > _VERDICT_RANK[best.verdict] ||
+            (graded.verdict === best.verdict && graded.finalScore > best.finalScore)) {
             best = graded;
             if (graded.verdict === 'excellent') break;   /* can't do better */
         }
@@ -1659,18 +1907,31 @@ function _getWordQuality(words) {
    path funnels through here, so the verdict is always deterministic. */
 function _finalizePronunciationResult(result, referenceText) {
     var finalized = result || {};
+    /* Assemble the Azure pronunciation metrics that the scoring core uses
+       for corroboration. Any missing metric is null (trusted-absent). */
+    var azure = {
+        accuracy:     _numOrNull(finalized.accuracyScore),
+        fluency:      _numOrNull(finalized.fluencyScore),
+        completeness: _numOrNull(finalized.completenessScore),
+        confidence:   _numOrNull(finalized.confidence)
+    };
     var grade = _gradeSpeech(
         finalized.recognizedText || '',
         referenceText || '',
-        { fakeMatch: finalized.reason === 'fake_match' }
+        { fakeMatch: finalized.reason === 'fake_match', azure: azure }
     );
     finalized.verdict = grade.verdict;
+    finalized.stars = grade.stars;
     finalized.pass = grade.pass;
     finalized.finalScore = grade.finalScore;
     finalized.pronunciationScore = grade.finalScore;
+    finalized.textScore = grade.textScore;
     finalized.aniqlik = grade.aniqlik;
     finalized.ravonlik = grade.ravonlik;
     finalized.toliqlik = grade.toliqlik;
+    finalized.accuracyScore = grade.accuracyScore;
+    finalized.fluencyScore = grade.fluencyScore;
+    finalized.confidence = grade.confidence;
     finalized.reason = grade.reason;
     finalized.wordStates = grade.wordStates;
     finalized.wordCounts = grade.wordCounts;
@@ -1678,6 +1939,8 @@ function _finalizePronunciationResult(result, referenceText) {
     finalized.matchRatio = grade.matchRatio;
     finalized.completenessScore = grade.completenessScore;
     finalized.wordFeedback = grade.wordFeedback;
+    finalized.recognizedText = finalized.recognizedText || '';
+    finalized.referenceText = referenceText || '';
     if (!Array.isArray(finalized.words)) finalized.words = [];
     delete finalized.__extraPenalty;
     return finalized;
@@ -1690,29 +1953,28 @@ function _applyFlexibleVerdict(result, referenceText) {
     return _finalizePronunciationResult(result, referenceText);
 }
 
-/* Numeric score -> category. Kept for legacy callers and as the
-   _showPronResult fallback. Boundaries match _VERDICT_SCORE. */
+/* Numeric score -> verdict key. Fallback for _showPronResult; boundaries
+   match the 5-star thresholds in the scoring core. */
 function _getCategory(score) {
-    var s = Number(score) || 0;
-    if (s >= 92) return 'excellent';
-    if (s >= 76) return 'good';
-    if (s >= 56) return 'average';
-    if (s >= 16) return 'unclear';
-    return 'empty';
+    return _scoreToVerdict(score);
 }
 
-/* verdict -> result-screen presentation. */
+/* verdict -> result-screen presentation (5-star scheme, 2026). */
 var _PRON_CATEGORY = {
-    excellent: { text: 'Ajoyib',                 emoji: '🌟', advice: '',
-                 verdictClass: 'good', animClass: 'anim-success' },
-    good:      { text: 'Yaxshi',                 emoji: '✨',       advice: 'Yana biroz ravonroq ayting',
-                 verdictClass: 'good', animClass: 'anim-success' },
-    average:   { text: 'O‘rtacha',          emoji: '💪', advice: 'So‘zlarni aniqroq ayting',
-                 verdictClass: 'ok',   animClass: 'anim-almost' },
-    unclear:   { text: 'Aniqroq gapiring',       emoji: '⚠️', advice: 'Mikrofonga yaqinroq, sekinroq ayting',
-                 verdictClass: 'ok',   animClass: 'anim-almost' },
-    empty:     { text: 'Hech narsa eshitilmadi', emoji: '🤐', advice: 'Mikrofonga aniq gapiring',
-                 verdictClass: 'bad',  animClass: 'anim-fail' }
+    excellent:      { stars: 5, text: 'Ajoyib!',              emoji: '🌟', advice: 'Talaffuzingiz juda aniq.',
+                      verdictClass: 'good', animClass: 'anim-success' },
+    great:          { stars: 4, text: 'Juda yaxshi!',         emoji: '✨', advice: 'Mayda xatolar bor.',
+                      verdictClass: 'good', animClass: 'anim-success' },
+    good:           { stars: 3, text: 'Yaxshi',               emoji: '👍', advice: 'Yana biroz mashq qiling.',
+                      verdictClass: 'good', animClass: 'anim-success' },
+    fair:           { stars: 2, text: 'Qoniqarli',            emoji: '💪', advice: "Ba'zi tovushlarni noto‘g‘ri aytdingiz.",
+                      verdictClass: 'ok',   animClass: 'anim-almost' },
+    poor:           { stars: 1, text: 'Qayta urinib ko‘ring', emoji: '🔁', advice: "So‘z to‘g‘ri talaffuz qilinmadi.",
+                      verdictClass: 'bad',  animClass: 'anim-fail' },
+    low_confidence: { stars: 0, text: 'Ovoz aniq eshitilmadi', emoji: '🎧', advice: "Iltimos, yana urinib ko‘ring.",
+                      verdictClass: 'ok',   animClass: 'anim-almost' },
+    empty:          { stars: 0, text: 'Hech narsa eshitilmadi', emoji: '🤐', advice: 'Mikrofonga aniq gapiring.',
+                      verdictClass: 'bad',  animClass: 'anim-fail' }
 };
 
 /* Color each reference word by its deterministic GREEN/YELLOW/RED state. */
@@ -1729,6 +1991,7 @@ function _buildWordStateHighlight(wordStates) {
 /* One-line, deterministic hint derived purely from the word states. */
 function _buildVerdictHint(result) {
     if (!result || result.verdict === 'empty' || result.verdict === 'excellent') return '';
+    if (result.verdict === 'low_confidence') return 'Mikrofonga yaqinroq va tinch joyda gapiring.';
     var states = result.wordStates || [];
     var reds = states.filter(function (s) { return s.status === 'red'; })
                      .map(function (s) { return s.ref; });
@@ -1737,7 +2000,36 @@ function _buildVerdictHint(result) {
                reds.map(function (w) { return '«' + w + '»'; }).join(', ');
     }
     var counts = result.wordCounts || { yellow: 0 };
-    if (counts.yellow > 0) return 'Deyarli! Bu so‘zlarni biroz aniqroq takrorlang';
+    if (counts.yellow > 0) return 'Deyarli! Bu so‘zlarni biroz aniqroq takrorlang.';
+    return '';
+}
+
+/* Explain WHY a pronunciation was not perfect: compare what was expected
+   against what was recognized and, when the learner dropped the end of a
+   word (e.g. "дела" for "делать"), point at the missing ending. Pure and
+   deterministic — no Azure phoneme data required. */
+function _buildPronExplanation(result, referenceText) {
+    if (!result) return '';
+    if (result.verdict === 'excellent') return '';
+    var rec = _normalizeSpeechText(result.recognizedText || '');
+    var refDisp = String(referenceText || result.referenceText || '').trim();
+
+    /* Missing-ending detection: any expected word whose recognized form is a
+       clean prefix of it (learner stopped early). */
+    var refTokens = _tokenize(refDisp);
+    var recForms = _tokenize(result.recognizedText || '').map(_matchForm);
+    for (var i = 0; i < refTokens.length; i++) {
+        var refForm = _matchForm(refTokens[i]);
+        if (refForm.length < 4) continue;
+        for (var k = 0; k < recForms.length; k++) {
+            var cand = recForms[k];
+            if (cand.length >= 3 && cand.length < refForm.length &&
+                refForm.indexOf(cand) === 0) {
+                var ending = refTokens[i].slice(refTokens[i].length - (refForm.length - cand.length));
+                return 'Oxiridagi «' + ending + '» tovushini to‘liq ayting.';
+            }
+        }
+    }
     return '';
 }
 
@@ -2190,10 +2482,14 @@ async function _runPronunciationAssessment(referenceText) {
                 return buildInvalidPronData(recognizedText);
             }
 
-            /* Extract Azure metrics (used only by the anti-cheat guard) */
+            /* Extract Azure pronunciation metrics. These now CORROBORATE the
+               verdict (accuracy is a hard ceiling in the scoring core) in
+               addition to feeding the anti-cheat fake-echo guard. */
             var words = [];
             var accuracy = 0;
             var fluency = 0;
+            var completeness = 0;
+            var confidence = null;
             try {
                 var pronResult = SpeechSDK.PronunciationAssessmentResult.fromResult(result);
                 var nb = pronResult.detailResult;
@@ -2214,8 +2510,11 @@ async function _runPronunciationAssessment(referenceText) {
                     if (jsonStr2) data = JSON.parse(jsonStr2);
                 } catch (_e) { /* ignore */ }
 
-                accuracy = Number(data?.NBest?.[0]?.PronunciationAssessment?.AccuracyScore);
-                fluency = Number(data?.NBest?.[0]?.PronunciationAssessment?.FluencyScore);
+                var pa0 = data?.NBest?.[0]?.PronunciationAssessment;
+                accuracy = Number(pa0?.AccuracyScore);
+                fluency = Number(pa0?.FluencyScore);
+                completeness = Number(pa0?.CompletenessScore);
+                confidence = data?.NBest?.[0]?.Confidence;
             } catch (scoreErr) {
                 console.warn('[PRON] Azure score extraction failed, grading by text similarity only:', scoreErr);
             }
@@ -2223,29 +2522,25 @@ async function _runPronunciationAssessment(referenceText) {
             /* normalize Azure metrics (0/null/garbage → null) */
             var rawAccuracy = _normalizeMetric(accuracy);
             var rawFluency = _normalizeMetric(fluency);
-
-            /* ---- Deterministic verdict (text similarity, see engine) ----
-               The verdict is graded purely from the recognized transcript
-               vs the reference text. Azure's per-word accuracy is used ONLY
-               for the anti-cheat fake-echo guard below — never to colour
-               words or to soften / harden the verdict. */
-            var quality = _getWordQuality(words);
-            var echoCheck = _classifyWords(recognizedText, referenceText);
-            var perfectEcho = echoCheck.total > 0
-                && echoCheck.counts.green === echoCheck.total
-                && echoCheck.extraWords === 0;
+            var rawCompleteness = _normalizeMetric(completeness);
+            var rawConfidence = _numOrNull(confidence);
+            if (rawConfidence !== null && (rawConfidence < 0 || rawConfidence > 1)) rawConfidence = null;
 
             /* Anti-cheat: Azure occasionally returns a verbatim echo of the
                reference text without real, clean audio behind it. A genuine
                perfect attempt has solid accuracy + fluency; a fake echo does
                not. Only a FULL echo with present-but-clearly-bad audio
-               metrics is rejected — missing metrics are trusted (so a real
-               perfect attempt is never failed by a metric glitch), and every
-               partial attempt is graded normally by text similarity. */
+               metrics is rejected here (a hard fail); the scoring core's
+               accuracy ceiling independently caps weaker echoes. */
+            var quality = _getWordQuality(words);
+            var echoCheck = _classifyWords(recognizedText, referenceText);
+            var perfectEcho = echoCheck.total > 0
+                && echoCheck.counts.green === echoCheck.total
+                && echoCheck.extraWords === 0;
             var fakeEcho = perfectEcho
                 && rawAccuracy !== null && rawFluency !== null
-                && (rawAccuracy < 45 || rawFluency < 45
-                    || (quality.avg !== null && quality.avg < 45));
+                && (rawAccuracy < 50 || rawFluency < 45
+                    || (quality.avg !== null && quality.avg < 50));
             if (fakeEcho) {
                 console.log('[PRON] FAKE ECHO BLOCKED — accuracy/fluency too low');
             }
@@ -2254,6 +2549,8 @@ async function _runPronunciationAssessment(referenceText) {
                 recognizedText: recognizedText,
                 accuracyScore: rawAccuracy,
                 fluencyScore: rawFluency,
+                completenessScore: rawCompleteness,
+                confidence: rawConfidence,
                 words: words,
                 reason: fakeEcho ? 'fake_match' : undefined
             }, referenceText);
@@ -2990,6 +3287,14 @@ function _showLessonCompleteOverlay() {
       + '</div>';
 
     ov.classList.add('active');
+
+    // Analytics: vocabulary lesson completed for the current topic.
+    try {
+        if (typeof window !== 'undefined' && typeof window.uzTrack === 'function') {
+            var cw = (typeof window.getCurrentWord === 'function') ? window.getCurrentWord() : null;
+            window.uzTrack('vocab_done', { topic: cw && cw.topicId != null ? cw.topicId : undefined });
+        }
+    } catch (e) { /* ignore */ }
 }
 
 function _closeLessonComplete() {
@@ -3007,27 +3312,47 @@ function _closeLessonComplete() {
 /* ================================================================== */
 /*  Log pronunciation result (fire-and-forget)                        */
 /* ================================================================== */
-function _logPronunciation(word, result) {
-    if (_logPronunciation._disabled) return;
-
+/* Analytics: report the learner's current vocabulary card position (and,
+   for the listen button, a listening-usage event). Meaningful only — fired
+   on real interactions (listen / pronounce), never on passive renders. */
+function _trackVocabCard(word, kind) {
     try {
-        fetch('/api/log-pronunciation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ..._getAuthHeaders() },
-            body: JSON.stringify({
-                word,
-                accuracyScore:      result.accuracyScore,
-                fluencyScore:       result.fluencyScore,
-                completenessScore:  result.completenessScore,
-                pronunciationScore: result.pronunciationScore,
-                words:              result.words,
-            }),
-        }).then(function (response) {
-            if (response && response.status === 404) {
-                _logPronunciation._disabled = true;
-            }
-        }).catch(() => {});   // silent — logging must never break UX
-    } catch { /* ignore */ }
+        if (typeof window === 'undefined' || typeof window.uzTrack !== 'function') return;
+        var wi = (word && typeof word.wordIndex === 'number') ? word.wordIndex
+               : (typeof window.currentWordIndex === 'number' ? window.currentWordIndex : null);
+        var topic = (word && word.topicId != null) ? word.topicId : undefined;
+        var card = (wi != null && wi >= 0) ? wi + 1 : undefined;
+        window.uzTrack('vocab_card', { topic: topic, card: card });
+        if (kind === 'listen') window.uzTrack('listen', { topic: topic, card: card });
+    } catch (e) { /* ignore */ }
+}
+
+/* Record a pronunciation attempt into the learning-analytics event stream.
+   Replaces the old POST /api/log-pronunciation call, which targeted an
+   underscore-prefixed API file that Vercel never routed (it 404'd and
+   self-disabled — pronunciation history was silently lost). Attempts now flow
+   through the buffered tracker → /api/analytics as `pron` events, giving the
+   admin dashboard a full, working pronunciation history. Never throws. */
+function _logPronunciation(word, result) {
+    try {
+        if (typeof window === 'undefined' || typeof window.uzTrack !== 'function' || !result) return;
+        var cw = (typeof window.getCurrentWord === 'function') ? window.getCurrentWord() : null;
+        var topicId = cw && cw.topicId != null ? cw.topicId : undefined;
+        var cat = (typeof _PRON_CATEGORY === 'object' && _PRON_CATEGORY[result.verdict]) || null;
+        window.uzTrack('pron', {
+            topic:        topicId,
+            expected:     word,
+            recognized:   result.recognizedText || '',
+            accuracy:     result.accuracyScore,
+            completeness: result.completenessScore,
+            fluency:      result.fluencyScore,
+            confidence:   result.confidence,
+            score:        result.finalScore,
+            stars:        result.stars,
+            feedback:     cat ? cat.text : (result.verdict || ''),
+            pass:         result.pass === true
+        });
+    } catch (e) { /* logging must never break UX */ }
 }
 
 /* ================================================================== */
@@ -3055,9 +3380,15 @@ function _closeLevelUp() { return; }
 if (typeof document !== 'undefined') {
     function _initUI() {
         _initVoiceSelector();
-        _injectMicSelector();
-        _initMicSelector();
+        /* Only wire the microphone selector (which triggers a getUserMedia
+           permission prompt) on pages where pronunciation is enabled.
+           Demo / A1 / B1 pages must never request the microphone. */
+        if (_pronEnabled()) {
+            _injectMicSelector();
+            _initMicSelector();
+        }
         _injectWordProgressCSS();
+        _applyPronPolicyUI();
         _scheduleDemoPronunciationLockSync();
     }
 
@@ -3076,9 +3407,16 @@ if (typeof document !== 'undefined') {
         if (e.target.closest('#pronOverlay')) return;
 
         var pronBtn = e.target.closest('.pron-btn');
-        if (pronBtn) {
-            console.debug('[PRON] CLICK DETECTED (delegation)');
+        if (pronBtn && !pronBtn.closest('#pronOverlay')) {
             e.stopPropagation();
+            /* Policy gate: on demo / A1 / B1 pages the mic feature is off.
+               Show the Premium note instead of starting recognition. */
+            var _pol = _pronPolicy();
+            if (!_pol.enabled) {
+                _showPronPolicyMessage(_pol);
+                return;
+            }
+            console.debug('[PRON] CLICK DETECTED (delegation)');
             checkPronunciation(e);
             return;
         }
@@ -3152,6 +3490,12 @@ function _injectWordProgressCSS() {
         '.audio-button.pron-btn.locked,.mic-btn.locked{opacity:.6;pointer-events:auto;cursor:pointer;position:relative}',
         '.audio-button.pron-btn.locked::after,.mic-btn.locked::after{content:"🔒";margin-left:6px;font-size:14px}',
 
+        /* ---- Premium / level pronunciation note (A1, B1, demo pages) ---- */
+        '.pron-premium-note{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;margin:10px auto 0;padding:13px 18px;max-width:420px;border-radius:16px;font-size:.94rem;font-weight:700;line-height:1.4;text-align:center;background:linear-gradient(135deg,#fff7e6,#fff0f6);color:#8a5a00;border:1.5px solid #ffe0a3;box-shadow:0 4px 14px rgba(0,0,0,.06);animation:pronNoteIn .35s ease both}',
+        '.pron-premium-note.pron-premium-demo{background:linear-gradient(135deg,#eef2ff,#f6f0ff);color:#463aa3;border-color:#d6ddff}',
+        '.pron-premium-text{display:inline-block}',
+        '@keyframes pronNoteIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}',
+
         /* ---- mic selector ---- */
         '.mic-selector-wrap{margin:8px auto 0;display:flex;flex-direction:column;align-items:stretch;justify-content:center;width:min(240px,calc(100% - 32px))}',
         '.mic-label{font-size:12px;color:#aaa;margin-bottom:6px;display:block}',
@@ -3200,6 +3544,13 @@ function _ensurePronOverlay() {
         '.pron-title.ok{color:#ff9800}',
         '.pron-title.bad{color:#ea2b2b}',
         '.pron-subtitle{font-size:.85rem;color:#999;margin-bottom:20px}',
+        '.pron-stars{display:flex;justify-content:center;gap:6px;margin:2px 0 8px;font-size:1.7rem;line-height:1}',
+        '.pron-star{transition:transform .2s}',
+        '.pron-star.on{color:#ffc400;text-shadow:0 1px 3px rgba(255,180,0,.45)}',
+        '.pron-star.off{color:#e2e2e2}',
+        '.pron-heard{font-size:.85rem;color:#555;background:#f4f6fb;border-radius:10px;padding:7px 12px;margin:6px auto 4px;max-width:90%;line-height:1.4}',
+        '.pron-heard-label{font-weight:700;color:#8a8fa3;margin-right:4px}',
+        '.pron-explain{font-size:.85rem;font-weight:600;color:#7a5b00;background:#fff6df;border-radius:10px;padding:8px 12px;margin:6px auto 4px;max-width:92%;line-height:1.45}',
 
         /* overall score ring */
         '.pron-ring-wrap{position:relative;width:100px;height:100px;margin:0 auto 20px}',
@@ -3427,6 +3778,18 @@ function _showPronResult(refText, r, attemptId) {
 
         /* emoji + verdict text */
         html += '<div class="pron-emoji">' + ui.emoji + '</div>';
+
+        /* 5-star rating (filled = earned). Hidden for no-speech / low-audio
+           states where a star score would be misleading. */
+        var starCount = (ui.stars != null) ? ui.stars : (_STAR_COUNT[verdict] || 0);
+        if (verdict !== 'empty' && verdict !== 'low_confidence') {
+            var starsHtml = '';
+            for (var si = 0; si < 5; si++) {
+                starsHtml += '<span class="pron-star ' + (si < starCount ? 'on' : 'off') + '">★</span>';
+            }
+            html += '<div class="pron-stars" aria-label="' + starCount + '/5">' + starsHtml + '</div>';
+        }
+
         html += '<div class="pron-title ' + ui.verdictClass + '">' + ui.text + '</div>';
         html += '<div class="pron-subtitle">«' + _escHtml(refText) + '»</div>';
 
@@ -3437,10 +3800,26 @@ function _showPronResult(refText, r, attemptId) {
             html += '<div class="wf-inline">' + _buildWordStateHighlight(states) + '</div>';
         }
 
+        /* Expected vs recognized — show exactly what Azure heard so the
+           learner understands the result (only when it differs / imperfect). */
+        var recTxt = (r.recognizedText || '').trim();
+        if (recTxt && verdict !== 'excellent' && verdict !== 'empty' &&
+            _normalizeSpeechText(recTxt) !== _normalizeSpeechText(refText)) {
+            html += '<div class="pron-heard">' +
+                    '<span class="pron-heard-label">Eshitildi:</span> «' + _escHtml(recTxt) + '»' +
+                    '</div>';
+        }
+
         /* one-line, deterministic hint derived from the word states */
         var hint = _buildVerdictHint(r);
         if (hint) {
             html += '<div class="wf-hint">' + _escHtml(hint) + '</div>';
+        }
+
+        /* explanation of the specific error (e.g. dropped ending) */
+        var explanation = _buildPronExplanation(r, refText);
+        if (explanation) {
+            html += '<div class="pron-explain">💡 ' + _escHtml(explanation) + '</div>';
         }
 
         /* short advice — one line, verdict-driven */

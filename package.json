@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "ensure:developer": "node scripts/ensure-developer.js",
-    "generate:audio": "node scripts/generate-audio.js"
+    "generate:audio": "node scripts/generate-audio.js",
+    "validate:speech": "node tests/pronunciation/run-validation.js",
+    "validate:speech:sweep": "node tests/pronunciation/sweep-thresholds.js"
   },
   "engines": {
     "node": "20.x"
