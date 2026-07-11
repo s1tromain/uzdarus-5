@@ -1471,8 +1471,14 @@ initCreateStaff();
 initRowActions();
 initActions();
 initCertificates();
-initStudentAnalytics();
 initGate();
+// NOTE: initStudentAnalytics() is intentionally NOT called here. Its module
+// state (_saOverlay/_saData/_saTab) is declared with `let` further down the
+// file, so calling it at this point would hit the temporal dead zone
+// (ReferenceError: Cannot access '_saOverlay' before initialization) and abort
+// the whole module — breaking admin login. It is invoked at the END of the
+// file instead, once those declarations have been initialized. It is also
+// lazily called by openStudentAnalytics(), so it is idempotent.
 
 /* ==================================================================
  *  STUDENT ANALYTICS DASHBOARD (Stage 2)
@@ -1879,3 +1885,8 @@ function injectAnalyticsStyles() {
 `;
     document.head.appendChild(s);
 }
+
+// Initialise Student Analytics LAST — every module-level variable it touches
+// (_saOverlay, _saData, _saTab) and every helper it uses are now declared and
+// initialized above, so this runs outside the temporal dead zone.
+initStudentAnalytics();
