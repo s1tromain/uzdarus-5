@@ -6,7 +6,11 @@
     "ensure:developer": "node scripts/ensure-developer.js",
     "generate:audio": "node scripts/generate-audio.js",
     "validate:speech": "node tests/pronunciation/run-validation.js",
-    "validate:speech:sweep": "node tests/pronunciation/sweep-thresholds.js"
+    "validate:speech:sweep": "node tests/pronunciation/sweep-thresholds.js",
+    "test:vocabulary": "node tests/vocabulary/progression.test.cjs",
+    "test:analytics": "node tests/analytics/run-tests.js",
+    "test:qa": "node validation_qa.test.cjs",
+    "test": "node tests/vocabulary/progression.test.cjs && node tests/analytics/run-tests.js && node progression_audit.test.cjs && node validation_rules.test.cjs"
   },
   "engines": {
     "node": "20.x"

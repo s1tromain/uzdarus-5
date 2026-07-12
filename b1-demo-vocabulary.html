@@ -878,9 +878,12 @@
             }
         }
     </style>
-    <script src="https://aka.ms/csspeech/jsbrowserpackageraw" async onerror="window.__speechSdkTagFailed=true"></script>
+    <!-- Azure Speech SDK intentionally NOT loaded here: _pronPolicy() disables
+         pronunciation on this page, so the ~1.5 MB bundle would be dead weight
+         competing with TTS audio for bandwidth. Pages with the mic enabled keep
+         the tag; _ensureSpeechSDK() injects it on demand if it is ever needed. -->
     <script>window.VOCAB_COURSE = 'b1-demo';</script>
-    <script src="/paid-courses/speech.js?v=20260613"></script>
+    <script src="/paid-courses/speech.js?v=20260712"></script>
 </head>
 
 <body>

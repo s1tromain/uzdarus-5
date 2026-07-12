@@ -601,8 +601,10 @@ function _initVoiceSelector() {
         sel.value = currentVoice;
         sel.addEventListener('change', function () {
             localStorage.setItem('tts_voice', sel.value);
-            _ttsCache.clear();
+            /* No cache flush needed: cache keys are voice-scoped, so both
+               voices stay warm and switching back is instant. */
             _syncVoiceButtons(sel.value);
+            _prefetchCurrentWord();
         });
     }
 
@@ -617,10 +619,11 @@ function _initVoiceSelector() {
             btn.addEventListener('click', function () {
                 var v = btn.getAttribute('data-voice');
                 localStorage.setItem('tts_voice', v);
-                _ttsCache.clear();
+                /* voice-scoped cache keys — nothing to flush */
                 _syncVoiceButtons(v);
                 /* also sync <select> if it exists */
                 if (sel) sel.value = v;
+                _prefetchCurrentWord();
             });
         });
     }
@@ -716,27 +719,199 @@ function _hapticWarning() { _haptic(20); }
 
 /* ================================================================== */
 /*  TTS playback                                                      */
+/*  ---------------------------------------------------------------- */
+/*  PERFORMANCE MODEL (why "Tinglash" used to take 5-6 s)             */
+/*                                                                     */
+/*  The old hot path did this for EVERY word, on EVERY press:         */
+/*    1. HEAD /audio/{lvl}/lesson{N}/{word}.mp3   → round-trip #1     */
+/*       The /audio tree is produced by scripts/generate-audio.js and */
+/*       has never been generated in production, so this HEAD is a    */
+/*       guaranteed 404 — pure latency, paid once per word.           */
+/*    2. POST /api/tts                            → round-trip #2     */
+/*       Serverless cold start + a full Azure REST synthesis.         */
+/*    3. new Audio(blobUrl) → decode → play.                          */
+/*  Nothing survived a reload: _ttsCache is a plain in-memory Map and */
+/*  a POST response is not HTTP-cacheable, so re-listening to the very */
+/*  same word re-synthesised it from scratch, every session.          */
+/*                                                                     */
+/*  The pipeline below removes each of those costs:                   */
+/*    • the dead 404 probe self-disables after one miss (tri-state,   */
+/*      remembered in sessionStorage) and stays fully functional if   */
+/*      the /audio tree is ever generated;                            */
+/*    • synthesised mp3s are stored in the Cache API, so a repeat     */
+/*      listen is a local disk read (0 network, ~0 ms) and survives   */
+/*      reloads and new sessions;                                     */
+/*    • concurrent/double presses share one in-flight request;        */
+/*    • the audio element is created once and reused (no re-decode,   */
+/*      and it is unlocked on first gesture so mobile autoplay        */
+/*      policies never swallow a play() that follows an await);       */
+/*    • the card the learner is looking at is prefetched in idle time */
+/*      so the press itself is usually a pure cache hit. Prefetch is  */
+/*      bounded to the CURRENT card only — a word the learner is      */
+/*      already on — so it moves bandwidth earlier without adding to  */
+/*      it, and costs nothing at all on a warm cache.                 */
 /* ================================================================== */
-const _ttsCache = new Map();
-const _localAudioChecked = new Map();
+const _ttsCache = new Map();          /* key -> playable URL (this page load) */
+const _ttsInflight = new Map();       /* key -> Promise<url>  (request dedupe) */
+const _localAudioChecked = new Map(); /* url -> bool (per-file existence)      */
 
+const _TTS_CACHE_NAME = 'uzdarus-tts-v1';
+const _LOCAL_AUDIO_FLAG = 'uzdarus_local_audio';
+
+/* Tri-state: null = not probed yet, true = /audio tree exists, false = absent
+   (never probe again — this is what kills the per-word 404 round-trip). */
+let _localAudioAvailable = (function () {
+    try {
+        var v = sessionStorage.getItem(_LOCAL_AUDIO_FLAG);
+        if (v === '1') return true;
+        if (v === '0') return false;
+    } catch (e) { /* storage blocked — probe normally */ }
+    return null;
+})();
+
+function _setLocalAudioAvailable(ok) {
+    _localAudioAvailable = ok;
+    try { sessionStorage.setItem(_LOCAL_AUDIO_FLAG, ok ? '1' : '0'); } catch (e) { /* ignore */ }
+}
+
+/* Cache key MUST include the voice. The old code keyed on `text` alone, so
+   after switching male<->female the cache returned the previous voice's audio
+   (it papered over this by clear()-ing the whole map on every voice change —
+   which also threw away every unrelated word). */
+function _ttsKey(text) { return _getVoice() + '|' + text; }
+
+/* ---- persistent (cross-session) blob store, Cache API ---- */
+let _ttsStorePromise;
+function _ttsStore() {
+    if (_ttsStorePromise === undefined) {
+        _ttsStorePromise = (typeof caches !== 'undefined' && caches.open)
+            ? caches.open(_TTS_CACHE_NAME).catch(function () { return null; })
+            : Promise.resolve(null);   /* Safari private mode / old browsers */
+    }
+    return _ttsStorePromise;
+}
+
+/* Synthetic same-origin request used as the cache key. Never fetched. */
+function _ttsCacheRequest(key) {
+    return new Request('/__tts-cache/' + encodeURIComponent(key));
+}
+
+async function _ttsCacheGet(key) {
+    try {
+        var store = await _ttsStore();
+        if (!store) return null;
+        var hit = await store.match(_ttsCacheRequest(key));
+        if (!hit) return null;
+        var blob = await hit.blob();
+        if (!blob || !blob.size) return null;
+        return URL.createObjectURL(blob);
+    } catch (e) { return null; }
+}
+
+async function _ttsCachePut(key, blob) {
+    try {
+        var store = await _ttsStore();
+        if (!store) return;
+        await store.put(_ttsCacheRequest(key), new Response(blob, {
+            headers: { 'Content-Type': 'audio/mpeg' }
+        }));
+    } catch (e) { /* quota / private mode — playback still works */ }
+}
+
+/* ---- one reused <audio> element ----
+   A fresh `new Audio()` per press re-runs element setup and decode, and on
+   iOS an element created outside a user gesture cannot be played after an
+   await. One element, unlocked once on the first real gesture, fixes both. */
+let _sharedAudioEl = null;
+let _audioUnlocked = false;
+let _currentAudioUrl = null;   /* URL last assigned to the shared element */
+
+function _getAudioEl() {
+    if (!_sharedAudioEl) {
+        _sharedAudioEl = new Audio();
+        _sharedAudioEl.preload = 'auto';
+    }
+    return _sharedAudioEl;
+}
+
+/* 32 samples of silence, 8 kHz mono PCM (108 bytes). iOS and Android will NOT
+   unlock a media element that has no source — calling play() on an empty
+   element just rejects with NotSupportedError — so the primer needs real,
+   decodable audio to attach the gesture to. */
+const _SILENT_WAV = 'data:audio/wav;base64,UklGRmQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+
+/* Mobile autoplay: prime the element inside the first user gesture so later
+   play() calls (which follow an await, and so run outside the gesture task)
+   are no longer treated as autoplay and silently blocked. */
+function _unlockAudioPlayback() {
+    if (_audioUnlocked) return;
+    _audioUnlocked = true;
+    try {
+        var el = _getAudioEl();
+        el.muted = true;
+        el.src = _SILENT_WAV;
+        _currentAudioUrl = _SILENT_WAV;
+        var p = el.play();
+        if (p && p.then) {
+            p.then(function () {
+                el.pause();
+                try { el.currentTime = 0; } catch (e) { /* ignore */ }
+                el.muted = false;
+            }).catch(function () { el.muted = false; });
+        } else {
+            el.muted = false;
+        }
+    } catch (e) { /* ignore */ }
+}
+['pointerdown', 'touchstart', 'keydown'].forEach(function (evt) {
+    document.addEventListener(evt, _unlockAudioPlayback, { once: true, passive: true, capture: true });
+});
+
+/* Reusing ONE <audio> element (instead of constructing a fresh one per press)
+   means a pending play() gets interrupted whenever we assign a new src — the
+   learner changed card, or pressed Tinglash again. The browser rejects the
+   superseded promise with AbortError. That is expected, not an error.
+   NotAllowedError is the autoplay policy declining a gesture; also not
+   actionable by the learner. Neither should surface a dialog. */
+function _isBenignPlaybackError(err) {
+    if (!err) return false;
+    var name = err.name || '';
+    if (name === 'AbortError' || name === 'NotAllowedError') return true;
+    return /interrupted by a new load request|interrupted by a call to pause/i
+        .test(err.message || '');
+}
+
+/* Returns the playback promise so callers (and tests) can await the audio
+   actually starting; the button state is still managed internally. */
 function playAudio(event) {
     // stopPropagation removed — delegation handler already prevents bubbling
     const btn = event.target.closest('.listen-btn') || event.currentTarget;
     const word = typeof window.getCurrentWord === 'function' && window.getCurrentWord();
-    if (!word || !word.ru) return;
+    if (!word || !word.ru) return Promise.resolve();
 
     // Analytics: listening usage + current vocabulary card position.
     _trackVocabCard(word, 'listen');
 
+    /* Listen-only courses (paid A1 / paid B1 / demos): no pronunciation pass
+       will ever arrive, so listening is what completes the card. Recorded
+       through the same path pronunciation uses, so progress bar / completion /
+       resume / statistics behave identically. No-op on A2/B2. */
+    _notePassiveProgress(word.topicId, _getWordIndex(word));
+
     btn.disabled = true;
     btn.classList.add('loading');
 
-    _playTTS(word.ru, word.topicId)
+    return _playTTS(word.ru, word.topicId)
         .catch(err => {
             console.error('TTS error:', err);
             if (err.limitExceeded) {
                 _showPaywall(err.tier);
+            } else if (_isBenignPlaybackError(err)) {
+                /* Not a failure the learner caused or can act on: the playback
+                   was superseded (they changed card / pressed again) or the
+                   browser declined the gesture. Alerting here would pop a
+                   dialog during ordinary fast navigation. */
+                console.debug('[TTS] playback superseded:', err && err.name);
             } else {
                 alert('Audio yuklanmadi. Qayta urinib ko\'ring.');
             }
@@ -771,56 +946,136 @@ function _localAudioPath(text, topicId) {
     return '/audio/' + level + '/lesson' + topicId + '/' + _sanitizeFilename(text) + '.mp3';
 }
 
-/* ---- check if local file exists (HEAD, cached) ---- */
+/* ---- check if a pre-generated local file exists (HEAD, cached) ----
+   The tri-state kill-switch is the important part: once a probe misses we
+   know the /audio tree was never generated for this deployment and we stop
+   paying a 404 round-trip on every single word. If the tree IS generated the
+   first probe succeeds and per-file checks continue exactly as before. */
 async function _hasLocalAudio(url) {
+    if (_localAudioAvailable === false) return false;
     if (_localAudioChecked.has(url)) return _localAudioChecked.get(url);
 
     try {
         var res = await fetch(url, { method: 'HEAD' });
         var ok = res.ok;
         _localAudioChecked.set(url, ok);
+        if (ok) {
+            _setLocalAudioAvailable(true);
+        } else if (_localAudioAvailable === null) {
+            /* First probe of the session missed → no /audio tree deployed. */
+            _setLocalAudioAvailable(false);
+        }
         return ok;
     } catch {
         _localAudioChecked.set(url, false);
+        if (_localAudioAvailable === null) _setLocalAudioAvailable(false);
         return false;
     }
 }
 
-async function _playTTS(text, topicId) {
-    let blobUrl = _ttsCache.get(text);
-
-    if (!blobUrl) {
-        /* 1) try local pre-generated file */
-        var localPath = _localAudioPath(text, topicId);
-        if (localPath && await _hasLocalAudio(localPath)) {
-            blobUrl = localPath;           // serve directly, no blob needed
-            _ttsCache.set(text, blobUrl);
-        }
-
-        /* 2) fallback to API */
-        if (!blobUrl) {
-            const res = await fetch('/api/tts', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
-                body: JSON.stringify({ text, voice: localStorage.getItem('tts_voice') || 'male' }),
-            });
-
-            if (res.status === 403) {
-                const body = await res.json().catch(() => ({}));
-                const e = new Error(body.message || 'Kunlik limit tugadi');
-                e.limitExceeded = true;
-                e.tier = body.tier || 'demo';
-                throw e;
-            }
-            if (!res.ok) throw new Error('TTS request failed: ' + res.status);
-
-            const blob = await res.blob();
-            blobUrl = URL.createObjectURL(blob);
-            _ttsCache.set(text, blobUrl);
-        }
+/* ---- fetch (and persist) the audio for one phrase ---- */
+async function _fetchTTSUrl(text, topicId) {
+    /* 1) pre-generated local file (skipped entirely once known absent) */
+    var localPath = _localAudioPath(text, topicId);
+    if (localPath && await _hasLocalAudio(localPath)) {
+        return localPath;                  // static, browser-cacheable, no blob
     }
 
-    const audio = new Audio(blobUrl);
+    /* 2) persistent cross-session store — a hit here means no network at all */
+    var key = _ttsKey(text);
+    var cached = await _ttsCacheGet(key);
+    if (cached) return cached;
+
+    /* 3) synthesise via the API (the only path that can be slow) */
+    const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(await _authHeaders()) },
+        body: JSON.stringify({ text, voice: _getVoice() }),
+    });
+
+    if (res.status === 403) {
+        const body = await res.json().catch(() => ({}));
+        const e = new Error(body.message || 'Kunlik limit tugadi');
+        e.limitExceeded = true;
+        e.tier = body.tier || 'demo';
+        throw e;
+    }
+    if (!res.ok) throw new Error('TTS request failed: ' + res.status);
+
+    const blob = await res.blob();
+    _ttsCachePut(key, blob);               // fire-and-forget: never blocks playback
+    return URL.createObjectURL(blob);
+}
+
+/**
+ * Resolve a playable URL for `text`, hitting the network at most once per
+ * (voice, phrase) — concurrent callers (double-click, prefetch racing a real
+ * press) all await the same in-flight promise instead of each firing an
+ * Azure synthesis.
+ */
+function _resolveTTSUrl(text, topicId) {
+    var key = _ttsKey(text);
+
+    var mem = _ttsCache.get(key);
+    if (mem) return Promise.resolve(mem);
+
+    var pending = _ttsInflight.get(key);
+    if (pending) return pending;
+
+    var p = _fetchTTSUrl(text, topicId)
+        .then(function (url) {
+            _ttsCache.set(key, url);
+            _ttsInflight.delete(key);
+            return url;
+        })
+        .catch(function (err) {
+            _ttsInflight.delete(key);       // let the next press retry
+            throw err;
+        });
+
+    _ttsInflight.set(key, p);
+    return p;
+}
+
+/** Warm the cache for a phrase without playing it. Never throws. */
+function _prefetchTTS(text, topicId) {
+    if (!text) return;
+    if (_ttsCache.has(_ttsKey(text))) return;      // already warm — no request
+    try {
+        _resolveTTSUrl(text, topicId).catch(function () { /* best effort */ });
+    } catch (e) { /* ignore */ }
+}
+
+/** Prefetch the card the learner is currently looking at, in idle time, so
+    that pressing "Tinglash" resolves from cache instead of from Azure. */
+function _prefetchCurrentWord() {
+    var run = function () {
+        try {
+            var w = (typeof window.getCurrentWord === 'function') ? window.getCurrentWord() : null;
+            if (w && w.ru) _prefetchTTS(w.ru, w.topicId);
+        } catch (e) { /* ignore */ }
+    };
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(run, { timeout: 1200 });
+    } else {
+        setTimeout(run, 200);
+    }
+}
+
+async function _playTTS(text, topicId) {
+    const url = await _resolveTTSUrl(text, topicId);
+    const audio = _getAudioEl();
+
+    /* Compare against the URL we last ASSIGNED, not audio.src — the getter
+       returns an absolute URL, so a relative local path ('/audio/a1/…') would
+       never compare equal and we'd re-assign src (and throw away the decoded
+       buffer) on every replay of the same word. */
+    if (_currentAudioUrl !== url) {
+        _currentAudioUrl = url;
+        audio.src = url;                   /* same word replayed → keep the
+                                              decoded buffer, just rewind */
+    }
+    try { audio.currentTime = 0; } catch (e) { /* not seekable yet — fine */ }
     return audio.play();
 }
 
@@ -2892,6 +3147,40 @@ function _loadProgress() {
     return {};
 }
 
+/* The topic currently open on the page. Owned by speech.js and written by
+   every entry point that is handed a real topic id (initWordProgress /
+   seedWordProgress / resetWordProgress / _completeWord). */
+var _activeTopicId = null;
+function _setActiveTopic(topicId) {
+    if (topicId != null) _activeTopicId = topicId;
+}
+
+/**
+ * Normalise the first argument of updateProgressBar().
+ *
+ * All eight vocabulary pages call it from loadCard() as
+ *   updateProgressBar(currentWordIndex, wordCount)
+ * i.e. they pass a WORD INDEX where a TOPIC ID is expected. The lookup then
+ * missed, `arr` came back empty and the bar was re-rendered as 0/N on every
+ * single card — silently overwriting the correct value that _completeWord()
+ * had just written. Rather than touch eight call sites (and leave the trap in
+ * place for the ninth), resolve against the topic speech.js knows is open.
+ *
+ * A word index that happens to equal the active topic id resolves to the same
+ * topic either way, so this is correct for both call shapes.
+ */
+function _resolveTopicId(maybeTopicId) {
+    var key = String(maybeTopicId);
+    if (_activeTopicId == null) return key;              // nothing open: legacy behaviour
+    if (key === String(_activeTopicId)) return key;      // correct call (or harmless collision)
+    var progress = _loadProgress();
+    /* An id we do not track at all is certainly not a topic → it is a page's
+       word index. Prefer the topic that is actually open. */
+    if (!Object.prototype.hasOwnProperty.call(progress, key)) return String(_activeTopicId);
+    /* Tracked, but not the open topic → still a stale/mistaken argument. */
+    return String(_activeTopicId);
+}
+
 function _saveProgress(progress) {
     try { localStorage.setItem(_progressKey(), JSON.stringify(progress)); } catch {}
 }
@@ -2919,6 +3208,7 @@ function _getTopicProgress(topicId, wordCount) {
  */
 function _completeWord(topicId, wordIndex) {
     if (!topicId) return;
+    _setActiveTopic(topicId);
     var progress = _loadProgress();
     var key = String(topicId);
     if (!progress[key]) return;
@@ -2933,12 +3223,40 @@ function _completeWord(topicId, wordIndex) {
     updateProgressBar(topicId, progress[key].length);
 }
 
+/* ================================================================== */
+/*  PROGRESSION GATING POLICY                                         */
+/*  ---------------------------------------------------------------- */
+/*  The per-word unlock array exists for exactly ONE purpose: to hold  */
+/*  the learner on a card until they PRONOUNCE it correctly. The only  */
+/*  writer that advances the frontier is _completeWord(), and the only */
+/*  caller of _completeWord() is the `didPass` branch of              */
+/*  checkPronunciation().                                             */
+/*                                                                     */
+/*  It follows that the gate is only meaningful where pronunciation is */
+/*  actually reachable. On a page where _pronPolicy() disables the mic */
+/*  (paid A1, paid B1, and every demo) no pronunciation result can     */
+/*  ever arrive, so the array stays [true,false,false,…] forever and   */
+/*  every consumer below would pin the learner to word 0 permanently.  */
+/*                                                                     */
+/*  On those pages progression is listen-only and must never be gated. */
+/*  Keeping this decision in ONE predicate (instead of per-page flags) */
+/*  is what guarantees the gate and the mic can never drift apart      */
+/*  again: enable pronunciation for a level and its gate comes back;   */
+/*  disable it and the gate disappears with it.                        */
+/* ================================================================== */
+function _pronGatesProgression() {
+    try { return _pronEnabled(); } catch (e) { return false; }
+}
+
 /**
  * Check if a word is locked.
  * A word is accessible (unlocked) only if progress[index] === true.
  * Word 0 is always unlocked.
  */
 function _isWordLocked(topicId, wordIndex) {
+    /* Listen-only course (paid A1 / paid B1 / demos): pronunciation is
+       disabled, so nothing can ever unlock the next word. Never gate. */
+    if (!_pronGatesProgression()) return false;
     if (!topicId) return false;
     if (wordIndex <= 0) return false;
     var progress = _loadProgress();
@@ -2946,6 +3264,34 @@ function _isWordLocked(topicId, wordIndex) {
     if (!progress[key]) return false; // no progress tracking active
     if (wordIndex >= progress[key].length) return true; // out of bounds = locked
     return !progress[key][wordIndex];
+}
+
+/**
+ * Record forward progress on a listen-only page.
+ *
+ * On A2/B2 the pronunciation pass is what marks a word done (_completeWord).
+ * Where the mic is disabled that signal never arrives, so without this the
+ * frontier would stay at word 0 and the progress bar, lesson completion,
+ * resume position, statistics and analytics would all stay frozen at zero
+ * even though the learner is moving through the deck normally.
+ *
+ * Visiting/listening to the card is the completion signal instead. It writes
+ * through the SAME _completeWord() path used by pronunciation, so every
+ * downstream consumer keeps working with no special-casing.
+ */
+function _notePassiveProgress(topicId, wordIndex) {
+    if (_pronGatesProgression()) return;      // A2/B2: pronunciation owns this
+    if (topicId == null) return;
+    if (!(wordIndex >= 0)) return;
+    var progress = _loadProgress();
+    var key = String(topicId);
+    var arr = progress[key];
+    if (!arr || wordIndex >= arr.length) return;
+    /* Already recorded (word done AND next one open) — don't churn storage
+       or re-render the DOM on every replayed listen. */
+    var nextDone = (wordIndex + 1 >= arr.length) || arr[wordIndex + 1];
+    if (arr[wordIndex] && nextDone) return;
+    _completeWord(topicId, wordIndex);
 }
 
 /** Get the word index — prefers word.wordIndex from getCurrentWord(). */
@@ -2966,6 +3312,7 @@ function _getWordIndex(word) {
  */
 function initWordProgress(topicId, wordCount) {
     if (!topicId || !wordCount || wordCount < 1) return;
+    _setActiveTopic(topicId);
     var progress = _loadProgress();
     var key = String(topicId);
     if (!progress[key] || progress[key].length !== wordCount) {
@@ -3095,6 +3442,7 @@ function isWordCompleted(topicId, wordIndex) {
  */
 function seedWordProgress(topicId, wordCount, startIdx) {
     if (!topicId || !wordCount || wordCount < 1) return;
+    _setActiveTopic(topicId);
     var progress = _loadProgress();
     var key = String(topicId);
     var arr = new Array(wordCount).fill(false);
@@ -3109,6 +3457,7 @@ function seedWordProgress(topicId, wordCount, startIdx) {
 /** Reset a topic to the beginning (only word 0 unlocked). */
 function resetWordProgress(topicId, wordCount) {
     if (!topicId || !wordCount || wordCount < 1) return;
+    _setActiveTopic(topicId);
     var progress = _loadProgress();
     progress[String(topicId)] = (function () {
         var a = new Array(wordCount).fill(false);
@@ -3216,7 +3565,7 @@ function _animateFlashcardError() {
  */
 function updateProgressBar(topicId, total) {
     var progress = _loadProgress();
-    var key = String(topicId);
+    var key = _resolveTopicId(topicId);
     var arr = progress[key] || [];
 
     /* count completed: all true entries EXCEPT the last true (active frontier) */
@@ -4182,6 +4531,10 @@ var _nextWarnTimer = null;
 /** Floating, non-blocking toast shown when a locked "Keyingi" is clicked.
     Smooth fade in/out, auto-hides after ~7s. */
 function _showNextWarning() {
+    /* "Avval so‘zni to‘g‘ri ayting" ("say the word correctly first") is a
+       pronunciation instruction. It must be unreachable where there is no
+       microphone to obey it with — belt-and-braces alongside _isWordLocked(). */
+    if (!_pronGatesProgression()) return;
     _ensureNextLockStyles();
     var t = document.getElementById('_nextWarnToast');
     if (!t) {
@@ -4231,16 +4584,33 @@ function _hideProcessingLoader() {
         document.addEventListener('click', function (e) {
             var tgt = e.target;
             if (!tgt || !tgt.closest) return;
-            /* clicked a locked "Keyingi" → show the floating warning */
-            if (tgt.closest('#nextWordBtn') && _isNextWordLocked()) {
-                _showNextWarning();
+            if (tgt.closest('#nextWordBtn')) {
+                if (_isNextWordLocked()) {
+                    /* clicked a locked "Keyingi" → show the floating warning */
+                    _showNextWarning();
+                } else if (!_pronGatesProgression()) {
+                    /* Listen-only page: the learner may advance without ever
+                       pressing Tinglash. Capture-phase runs before the button's
+                       inline nextCard(), so the card we are LEAVING is still the
+                       current one — record it here or the frontier (and with it
+                       the progress bar and completion) would lag behind. */
+                    var cw = (typeof window.getCurrentWord === 'function')
+                        ? window.getCurrentWord() : null;
+                    if (cw) _notePassiveProgress(cw.topicId, _getWordIndex(cw));
+                }
             }
             /* any flashcard nav click may change the active card */
             if (tgt.closest('.control-btn')) {
-                setTimeout(_refreshNextLock, 0);
+                setTimeout(function () {
+                    _refreshNextLock();
+                    /* Warm the card the learner just landed on, so their
+                       "Tinglash" is a cache hit rather than an Azure call. */
+                    _prefetchCurrentWord();
+                }, 0);
             }
         }, true);
         _refreshNextLock();
+        _prefetchCurrentWord();   /* first card of the session */
     }
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', setup);

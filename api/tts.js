@@ -83,6 +83,7 @@ export default async function handler(req, res) {
     const cached = getCached(cacheKey);
     if (cached) {
         res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Cache-Control', 'private, max-age=86400');
         res.setHeader('X-TTS-Cache', 'HIT');
         return res.end(cached);
     }
@@ -128,6 +129,7 @@ export default async function handler(req, res) {
         pruneCache();
 
         res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Cache-Control', 'private, max-age=86400');
         res.setHeader('X-TTS-Cache', 'MISS');
         return res.end(buffer);
     } catch (err) {
