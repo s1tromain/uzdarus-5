@@ -192,6 +192,59 @@ async function firestoreSaveQuizResult(userId, topicId, quizData, course = '') {
     }
 }
 
+/* Persist ONE completed-lesson snapshot into the EXISTING per-topic document
+   users/{uid}/quizResults/topic_{topicId}, under the reserved `lessonResult`
+   field. Deliberately separate from saveQuizResult(): that function also emits
+   an `ex_done` / `exam_*` analytics event, and this write is a UI-restoration
+   snapshot of an attempt that has ALREADY been tracked by the course page —
+   emitting again would double-count exercises on the admin timeline.
+   `merge: true` keeps every sibling field (native mc/blank answers, draft,
+   course tag) intact. */
+async function firestoreSaveLessonResult(userId, topicId, snapshot, course = '') {
+    if (!userId || topicId === null || topicId === undefined) {
+        return false;
+    }
+    if (!snapshot || typeof snapshot !== 'object') {
+        return false;
+    }
+    try {
+        await authReady();
+        const resultRef = doc(db, 'users', userId, 'quizResults', `topic_${topicId}`);
+        await setDoc(resultRef, {
+            lessonResult: snapshot,
+            course,
+            updatedAt: serverTimestamp()
+        }, { merge: true });
+        return true;
+    } catch (error) {
+        console.warn('progress-sync: saveLessonResult failed', error?.message || error);
+        return false;
+    }
+}
+
+/* Single-document read of ONE topic's quiz/result record. Used by
+   course-global-fixes.js to restore a previously completed lesson without
+   pulling the learner's whole quizResults collection on every topic open.
+   Mirrors firebase-utils.getTopicQuizResult; fails soft (null) so the page
+   simply behaves as if no saved result existed. */
+async function firestoreGetTopicQuizResult(userId, topicId) {
+    if (!userId || topicId === null || topicId === undefined) {
+        return null;
+    }
+    try {
+        await authReady();
+        const resultRef = doc(db, 'users', userId, 'quizResults', `topic_${topicId}`);
+        const snap = await withTimeout(getDoc(resultRef), PROGRESS_READ_TIMEOUT_MS, null);
+        if (!snap || !snap.exists()) {
+            return null;
+        }
+        return snap.data() || null;
+    } catch (error) {
+        console.warn('progress-sync: getTopicQuizResult fallback', error?.message || error);
+        return null;
+    }
+}
+
 async function firestoreGetUserQuizResults(userId, course) {
     if (!userId) {
         return {};
@@ -222,6 +275,8 @@ window.getUserProgress = firestoreGetUserProgress;
 window.saveUserProgress = firestoreSaveUserProgress;
 window.saveQuizResult = firestoreSaveQuizResult;
 window.getUserQuizResults = firestoreGetUserQuizResults;
+window.getTopicQuizResult = firestoreGetTopicQuizResult;
+window.saveLessonResult = firestoreSaveLessonResult;
 window.firebaseReady = true;
 
 /* ================================================================

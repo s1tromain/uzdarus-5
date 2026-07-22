@@ -311,21 +311,36 @@ export function buildStudentDashboard(input = {}) {
         const percent = quizPercent(q);
         const isExam = /final|exam/i.test(q.id || '');
         // Extract per-question answers from arbitrary section maps stored by courses.
+        // `lessonResult` is the completed-lesson UI snapshot (course-global-fixes.js);
+        // it is a result-screen reconstruction, not a section->answers map, so it is
+        // skipped here and surfaced through its own `lesson` field below.
         const answers = [];
         for (const [k, v] of Object.entries(q)) {
-            if (['id', 'score', 'total', 'timestamp', 'course', 'updatedAt', 'percentage', 'passed'].includes(k)) continue;
+            if (['id', 'score', 'total', 'timestamp', 'course', 'updatedAt', 'percentage', 'passed', 'lessonResult'].includes(k)) continue;
             if (v && typeof v === 'object') {
                 for (const [qk, qv] of Object.entries(v)) {
                     answers.push({ section: k, question: qk, answer: typeof qv === 'object' ? JSON.stringify(qv) : String(qv) });
                 }
             }
         }
+        // Compact view of the stored completed-lesson snapshot (counts only — the
+        // full per-answer detail already lives in `answers` for older docs and in
+        // the learner's own result screen).
+        const lr = q.lessonResult;
+        const lesson = (lr && typeof lr === 'object' && Array.isArray(lr.results))
+            ? {
+                correct: lr.results.filter(r => r && r.isCorrect === true).length,
+                total: lr.results.length,
+                completedAt: lr.completedAt || null,
+            }
+            : null;
         return {
             id: q.id, course: q.course || null, kind: isExam ? 'exam' : 'exercise',
             score: q.score ?? null, total: q.total ?? null, percent,
             passed: percent != null ? percent >= 60 : null,
             timestamp: toMs(q.timestamp) || toMs(q.updatedAt),
             answers,
+            lesson,
         };
     }).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 

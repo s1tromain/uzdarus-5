@@ -89,6 +89,37 @@
         catch (e) { return []; }
     }
 
+    /* An exercise whose answer element is NOT in the page was never presented to
+       the learner on this screen — most often because the course renders it
+       under a different DOM hook (A2 topics 1–3 use data-t2-* / data-t3-*
+       while the generic collector queries data-topicN-eM). Reporting such an
+       item as "(kiritilmagan)" invents an answer the learner never gave, drags
+       the summary percentage down and — now that results are persisted — would
+       store a fabricated review. So a missing element means "not on this
+       screen": skip it entirely rather than score it wrong. Items that ARE on
+       screen but left empty still count as incorrect, exactly as before (and
+       the completeness gate blocks submitting them in the first place). */
+    function isRendered(el) {
+        return !!el;
+    }
+
+    /* Open-ended ("davomini yozing" / "to'liq javob yozing") items have no single
+       right answer: they are flagged either with `free: true` or — as most B1
+       topics do — with a blank answer key. This mirrors t1IsOpenAnswer() in
+       b1-course.html EXACTLY, so the shared feedback screen agrees with the
+       score the course itself computes. Without it, an item like
+       { q: "Я думаю, что …", answer: [""] } is graded correct by B1 but shown
+       as permanently wrong here (and would be persisted that way). */
+    function isOpenAnswerItem(item) {
+        if (item && item.free) return true;
+        var a = item ? item.answer : null;
+        if (a === null || a === undefined) return true;
+        if (Array.isArray(a)) {
+            return a.every(function (x) { return String(x === null || x === undefined ? '' : x).trim() === ''; });
+        }
+        return String(a).trim() === '';
+    }
+
     function markInput(el, ok) {
         if (!el) return;
         el.classList.remove('correct', 'incorrect');
@@ -108,6 +139,16 @@
             isCorrect: !!ok,
             explanation: String(explanation || '')
         };
+    }
+
+    /* Attach a RESTORE DESCRIPTOR to a result. It records HOW the answer was
+       read from the DOM so the very same answer can be written back when the
+       learner reopens an already-completed topic (see LESSON RESULT
+       PERSISTENCE below). Purely additive \u2014 the descriptor is ignored by the
+       renderer and by every existing consumer. */
+    function withRef(result, ref) {
+        if (result && ref) result.ref = ref;
+        return result;
     }
 
     /* ================================================================
@@ -212,7 +253,9 @@
 
         if (Array.isArray(topic.quiz.mcQuestions) && Array.isArray(topic.quiz.mcAnswers)) {
             topic.quiz.mcQuestions.forEach(function (question, i) {
-                var sel = queryIn(scope, '.quiz-options[data-question="' + i + '"] .quiz-option.selected');
+                var box = queryIn(scope, '.quiz-options[data-question="' + i + '"]');
+                if (!isRendered(box)) return;
+                var sel = queryIn(box, '.quiz-option.selected');
                 var selIdx = sel ? parseInt(sel.getAttribute('data-option'), 10) : -1;
                 var opts = (topic.quiz.mcOptions && topic.quiz.mcOptions[i]) || [];
                 var raw = topic.quiz.mcAnswers[i];
@@ -220,25 +263,26 @@
                 var cText = opts[cIdx] || '(javob topilmadi)';
                 var uText = selIdx >= 0 ? (opts[selIdx] || '(tanlanmagan)') : '(tanlanmagan)';
                 var ok = selIdx === cIdx;
-                results.push(makeResult(
+                results.push(withRef(makeResult(
                     'Test savol ' + (i + 1), question, uText, cText, ok,
                     generateExplanation(ok, uText, cText, topicTitle, 'Test')
-                ));
+                ), { k: 'mc', q: i, o: selIdx, c: cIdx }));
             });
         }
 
         if (Array.isArray(topic.quiz.blankQuestions) && Array.isArray(topic.quiz.blankAnswers)) {
             topic.quiz.blankQuestions.forEach(function (question, i) {
                 var inp = queryIn(scope, 'input[data-blank="' + i + '"]');
-                var uv = inp ? inp.value.trim() : '';
+                if (!isRendered(inp)) return;
+                var uv = inp.value.trim();
                 var exp = topic.quiz.blankAnswers[i];
                 var ok = isCorrect(uv, exp);
                 markInput(inp, ok);
                 var ed = expectedDisplay(exp);
-                results.push(makeResult(
+                results.push(withRef(makeResult(
                     "Bo'sh joy " + (i + 1), question, uv, ed, ok,
                     generateExplanation(ok, uv, ed, topicTitle, "Bo'sh joy to'ldirish")
-                ));
+                ), { k: 'input', s: 'input[data-blank="' + i + '"]', v: uv }));
             });
         }
 
@@ -288,14 +332,15 @@
             normList.forEach(function (exp, ii) {
                 var sel = '.blank-input-inline[data-q-index="' + qi + '"][data-input-index="' + ii + '"]';
                 var inp = queryIn(scope, sel);
-                var uv = inp ? inp.value.trim() : '';
+                if (!isRendered(inp)) return;
+                var uv = inp.value.trim();
                 var ok = isCorrect(uv, exp);
                 markInput(inp, ok);
                 var ed = expectedDisplay(exp);
-                results.push(makeResult(
+                results.push(withRef(makeResult(
                     'Yozma mashq ' + (qi + 1) + '.' + (ii + 1), '', uv, ed, ok,
                     generateExplanation(ok, uv, ed, topicTitle, "Bo'sh joy to'ldirish")
-                ));
+                ), { k: 'input', s: sel, v: uv }));
             });
         });
         return results;
@@ -314,17 +359,19 @@
             var secTitle = sec.title || sKey;
 
             sec.questions.forEach(function (q, i) {
-                var inp = queryIn(scope, 'input[data-section="' + sKey + '"][data-index="' + i + '"]');
-                var uv = inp ? inp.value.trim() : '';
+                var inpSel = 'input[data-section="' + sKey + '"][data-index="' + i + '"]';
+                var inp = queryIn(scope, inpSel);
+                if (!isRendered(inp)) return;
+                var uv = inp.value.trim();
                 var exp = sec.answers[i];
                 var ok = isCorrect(uv, exp);
                 markInput(inp, ok);
                 var ed = expectedDisplay(exp);
                 var qText = String(q || '').replace(/\u2026/g, '_____');
-                results.push(makeResult(
+                results.push(withRef(makeResult(
                     secTitle + ' \u2014 ' + (i + 1), qText, uv, ed, ok,
                     generateExplanation(ok, uv, ed, topicTitle, secTitle)
-                ));
+                ), { k: 'input', s: inpSel, v: uv }));
             });
         });
         return results;
@@ -348,30 +395,38 @@
             ex.items.forEach(function (item, i) {
                 var key = ex.id + '-' + i;
                 var uv = '';
+                var ref;
                 if (ex.type === 'choice') {
-                    var row = queryIn(scope, '[data-t1-row="' + key + '"]');
-                    var sel = row ? row.querySelector('.t1-opt.selected') : null;
+                    var rowSel = '[data-t1-row="' + key + '"]';
+                    var row = queryIn(scope, rowSel);
+                    if (!isRendered(row)) return;
+                    var sel = row.querySelector('.t1-opt.selected');
                     uv = sel ? (sel.getAttribute('data-value') || sel.textContent || '').trim() : '';
+                    ref = { k: 't1choice', s: rowSel, v: uv, c: expectedDisplay(item.answer) };
                 } else {
-                    var inp = queryIn(scope, '[data-t1-input="' + key + '"]');
-                    uv = inp ? inp.value.trim() : '';
-                    markInput(inp, item.free
+                    var inpSel = '[data-t1-input="' + key + '"]';
+                    var inp = queryIn(scope, inpSel);
+                    if (!isRendered(inp)) return;
+                    uv = inp.value.trim();
+                    markInput(inp, isOpenAnswerItem(item)
                         ? (uv.split(/\s+/).filter(Boolean).length >= 3)
                         : isCorrect(uv, item.answer));
+                    ref = { k: 'input', s: inpSel, v: uv, x: '[data-t1-slot="' + key + '"]' };
                 }
                 var exp = item.answer;
                 /* Free completion items: meaningful = non-empty + >= 3 words. */
-                var ok = item.free
+                var open = isOpenAnswerItem(item);
+                var ok = open
                     ? (uv.split(/\s+/).filter(Boolean).length >= 3)
                     : isCorrect(uv, exp);
-                var ed = item.free ? 'Bemalol javob (kamida 3 soʻz)' : expectedDisplay(exp);
-                results.push(makeResult(
+                var ed = open ? 'Bemalol javob (kamida 3 soʻz)' : expectedDisplay(exp);
+                results.push(withRef(makeResult(
                     exTitle + ' — ' + (i + 1),
                     item.q || item.prompt || '',
                     uv || (ex.type === 'choice' ? '(tanlanmagan)' : '(kiritilmagan)'),
                     ed, ok,
                     generateExplanation(ok, uv, ed, topicTitle, exTitle)
-                ));
+                ), ref));
             });
         });
 
@@ -387,16 +442,18 @@
         var exTitle = topic.topic4FillExercise.title || "Bo'sh joy to'ldirish";
 
         topic.topic4FillExercise.questions.forEach(function (prompt, i) {
-            var inp = queryIn(scope, 'input[data-topic4-fill="' + i + '"]');
-            var uv = inp ? inp.value.trim() : '';
+            var inpSel = 'input[data-topic4-fill="' + i + '"]';
+            var inp = queryIn(scope, inpSel);
+            if (!isRendered(inp)) return;
+            var uv = inp.value.trim();
             var exp = topic.topic4FillExercise.answers[i];
             var ok = isCorrect(uv, exp);
             markInput(inp, ok);
             var ed = expectedDisplay(exp);
-            results.push(makeResult(
+            results.push(withRef(makeResult(
                 exTitle + ' \u2014 ' + (i + 1), prompt, uv, ed, ok,
                 generateExplanation(ok, uv, ed, topicTitle, exTitle)
-            ));
+            ), { k: 'input', s: inpSel, v: uv }));
         });
         return results;
     }
@@ -412,16 +469,18 @@
         if (ex1 && Array.isArray(ex1.questions)) {
             var ex1Title = ex1.title || '1-mashq';
             ex1.questions.forEach(function (q, i) {
-                var blank = queryIn(scope, '.topic5-select-blank[data-topic5-select="' + i + '"]');
-                var uv = blank ? (blank.dataset.value || '').trim() : '';
+                var blankSel = '.topic5-select-blank[data-topic5-select="' + i + '"]';
+                var blank = queryIn(scope, blankSel);
+                if (!isRendered(blank)) return;
+                var uv = (blank.dataset.value || '').trim();
                 var exp = q.answer;
                 var ok = isCorrect(uv, exp);
                 markInput(blank, ok);
                 var ed = expectedDisplay(exp);
-                results.push(makeResult(
+                results.push(withRef(makeResult(
                     ex1Title + ' \u2014 ' + (i + 1), q.text || '', uv || '(tanlanmagan)', ed, ok,
                     generateExplanation(ok, uv, ed, topicTitle, ex1Title)
-                ));
+                ), { k: 'dataval', s: blankSel, v: uv }));
             });
         }
 
@@ -431,16 +490,18 @@
             var num = eKey.replace('exercise', '');
             var eTitle = ex.title || (num + '-mashq');
             ex.prompts.forEach(function (prompt, i) {
-                var inp = queryIn(scope, 'input[data-topic5-e' + num + '="' + i + '"]');
-                var uv = inp ? inp.value.trim() : '';
+                var inpSel = 'input[data-topic5-e' + num + '="' + i + '"]';
+                var inp = queryIn(scope, inpSel);
+                if (!isRendered(inp)) return;
+                var uv = inp.value.trim();
                 var exp = ex.answers[i];
                 var ok = isCorrect(uv, exp);
                 markInput(inp, ok);
                 var ed = expectedDisplay(exp);
-                results.push(makeResult(
+                results.push(withRef(makeResult(
                     eTitle + ' \u2014 ' + (i + 1), prompt, uv, ed, ok,
                     generateExplanation(ok, uv, ed, topicTitle, eTitle)
-                ));
+                ), { k: 'input', s: inpSel, v: uv }));
             });
         });
 
@@ -498,15 +559,16 @@
         items.forEach(function (item, i) {
             var sel = 'input[data-topic' + N + '-e' + M + '="' + i + '"]';
             var inp = queryIn(scope, sel);
-            var uv = inp ? inp.value.trim() : '';
+            if (!isRendered(inp)) return;
+            var uv = inp.value.trim();
             var exp = item.answers || item.answer;
             var ok = isCorrect(uv, exp);
             markInput(inp, ok);
             var ed = expectedDisplay(exp);
             var qText = item.prompt || item.word || '';
             if (item.hint) qText += ' (' + item.hint + ')';
-            results.push(makeResult(exTitle + ' \u2014 ' + (i + 1), qText, uv, ed, ok,
-                generateExplanation(ok, uv, ed, topicTitle, exTitle)));
+            results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), qText, uv, ed, ok,
+                generateExplanation(ok, uv, ed, topicTitle, exTitle)), { k: 'input', s: sel, v: uv }));
         });
         return results;
     }
@@ -517,6 +579,7 @@
         items.forEach(function (item, i) {
             var rowSel = '[data-topic' + N + '-e' + M + '-row="' + i + '"]';
             var row = queryIn(scope, rowSel);
+            if (!isRendered(row)) return;
             var uv = '';
             if (row) {
                 var selBtn = row.querySelector('.selected');
@@ -526,8 +589,8 @@
             var exp = item.answer;
             var ok = isCorrect(uv, exp);
             var ed = expectedDisplay(exp);
-            results.push(makeResult(exTitle + ' \u2014 ' + (i + 1), item.prompt || '', uv || '(tanlanmagan)', ed, ok,
-                generateExplanation(ok, uv, ed, topicTitle, exTitle)));
+            results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), item.prompt || '', uv || '(tanlanmagan)', ed, ok,
+                generateExplanation(ok, uv, ed, topicTitle, exTitle)), { k: 'chip', s: rowSel, v: uv }));
         });
         return results;
     }
@@ -536,15 +599,19 @@
         var results = [];
         var items = exercise.items || [];
         items.forEach(function (item, i) {
-            var el = queryIn(scope, '[data-topic' + N + '-select="' + i + '"]') ||
-                     queryIn(scope, '[data-topic' + N + '-e' + M + '="' + i + '"]');
-            var uv = el ? (el.dataset.value || el.textContent || '').trim() : '';
+            var selA = '[data-topic' + N + '-select="' + i + '"]';
+            var selB = '[data-topic' + N + '-e' + M + '="' + i + '"]';
+            var el = queryIn(scope, selA);
+            var elSel = selA;
+            if (!el) { el = queryIn(scope, selB); elSel = selB; }
+            if (!isRendered(el)) return;
+            var uv = (el.dataset.value || el.textContent || '').trim();
             var exp = item.answer;
             var ok = isCorrect(uv, exp);
             markInput(el, ok);
             var ed = expectedDisplay(exp);
-            results.push(makeResult(exTitle + ' \u2014 ' + (i + 1), item.template || item.prompt || '', uv || '(tanlanmagan)', ed, ok,
-                generateExplanation(ok, uv, ed, topicTitle, exTitle)));
+            results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), item.template || item.prompt || '', uv || '(tanlanmagan)', ed, ok,
+                generateExplanation(ok, uv, ed, topicTitle, exTitle)), { k: 'dataval', s: elSel, v: uv }));
         });
         return results;
     }
@@ -553,12 +620,16 @@
         var results = [];
         var items = exercise.items || [];
         items.forEach(function (item, i) {
-            var hiddenInput = queryIn(scope, 'input[data-topic' + N + '-builder-selected="' + i + '"]');
+            var hiddenSel = 'input[data-topic' + N + '-builder-selected="' + i + '"]';
+            var targetSel = '[data-topic' + N + '-builder-target="' + i + '"]';
+            var hiddenInput = queryIn(scope, hiddenSel);
+            var builderTarget = queryIn(scope, targetSel);
+            if (!isRendered(hiddenInput) && !isRendered(builderTarget)) return;
             var uv = '';
             if (hiddenInput && hiddenInput.value) {
                 uv = hiddenInput.value.split('|').map(function (w) { return w.trim(); }).filter(Boolean).join(' ');
             } else {
-                var target = queryIn(scope, '[data-topic' + N + '-builder-target="' + i + '"]');
+                var target = queryIn(scope, targetSel);
                 if (target) {
                     var tokens = queryAllIn(target, 'button, [class*="token"]');
                     uv = tokens.length
@@ -569,8 +640,8 @@
             var exp = item.answers || item.answer;
             var ok = isCorrect(uv, exp);
             var ed = expectedDisplay(exp);
-            results.push(makeResult(exTitle + ' \u2014 ' + (i + 1), item.prompt || 'Gap tuzing', uv || "(yig'ilmagan)", ed, ok,
-                generateExplanation(ok, uv, ed, topicTitle, exTitle)));
+            results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), item.prompt || 'Gap tuzing', uv || "(yig'ilmagan)", ed, ok,
+                generateExplanation(ok, uv, ed, topicTitle, exTitle)), { k: 'builder', s: hiddenSel, x: targetSel, v: uv }));
         });
         return results;
     }
@@ -581,14 +652,16 @@
                         type === 'sentences-input' ? exercise.sentences : exercise.questions;
         var answers = exercise.answers || [];
         (questions || []).forEach(function (q, i) {
-            var inp = queryIn(scope, 'input[data-topic' + N + '-e' + M + '="' + i + '"]');
-            var uv = inp ? inp.value.trim() : '';
+            var inpSel = 'input[data-topic' + N + '-e' + M + '="' + i + '"]';
+            var inp = queryIn(scope, inpSel);
+            if (!isRendered(inp)) return;
+            var uv = inp.value.trim();
             var exp = answers[i];
             var ok = isCorrect(uv, exp);
             markInput(inp, ok);
             var ed = expectedDisplay(exp);
-            results.push(makeResult(exTitle + ' \u2014 ' + (i + 1), String(q || ''), uv, ed, ok,
-                generateExplanation(ok, uv, ed, topicTitle, exTitle)));
+            results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), String(q || ''), uv, ed, ok,
+                generateExplanation(ok, uv, ed, topicTitle, exTitle)), { k: 'input', s: inpSel, v: uv }));
         });
         return results;
     }
@@ -640,7 +713,18 @@
        FEEDBACK RENDERER — detailed card-based output
        ================================================================ */
 
-    function renderDetailedFeedback(host, results) {
+    /* Single source of truth for the Uzbek summary wording — shared by the live
+       feedback render and by the restored (previously completed) render so a
+       reopened topic reads EXACTLY like the screen the learner first saw. */
+    function scoreMessage(pct) {
+        if (pct >= 90) return "🎉 Ajoyib! Siz mavzuni mukammal o'zlashtirgansiz!";
+        if (pct >= 70) return "👍 Yaxshi natija! Siz mavzuni yaxshi tushundingiz.";
+        if (pct >= 50) return "📝 Qoniqarli. Ba'zi savollarni qayta ko'rib chiqing.";
+        return "📚 Ko'proq mashq qiling. Mavzuni diqqat bilan o'qib chiqing.";
+    }
+
+    function renderDetailedFeedback(host, results, options) {
+        var opts = options || {};
         var feedback = host ? queryIn(host, '.topic-feedback') : null;
         if (!feedback) return;
 
@@ -655,11 +739,7 @@
         }
 
         var pct = Math.round((correct / total) * 100);
-        var msg;
-        if (pct >= 90) msg = "\uD83C\uDF89 Ajoyib! Siz mavzuni mukammal o'zlashtirgansiz!";
-        else if (pct >= 70) msg = "\uD83D\uDC4D Yaxshi natija! Siz mavzuni yaxshi tushundingiz.";
-        else if (pct >= 50) msg = "\uD83D\uDCDD Qoniqarli. Ba'zi savollarni qayta ko'rib chiqing.";
-        else msg = "\uD83D\uDCDA Ko'proq mashq qiling. Mavzuni diqqat bilan o'qib chiqing.";
+        var msg = scoreMessage(pct);
 
         var html = '<div class="fb-summary">' +
             '<div class="fb-summary-score">' + correct + ' / ' + total + " to'g'ri (" + pct + '%)</div>' +
@@ -724,8 +804,455 @@
             }
         } catch (e) { /* ignore — legacy score block is optional */ }
 
+        if (opts.scroll === false) return;
         try { feedback.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) { /* ignore */ }
     }
+
+    /* ================================================================
+       LESSON RESULT PERSISTENCE  (PAID COURSES ONLY)
+       ----------------------------------------------------------------
+       PROBLEM: "Javoblarni tekshirish" produced a full result screen
+       (score + every answer + correct answer + feedback), but that screen
+       lived only in the DOM. Reopening the topic re-rendered a blank
+       lesson: `completedTopics` remembered THAT the topic was done, never
+       HOW it was done. The per-topic quizResults doc only held the native
+       quiz's mc/blank arrays (topics 1–5) or nothing at all (the
+       exercise-only topics), and the shared feedback cards were never
+       stored anywhere.
+
+       FIX: after a graded check we persist ONE structured snapshot of the
+       exact `results` array this file already builds — the same array the
+       renderer consumes — into the EXISTING per-topic document
+       users/{uid}/quizResults/topic_{topicId}, under the reserved
+       `lessonResult` field. On reopen the snapshot is replayed through the
+       SAME renderer, and each answer is written back into the DOM through
+       the restore descriptor its collector recorded.
+
+       Scope guard: paid A1/A2/B1/B2 course pages only. Demo pages load
+       this same file and must NOT persist; vocabulary / pronunciation /
+       final-exam pages have their own architecture and are untouched.
+       ================================================================ */
+
+    var SNAPSHOT_VERSION = 1;
+    var MAX_SNAPSHOT_RESULTS = 400;   // hard cap — keeps the doc far below 1 MB
+    var MAX_SNAPSHOT_TEXT = 400;      // per-field character cap
+    var RESTORE_MIN_DELAY_MS = 800;   // let the page's own restore paths run first
+
+    /* Returns 'A1' | 'A2' | 'B1' | 'B2' for a paid course page, else null.
+       Pure + path-injectable so it is directly testable. */
+    function detectPaidCourse(pathname) {
+        var p = String(
+            pathname !== undefined && pathname !== null
+                ? pathname
+                : ((window.location && window.location.pathname) || '')
+        ).toLowerCase();
+        if (p.indexOf('-demo') !== -1) return null;           // demo courses: never persist
+        if (p.indexOf('/paid-courses/') === -1) return null;  // outside the paid area
+        var m = p.match(/\/(a1|a2|b1|b2)-course\.html$/);     // excludes -vocabulary / -final-exam
+        return m ? m[1].toUpperCase() : null;
+    }
+
+    function currentUserId() {
+        if (window.currentUserId) return String(window.currentUserId);
+        try {
+            var raw = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            if (raw && (raw.id || raw.uid)) return String(raw.id || raw.uid);
+        } catch (e) { /* ignore */ }
+        return null;
+    }
+
+    function clip(value) {
+        var s = String(value === null || value === undefined ? '' : value);
+        return s.length > MAX_SNAPSHOT_TEXT ? s.slice(0, MAX_SNAPSHOT_TEXT) : s;
+    }
+
+    /* Build the persisted snapshot from a live results array. Counters are
+       DERIVED, never trusted from elsewhere, so they can never disagree with
+       the stored answers. */
+    function buildSnapshot(course, topicId, results) {
+        var list = [];
+        (Array.isArray(results) ? results : []).slice(0, MAX_SNAPSHOT_RESULTS).forEach(function (r) {
+            if (!r || typeof r !== 'object') return;
+            var item = {
+                label: clip(r.label),
+                question: clip(r.question),
+                userAnswer: clip(r.userAnswer),
+                correctAnswer: clip(r.correctAnswer),
+                isCorrect: r.isCorrect === true,
+                explanation: clip(r.explanation)
+            };
+            if (r.ref && typeof r.ref === 'object') {
+                var ref = { k: clip(r.ref.k) };
+                if (r.ref.s) ref.s = clip(r.ref.s);
+                if (r.ref.x) ref.x = clip(r.ref.x);
+                if (r.ref.v !== undefined) ref.v = clip(r.ref.v);
+                if (r.ref.c !== undefined) ref.c = typeof r.ref.c === 'number' ? r.ref.c : clip(r.ref.c);
+                if (typeof r.ref.q === 'number') ref.q = r.ref.q;
+                if (typeof r.ref.o === 'number') ref.o = r.ref.o;
+                item.ref = ref;
+            }
+            list.push(item);
+        });
+
+        var total = list.length;
+        var correct = list.filter(function (r) { return r.isCorrect; }).length;
+        var percent = total ? Math.round((correct / total) * 100) : 0;
+
+        return {
+            v: SNAPSHOT_VERSION,
+            course: course,
+            topicId: topicId,
+            completedAt: new Date().toISOString(),
+            score: correct,
+            correct: correct,
+            incorrect: total - correct,
+            total: total,
+            percent: percent,
+            /* STORAGE-ONLY flag. Used exclusively to stop a later FAILED retry
+               from overwriting a stored PASSED result. It is NOT a completion
+               rule and nothing reads it to unlock or complete anything — the
+               course pages keep their own thresholds untouched. */
+            passed: total > 0 && percent >= 60,
+            message: scoreMessage(percent),
+            results: list
+        };
+    }
+
+    /* Defensive read: tolerate partial / malformed / foreign data without ever
+       throwing, and recompute the counters from the answers actually present. */
+    function sanitizeSnapshot(raw) {
+        if (!raw || typeof raw !== 'object') return null;
+        if (!Array.isArray(raw.results)) return null;
+
+        var list = [];
+        raw.results.forEach(function (r) {
+            if (!r || typeof r !== 'object') return;
+            list.push({
+                label: String(r.label || ''),
+                question: String(r.question || ''),
+                userAnswer: String(r.userAnswer || ''),
+                correctAnswer: String(r.correctAnswer || ''),
+                isCorrect: r.isCorrect === true,
+                explanation: String(r.explanation || ''),
+                ref: (r.ref && typeof r.ref === 'object') ? r.ref : null
+            });
+        });
+        if (!list.length) return null;   // nothing reconstructible -> treat as "no snapshot"
+
+        var total = list.length;
+        var correct = list.filter(function (r) { return r.isCorrect; }).length;
+        var percent = total ? Math.round((correct / total) * 100) : 0;
+
+        return {
+            v: Number(raw.v) || 1,
+            course: String(raw.course || ''),
+            topicId: raw.topicId,
+            completedAt: String(raw.completedAt || ''),
+            score: correct,
+            correct: correct,
+            incorrect: total - correct,
+            total: total,
+            percent: percent,
+            passed: raw.passed === true,
+            message: raw.message ? String(raw.message) : scoreMessage(percent),
+            results: list
+        };
+    }
+
+    /* ---- storage: Firestore is the source of truth, localStorage is a mirror ---- */
+
+    function localKey(uid, course, topicId) {
+        return 'uz_lessonresult_' + (uid || 'guest') + '_' + course + '_' + topicId;
+    }
+
+    function readLocalSnapshot(uid, course, topicId) {
+        try {
+            var raw = localStorage.getItem(localKey(uid, course, topicId));
+            return raw ? sanitizeSnapshot(JSON.parse(raw)) : null;
+        } catch (e) { return null; }
+    }
+
+    function writeLocalSnapshot(uid, course, topicId, snapshot) {
+        try { localStorage.setItem(localKey(uid, course, topicId), JSON.stringify(snapshot)); }
+        catch (e) { /* quota / private mode — Firestore still holds the truth */ }
+    }
+
+    var snapshotCache = {};       // topicId -> snapshot | null   (per page load)
+    var persistInFlight = {};     // topicId -> true              (double-click guard)
+
+    async function fetchRemoteSnapshot(uid, course, topicId) {
+        try {
+            if (typeof window.getTopicQuizResult === 'function') {
+                var doc = await window.getTopicQuizResult(uid, topicId);
+                return doc ? sanitizeSnapshot(doc.lessonResult) : null;
+            }
+            if (typeof window.getUserQuizResults === 'function') {
+                var all = await window.getUserQuizResults(uid, course);
+                var entry = all && all['topic_' + topicId];
+                return entry ? sanitizeSnapshot(entry.lessonResult) : null;
+            }
+        } catch (e) {
+            console.warn('lesson-result: remote read failed', e && e.message);
+        }
+        return null;
+    }
+
+    /* Account data wins; the localStorage mirror only fills in when the account
+       copy is unreachable (offline / permission race), so the result still
+       survives a refresh on the same device. */
+    async function loadSnapshot(course, topicId) {
+        if (Object.prototype.hasOwnProperty.call(snapshotCache, topicId)) {
+            return snapshotCache[topicId];
+        }
+        var uid = currentUserId();
+        var snapshot = uid ? await fetchRemoteSnapshot(uid, course, topicId) : null;
+        if (!snapshot) snapshot = readLocalSnapshot(uid, course, topicId);
+        snapshotCache[topicId] = snapshot;
+        return snapshot;
+    }
+
+    /* Decide whether `next` may replace `previous`.
+       - never replace a real snapshot with an empty/unusable one;
+       - never let a FAILED retry erase a stored PASSED result (the spec: only a
+         newly COMPLETED attempt becomes the shown result). */
+    function shouldReplaceSnapshot(previous, next) {
+        if (!next || !Array.isArray(next.results) || !next.results.length) return false;
+        if (!previous) return true;
+        if (previous.passed && !next.passed) return false;
+        return true;
+    }
+
+    async function persistSnapshot(course, topicId, results) {
+        if (!course || topicId === null || topicId === undefined) return null;
+        if (!Array.isArray(results) || !results.length) return null;   // never store an empty result
+        var key = String(topicId);
+        if (persistInFlight[key]) return null;                          // double-click / re-entry guard
+        persistInFlight[key] = true;
+
+        try {
+            var snapshot = buildSnapshot(course, topicId, results);
+            var previous = await loadSnapshot(course, topicId);
+            if (!shouldReplaceSnapshot(previous, snapshot)) return previous;
+
+            var uid = currentUserId();
+            /* Mirror synchronously FIRST so an immediate refresh or navigation
+               cannot lose the attempt even if the network write is still in
+               flight. */
+            writeLocalSnapshot(uid, course, topicId, snapshot);
+            snapshotCache[topicId] = snapshot;
+
+            /* ONE merge write per completed lesson. `merge` keeps the native
+               mc/blank arrays, the draft field and the course tag that already
+               live in this document. A network failure leaves the previously
+               stored snapshot untouched. */
+            var writer = typeof window.saveLessonResult === 'function'
+                ? function () { return window.saveLessonResult(uid, topicId, snapshot, course); }
+                : (typeof window.saveQuizResult === 'function'
+                    ? function () { return window.saveQuizResult(uid, topicId, { lessonResult: snapshot }, course); }
+                    : null);
+            if (uid && writer) {
+                try { await writer(); }
+                catch (e) { console.warn('lesson-result: save failed, kept local mirror', e && e.message); }
+            }
+            return snapshot;
+        } catch (e) {
+            console.warn('lesson-result: persist error', e && e.message);
+            return null;
+        } finally {
+            delete persistInFlight[key];
+        }
+    }
+
+    /* ---- restoration ---- */
+
+    /* Write one stored answer back into the live DOM, reproducing the
+       correct/incorrect visual state the learner originally saw. Every branch
+       is defensive: a missing node is simply skipped (the feedback card for
+       that answer is still rendered). */
+    function applyRestoreRef(result, scope) {
+        var ref = result && result.ref;
+        if (!ref || !ref.k) return;
+        var ok = result.isCorrect === true;
+        try {
+            switch (ref.k) {
+                case 'input': {
+                    var inp = queryIn(scope, ref.s);
+                    if (!inp) return;
+                    if (ref.v) inp.value = ref.v;
+                    markInput(inp, ok);
+                    if (ref.x) markInput(queryIn(scope, ref.x), ok);
+                    return;
+                }
+                case 'dataval': {
+                    var el = queryIn(scope, ref.s);
+                    if (!el) return;
+                    if (ref.v) {
+                        try { el.dataset.value = ref.v; } catch (e) { /* ignore */ }
+                        if (!el.children.length) el.textContent = ref.v;
+                    }
+                    markInput(el, ok);
+                    return;
+                }
+                case 'mc': {
+                    var box = queryIn(scope, '.quiz-options[data-question="' + ref.q + '"]');
+                    if (!box) return;
+                    queryAllIn(box, '.quiz-option').forEach(function (opt, idx) {
+                        opt.classList.remove('selected', 'correct-answer', 'wrong-answer');
+                        if (idx === ref.o) opt.classList.add('selected');
+                        if (idx === ref.c) opt.classList.add('correct-answer');
+                        if (idx === ref.o && idx !== ref.c) opt.classList.add('wrong-answer');
+                    });
+                    return;
+                }
+                case 't1choice': {
+                    var row = queryIn(scope, ref.s);
+                    if (!row) return;
+                    queryAllIn(row, '.t1-opt').forEach(function (btn) {
+                        btn.classList.remove('selected', 't1-ok', 't1-bad', 't1-reveal');
+                        var value = (btn.getAttribute('data-value') || '').trim();
+                        if (ref.c && normalize(value) === normalize(ref.c)) btn.classList.add('t1-reveal');
+                        if (ref.v && normalize(value) === normalize(ref.v)) {
+                            btn.classList.add('selected', ok ? 't1-ok' : 't1-bad');
+                        }
+                    });
+                    return;
+                }
+                case 'chip': {
+                    var chipRow = queryIn(scope, ref.s);
+                    if (!chipRow || !ref.v) return;
+                    queryAllIn(chipRow, 'button, .chip, [data-value]').forEach(function (btn) {
+                        var value = (btn.dataset && btn.dataset.value) || btn.textContent || '';
+                        if (normalize(value) === normalize(ref.v)) btn.classList.add('selected');
+                    });
+                    return;
+                }
+                case 'builder': {
+                    var hidden = queryIn(scope, ref.s);
+                    if (hidden && ref.v) hidden.value = ref.v.split(/\s+/).join('|');
+                    var target = ref.x ? queryIn(scope, ref.x) : null;
+                    if (target && ref.v && !target.children.length) target.textContent = ref.v;
+                    if (target) markInput(target, ok);
+                    return;
+                }
+                default:
+                    return;
+            }
+        } catch (e) { /* one bad descriptor must never break the restore */ }
+    }
+
+    /* Re-populate the legacy results block (#scoreDisplay / #resultsMessage)
+       ONLY when the page's own saved-result path has not already shown it —
+       topics 1–5 of A1/A2/B1 restore that block natively from the quiz doc and
+       must keep owning it. Buttons are deliberately left as the page left them:
+       restoring a review must never surface a completion action. */
+    function restoreScoreBlock(snapshot) {
+        try {
+            var section = document.getElementById('resultsSection');
+            if (!section || section.classList.contains('show')) return;
+            var scoreEl = document.getElementById('scoreDisplay');
+            if (scoreEl) {
+                scoreEl.textContent = 'Sizning natijangiz: ' + snapshot.correct + '/' +
+                    snapshot.total + ' (' + snapshot.percent + '%)';
+            }
+            var msgEl = document.getElementById('resultsMessage');
+            if (msgEl) msgEl.innerHTML = escapeHtml(snapshot.message || scoreMessage(snapshot.percent));
+            var answersEl = document.getElementById('correctAnswers');
+            if (answersEl) answersEl.innerHTML = '';   // the feedback cards are the detail view
+            section.classList.add('show');
+        } catch (e) { /* legacy block is optional */ }
+    }
+
+    /* Replay a stored attempt: the SAME renderer, the same cards, the same
+       wording — it simply looks like the screen the learner already saw. */
+    function restoreSnapshot(host, snapshot) {
+        if (!host || !snapshot || !Array.isArray(snapshot.results) || !snapshot.results.length) return false;
+        var feedback = queryIn(host, '.topic-feedback');
+        if (!feedback) return false;
+
+        renderDetailedFeedback(host, snapshot.results, { scroll: false });
+        feedback.dataset.uzRestored = '1';
+
+        var scope = getActiveTopicRoot() || document;
+        snapshot.results.forEach(function (r) { applyRestoreRef(r, scope); });
+        restoreScoreBlock(snapshot);
+        return true;
+    }
+
+    /* ---- lifecycle glue ---- */
+
+    var activeCourse = detectPaidCourse();
+    var restoreState = { topicId: null, since: 0, loading: false, suppressed: false };
+
+    /* A fresh attempt (a new check) or an explicit retry owns the screen from
+       that point on — never paint a stored result over it. */
+    function suppressRestore(topicId) {
+        if (topicId !== undefined && topicId !== null) restoreState.topicId = topicId;
+        restoreState.since = Date.now();
+        restoreState.suppressed = true;
+    }
+
+    function noteTopicChanged(topicId) {
+        restoreState = { topicId: topicId, since: Date.now(), loading: false, suppressed: false };
+    }
+
+    function maybeRestoreSavedResult(host, topicId) {
+        if (!activeCourse || !host) return;
+        if (topicId === null || topicId === undefined) return;
+        if (restoreState.topicId !== topicId) noteTopicChanged(topicId);
+        if (restoreState.suppressed) return;
+        if (Date.now() - restoreState.since < RESTORE_MIN_DELAY_MS) return;
+
+        var feedback = queryIn(host, '.topic-feedback');
+        if (!feedback || feedback.innerHTML) return;   // live or already-restored feedback wins
+
+        if (!Object.prototype.hasOwnProperty.call(snapshotCache, topicId)) {
+            if (restoreState.loading) return;
+            restoreState.loading = true;
+            loadSnapshot(activeCourse, topicId)
+                .catch(function () { snapshotCache[topicId] = null; })
+                .then(function () { restoreState.loading = false; });
+            return;
+        }
+
+        var snapshot = snapshotCache[topicId];
+        if (!snapshot) return;                         // old completed topic without a snapshot
+        restoreSnapshot(host, snapshot);
+    }
+
+    /* The retry button intentionally starts a NEW attempt — drop the restored
+       screen from the DOM, but never touch the stored snapshot: it is replaced
+       only once a new attempt has actually been graded. */
+    document.addEventListener('click', function (e) {
+        var btn = (e.target && e.target.closest) ? e.target.closest('#retryBtn, .retry-btn') : null;
+        if (!btn) return;
+        suppressRestore();
+        queryAllIn(document, '.topic-feedback').forEach(function (node) {
+            node.innerHTML = '';
+            node.classList.remove('show');
+            node.classList.add('hidden');
+            delete node.dataset.uzRestored;
+        });
+    }, true);
+
+    /* Test/debug surface — pure helpers only, no side effects on import. */
+    window.__uzLessonResults = {
+        detectPaidCourse: detectPaidCourse,
+        buildSnapshot: buildSnapshot,
+        sanitizeSnapshot: sanitizeSnapshot,
+        shouldReplaceSnapshot: shouldReplaceSnapshot,
+        persistSnapshot: persistSnapshot,
+        loadSnapshot: loadSnapshot,
+        restoreSnapshot: restoreSnapshot,
+        applyRestoreRef: applyRestoreRef,
+        scoreMessage: scoreMessage,
+        renderDetailedFeedback: renderDetailedFeedback,
+        _cache: snapshotCache,
+        _resetForTests: function (course) {
+            activeCourse = course === undefined ? detectPaidCourse() : course;
+            Object.keys(snapshotCache).forEach(function (k) { delete snapshotCache[k]; });
+            restoreState = { topicId: null, since: 0, loading: false, suppressed: false };
+        }
+    };
 
     /* ================================================================
        TOPIC CHECK ORCHESTRATOR
@@ -802,6 +1329,20 @@
         }
 
         renderDetailedFeedback(host, results);
+
+        /* PAID COURSES ONLY — persist this graded attempt so reopening the topic
+           can reproduce this exact screen. Fire-and-forget: persistence must
+           never delay or break the feedback the learner is already looking at,
+           and completion/validation above is untouched. */
+        if (activeCourse) {
+            var persistTopicId = Number.isFinite(topicId)
+                ? topicId
+                : (topic && topic.id !== undefined ? topic.id : null);
+            suppressRestore(persistTopicId);
+            if (persistTopicId !== null && persistTopicId !== undefined) {
+                persistSnapshot(activeCourse, persistTopicId, results).catch(function () { /* fail soft */ });
+            }
+        }
     }
 
     /* ================================================================
@@ -909,6 +1450,13 @@
         queryAllIn(document, '.topic-check-section, .topic-check-host').forEach(function (n) {
             if (!root.contains(n)) n.remove();
         });
+
+        /* Paid courses: if this topic already has a stored completed attempt and
+           nothing has been graded in this session, replay it. No-op everywhere
+           else (demo pages, vocabulary, guests, topics without a snapshot). */
+        var currentId = getCurrentTopicId();
+        if (!Number.isFinite(currentId) && topic && topic.id !== undefined) currentId = topic.id;
+        maybeRestoreSavedResult(host, currentId);
     }
 
     function startTopicObserver() {
