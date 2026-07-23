@@ -4,12 +4,12 @@ import {
     handleCors,
     readBody,
     requireSession,
-    requireRole,
+    requireCapability,
     requireManagePermission,
     sendJson,
     safeError
 } from '../_lib/request.js';
-import { normalizeRole } from '../_lib/roles.js';
+import { normalizeRole, CAPABILITIES } from '../_lib/roles.js';
 import { writeAuditLog } from '../_lib/audit.js';
 
 export default async function handler(req, res) {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     try {
         const session = await requireSession(req);
         const { adminAuth, adminDb, FieldValue } = initAdmin();
-        requireRole(session, 'moderator');
+        requireCapability(session, CAPABILITIES.USERS_PASSWORD);
 
         const body = await readBody(req);
         const userId = String(body.userId || '').trim();

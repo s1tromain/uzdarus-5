@@ -1,17 +1,9 @@
 import { initAdmin } from '../_firebaseAdmin.js';
-import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError } from '../_lib/request.js';
-import { normalizeRole } from '../_lib/roles.js';
+import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError,
+    requireCapability
+} from '../_lib/request.js';
+import { normalizeRole, CAPABILITIES, canViewUser as canViewTarget } from '../_lib/roles.js';
 import { listUserCertificates } from '../_lib/certificates.js';
-
-function canViewTarget(actorRole, actorUid, targetUid, targetRole) {
-    const actor = normalizeRole(actorRole);
-    const target = normalizeRole(targetRole);
-
-    if (actor === 'developer') return true;
-    if (actor === 'admin') return target !== 'developer';
-    if (actor === 'moderator') return target === 'customer' || target === 'moderator' || actorUid === targetUid;
-    return false;
-}
 
 function toIso(value) {
     if (!value) return null;
@@ -27,7 +19,7 @@ export default async function handler(req, res) {
 
     try {
         const session = await requireSession(req);
-        requireRole(session, 'moderator');
+        requireCapability(session, CAPABILITIES.CERTIFICATES_READ);
 
         const userId = String(req.query?.userId || '').trim();
         if (!userId) {

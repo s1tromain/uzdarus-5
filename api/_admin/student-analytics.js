@@ -1,17 +1,9 @@
 import { initAdmin } from '../_firebaseAdmin.js';
-import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError } from '../_lib/request.js';
-import { normalizeRole } from '../_lib/roles.js';
+import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError,
+    requireCapability
+} from '../_lib/request.js';
+import { normalizeRole, CAPABILITIES, canViewUser as canViewTarget } from '../_lib/roles.js';
 import { readStudentDashboard } from '../_lib/analytics-store.js';
-
-/** Same visibility rules as list-users: who a staff member may inspect. */
-function canViewTarget(actorRole, actorUid, targetUid, targetRole) {
-    const actor = normalizeRole(actorRole);
-    const target = normalizeRole(targetRole);
-    if (actor === 'developer') return true;
-    if (actor === 'admin') return target !== 'developer';
-    if (actor === 'moderator') return target === 'customer' || target === 'moderator' || actorUid === targetUid;
-    return false;
-}
 
 /**
  * GET /api/admin?action=student-analytics&uid=<uid>
@@ -27,7 +19,7 @@ export default async function handler(req, res) {
 
     try {
         const session = await requireSession(req);
-        requireRole(session, 'moderator');
+        requireCapability(session, CAPABILITIES.STUDENTS_READ);
 
         const uid = String(req.query?.uid || '').trim();
         if (!uid) return sendJson(res, 400, { error: 'Missing uid' });

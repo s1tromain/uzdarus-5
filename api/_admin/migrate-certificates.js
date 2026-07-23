@@ -1,5 +1,8 @@
 import { initAdmin } from '../_firebaseAdmin.js';
-import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError } from '../_lib/request.js';
+import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError,
+    requireCapability
+} from '../_lib/request.js';
+import { CAPABILITIES } from '../_lib/roles.js';
 import { issueCertificate, CERT_COURSES } from '../_lib/certificates.js';
 
 /**
@@ -19,7 +22,7 @@ export default async function handler(req, res) {
 
     try {
         const session = await requireSession(req);
-        requireRole(session, 'developer');
+        requireCapability(session, CAPABILITIES.CERTIFICATES_MIGRATE);
 
         const { adminDb } = initAdmin();
         const courses = Object.keys(CERT_COURSES);

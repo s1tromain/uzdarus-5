@@ -327,24 +327,83 @@ export function buildStudentDashboard(input = {}) {
                 }
             }
         }
-        // Compact view of the stored completed-lesson snapshot (counts only — the
-        // full per-answer detail already lives in `answers` for older docs and in
-        // the learner's own result screen).
+        /* ---- completed-lesson snapshot (course-global-fixes.js) ----
+           This is the RICHEST record the platform holds: per question it has
+           the learner's submitted answer, the expected answer, correctness
+           and the feedback they were shown. For the exercise-only topics
+           (all of B1, A1 topics 6-12) it is the ONLY record — those topics
+           write no native mc/blank arrays — so an admin previously saw
+           "— (0/?) · Javoblar saqlanmagan" for a fully graded lesson.
+           Counters are recomputed from `results` rather than trusted. */
         const lr = q.lessonResult;
-        const lesson = (lr && typeof lr === 'object' && Array.isArray(lr.results))
+        const hasLesson = lr && typeof lr === 'object' && Array.isArray(lr.results) && lr.results.length > 0;
+        const lessonAnswers = hasLesson
+            ? lr.results.map((r, i) => ({
+                index: i + 1,
+                label: String(r?.label || ''),
+                question: String(r?.question || ''),
+                submitted: String(r?.userAnswer || ''),
+                expected: String(r?.correctAnswer || ''),
+                isCorrect: r?.isCorrect === true,
+                feedback: String(r?.explanation || ''),
+            }))
+            : [];
+        const lessonCorrect = lessonAnswers.filter(a => a.isCorrect).length;
+        const lessonTotal = lessonAnswers.length;
+        const lessonCompletedAt = hasLesson ? (toMs(lr.completedAt) || null) : null;
+        const lesson = hasLesson
             ? {
-                correct: lr.results.filter(r => r && r.isCorrect === true).length,
-                total: lr.results.length,
-                completedAt: lr.completedAt || null,
+                correct: lessonCorrect,
+                incorrect: lessonTotal - lessonCorrect,
+                total: lessonTotal,
+                percent: lessonTotal ? Math.round((lessonCorrect / lessonTotal) * 100) : null,
+                completedAt: lessonCompletedAt,
+                message: lr.message ? String(lr.message) : null,
+                course: lr.course || null,
+                topicId: lr.topicId ?? null,
+                answers: lessonAnswers,
             }
             : null;
+
+        /* ---- in-progress draft ----
+           A draft is UNFINISHED work that was never submitted. It must never
+           be presented as a graded attempt: no score, no pass/fail, and an
+           explicit status the UI can render as "in progress". */
+        const rawDraft = q.lessonDraft || q.draft;
+        const draftFieldCount = rawDraft && typeof rawDraft === 'object'
+            ? (rawDraft.fields && typeof rawDraft.fields === 'object'
+                ? Object.keys(rawDraft.fields).length
+                : ['mc', 'blanks'].reduce((n, k) => n + (rawDraft[k] && typeof rawDraft[k] === 'object'
+                    ? Object.keys(rawDraft[k]).length : 0), 0))
+            : 0;
+        const draft = draftFieldCount > 0
+            ? { answered: draftFieldCount, savedAt: toMs(rawDraft.savedAt) || null }
+            : null;
+
+        /* Effective score: native quiz fields when present (legacy accounts),
+           otherwise the lesson snapshot. The two never overwrite each other —
+           native wins only because it is the older, explicitly-graded record. */
+        const effScore = q.score ?? (hasLesson ? lessonCorrect : null);
+        const effTotal = q.total ?? (hasLesson ? lessonTotal : null);
+        const effPercent = percent != null ? percent : (lesson ? lesson.percent : null);
+
+        /* A row is only `graded` when something was actually submitted. A
+           draft-only document is `in_progress` and carries no score at all. */
+        const graded = q.score != null || hasLesson;
+        const status = graded ? 'graded' : (draft ? 'in_progress' : 'empty');
+
         return {
-            id: q.id, course: q.course || null, kind: isExam ? 'exam' : 'exercise',
-            score: q.score ?? null, total: q.total ?? null, percent,
-            passed: percent != null ? percent >= 60 : null,
-            timestamp: toMs(q.timestamp) || toMs(q.updatedAt),
+            id: q.id, course: q.course || (lesson && lesson.course) || null,
+            kind: isExam ? 'exam' : 'exercise',
+            status,
+            score: graded ? effScore : null,
+            total: graded ? effTotal : null,
+            percent: graded ? effPercent : null,
+            passed: graded && effPercent != null ? effPercent >= 60 : null,
+            timestamp: toMs(q.timestamp) || lessonCompletedAt || toMs(q.updatedAt),
             answers,
             lesson,
+            draft,
         };
     }).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 

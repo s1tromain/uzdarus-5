@@ -4,12 +4,12 @@ import {
     handleCors,
     readBody,
     requireSession,
-    requireRole,
+    requireCapability,
     requireManagePermission,
     sendJson,
     safeError
 } from '../_lib/request.js';
-import { normalizeRole } from '../_lib/roles.js';
+import { normalizeRole, CAPABILITIES } from '../_lib/roles.js';
 import { buildSubscription } from '../_lib/user-helpers.js';
 import { writeAuditLog } from '../_lib/audit.js';
 
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     try {
         const session = await requireSession(req);
         const { adminAuth, adminDb, FieldValue } = initAdmin();
-        requireRole(session, 'admin');
+        requireCapability(session, CAPABILITIES.ROLE_WRITE);
 
         const body = await readBody(req);
         const userId = String(body.userId || '').trim();
@@ -66,16 +66,40 @@ export default async function handler(req, res) {
         await adminAuth.setCustomUserClaims(userId, { role: newRole });
         await targetRef.update(updateData);
 
+        /* ------------------------------------------------------------------ *
+         * DEFENCE IN DEPTH AGAINST STALE PRIVILEGE.
+         * ------------------------------------------------------------------
+         * setCustomUserClaims only affects tokens minted from now on, so the
+         * target still holds an ID token carrying their OLD role for up to an
+         * hour. requireSession() now resolves the role from the Firestore
+         * profile (which we just updated), so the downgrade is already
+         * effective — this revocation is the second, independent barrier:
+         * requireSession() verifies with checkRevoked=true, so every existing
+         * token for this user is rejected outright and they must
+         * re-authenticate with a token carrying the correct claim.
+         *
+         * Failure to revoke must NOT fail the role change — the profile write
+         * above has already removed the privilege — so it is logged and
+         * reported instead of thrown.
+         * ------------------------------------------------------------------ */
+        let sessionsRevoked = true;
+        try {
+            await adminAuth.revokeRefreshTokens(userId);
+        } catch (revokeError) {
+            sessionsRevoked = false;
+            console.error('[set-role] token revocation failed', revokeError?.message || revokeError);
+        }
+
         await writeAuditLog({
             action: 'set-role',
             actorUid: session.uid,
             actorRole: session.role,
             targetUid: userId,
             targetUsername: targetData.username || null,
-            details: { previousRole: targetRole, newRole }
+            details: { previousRole: targetRole, newRole, sessionsRevoked }
         });
 
-        sendJson(res, 200, { ok: true, role: newRole });
+        sendJson(res, 200, { ok: true, role: newRole, sessionsRevoked });
     } catch (error) {
         safeError(res, error);
     }

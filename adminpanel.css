@@ -866,3 +866,42 @@ body.modal-open {
         flex: 1 1 calc(50% - 6px);
     }
 }
+
+/* ---- Role badges + teacher (read-only) surface -------------------------
+   Teacher accounts get a genuinely reduced panel rather than a management
+   screen full of disabled controls; the sections they cannot use are
+   removed by applyRoleUi(). These rules only style what remains. */
+.role-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: .74rem;
+    font-weight: 700;
+    letter-spacing: .01em;
+    background: #eef1f8;
+    color: #5b6480;
+}
+.role-badge.role-teacher { background: #e6f7ee; color: #0b7a4b; }
+.role-badge.role-moderator { background: #eef1f8; color: #5b6480; }
+.role-badge.role-admin { background: #e8ecff; color: #3b49c4; }
+.role-badge.role-developer { background: #efe4ff; color: #7d4fe0; }
+
+body.role-teacher .admin-tabs [data-tab="staff"],
+body.role-teacher .admin-tabs [data-tab="create"] {
+    display: none !important;
+}
+
+body.role-teacher .teacher-hidden { display: none !important; }
+
+/* Read-only banner so a teacher understands the surface they are on. */
+body.role-teacher .admin-shell::before {
+    content: "O‘qituvchi rejimi — faqat o‘quvchilar statistikasi (ko‘rish)";
+    display: block;
+    margin: 0 0 14px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    background: #e6f7ee;
+    color: #0b7a4b;
+    font-weight: 700;
+    font-size: .86rem;
+}

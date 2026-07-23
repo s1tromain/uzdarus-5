@@ -11,8 +11,9 @@
     "test:analytics": "node tests/analytics/run-tests.js",
     "test:qa": "node validation_qa.test.cjs",
     "test:lesson-results": "node tests/lesson-results/persistence.test.cjs",
-    "test": "node tests/vocabulary/progression.test.cjs && node tests/analytics/run-tests.js && node progression_audit.test.cjs && node validation_rules.test.cjs && node tests/lesson-results/persistence.test.cjs && node tests/lesson-results/lifecycle.test.cjs",
-    "test:lifecycle": "node tests/lesson-results/lifecycle.test.cjs"
+    "test": "node tests/vocabulary/progression.test.cjs && node tests/analytics/run-tests.js && node progression_audit.test.cjs && node validation_rules.test.cjs && node tests/lesson-results/persistence.test.cjs && node tests/lesson-results/lifecycle.test.cjs && node tests/admin/rbac.test.cjs && node tests/admin/session.test.cjs && node tests/admin/analytics.test.cjs",
+    "test:lifecycle": "node tests/lesson-results/lifecycle.test.cjs",
+    "test:admin": "node tests/admin/rbac.test.cjs && node tests/admin/session.test.cjs && node tests/admin/analytics.test.cjs"
   },
   "engines": {
     "node": "20.x"

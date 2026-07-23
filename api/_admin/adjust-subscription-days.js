@@ -4,10 +4,11 @@ import {
     handleCors,
     readBody,
     requireSession,
+    requireCapability,
     sendJson,
     safeError
 } from '../_lib/request.js';
-import { normalizeRole } from '../_lib/roles.js';
+import { CAPABILITIES, normalizeRole } from '../_lib/roles.js';
 import { normalizeUserDocument, toDate } from '../_lib/user-helpers.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -26,14 +27,22 @@ function parseDaysDelta(rawValue) {
     return value;
 }
 
+/**
+ * Subscription editing guard.
+ *
+ * This endpoint used to authorize on `session.claimsRole` ALONE — the role
+ * baked into the ID token — while ignoring the Firestore profile entirely.
+ * That made it the most exposed instance of the stale-privilege problem:
+ * a user demoted from admin kept the ability to grant themselves (or anyone)
+ * subscription days until their token expired, and conversely a freshly
+ * promoted admin was refused until their token happened to refresh.
+ *
+ * It now goes through the same capability guard as every other admin
+ * endpoint, which resolves the role from the authoritative profile.
+ */
 function requireSubscriptionEditor(session) {
-    const claimRole = session.claimsRole ? normalizeRole(session.claimsRole) : null;
-
-    if (claimRole !== 'developer' && claimRole !== 'admin') {
-        throw Object.assign(new Error('Faqat developer yoki admin obunani o‘zgartira oladi'), { statusCode: 403 });
-    }
-
-    return claimRole;
+    requireCapability(session, CAPABILITIES.SUBSCRIPTION_WRITE);
+    return session.role;
 }
 
 export default async function handler(req, res) {

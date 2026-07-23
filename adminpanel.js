@@ -1,5 +1,6 @@
 import {
     auth,
+    onAuthStateChanged,
     signInWithEmailAndPassword,
     signOut,
     usernameToEmail,
@@ -8,11 +9,21 @@ import {
     clearLocalUser,
     callApi
 } from './firebase-client.js';
+import {
+    CAPABILITIES,
+    normalizeRole as normalizeRoleShared,
+    isStaffRole,
+    roleHasCapability,
+    capabilitiesForRole,
+    roleLabel
+} from './admin-roles.js';
 
 const state = {
     user: null,
     profile: null,
     role: 'customer',
+    capabilities: new Set(),
+    bootstrapped: false,
     users: [],
     customerSearch: '',
     customerStatusFilter: 'all',
@@ -24,14 +35,19 @@ const state = {
     achievementFilter: 'all'
 };
 
-const ADMIN_ROLES = new Set(['developer', 'admin', 'moderator']);
-const SUBSCRIPTION_EDIT_ROLES = new Set(['developer', 'admin']);
-const VALID_USER_ROLES = new Set(['customer', 'moderator', 'admin', 'developer']);
+/* Roles the admin panel understands. `teacher` is read-only staff. Kept in
+   sync with api/_lib/roles.js through ./admin-roles.js (drift-tested). */
+const VALID_USER_ROLES = new Set(['customer', 'teacher', 'moderator', 'admin', 'developer']);
 const EXPIRING_SOON_DAYS = 7;
 
 function isSupportedRoleInput(value) {
     const raw = String(value || '').trim().toLowerCase();
     return raw === 'user' || VALID_USER_ROLES.has(raw);
+}
+
+/** UI-only capability check. Authorization is enforced server-side. */
+function can(capability) {
+    return roleHasCapability(state.role, capability);
 }
 
 const adminMeta = document.getElementById('adminMeta');
@@ -65,13 +81,10 @@ const modalError = document.getElementById('adminModalError');
 const modalCancel = document.getElementById('adminModalCancel');
 const modalConfirm = document.getElementById('adminModalConfirm');
 
+/* Delegates to the shared contract so the panel can never disagree with the
+   server about what a role is called. */
 function normalizeRole(value) {
-    const raw = String(value || '').trim().toLowerCase();
-    if (raw === 'user') {
-        return 'customer';
-    }
-
-    return VALID_USER_ROLES.has(raw) ? raw : 'customer';
+    return normalizeRoleShared(value);
 }
 
 function sanitizeRecord(user) {
@@ -415,8 +428,10 @@ function getRemainingDays(rawDate) {
     return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
+/* May this role open the admin panel at all? Teacher may — with a read-only
+   surface. Real enforcement is server-side on every endpoint. */
 function roleAllowed(role) {
-    return ADMIN_ROLES.has(normalizeRole(role));
+    return isStaffRole(role) && roleHasCapability(role, CAPABILITIES.PANEL_ACCESS);
 }
 
 function collectPacks(form) {
@@ -426,7 +441,7 @@ function collectPacks(form) {
 }
 
 function canEditSubscription() {
-    return SUBSCRIPTION_EDIT_ROLES.has(state.role);
+    return can(CAPABILITIES.SUBSCRIPTION_WRITE);
 }
 
 /* ---- Status badge classification (PART 5) ---- */
@@ -621,7 +636,7 @@ function renderCustomers() {
                         <button class="btn btn-ghost btn-small" data-action="adjust-days-custom" data-uid="${user.uid}" type="button">Qo‘llash</button>
                     </div>
                 `
-                : '<small>Obuna faqat ko‘rish rejimida</small>';
+                : (can(CAPABILITIES.USERS_READ) ? '<small>Obuna faqat ko‘rish rejimida</small>' : '');
 
             return `
                 <tr>
@@ -640,11 +655,11 @@ function renderCustomers() {
                     <td data-label="Amallar" class="actions-cell">
                         <div class="actions-row">
                             <button class="btn btn-analytics" data-action="analytics" data-uid="${user.uid}" type="button">📊 Analitika</button>
-                            <button class="btn btn-ghost" data-action="reset" data-uid="${user.uid}" type="button">Reset parol</button>
+                            ${can(CAPABILITIES.USERS_PASSWORD) ? `<button class="btn btn-ghost" data-action="reset" data-uid="${user.uid}" type="button">Reset parol</button>` : ''}
                             ${canEditSubscription() ? `<button class="btn btn-ghost" data-action="subscription" data-uid="${user.uid}" type="button">Obuna</button>` : ''}
-                            <button class="btn btn-ghost" data-action="certificates" data-uid="${user.uid}" type="button">Sertifikatlar</button>
-                            <button class="btn btn-ghost" data-action="unblock" data-uid="${user.uid}" type="button">Unblock</button>
-                            ${state.role === 'developer' ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${user.uid}" type="button">Delete</button>` : ''}
+                            ${can(CAPABILITIES.CERTIFICATES_READ) ? `<button class="btn btn-ghost" data-action="certificates" data-uid="${user.uid}" type="button">Sertifikatlar</button>` : ''}
+                            ${can(CAPABILITIES.USERS_BLOCK) ? `<button class="btn btn-ghost" data-action="unblock" data-uid="${user.uid}" type="button">Unblock</button>` : ''}
+                            ${can(CAPABILITIES.USERS_DELETE) && state.role === 'developer' ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${user.uid}" type="button">Delete</button>` : ''}
                             ${dayAdjustControls}
                         </div>
                     </td>
@@ -666,15 +681,18 @@ function renderStaff() {
         return;
     }
 
-    const allowRoleChange = state.role === 'admin' || state.role === 'developer';
+    const allowRoleChange = can(CAPABILITIES.ROLE_WRITE);
 
     staffBody.innerHTML = rows
         .map((user) => {
-            const canModify = state.role === 'developer' || (state.role === 'admin' && user.role === 'moderator');
-            const options = ['moderator', 'admin', 'developer']
+            /* Mirrors canManageRole() on the server: developer manages anyone;
+               admin manages teacher + moderator (never another admin). */
+            const canModify = state.role === 'developer'
+                || (state.role === 'admin' && (user.role === 'moderator' || user.role === 'teacher'));
+            const options = ['teacher', 'moderator', 'admin', 'developer']
                 .filter((role) => role === user.role || (state.role === 'developer' || role !== 'developer'))
                 .filter((role) => !(state.role === 'admin' && role === 'admin'))
-                .map((role) => `<option value="${role}" ${role === user.role ? 'selected' : ''}>${role}</option>`)
+                .map((role) => `<option value="${role}" ${role === user.role ? 'selected' : ''}>${roleLabel(role)}</option>`)
                 .join('');
 
             const statusBadge = user.blocked
@@ -685,7 +703,7 @@ function renderStaff() {
                 <tr>
                     <td data-label="Login">${escapeHtml(user.username)}</td>
                     <td data-label="Ism">${escapeHtml(user.displayName)}</td>
-                    <td data-label="Role">${escapeHtml(user.role)}</td>
+                    <td data-label="Role"><span class="role-badge role-${escapeHtml(user.role)}">${escapeHtml(roleLabel(user.role))}</span></td>
                     <td data-label="Status">${statusBadge}</td>
                     <td data-label="Amallar" class="actions-cell">
                         <div class="actions-row">
@@ -695,8 +713,8 @@ function renderStaff() {
                                 </select>
                                 <button class="btn btn-ghost" data-action="set-role" data-uid="${user.uid}" type="button">Saqlash</button>
                             ` : ''}
-                            ${canModify ? `<button class="btn btn-ghost" data-action="reset" data-uid="${user.uid}" type="button">Reset parol</button>` : ''}
-                            ${state.role === 'developer' ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${user.uid}" type="button">Delete</button>` : ''}
+                            ${canModify && can(CAPABILITIES.USERS_PASSWORD) ? `<button class="btn btn-ghost" data-action="reset" data-uid="${user.uid}" type="button">Reset parol</button>` : ''}
+                            ${can(CAPABILITIES.USERS_DELETE) && state.role === 'developer' ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${user.uid}" type="button">Delete</button>` : ''}
                         </div>
                     </td>
                 </tr>
@@ -760,36 +778,115 @@ async function loadOverview() {
     }
 }
 
+/**
+ * Load the panel's data for the CURRENT role.
+ *
+ * Two changes from the previous implementation:
+ *
+ *  1. It no longer fires list-users + stats + students-overview
+ *     unconditionally. Each of those performs a FULL users-collection scan
+ *     server-side, so an admin login cost three complete scans. A teacher
+ *     needs exactly one of them, and only capabilities the role actually
+ *     holds are requested — anything else would 403 anyway.
+ *
+ *  2. Nothing here blocks the shell: enterPanel() has already revealed the
+ *     UI, and each section renders as its own request resolves rather than
+ *     after the slowest one.
+ */
 async function refreshData() {
-    await Promise.all([loadUsers(), loadStats(), loadOverview()]);
-    // Re-render once the overview map is in so analytics filters/badges apply.
+    const tasks = [];
+
+    if (can(CAPABILITIES.STUDENTS_READ)) {
+        tasks.push(loadOverview().then(() => renderCustomers()));
+    }
+
+    if (can(CAPABILITIES.USERS_READ)) {
+        tasks.push(loadUsers());
+    }
+
+    if (can(CAPABILITIES.STATS_READ)) {
+        tasks.push(loadStats());
+    }
+
+    /* allSettled: one failing section must never blank the whole panel. */
+    const results = await Promise.allSettled(tasks);
+    results.forEach((r) => {
+        if (r.status === 'rejected') {
+            console.warn('admin section failed to load:', r.reason?.message || r.reason);
+        }
+    });
+
     renderCustomers();
 }
 
+/**
+ * Capability-driven UI. Every control that maps to a privileged action is
+ * shown only when the role holds the corresponding capability — and the same
+ * capability is enforced server-side, so hiding is purely cosmetic.
+ *
+ * For teachers the panel is not "admin with 20 disabled buttons": management
+ * sections are removed entirely and the learner analytics view is what loads.
+ */
 function applyRoleUi() {
-    if (state.role === 'moderator') {
-        if (createStaffCard) {
-            createStaffCard.style.display = 'none';
+    const teacherMode = !can(CAPABILITIES.USERS_READ);
+    document.body.classList.toggle('role-teacher', teacherMode);
+
+    /* Staff creation card — needs the ability to create users AND to assign
+       a staff role; a moderator has neither in practice. */
+    if (createStaffCard) {
+        createStaffCard.style.display =
+            (can(CAPABILITIES.USERS_CREATE) && can(CAPABILITIES.ROLE_WRITE)) ? '' : 'none';
+    }
+
+    /* Which staff roles may this actor mint? Mirrors canManageRole(). */
+    if (staffRoleSelect) {
+        const assignable = can(CAPABILITIES.ROLE_WRITE)
+            ? (state.role === 'developer'
+                ? ['teacher', 'moderator', 'admin', 'developer']
+                : ['teacher', 'moderator'])          // admin
+            : [];
+        Array.from(staffRoleSelect.options).forEach((option) => {
+            const allowed = assignable.includes(option.value);
+            option.style.display = allowed ? 'block' : 'none';
+            option.disabled = !allowed;
+        });
+        if (assignable.length && !assignable.includes(staffRoleSelect.value)) {
+            staffRoleSelect.value = assignable[0];
         }
     }
 
-    if (state.role === 'admin') {
-        Array.from(staffRoleSelect.options).forEach((option) => {
-            option.style.display = option.value === 'moderator' ? 'block' : 'none';
-        });
-        staffRoleSelect.value = 'moderator';
-    }
+    /* Hide whole tabs a teacher has no business seeing. */
+    const tabCapability = {
+        customers: CAPABILITIES.STUDENTS_READ,
+        staff: CAPABILITIES.USERS_READ,
+        create: CAPABILITIES.USERS_CREATE,
+        certificates: CAPABILITIES.CERTIFICATES_READ
+    };
+    document.querySelectorAll('[data-tab]').forEach((btn) => {
+        const capability = tabCapability[btn.dataset.tab];
+        if (capability && !can(capability)) {
+            btn.style.display = 'none';
+            const panel = document.getElementById(`tab-${btn.dataset.tab}`);
+            if (panel) {
+                panel.classList.remove('active');
+                panel.style.display = 'none';
+            }
+        }
+    });
 
-    if (state.role === 'moderator') {
-        Array.from(staffRoleSelect.options).forEach((option) => {
-            option.style.display = 'none';
-        });
-    }
-
-    if (state.role === 'developer') {
-        Array.from(staffRoleSelect.options).forEach((option) => {
-            option.style.display = 'block';
-        });
+    /* Land the teacher on a section they can actually use. */
+    if (teacherMode) {
+        const firstVisible = Array.from(document.querySelectorAll('[data-tab]'))
+            .find((b) => b.style.display !== 'none');
+        if (firstVisible) {
+            setActiveTab(firstVisible.dataset.tab);
+        }
+        if (statTotalUsers || statActiveSubs || statBlocked || statDevices) {
+            /* Those counters come from the stats endpoint, which a teacher
+               cannot call — hide the row instead of showing zeros. */
+            const statsRow = document.querySelector('.stats-grid, .stat-cards, #adminStats');
+            if (statsRow) statsRow.style.display = 'none';
+        }
     }
 }
 
@@ -801,39 +898,105 @@ function debounce(fn, wait = 250) {
     };
 }
 
-async function unlockAdminPanel(username, password) {
-    const email = usernameToEmail(username);
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-    const profile = await getUserProfile(credential.user.uid);
+/* ==================================================================== *
+ *  SESSION + AUTHORIZATION
+ *  --------------------------------------------------------------------
+ *  Previously the panel had NO session-restoration path at all: initGate()
+ *  unconditionally showed the login form and the only way in was submitting
+ *  it, so every refresh demanded credentials again. Firebase already keeps a
+ *  persistent session (browserLocalPersistence is the SDK default) — the
+ *  panel simply never asked for it.
+ *
+ *  Now a single onAuthStateChanged subscription owns the gate. No
+ *  "loggedIn=true" flag is ever written: the ONLY thing that opens the panel
+ *  is a live Firebase session whose profile still carries a staff role.
+ *  Authorization is re-derived from the profile on EVERY restore, so a
+ *  demotion or a block takes effect on the next page load, and every API
+ *  call is independently enforced server-side.
+ * ==================================================================== */
 
-    if (!profile) {
-        throw new Error('Profil topilmadi');
+/** Establish panel state from an authenticated user. Throws 403 if not staff. */
+async function establishSession(user, { forceRefresh = false } = {}) {
+    /* Force a token refresh only when we have reason to (post-login), so a
+       plain refresh does not pay for an unnecessary network round-trip. */
+    if (forceRefresh) {
+        await user.getIdToken(true).catch(() => null);
     }
 
+    const profile = await getUserProfile(user.uid, { forceRefresh: true });
+
+    if (!profile) {
+        throw Object.assign(new Error('Profil topilmadi'), { statusCode: 403 });
+    }
+
+    /* The Firestore profile is authoritative here exactly as it is on the
+       server, so a stale custom claim can never keep the panel open. */
     const role = normalizeRole(profile.role);
-    if (!roleAllowed(role)) {
-        await signOut(auth).catch(() => null);
-        clearLocalUser();
+
+    if (profile.blocked === true || !roleAllowed(role)) {
         throw Object.assign(new Error('Sizda admin panelga ruxsat yo‘q'), { statusCode: 403 });
     }
 
-    state.user = credential.user;
+    state.user = user;
     state.profile = profile;
     state.role = role;
-    saveLocalUser(credential.user, profile);
+    state.capabilities = new Set(capabilitiesForRole(role));
+    saveLocalUser(user, profile);
 
-    adminMeta.textContent = `${profile.displayName || profile.username || credential.user.email} • ${state.role}`;
-    applyRoleUi();
+    if (adminMeta) {
+        adminMeta.textContent = `${profile.displayName || profile.username || user.email} • ${roleLabel(role)}`;
+    }
 
-    renderLoadingState();
-    await refreshData();
+    return role;
 }
 
-async function initGate() {
-    hideProtectedUi();
-    setGateInfo('Admin panel uchun qayta login qiling.');
-    clearNotice(gateError);
+/** Tear the session down locally (used on denial and on explicit sign-out). */
+async function endSession({ signOutFirebase = true } = {}) {
+    state.user = null;
+    state.profile = null;
+    state.role = 'customer';
+    state.capabilities = new Set();
+    state.bootstrapped = false;
+    if (signOutFirebase) {
+        await signOut(auth).catch(() => null);
+    }
+    clearLocalUser();
+}
 
+/**
+ * Show the shell FIRST, then stream data into it.
+ *
+ * The old flow awaited refreshData() (three parallel full-collection reads)
+ * before revealing the panel, so the admin stared at the login card until the
+ * slowest query returned. Identity + authorization are known at this point,
+ * which is all that is required to render — data arrives progressively.
+ */
+async function enterPanel() {
+    if (state.bootstrapped) {
+        return;
+    }
+    state.bootstrapped = true;
+
+    applyRoleUi();
+    showProtectedUi();          // <- shell is interactive from here on
+    renderLoadingState();
+
+    await refreshData();        // sections fill in as their data lands
+}
+
+async function unlockAdminPanel(username, password) {
+    const email = usernameToEmail(username);
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    try {
+        await establishSession(credential.user, { forceRefresh: true });
+    } catch (error) {
+        await endSession();
+        throw error;
+    }
+}
+
+/** Wire the login form. Only ever used when there is genuinely no session. */
+function initLoginForm() {
     adminLoginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         clearNotice(gateError);
@@ -853,7 +1016,7 @@ async function initGate() {
         try {
             setGateInfo('Ruxsatlar tekshirilmoqda...');
             await unlockAdminPanel(username, password);
-            showProtectedUi();
+            await enterPanel();
             showSuccess('Admin panel tayyor');
         } catch (error) {
             if (error?.statusCode === 403) {
@@ -868,7 +1031,46 @@ async function initGate() {
         } finally {
             adminLoginBtn.disabled = false;
             adminLoginBtn.textContent = 'Kirish';
-            setGateInfo('Xavfsizlik uchun admin panel alohida login talab qiladi.');
+            setGateInfo('Sessiya tugagan bo‘lsa, qaytadan kiring.');
+        }
+    });
+}
+
+async function initGate() {
+    initLoginForm();
+    hideProtectedUi();
+    setGateInfo('Sessiya tekshirilmoqda...');
+    clearNotice(gateError);
+
+    /* THE session-restoration path. Fires once on load with either the
+       restored user or null, and again on every sign-in/sign-out. */
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            await endSession({ signOutFirebase: false });
+            hideProtectedUi();
+            setGateInfo('Davom etish uchun tizimga kiring.');
+            return;
+        }
+
+        if (state.bootstrapped && state.user && state.user.uid === user.uid) {
+            return;                       // already inside; nothing to redo
+        }
+
+        try {
+            await establishSession(user);
+            await enterPanel();
+        } catch (error) {
+            /* A signed-in NON-staff user (or a blocked/demoted one) must not
+               sit on the login form pretending they can retry — they are
+               signed out and sent back to their own cabinet. */
+            await endSession();
+            hideProtectedUi();
+            if (error?.statusCode === 403) {
+                showGateError('Sizda admin panelga ruxsat yo‘q');
+                setTimeout(() => redirectUnauthorized(), 400);
+                return;
+            }
+            setGateInfo('Davom etish uchun tizimga kiring.');
         }
     });
 }
@@ -1368,6 +1570,29 @@ function initRowActions() {
         const userId = button.dataset.uid;
         let performed = false;
 
+        /* Defence in depth. The server enforces every one of these through
+           requireCapability(), so this cannot be the security boundary — but
+           it stops a re-injected or stale button from firing a request that
+           is guaranteed to 403, and gives the user an honest message instead
+           of a generic API error. */
+        const ACTION_CAPABILITY = {
+            'reset': CAPABILITIES.USERS_PASSWORD,
+            'subscription': CAPABILITIES.SUBSCRIPTION_WRITE,
+            'adjust-days': CAPABILITIES.SUBSCRIPTION_WRITE,
+            'adjust-days-custom': CAPABILITIES.SUBSCRIPTION_WRITE,
+            'unblock': CAPABILITIES.USERS_BLOCK,
+            'delete': CAPABILITIES.USERS_DELETE,
+            'set-role': CAPABILITIES.ROLE_WRITE,
+            'certificates': CAPABILITIES.CERTIFICATES_READ,
+            'clear-devices': CAPABILITIES.USERS_DEVICES,
+            'analytics': CAPABILITIES.STUDENTS_READ
+        };
+        const needed = ACTION_CAPABILITY[action];
+        if (needed && !can(needed)) {
+            showError('Bu amal uchun ruxsatingiz yo‘q');
+            return;
+        }
+
         try {
             if (action === 'reset') {
                 performed = await resetPasswordFlow(userId, button);
@@ -1717,26 +1942,79 @@ function saTlClass(type) {
     return '';
 }
 
+/**
+ * Exercise / lesson history.
+ *
+ * Three record shapes coexist and must NOT be conflated:
+ *   graded + lesson   the completed-lesson snapshot — full per-question detail
+ *                     (submitted answer, expected answer, correctness, feedback)
+ *   graded (legacy)   older native-quiz docs with a flat section->answer map
+ *   in_progress       an unfinished DRAFT. Never a score, never pass/fail.
+ */
 function renderSAExercises(d) {
     const ex = (d.exercises || []).filter(e => e.kind === 'exercise' || e.kind === 'exam');
     if (!ex.length) return '<div class="sa-empty">Mashq/imtihon natijalari yo‘q.</div>';
+
     return '<div class="sa-exlist">' + ex.map((e) => {
-        const cls = e.passed === true ? 'ok' : e.passed === false ? 'bad' : '';
-        const answers = (e.answers || []).length
-            ? `<div class="sa-answers">${e.answers.map(a => `
+        const inProgress = e.status === 'in_progress';
+        const cls = inProgress ? 'wip' : e.passed === true ? 'ok' : e.passed === false ? 'bad' : '';
+
+        /* Score pill — an unfinished draft shows its progress, never a mark. */
+        const scorePill = inProgress
+            ? `<span class="sa-ex-score sa-pill wip">Yakunlanmagan${e.draft && e.draft.answered ? ` · ${e.draft.answered} ta javob` : ''}</span>`
+            : `<span class="sa-ex-score sa-pill ${cls}">${e.percent != null ? e.percent + '%' : '—'} (${saNum(e.score, '0')}/${saNum(e.total, '?')})</span>`;
+
+        const when = inProgress
+            ? (e.draft && e.draft.savedAt ? saDateTime(e.draft.savedAt) : '—')
+            : saDateTime(e.timestamp);
+
+        let body;
+        if (inProgress) {
+            body = `<div class="sa-answers sa-muted">Ishlanmoqda — o‘quvchi hali javoblarni tekshirmagan.
+                    Bu yakunlangan natija emas.</div>`;
+        } else if (e.lesson && e.lesson.answers && e.lesson.answers.length) {
+            /* The rich snapshot: everything the learner saw on their result screen. */
+            const head = `<div class="sa-lesson-head">
+                    <span class="sa-pill ${cls}">${e.lesson.correct}/${e.lesson.total} to‘g‘ri</span>
+                    ${e.lesson.message ? `<span class="sa-lesson-msg">${escapeHtml(e.lesson.message)}</span>` : ''}
+                </div>`;
+            const rows = e.lesson.answers.map(a => `
+                <div class="sa-lr ${a.isCorrect ? 'ok' : 'bad'}">
+                    <div class="sa-lr-top">
+                        <span class="sa-lr-n">${a.index}</span>
+                        <span class="sa-lr-badge">${a.isCorrect ? '✓ To‘g‘ri' : '✗ Noto‘g‘ri'}</span>
+                        ${a.label ? `<span class="sa-lr-label">${escapeHtml(a.label)}</span>` : ''}
+                    </div>
+                    ${a.question ? `<div class="sa-lr-q">${escapeHtml(a.question)}</div>` : ''}
+                    <div class="sa-lr-line"><span>Javobi:</span> <b>${escapeHtml(a.submitted || '—')}</b></div>
+                    <div class="sa-lr-line"><span>To‘g‘ri javob:</span> <b>${escapeHtml(a.expected || '—')}</b></div>
+                    ${a.feedback ? `<div class="sa-lr-fb">${escapeHtml(a.feedback)}</div>` : ''}
+                </div>`).join('');
+            body = `<div class="sa-answers">${head}${rows}</div>`;
+        } else if ((e.answers || []).length) {
+            /* Legacy native-quiz record — preserved exactly as before. */
+            body = `<div class="sa-answers">${e.answers.map(a => `
                 <div class="sa-ans">
                     <span class="sa-ans-q">${escapeHtml(a.section ? a.section + ' · ' : '')}${escapeHtml(a.question || '')}</span>
                     <span class="sa-ans-a">${escapeHtml(a.answer || '')}</span>
-                </div>`).join('')}</div>`
-            : '<div class="sa-answers sa-muted">Javoblar saqlanmagan.</div>';
+                </div>`).join('')}</div>`;
+        } else {
+            /* Never fabricate: say plainly that detail was not stored. */
+            body = '<div class="sa-answers sa-muted">Javoblar saqlanmagan (eski yozuv).</div>';
+        }
+
+        const tag = inProgress
+            ? '<span class="sa-tag wip">Jarayonda</span>'
+            : `<span class="sa-tag ${e.kind === 'exam' ? 'exam' : ''}">${e.kind === 'exam' ? 'Imtihon' : 'Mashq'}</span>`;
+
         return `
-            <details class="sa-ex">
+            <details class="sa-ex${inProgress ? ' wip' : ''}">
                 <summary>
-                    <span class="sa-ex-title">${escapeHtml(e.id || '')} <span class="sa-tag ${e.kind === 'exam' ? 'exam' : ''}">${e.kind === 'exam' ? 'Imtihon' : 'Mashq'}</span></span>
-                    <span class="sa-ex-score sa-pill ${cls}">${e.percent != null ? e.percent + '%' : '—'} (${saNum(e.score, '0')}/${saNum(e.total, '?')})</span>
-                    <span class="sa-ex-date">${saDateTime(e.timestamp)}</span>
+                    <span class="sa-ex-title">${escapeHtml(e.id || '')} ${tag}</span>
+                    ${scorePill}
+                    <span class="sa-ex-date">${when}</span>
                 </summary>
-                ${answers}
+                ${body}
             </details>`;
     }).join('') + '</div>';
 }
@@ -1869,6 +2147,22 @@ function injectAnalyticsStyles() {
 .sa-ans{display:flex;justify-content:space-between;gap:12px;font-size:.82rem;padding:5px 10px;background:#fff;border-radius:8px}
 .sa-ans-q{color:#8791b0}.sa-ans-a{font-weight:600}
 .sa-muted{color:#a7afca;font-size:.8rem;font-style:italic}
+.sa-pill.wip{background:#fff4e0;color:#a4670a}
+.sa-tag.wip{background:#fff4e0;color:#a4670a}
+.sa-ex.wip{background:#fffaf1}
+.sa-lesson-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.sa-lesson-msg{font-size:.82rem;color:#5b6480}
+.sa-lr{background:#fff;border-radius:10px;padding:9px 12px;border-left:4px solid #c3cae0;margin-bottom:6px}
+.sa-lr.ok{border-left-color:#12b76a}.sa-lr.bad{border-left-color:#e2444b}
+.sa-lr-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.sa-lr-n{width:20px;height:20px;border-radius:50%;background:#eef1f8;color:#5b6480;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+.sa-lr-badge{font-size:.74rem;font-weight:700}
+.sa-lr.ok .sa-lr-badge{color:#0b7a4b}.sa-lr.bad .sa-lr-badge{color:#c0333a}
+.sa-lr-label{font-size:.72rem;color:#8791b0}
+.sa-lr-q{font-size:.85rem;color:#2b3255;margin-bottom:4px}
+.sa-lr-line{font-size:.82rem;color:#5b6480}
+.sa-lr-line b{color:#2b3255}
+.sa-lr-fb{margin-top:4px;font-size:.78rem;color:#5b6ef5}
 .sa-pron{background:#f4f6fc;border-radius:12px;padding:12px 14px;border-left:4px solid #c3cae0}
 .sa-pron.ok{border-left-color:#12b76a}.sa-pron.bad{border-left-color:#e2444b}
 .sa-pron-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
