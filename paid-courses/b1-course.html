@@ -7777,7 +7777,19 @@
             if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises || topic.topic16Exercises || topic.topic17Exercises || topic.topic18Exercises || topic.topic19Exercises || topic.topic20Exercises) { renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
-            const topicResults = userQuizResults[`topic_${topicId}`];
+            // The quizResults document is shared by several writers: the native
+            // quiz answers, the in-progress draft (`draft` / `lessonDraft`) and
+            // the completed-lesson snapshot. Only a GRADED attempt may drive the
+            // saved-result UI. Previously the mere existence of the document
+            // counted, so a student who had only typed a few answers (a draft
+            // write creates the document) came back to
+            // "Sizning natijangiz: undefined/N", a failure message for a topic
+            // they never submitted, a thrown TypeError — and their draft was NOT
+            // restored, because the draft branch is gated on the same value.
+            const topicDoc = userQuizResults[`topic_${topicId}`];
+            const topicResults = (topicDoc && (Array.isArray(topicDoc.mcAnswers)
+                || Array.isArray(topicDoc.blankAnswers)
+                || typeof topicDoc.score === 'number')) ? topicDoc : null;
 
             let quizHTML = `
                 <h3 class="quiz-title">Test: ${topic.title}</h3>

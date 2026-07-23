@@ -142,11 +142,18 @@ export function listenToActivityLogs(callback) {
 export async function saveQuizResult(userId, topicId, quizData, course = 'A1') {
     try {
         const resultRef = doc(db, 'users', userId, 'quizResults', `topic_${topicId}`);
+        // MERGE, never replace. This document is shared by several writers:
+        // the native quiz answers (here), the in-progress draft and the
+        // completed-lesson snapshot (lessonResult / lessonDraft, written by
+        // course-global-fixes.js). A plain setDoc() replaces the WHOLE
+        // document, so a signed-in student who opened a demo page — demos read
+        // the same `currentUser` and write the same topic ids — silently erased
+        // their paid-course draft and saved result for that topic.
         await setDoc(resultRef, {
             ...quizData,
             course: course, // Добавляем курс
             updatedAt: serverTimestamp()
-        });
+        }, { merge: true });
         console.log('✅ Quiz result saved for topic:', topicId, 'course:', course);
         return true;
     } catch (error) {

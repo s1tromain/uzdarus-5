@@ -15,6 +15,12 @@
      multiple choice, text input, fill-in-the-blank, chips, selects, sentence
      builders, translation and transformation items.
 
+   PART C — draft round-trip (dynamic).
+     For every topic it fills the synthesised DOM, captures a draft with the
+     real captureDraft(), wipes the DOM, restores with the real applyDraft()
+     and asserts the answers came back byte-identical — and that NO grading
+     state came back with them (a draft must never look graded).
+
    PART B — DOM hook reality check (static).
      A collector is only useful if the course page really renders the attribute
      it queries. For every topic this greps the course HTML for the data-*
@@ -319,26 +325,83 @@ async function waitFor(fn, ms = 3000, step = 25) {
     return null;
 }
 
-async function runTopic(code, courseData, topic, synth) {
+/* Read back every answer-bearing field so a draft round-trip can be compared. */
+function readAnswers(doc) {
+    const out = {};
+    doc.querySelectorAll('input, textarea').forEach((el, i) => {
+        if (el.value) out['i' + i] = el.value;
+    });
+    doc.querySelectorAll('.selected').forEach((el, i) => {
+        out['s' + i] = el.getAttribute('data-value') || el.getAttribute('data-option') || (el.textContent || '').trim();
+    });
+    doc.querySelectorAll('[data-value]').forEach((el, i) => {
+        if (!el.classList.contains('selected')) out['d' + i] = el.getAttribute('data-value');
+    });
+    return out;
+}
+
+/* PART C: fill -> capture -> wipe -> restore -> compare, on the real engine. */
+async function draftRoundTrip(code, courseData, topic, synth) {
+    const dom = makeHarnessDom(code, synth);
+    const w = dom.window;
+    wireHarness(w, code, courseData, topic, synth);
+    w.eval(CGF);
+    await sleep(20);
+
+    const api = w.__uzLessonResults;
+    if (!api || typeof api.captureDraft !== 'function') { dom.window.close(); return 'no draft engine'; }
+
+    const before = readAnswers(w.document);
+    const draft = api.captureDraft(w.document);
+
+    // Wipe every answer, as a fresh page load would.
+    w.document.querySelectorAll('input, textarea').forEach(el => { el.value = ''; });
+    w.document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+    w.document.querySelectorAll('[data-value]').forEach(el => {
+        if (!el.matches('.t1-opt, .quiz-option, .chip, button')) el.removeAttribute('data-value');
+    });
+
+    api.applyDraft(w.document, draft);
+    const after = readAnswers(w.document);
+
+    const graded = w.document.querySelector('.correct, .incorrect, .correct-answer, .wrong-answer, .t1-ok, .t1-bad');
+    const fields = Object.keys(draft.fields || {}).length;
+    const missing = Object.keys(before).filter(k => before[k] !== after[k]);
+    dom.window.close();
+
+    if (graded) return 'restored draft carries grading state';
+    if (!fields) return 'captured nothing';
+    if (missing.length) return `${missing.length} field(s) not restored`;
+    return null;
+}
+
+function makeHarnessDom(code, synth) {
     const virtualConsole = new VirtualConsole();
-    let muted = false;
-    virtualConsole.on('jsdomError', (e) => { if (!muted) console.error(String((e && e.message) || e)); });
-    /* B2 renders into #lessonContent (it has no #quizSection); the others use
-       #quizSection. Mirrors getActiveTopicRoot() in course-global-fixes.js. */
-    const body = code === 'B2'
-        ? '<div id="lessonContent"><div class="quiz-section"></div><div class="blank-section">' + synth.html + '</div></div>'
-        : '<div id="lessonContent"></div><div id="quizSection"><div class="quiz-container">' + synth.html + '</div></div>';
     const dom = new JSDOM(
-        '<!DOCTYPE html><body><div id="lesson">' + body +
+        '<!DOCTYPE html><body><div id="lesson">' + harnessBody(code, synth) +
         '<div class="results-section" id="resultsSection"><div id="scoreDisplay">Sizning natijangiz: 0/0</div>' +
         '<div id="resultsMessage"></div><div id="correctAnswers"></div>' +
         '<button id="completeBtn" style="display:none"></button><button id="retryBtn" style="display:none"></button>' +
         '</div></div></body>',
         { url: `https://uzdarus.uz/paid-courses/${code.toLowerCase()}-course.html`, runScripts: 'outside-only', pretendToBeVisual: true, virtualConsole });
+    let muted = false;
+    virtualConsole.on('jsdomError', (e) => { if (!muted) console.error(String((e && e.message) || e)); });
+    const orig = dom.window.close.bind(dom.window);
+    dom.window.close = function () { muted = true; orig(); };
+    dom.window.HTMLElement.prototype.scrollIntoView = function () {};
+    dom.window.alert = function () {};
+    return dom;
+}
 
-    const w = dom.window;
-    w.HTMLElement.prototype.scrollIntoView = function () {};
-    w.alert = function () {};
+/* B2 renders into #lessonContent (it has no #quizSection); the others use
+   #quizSection. Mirrors getActiveTopicRoot() in course-global-fixes.js. */
+function harnessBody(code, synth) {
+    return code === 'B2'
+        ? '<div id="lessonContent"><div class="quiz-section"></div><div class="blank-section">' + synth.html + '</div></div>'
+        : '<div id="lessonContent"></div><div id="quizSection"><div class="quiz-container">' + synth.html + '</div></div>';
+}
+
+function wireHarness(w, code, courseData, topic, synth) {
     w.courseData = courseData;
     if (code === 'B2') {
         w.currentTopic = topic;
@@ -353,9 +416,15 @@ async function runTopic(code, courseData, topic, synth) {
         w.matchingState = { matches: Array.from({ length: synth.matchingPairs }, (_, i) => ({ left: i, right: i })) };
     }
     w.currentUserId = null;                       // guest -> no account writes
+}
+
+async function runTopic(code, courseData, topic, synth) {
+    const dom = makeHarnessDom(code, synth);
+    const w = dom.window;
+    wireHarness(w, code, courseData, topic, synth);
     w.eval(CGF);
 
-    const close = () => { muted = true; w.close(); };
+    const close = () => { w.close(); };
     const btn = await waitFor(() => w.document.querySelector('.check-topic-btn'));
     if (!btn) return { w, close, out: null };
     btn.click();
@@ -390,6 +459,7 @@ for (const [code, rel] of COURSES) {
 
     let withExercises = 0, itemsTotal = 0;
     const roundTripFailures = [];
+    const draftFailures = [];
     const allFamilies = new Set();
     const allOrphans = [];
 
@@ -411,12 +481,17 @@ for (const [code, rel] of COURSES) {
         if (cards !== synth.expected || wrong !== 0) {
             roundTripFailures.push(`topic ${topic.id}: ${cards}/${synth.expected} captured, ${wrong} mis-scored`);
         }
+
+        const draftProblem = await draftRoundTrip(code, data, topic, synth);
+        if (draftProblem) draftFailures.push(`topic ${topic.id}: ${draftProblem}`);
     }
 
     console.log(`  ${code}: ${topics.length} topics — ${withExercises} with collectable exercises, ${itemsTotal} answers audited`);
     console.log(`      families: ${[...allFamilies].sort().join(', ') || '(none)'}`);
     okc(`${code}: every declared answer is captured and scored correctly`,
         roundTripFailures.length === 0, roundTripFailures.slice(0, 6).join(' | '));
+    okc(`${code}: draft captures and restores every answer, with no grading state`,
+        draftFailures.length === 0, draftFailures.slice(0, 6).join(' | '));
 
     if (allOrphans.length) {
         warn++;

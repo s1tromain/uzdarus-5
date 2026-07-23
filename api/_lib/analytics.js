@@ -311,12 +311,16 @@ export function buildStudentDashboard(input = {}) {
         const percent = quizPercent(q);
         const isExam = /final|exam/i.test(q.id || '');
         // Extract per-question answers from arbitrary section maps stored by courses.
-        // `lessonResult` is the completed-lesson UI snapshot (course-global-fixes.js);
-        // it is a result-screen reconstruction, not a section->answers map, so it is
-        // skipped here and surfaced through its own `lesson` field below.
+        // Skipped keys are NOT section->answers maps and must never be flattened
+        // into a student's submitted answers:
+        //   lessonResult          completed-lesson UI snapshot (surfaced as `lesson`)
+        //   draft / lessonDraft   work IN PROGRESS — never submitted, never graded.
+        //                         Flattening these showed unfinished typing (and the
+        //                         raw `savedAt` epoch) as if the student had answered.
         const answers = [];
         for (const [k, v] of Object.entries(q)) {
-            if (['id', 'score', 'total', 'timestamp', 'course', 'updatedAt', 'percentage', 'passed', 'lessonResult'].includes(k)) continue;
+            if (['id', 'score', 'total', 'timestamp', 'course', 'updatedAt', 'percentage', 'passed',
+                 'lessonResult', 'draft', 'lessonDraft'].includes(k)) continue;
             if (v && typeof v === 'object') {
                 for (const [qk, qv] of Object.entries(v)) {
                     answers.push({ section: k, question: qk, answer: typeof qv === 'object' ? JSON.stringify(qv) : String(qv) });

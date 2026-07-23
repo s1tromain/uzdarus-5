@@ -978,6 +978,7 @@
     }
 
     var snapshotCache = {};       // topicId -> snapshot | null   (per page load)
+    var draftCache = {};          // topicId -> draft | null      (per page load)
     var persistInFlight = {};     // topicId -> true              (double-click guard)
 
     async function fetchRemoteSnapshot(uid, course, topicId) {
@@ -1178,6 +1179,290 @@
         return true;
     }
 
+    /* ================================================================
+       IN-PROGRESS DRAFT  (PAID COURSES ONLY)
+       ----------------------------------------------------------------
+       PROBLEM: each course page has its own draft autosave, but every one
+       of them only reads the NATIVE quiz hooks:
+           #quizSection .quiz-options      (multiple choice)
+           #quizSection input[data-blank]  (fill-in-the-blank)
+       Nothing else was ever captured — not the topicN exercise inputs, the
+       t1 choice rows, extraExercises, topic4/topic5 fields, chips, selects
+       or sentence builders. Worse, those per-page routines are wired inside
+       loadQuiz(), which B1 skips entirely (it early-returns into
+       renderTopic1Exercises) and which A1 bypasses for topics 6-12. Net
+       effect measured during the audit: B1 saved NOTHING for all 20 topics,
+       A1 saved nothing for topics 6-12, and every course lost the exercise
+       blocks of its remaining topics. A student answering 60 exercises and
+       clicking another topic lost all of it, silently.
+
+       FIX: one generic, course-agnostic draft that lives beside the result
+       snapshot. It identifies each answer field by its own data-* attributes
+       — which the courses derive from courseData indices and therefore keep
+       stable across re-renders — so it works for every exercise type,
+       including the bespoke A2 hooks, WITHOUT hardcoding attribute names.
+
+       A draft stores ONLY raw answers: never a score, never correctness.
+       That is what keeps state 2 (in-progress) distinguishable from state 3
+       (graded) — see the state model in the audit report.
+       ================================================================ */
+
+    var DRAFT_DEBOUNCE_MS = 900;
+    var MAX_DRAFT_FIELDS = 500;
+
+    /* Stable identity for an answer element: its own data-* attributes, minus
+       data-value (which holds the ANSWER, not the identity). */
+    function draftKeyFor(el) {
+        if (!el || !el.attributes) return null;
+        var parts = [];
+        for (var i = 0; i < el.attributes.length; i++) {
+            var a = el.attributes[i];
+            if (a.name.indexOf('data-') !== 0) continue;
+            if (a.name === 'data-value' || a.name === 'data-option') continue;
+            parts.push(a.name + '=' + a.value);
+        }
+        if (!parts.length) return null;
+        return parts.sort().join('&');
+    }
+
+    function selectorFromDraftKey(key) {
+        return String(key).split('&').map(function (pair) {
+            var idx = pair.indexOf('=');
+            if (idx === -1) return '';
+            return '[' + pair.slice(0, idx) + '="' + pair.slice(idx + 1).replace(/"/g, '\\"') + '"]';
+        }).join('');
+    }
+
+    /* Snapshot every answer the learner has entered in `scope`. Values only. */
+    function captureDraft(scope) {
+        var root = scope || getActiveTopicRoot() || document;
+        var fields = {};
+        var count = 0;
+        var add = function (key, entry) {
+            if (!key || count >= MAX_DRAFT_FIELDS) return;
+            if (!Object.prototype.hasOwnProperty.call(fields, key)) count++;
+            fields[key] = entry;
+        };
+
+        /* (1) typed answers — every data-* bearing input/textarea */
+        queryAllIn(root, 'input, textarea').forEach(function (el) {
+            if (el.type === 'checkbox' || el.type === 'radio') return;
+            var v = el.value;
+            if (v === undefined || v === null || String(v).trim() === '') return;
+            add(draftKeyFor(el), { t: 'v', v: clip(v) });
+        });
+
+        /* (2) chosen options — a `.selected` child identifies its container */
+        queryAllIn(root, '.selected').forEach(function (sel) {
+            var host = sel.parentElement;
+            if (!host) return;
+            var key = draftKeyFor(host);
+            if (!key) return;
+            var v = sel.getAttribute('data-value');
+            if (v === null) v = sel.getAttribute('data-option');
+            if (v === null) v = (sel.textContent || '').trim();
+            add(key, { t: 's', v: clip(v) });
+        });
+
+        /* (3) widgets that keep their answer in data-value (topic5 blanks,
+               topicN selects) rather than in an input */
+        queryAllIn(root, '[data-value]').forEach(function (el) {
+            if (el.classList && el.classList.contains('selected')) return;
+            var v = el.getAttribute('data-value');
+            if (!v || !String(v).trim()) return;
+            add(draftKeyFor(el), { t: 'd', v: clip(v) });
+        });
+
+        return { v: 1, savedAt: Date.now(), fields: fields };
+    }
+
+    function draftIsEmpty(draft) {
+        return !draft || !draft.fields || !Object.keys(draft.fields).length;
+    }
+
+    /* Write a stored draft back into the DOM. Values only — no grading
+       classes are ever applied, so a restored draft can never look graded. */
+    function applyDraft(scope, draft) {
+        if (draftIsEmpty(draft)) return false;
+        var root = scope || getActiveTopicRoot() || document;
+        var applied = 0;
+        Object.keys(draft.fields).forEach(function (key) {
+            var entry = draft.fields[key];
+            if (!entry || entry.v === undefined) return;
+            var el;
+            try { el = queryIn(root, selectorFromDraftKey(key)); } catch (e) { el = null; }
+            if (!el) return;                     // content changed since the draft
+            try {
+                if (entry.t === 'v') {
+                    el.value = entry.v;
+                    applied++;
+                } else if (entry.t === 'd') {
+                    el.dataset.value = entry.v;
+                    if (!el.children.length) el.textContent = entry.v;
+                    applied++;
+                } else if (entry.t === 's') {
+                    var children = queryAllIn(el, '*');
+                    var match = null;
+                    children.forEach(function (c) {
+                        if (match) return;
+                        var cv = c.getAttribute('data-value');
+                        if (cv === null) cv = c.getAttribute('data-option');
+                        if (cv === null) cv = (c.textContent || '').trim();
+                        if (String(cv) === String(entry.v)) match = c;
+                    });
+                    if (match) {
+                        children.forEach(function (c) { c.classList.remove('selected'); });
+                        match.classList.add('selected');
+                        applied++;
+                    }
+                }
+            } catch (e) { /* one bad field must never break the restore */ }
+        });
+        return applied > 0;
+    }
+
+    function draftLocalKey(uid, course, topicId) {
+        return 'uz_lessondraft_' + (uid || 'guest') + '_' + course + '_' + topicId;
+    }
+
+    function sanitizeDraft(raw) {
+        if (!raw || typeof raw !== 'object' || !raw.fields || typeof raw.fields !== 'object') return null;
+        var fields = {};
+        var n = 0;
+        Object.keys(raw.fields).forEach(function (k) {
+            if (n >= MAX_DRAFT_FIELDS) return;
+            var e = raw.fields[k];
+            if (!e || typeof e !== 'object' || e.v === undefined) return;
+            fields[k] = { t: String(e.t || 'v'), v: String(e.v) };
+            n++;
+        });
+        if (!n) return null;
+        return { v: 1, savedAt: Number(raw.savedAt) || 0, fields: fields };
+    }
+
+    var draftSaveTimer = 0;
+    var draftSeq = 0;                 // monotonic guard against out-of-order writes
+    var draftLastApplied = 0;
+
+    /* Persist the current draft for `topicId`. Local mirror is written
+       synchronously so navigating away can never lose the attempt; the account
+       write is the source of truth. Fails soft — never throws at the caller. */
+    async function persistDraft(topicId) {
+        if (!activeCourse || topicId === null || topicId === undefined) return null;
+        var draft = captureDraft(getActiveTopicRoot() || document);
+        if (draftIsEmpty(draft)) return null;
+
+        var seq = ++draftSeq;
+        var uid = currentUserId();
+        try { localStorage.setItem(draftLocalKey(uid, activeCourse, topicId), JSON.stringify(draft)); }
+        catch (e) { /* quota / private mode */ }
+
+        if (!uid) return draft;                  // signed-out: local mirror only
+        try {
+            if (typeof window.saveLessonDraft === 'function') {
+                await window.saveLessonDraft(uid, topicId, draft, activeCourse);
+            } else if (typeof window.saveQuizResult === 'function') {
+                await window.saveQuizResult(uid, topicId, { lessonDraft: draft }, activeCourse);
+            }
+        } catch (e) {
+            console.warn('lesson-draft: save failed, kept local mirror', e && e.message);
+            return draft;
+        }
+        /* An older in-flight write that lands after a newer one would roll the
+           learner back; re-issue the newest state if that happened. */
+        if (seq !== draftSeq) return draft;
+        return draft;
+    }
+
+    function scheduleDraftSave(topicId) {
+        if (!activeCourse) return;
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = setTimeout(function () {
+            persistDraft(topicId).catch(function () { /* fail soft */ });
+        }, DRAFT_DEBOUNCE_MS);
+    }
+
+    /* Drop the draft once the attempt has actually been graded — from that
+       point the stored RESULT is what a reopen must show. */
+    function clearDraft(topicId) {
+        if (!activeCourse || topicId === null || topicId === undefined) return;
+        clearTimeout(draftSaveTimer);
+        draftSeq++;
+        var uid = currentUserId();
+        try { localStorage.removeItem(draftLocalKey(uid, activeCourse, topicId)); } catch (e) { /* ignore */ }
+        if (!uid) return;
+        try {
+            if (typeof window.saveLessonDraft === 'function') {
+                window.saveLessonDraft(uid, topicId, null, activeCourse);
+            } else if (typeof window.saveQuizResult === 'function') {
+                window.saveQuizResult(uid, topicId, { lessonDraft: null }, activeCourse);
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    async function loadDraft(course, topicId) {
+        var uid = currentUserId();
+        var remote = null;
+        if (uid) {
+            try {
+                if (typeof window.getTopicQuizResult === 'function') {
+                    var d = await window.getTopicQuizResult(uid, topicId);
+                    remote = d ? sanitizeDraft(d.lessonDraft) : null;
+                }
+            } catch (e) { remote = null; }
+        }
+        var local = null;
+        try {
+            var raw = localStorage.getItem(draftLocalKey(uid, course, topicId));
+            local = raw ? sanitizeDraft(JSON.parse(raw)) : null;
+        } catch (e) { local = null; }
+
+        /* Deterministic conflict rule: the NEWER draft wins by savedAt. The
+           account copy is authoritative on ties, so a second device cannot be
+           rolled back by a stale local mirror. */
+        if (remote && local) return (local.savedAt > remote.savedAt) ? local : remote;
+        return remote || local;
+    }
+
+    /* Delegated autosave. One listener pair for the whole page: works for
+       markup the courses inject later, which per-page listeners bound inside
+       loadQuiz() could never see. */
+    function startDraftAutosave() {
+        if (!activeCourse) return;
+        var onEdit = function (e) {
+            var t = e.target;
+            if (!t || !t.closest) return;
+            if (t.closest('.topic-check-section, .check-topic-btn, #retryBtn, .retry-btn')) return;
+            var root = getActiveTopicRoot();
+            if (!root || !root.contains(t)) return;
+            var id = getCurrentTopicId();
+            var topic = getActiveTopic();
+            if (!Number.isFinite(id) && topic && topic.id !== undefined) id = topic.id;
+            if (id === null || id === undefined) return;
+            scheduleDraftSave(id);
+        };
+        document.addEventListener('input', onEdit, true);
+        document.addEventListener('change', onEdit, true);
+        document.addEventListener('click', onEdit, true);
+
+        /* Flush on the ways a learner actually leaves a page. */
+        var flush = function () {
+            if (!draftSaveTimer) return;
+            clearTimeout(draftSaveTimer);
+            draftSaveTimer = 0;
+            var id = getCurrentTopicId();
+            var topic = getActiveTopic();
+            if (!Number.isFinite(id) && topic && topic.id !== undefined) id = topic.id;
+            if (id === null || id === undefined) return;
+            persistDraft(id).catch(function () { /* fail soft */ });
+        };
+        window.addEventListener('pagehide', flush);
+        window.addEventListener('beforeunload', flush);
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'hidden') flush();
+        });
+    }
+
     /* ---- lifecycle glue ---- */
 
     var activeCourse = detectPaidCourse();
@@ -1192,7 +1477,28 @@
     }
 
     function noteTopicChanged(topicId) {
+        /* Leaving a topic must not lose what was typed in it. */
+        if (restoreState.topicId !== null && restoreState.topicId !== undefined && draftSaveTimer) {
+            var leaving = restoreState.topicId;
+            clearTimeout(draftSaveTimer);
+            draftSaveTimer = 0;
+            persistDraft(leaving).catch(function () { /* fail soft */ });
+        }
         restoreState = { topicId: topicId, since: Date.now(), loading: false, suppressed: false };
+        draftLastApplied = 0;
+    }
+
+    /* Decide what a reopened topic should show.
+       A stored RESULT wins, except when the learner started a new attempt
+       afterwards (retry): a draft saved AFTER the result means the newer,
+       in-progress attempt is the truth. */
+    function pickRestoreTarget(snapshot, draft) {
+        if (draftIsEmpty(draft)) return snapshot ? { kind: 'result', data: snapshot } : null;
+        if (!snapshot) return { kind: 'draft', data: draft };
+        var resultAt = Date.parse(snapshot.completedAt || '') || 0;
+        return (draft.savedAt > resultAt)
+            ? { kind: 'draft', data: draft }
+            : { kind: 'result', data: snapshot };
     }
 
     function maybeRestoreSavedResult(host, topicId) {
@@ -1208,15 +1514,34 @@
         if (!Object.prototype.hasOwnProperty.call(snapshotCache, topicId)) {
             if (restoreState.loading) return;
             restoreState.loading = true;
-            loadSnapshot(activeCourse, topicId)
-                .catch(function () { snapshotCache[topicId] = null; })
-                .then(function () { restoreState.loading = false; });
+            var requestedTopic = topicId;              // identity captured per request
+            Promise.all([
+                loadSnapshot(activeCourse, requestedTopic),
+                loadDraft(activeCourse, requestedTopic)
+            ]).then(function (pair) {
+                /* INVARIANT 6 — never apply a response to a topic the learner
+                   has already navigated away from. */
+                if (restoreState.topicId !== requestedTopic) return;
+                draftCache[requestedTopic] = pair[1] || null;
+            }).catch(function () {
+                snapshotCache[requestedTopic] = null;
+                draftCache[requestedTopic] = null;
+            }).then(function () { restoreState.loading = false; });
             return;
         }
 
-        var snapshot = snapshotCache[topicId];
-        if (!snapshot) return;                         // old completed topic without a snapshot
-        restoreSnapshot(host, snapshot);
+        var target = pickRestoreTarget(snapshotCache[topicId], draftCache[topicId]);
+        if (!target) return;                           // untouched, or an old topic with no data
+
+        if (target.kind === 'result') {
+            restoreSnapshot(host, target.data);
+            return;
+        }
+        /* DRAFT: values only. No score, no feedback, no completion state. */
+        if (draftLastApplied === topicId) return;
+        if (applyDraft(getActiveTopicRoot() || document, target.data)) {
+            draftLastApplied = topicId;
+        }
     }
 
     /* The retry button intentionally starts a NEW attempt — drop the restored
@@ -1226,6 +1551,7 @@
         var btn = (e.target && e.target.closest) ? e.target.closest('#retryBtn, .retry-btn') : null;
         if (!btn) return;
         suppressRestore();
+        draftLastApplied = 0;
         queryAllIn(document, '.topic-feedback').forEach(function (node) {
             node.innerHTML = '';
             node.classList.remove('show');
@@ -1246,11 +1572,24 @@
         applyRestoreRef: applyRestoreRef,
         scoreMessage: scoreMessage,
         renderDetailedFeedback: renderDetailedFeedback,
+        captureDraft: captureDraft,
+        applyDraft: applyDraft,
+        sanitizeDraft: sanitizeDraft,
+        persistDraft: persistDraft,
+        loadDraft: loadDraft,
+        clearDraft: clearDraft,
+        pickRestoreTarget: pickRestoreTarget,
+        draftKeyFor: draftKeyFor,
         _cache: snapshotCache,
+        _draftCache: draftCache,
         _resetForTests: function (course) {
             activeCourse = course === undefined ? detectPaidCourse() : course;
             Object.keys(snapshotCache).forEach(function (k) { delete snapshotCache[k]; });
+            Object.keys(draftCache).forEach(function (k) { delete draftCache[k]; });
             restoreState = { topicId: null, since: 0, loading: false, suppressed: false };
+            draftLastApplied = 0;
+            clearTimeout(draftSaveTimer);
+            draftSaveTimer = 0;
         }
     };
 
@@ -1340,6 +1679,10 @@
                 : (topic && topic.id !== undefined ? topic.id : null);
             suppressRestore(persistTopicId);
             if (persistTopicId !== null && persistTopicId !== undefined) {
+                /* The attempt is graded: the RESULT is now what a reopen shows,
+                   so the in-progress draft for this topic is retired. */
+                clearDraft(persistTopicId);
+                draftCache[persistTopicId] = null;
                 persistSnapshot(activeCourse, persistTopicId, results).catch(function () { /* fail soft */ });
             }
         }
@@ -1460,6 +1803,7 @@
     }
 
     function startTopicObserver() {
+        startDraftAutosave();
         ensureSingleTopicControls();
         var observer = new MutationObserver(function () { ensureSingleTopicControls(); });
         if (document.body) observer.observe(document.body, { childList: true, subtree: true });

@@ -222,6 +222,29 @@ async function firestoreSaveLessonResult(userId, topicId, snapshot, course = '')
     }
 }
 
+/* Persist (or clear, with `draft === null`) the in-progress draft for ONE
+   topic. Same reasoning as saveLessonResult: kept separate from
+   saveQuizResult() so an autosave never emits an `ex_done` analytics event —
+   a draft is unfinished work, not a completed exercise. */
+async function firestoreSaveLessonDraft(userId, topicId, draft, course = '') {
+    if (!userId || topicId === null || topicId === undefined) {
+        return false;
+    }
+    try {
+        await authReady();
+        const resultRef = doc(db, 'users', userId, 'quizResults', `topic_${topicId}`);
+        await setDoc(resultRef, {
+            lessonDraft: draft || null,
+            course,
+            updatedAt: serverTimestamp()
+        }, { merge: true });
+        return true;
+    } catch (error) {
+        console.warn('progress-sync: saveLessonDraft failed', error?.message || error);
+        return false;
+    }
+}
+
 /* Single-document read of ONE topic's quiz/result record. Used by
    course-global-fixes.js to restore a previously completed lesson without
    pulling the learner's whole quizResults collection on every topic open.
@@ -277,6 +300,7 @@ window.saveQuizResult = firestoreSaveQuizResult;
 window.getUserQuizResults = firestoreGetUserQuizResults;
 window.getTopicQuizResult = firestoreGetTopicQuizResult;
 window.saveLessonResult = firestoreSaveLessonResult;
+window.saveLessonDraft = firestoreSaveLessonDraft;
 window.firebaseReady = true;
 
 /* ================================================================
