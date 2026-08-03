@@ -12,6 +12,7 @@ import {
 import { normalizeRole, CAPABILITIES } from '../_lib/roles.js';
 import { buildSubscription, normalizePacks } from '../_lib/user-helpers.js';
 import { writeAuditLog } from '../_lib/audit.js';
+import { syncPulse } from '../_lib/analytics-store.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -81,6 +82,8 @@ export default async function handler(req, res) {
                 accessPacks: updateData.accessPacks || null
             }
         });
+
+        await syncPulse({ adminDb, FieldValue }, userId);
 
         sendJson(res, 200, { ok: true, subscription, accessPacks: updateData.accessPacks || targetData.accessPacks || [] });
     } catch (error) {

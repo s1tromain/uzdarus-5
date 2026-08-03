@@ -1350,6 +1350,19 @@
 
         async function persistA1Completion(passed, pct, resultData) {
             var completedOk = false;
+            /* Learning-analytics: a final exam is a milestone the admin panel
+               must reflect immediately (Stage 6). Emitted from the SAME place
+               that persists the result, so it can never disagree with what was
+               stored, and only for real signed-in learners (uzTrack self-
+               disables for demo/guest). Never throws into the exam. */
+            try {
+                if (typeof window.uzTrack === 'function') {
+                    window.uzTrack(passed ? 'exam_pass' : 'exam_fail', {
+                        course: 'A1', level: 'A1', score: pct
+                    });
+                }
+            } catch (e) {}
+
             try { completedOk = (await getCompletedTopicCount()) >= GATE_REQUIRED; } catch (e) { completedOk = false; }
             var grantCompletion = passed && completedOk;
             var uid = gateUid();

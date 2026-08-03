@@ -1,10 +1,18 @@
 import { initAdmin } from '../_firebaseAdmin.js';
-import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError,
+import { assertMethod, handleCors, requireSession, sendJson, safeError,
     requireCapability
 } from '../_lib/request.js';
-import { normalizeRole, CAPABILITIES, canViewUser as canViewTarget } from '../_lib/roles.js';
-import { normalizeUserDocument, toDate } from '../_lib/user-helpers.js';
+import { CAPABILITIES, canViewUser as canViewTarget } from '../_lib/roles.js';
+import { computePlatformStats } from '../_lib/platform-stats.js';
 
+/**
+ * GET /api/admin?action=stats
+ *
+ * The header counters. The computation itself lives in _lib/platform-stats.js
+ * so that students-overview can produce byte-identical numbers from the scan it
+ * already performs — see the note there. This endpoint is unchanged in
+ * behaviour and remains the standalone way to fetch the counters.
+ */
 export default async function handler(req, res) {
     if (handleCors(req, res, ['GET'])) {
         return;
@@ -20,54 +28,11 @@ export default async function handler(req, res) {
         requireCapability(session, CAPABILITIES.STATS_READ);
 
         const snapshot = await adminDb.collection('users').get();
-        const docs = snapshot.docs
-            .map((docSnap) => normalizeUserDocument(docSnap.id, docSnap.data()))
-            .filter(Boolean)
-            .filter((user) => canViewTarget(session.role, session.uid, user.uid, user.role));
-
-        const roleCounts = {
-            customer: 0,
-            teacher: 0,
-            moderator: 0,
-            admin: 0,
-            developer: 0
-        };
-
-        let activeSubscriptions = 0;
-        let blockedUsers = 0;
-        let registeredDevices = 0;
-
-        const now = Date.now();
-
-        for (const user of docs) {
-            const role = normalizeRole(user.role);
-            roleCounts[role] = (roleCounts[role] || 0) + 1;
-
-            if (user.blocked) {
-                blockedUsers += 1;
-            }
-
-            const deviceCount = Array.isArray(user.deviceHashes) ? user.deviceHashes.length : 0;
-            registeredDevices += deviceCount;
-
-            if (role === 'customer') {
-                const subscription = user.subscription || {};
-                const endAt = toDate(subscription.endAt);
-                if (subscription.active && endAt && endAt.getTime() >= now) {
-                    activeSubscriptions += 1;
-                }
-            }
-        }
+        const docs = snapshot.docs.map((docSnap) => ({ uid: docSnap.id, data: docSnap.data() || {} }));
 
         sendJson(res, 200, {
             ok: true,
-            stats: {
-                totalUsers: docs.length,
-                roleCounts,
-                activeSubscriptions,
-                blockedUsers,
-                registeredDevices
-            }
+            stats: computePlatformStats(docs, session, canViewTarget, Date.now())
         });
     } catch (error) {
         safeError(res, error);

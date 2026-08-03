@@ -1,5 +1,5 @@
 import { initAdmin } from '../_firebaseAdmin.js';
-import { assertMethod, handleCors, requireSession, requireRole, sendJson, safeError,
+import { assertMethod, handleCors, requireSession, sendJson, safeError,
     requireCapability
 } from '../_lib/request.js';
 import { normalizeRole, CAPABILITIES, canViewUser as canViewTarget } from '../_lib/roles.js';

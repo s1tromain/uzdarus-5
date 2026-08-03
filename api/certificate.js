@@ -1,6 +1,8 @@
 import { handleCors, sendJson, readBody, requireSession, safeError } from './_lib/request.js';
 import { rateLimit } from './_lib/rate-limit.js';
 import { issueCertificate, getRegistryCertificate, normalizeCourse } from './_lib/certificates.js';
+import { initAdmin } from './_firebaseAdmin.js';
+import { syncPulse } from './_lib/analytics-store.js';
 
 /**
  * /api/certificate?action=<issue|verify>
@@ -46,6 +48,16 @@ async function handleIssue(req, res) {
         profile: { ...session.profile, role: session.role },
         isPrivileged
     });
+
+    /* Stage 6: a certificate is one of the student actions the admin panel must
+       reflect instantly. issueCertificate() writes courses.<LVL>.certificateNumber
+       on the user document inside its transaction, so republishing the pulse row
+       here is all that is needed — and only on a genuinely NEW issue, since the
+       idempotent re-issue path changes nothing. */
+    if (!result.alreadyIssued) {
+        const { adminDb, FieldValue } = initAdmin();
+        await syncPulse({ adminDb, FieldValue }, session.uid);
+    }
 
     const cert = result.certificate || {};
     return sendJson(res, 200, {

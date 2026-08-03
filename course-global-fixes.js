@@ -1055,6 +1055,38 @@
                 try { await writer(); }
                 catch (e) { console.warn('lesson-result: save failed, kept local mirror', e && e.message); }
             }
+
+            /* ---- learning-analytics emission ----------------------------
+               A completed lesson is the single most important learning event
+               on the platform, and until now NOTHING emitted it: the tracker
+               only ever received login/session/listen/pron/vocab_*, so the
+               admin timeline showed no exercise activity and the platform-wide
+               "hardest topics" ranking had no data at all to rank.
+
+               This is the one place a lesson is genuinely completed (guarded
+               by shouldReplaceSnapshot, so a re-render or a rejected retry
+               emits nothing). `ex_done` and `topic_pass` are milestone events,
+               so the tracker flushes them immediately — which is what makes
+               the admin panel update in real time. Failures are swallowed:
+               analytics must never break a lesson. */
+            try {
+                if (typeof window.uzTrack === 'function') {
+                    window.uzTrack('ex_done', {
+                        course: course,
+                        topic: topicId,
+                        score: snapshot.score,
+                        total: snapshot.total
+                    });
+                    if (snapshot.passed) {
+                        window.uzTrack('topic_pass', {
+                            course: course,
+                            topic: topicId,
+                            score: snapshot.percent
+                        });
+                    }
+                }
+            } catch (e) { /* never break the lesson */ }
+
             return snapshot;
         } catch (e) {
             console.warn('lesson-result: persist error', e && e.message);

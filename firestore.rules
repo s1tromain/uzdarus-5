@@ -25,6 +25,14 @@ service cloud.firestore {
       return userRole() in ["moderator", "admin", "developer"];
     }
 
+    // Every role that may open the admin panel, INCLUDING the read-only
+    // `teacher`. Mirrors STAFF_ROLES in api/_lib/roles.js. Used only to grant
+    // READS of server-published, learner-only projections — it never grants a
+    // write anywhere, so widening it cannot widen mutation rights.
+    function isPanelStaff() {
+      return userRole() in ["teacher", "moderator", "admin", "developer"];
+    }
+
     function ownerMutableKeys() {
       return [
         "courses",
@@ -77,12 +85,45 @@ service cloud.firestore {
       }
     }
 
+    // Legacy course-page activity trail (demo pages call logActivity()).
+    //
+    // The previous rule accepted ANY string in `userEmail` from ANY signed-in
+    // account, so any learner could forge unlimited entries attributing actions
+    // to somebody else — log poisoning plus an unbounded, un-ratelimited write
+    // path into a staff-readable collection. A log entry may now only be filed
+    // under the caller's OWN identity, and only with bounded fields.
     match /activityLogs/{logId} {
       allow create: if isSignedIn() &&
         request.resource.data.userEmail is string &&
-        request.resource.data.action is string;
+        request.resource.data.userEmail == request.auth.token.email &&
+        request.resource.data.action is string &&
+        request.resource.data.action.size() <= 500;
       allow read: if isStaff();
       allow update, delete: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // REALTIME ADMIN PROJECTIONS (Stage 6/7)
+    // ---------------------------------------------------------------------
+    // studentPulse/{uid} is a narrow, LEARNER-ONLY mirror of the row the admin
+    // list renders, republished by the Admin SDK whenever a student acts. It is
+    // what makes the panel live without polling. Staff read; NOBODY writes from
+    // a client — the server bypasses these rules.
+    //
+    // Because staff accounts are never projected into this collection, a
+    // `teacher` subscribing to all of it still sees exactly what canViewUser()
+    // would have allowed them to see: learners, and nothing else.
+    match /studentPulse/{userId} {
+      allow read: if isPanelStaff();
+      allow write: if false;
+    }
+
+    // Pre-aggregated platform counters (daily activity, per-topic difficulty).
+    // Contains no personal data at all. Read by the Global Analytics page;
+    // written only by the ingest path via the Admin SDK.
+    match /analyticsGlobal/{docId} {
+      allow read: if isPanelStaff();
+      allow write: if false;
     }
 
     // Admin audit trail. Written server-side via the Admin SDK only (which

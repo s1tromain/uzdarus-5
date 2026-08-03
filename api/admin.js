@@ -23,6 +23,7 @@ const ACTIONS = {
     'migrate-certificates':     () => import('./_admin/migrate-certificates.js'),
     'student-analytics':        () => import('./_admin/student-analytics.js'),
     'students-overview':        () => import('./_admin/students-overview.js'),
+    'global-analytics':         () => import('./_admin/global-analytics.js'),
 };
 
 export default async function handler(req, res) {

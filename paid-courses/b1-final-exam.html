@@ -1187,6 +1187,19 @@
             // when the learner BOTH passed (>=80%) AND has actually finished all 20 topics.
             var completedOk = false;
             try { completedOk = (await getCompletedTopicCount()) >= REQUIRED_TOPICS; } catch (e) { completedOk = false; }
+            /* Learning-analytics: a final exam is a milestone the admin panel
+               must reflect immediately (Stage 6). Emitted from the SAME place
+               that persists the result, so it can never disagree with what was
+               stored, and only for real signed-in learners (uzTrack self-
+               disables for demo/guest). Never throws into the exam. */
+            try {
+                if (typeof window.uzTrack === 'function') {
+                    window.uzTrack(passed ? 'exam_pass' : 'exam_fail', {
+                        course: 'B1', level: 'B1', score: pct
+                    });
+                }
+            } catch (e) {}
+
             var grantCompletion = passed && completedOk;
 
             // Local completion flags (read by b1-course.html only as a fallback cache).

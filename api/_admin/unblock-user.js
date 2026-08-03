@@ -11,6 +11,7 @@ import {
 } from '../_lib/request.js';
 import { normalizeRole, CAPABILITIES } from '../_lib/roles.js';
 import { writeAuditLog } from '../_lib/audit.js';
+import { syncPulse } from '../_lib/analytics-store.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -72,6 +73,8 @@ export default async function handler(req, res) {
             targetUsername: targetData.username || null,
             details: { previousReason, clearedDeviceCount: previousDeviceCount }
         });
+
+        await syncPulse({ adminDb, FieldValue }, userId);
 
         sendJson(res, 200, { ok: true });
     } catch (error) {

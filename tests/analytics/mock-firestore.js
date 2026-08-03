@@ -7,15 +7,57 @@
 let autoSeq = 0;
 export const SERVER_TS = '<serverTimestamp>';
 
+/* Sentinels — mirror the Admin SDK's FieldValue.increment()/delete(), which the
+   analytics ingest path now uses for the platform counter documents. Without
+   them the mock silently stored the sentinel OBJECT and every global-aggregate
+   assertion would have been vacuously true. */
+const INCREMENT = Symbol('increment');
+const DELETE = Symbol('delete');
+
+function isSentinel(v, kind) {
+    return Boolean(v && typeof v === 'object' && v.__sentinel === kind);
+}
+
 function resolveTimestamps(value) {
     if (value === SERVER_TS) return Date.now();
     if (Array.isArray(value)) return value.map(resolveTimestamps);
     if (value && typeof value === 'object') {
+        if (isSentinel(value, INCREMENT) || isSentinel(value, DELETE)) return value;
         const out = {};
         for (const k of Object.keys(value)) out[k] = resolveTimestamps(value[k]);
         return out;
     }
     return value;
+}
+
+function isPlainObject(v) {
+    return Boolean(v) && typeof v === 'object' && !Array.isArray(v)
+        && !isSentinel(v, INCREMENT) && !isSentinel(v, DELETE);
+}
+
+/**
+ * set(..., { merge: true }) in real Firestore merges NESTED maps and applies
+ * field sentinels. The old shallow spread would have thrown away every day
+ * bucket except the newest.
+ */
+function deepMerge(target, patch) {
+    const out = { ...(target || {}) };
+    for (const [k, v] of Object.entries(patch || {})) {
+        if (isSentinel(v, DELETE)) { delete out[k]; continue; }
+        if (isSentinel(v, INCREMENT)) {
+            out[k] = (Number(out[k]) || 0) + Number(v.value || 0);
+            continue;
+        }
+        if (isPlainObject(v)) { out[k] = deepMerge(isPlainObject(out[k]) ? out[k] : {}, v); continue; }
+        out[k] = v;
+    }
+    return out;
+}
+
+/** Strip any sentinel that survived a non-merge write (Firestore rejects those;
+ *  the mock just resolves them against an empty base so tests stay readable). */
+function materialize(data) {
+    return deepMerge({}, data);
 }
 
 class DocRef {
@@ -28,12 +70,14 @@ class DocRef {
     }
     _write(data, merge) {
         const resolved = resolveTimestamps(data);
-        if (merge && this.store.docs.has(this.path)) {
-            this.store.docs.set(this.path, { ...this.store.docs.get(this.path), ...resolved });
+        if (merge) {
+            this.store.docs.set(this.path, deepMerge(this.store.docs.get(this.path), resolved));
         } else {
-            this.store.docs.set(this.path, { ...resolved });
+            this.store.docs.set(this.path, materialize(resolved));
         }
     }
+    async set(data, opts) { this._write(data, Boolean(opts && opts.merge)); }
+    async delete() { this.store.docs.delete(this.path); }
 }
 
 class Query {
@@ -65,13 +109,20 @@ class CollectionRef extends Query {
 
 class Batch {
     constructor() { this.ops = []; }
-    set(ref, data, opts) { this.ops.push({ ref, data, merge: Boolean(opts && opts.merge) }); return this; }
-    async commit() { for (const op of this.ops) op.ref._write(op.data, op.merge); }
+    set(ref, data, opts) { this.ops.push({ op: 'set', ref, data, merge: Boolean(opts && opts.merge) }); return this; }
+    delete(ref) { this.ops.push({ op: 'delete', ref }); return this; }
+    async commit() {
+        for (const op of this.ops) {
+            if (op.op === 'delete') op.ref.store.docs.delete(op.ref.path);
+            else op.ref._write(op.data, op.merge);
+        }
+    }
 }
 
 export class MockFirestore {
     constructor() { this.docs = new Map(); }
     collection(name) { return new CollectionRef(this, name); }
+    doc(path) { return new DocRef(this, path); }
     batch() { return new Batch(); }
     /** test helper: seed a doc at an absolute path */
     seed(path, data) { this.docs.set(path, data); return this; }
@@ -90,7 +141,14 @@ export class MockFirestore {
 export function makeAdmin() {
     const db = new MockFirestore();
     return {
-        admin: { adminDb: db, FieldValue: { serverTimestamp: () => SERVER_TS } },
+        admin: {
+            adminDb: db,
+            FieldValue: {
+                serverTimestamp: () => SERVER_TS,
+                increment: (value) => ({ __sentinel: INCREMENT, value }),
+                delete: () => ({ __sentinel: DELETE }),
+            },
+        },
         db,
     };
 }

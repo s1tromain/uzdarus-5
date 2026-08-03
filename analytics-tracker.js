@@ -28,6 +28,21 @@
     var MAX_BATCH = 200;
     var MILESTONES = { topic_pass: 1, exam_pass: 1, exam_fail: 1, vocab_done: 1, ex_done: 1 };
 
+    /**
+     * Should this event be flushed NOW rather than buffered?
+     *
+     * Milestones are the achievements the admin panel is required to reflect
+     * immediately. A PASSED pronunciation is one of them — but a failed one is
+     * not: learners retry a word many times in a row, and flushing each attempt
+     * would turn one lesson into dozens of Firestore batch writes for no
+     * additional insight. Failed attempts still arrive, just on the normal
+     * buffered schedule.
+     */
+    function isMilestone(type, data) {
+        if (MILESTONES[type]) return true;
+        return type === 'pron' && Boolean(data && data.pass === true);
+    }
+
     var buffer = loadBuffer();
     var flushing = false;
     var cachedToken = null;
@@ -71,7 +86,7 @@
             }
             buffer.push(ev);
             persist();
-            if (MILESTONES[type] || buffer.length >= FLUSH_THRESHOLD) flush();
+            if (isMilestone(type, data) || buffer.length >= FLUSH_THRESHOLD) flush();
         } catch (e) { /* never break the app */ }
     }
 

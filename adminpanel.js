@@ -15,6 +15,7 @@ import {
     isStaffRole,
     roleHasCapability,
     capabilitiesForRole,
+    canManageRole,
     roleLabel
 } from './admin-roles.js';
 
@@ -29,6 +30,9 @@ const state = {
     customerStatusFilter: 'all',
     // Analytics filters (Part 8) + per-uid overview rows from students-overview
     overview: {},
+    // True once students-overview has supplied the header counters, so the
+    // separate (equally expensive) stats scan can be skipped.
+    statsFromOverview: false,
     courseFilter: 'all',
     progressFilter: 'all',
     activityFilter: 'all',
@@ -50,6 +54,41 @@ function can(capability) {
     return roleHasCapability(state.role, capability);
 }
 
+/**
+ * May the CURRENT actor delete this account?
+ *
+ * Two independent conditions, both of which the server re-checks in
+ * delete-user.js (requireCapability + requireManagePermission):
+ *
+ *   1. the actor holds users:delete;
+ *   2. the actor outranks the target in the management hierarchy;
+ *   3. it is not the actor's own account (the server rejects self-deletion
+ *      with 400, so offering the button would be a dead end).
+ *
+ * This replaces a hard-coded `state.role === 'developer'` test, which was the
+ * one place in the panel where a ROLE NAME rather than a CAPABILITY decided
+ * what renders. That test hid the button from Administrators even though the
+ * server has always granted them users:delete — so the documented
+ * "Administrator may delete accounts" power was unreachable through the UI.
+ */
+function canDeleteUser(user) {
+    if (!user || !can(CAPABILITIES.USERS_DELETE)) {
+        return false;
+    }
+
+    if (state.user && user.uid === state.user.uid) {
+        return false;
+    }
+
+    return canManageRole(state.role, user.role);
+}
+
+function deleteButtonHtml(user) {
+    return canDeleteUser(user)
+        ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${escapeHtml(user.uid)}" type="button">Delete</button>`
+        : '';
+}
+
 const adminMeta = document.getElementById('adminMeta');
 const customersBody = document.getElementById('customersBody');
 const staffBody = document.getElementById('staffBody');
@@ -68,6 +107,7 @@ const toastContainer = document.getElementById('toastContainer');
 
 const adminGate = document.getElementById('adminGate');
 const adminApp = document.getElementById('adminApp');
+const adminBoot = document.getElementById('adminBoot');
 const gateInfo = document.getElementById('gateInfo');
 const gateError = document.getElementById('gateError');
 const adminLoginForm = document.getElementById('adminLoginForm');
@@ -516,9 +556,31 @@ function mapApiError(error, fallback = 'Amalni bajarishda xatolik yuz berdi') {
     return String(error?.message || fallback);
 }
 
+/* ==================================================================== *
+ *  BOOT PHASES (Stage 3)
+ *  --------------------------------------------------------------------
+ *  The <html data-boot> attribute is set synchronously by the inline script
+ *  in adminpanel.html so the FIRST paint is already correct. These helpers
+ *  hand that state over to JS once Firebase has spoken authoritatively.
+ *
+ *    anonymous  no local staff hint         -> login card
+ *    restoring  staff hint, session pending -> neutral splash (no login flash)
+ *    ready      Firebase reported a user    -> the panel shell
+ * ==================================================================== */
+function setBootPhase(phase) {
+    document.documentElement.setAttribute('data-boot', phase);
+}
+
 function hideProtectedUi() {
+    setBootPhase('anonymous');       // stop the splash; the gate is the truth now
+
+    if (adminBoot) {
+        adminBoot.hidden = true;
+    }
+
     if (adminApp) {
         adminApp.hidden = true;
+        adminApp.removeAttribute('data-phase');
     }
 
     if (adminGate) {
@@ -526,13 +588,40 @@ function hideProtectedUi() {
     }
 }
 
-function showProtectedUi() {
+/**
+ * Reveal the shell the moment Firebase confirms a restored user — BEFORE the
+ * Firestore profile read that decides the role.
+ *
+ * This is what removes the multi-second wait: authorization still gates every
+ * byte of data (nothing is fetched here, and applyRoleUi() has not run, so all
+ * role-dependent chrome is skeletonised by `data-phase="resolving"`). If the
+ * profile then says "not staff" or "blocked", hideProtectedUi() retracts the
+ * shell and the user is signed out and redirected — exactly as before.
+ */
+function revealShell() {
+    setBootPhase('ready');
+
+    if (adminBoot) {
+        adminBoot.hidden = true;
+    }
+
     if (adminGate) {
         adminGate.style.display = 'none';
     }
 
     if (adminApp) {
         adminApp.hidden = false;
+        if (!state.bootstrapped) {
+            adminApp.setAttribute('data-phase', 'resolving');
+        }
+    }
+}
+
+function showProtectedUi() {
+    revealShell();
+
+    if (adminApp) {
+        adminApp.setAttribute('data-phase', 'ready');
     }
 }
 
@@ -540,10 +629,44 @@ function redirectUnauthorized() {
     window.location.replace('./my.cabinet/dashboard.html?status=no-access');
 }
 
+/**
+ * The customer records the table renders.
+ *
+ * `state.users` comes from list-users, which requires users:read — a
+ * capability a TEACHER does not hold. The list used to be derived from that
+ * array unconditionally, so a teacher (whose whole reason for having the panel
+ * is to see students) got "Customerlar topilmadi" on an empty array while the
+ * students-overview rows they ARE entitled to sat unused in state.overview.
+ *
+ * Now the overview rows are the fallback source. Fields that genuinely require
+ * users:read (access packs, device count) stay absent rather than being faked —
+ * renderCustomers() prints "—" for them.
+ */
+function getCustomerSource() {
+    if (can(CAPABILITIES.USERS_READ)) {
+        return state.users.filter((user) => user.role === 'customer');
+    }
+
+    return Object.values(state.overview)
+        .filter((row) => row && !row.deleted && row.role === 'customer' && row.username)
+        .map((row) => ({
+            uid: row.uid,
+            username: row.username,
+            displayName: row.displayName || row.username,
+            email: row.email || '',
+            role: 'customer',
+            blocked: Boolean(row.blocked),
+            subscription: row.subscription || {},
+            accessPacks: null,       // not visible to this role
+            deviceCount: null        // not visible to this role
+        }))
+        .sort((a, b) => a.username.localeCompare(b.username));
+}
+
 function getCustomerRows() {
     const q = state.customerSearch.trim().toLowerCase();
     const filter = state.customerStatusFilter;
-    let customers = state.users.filter((user) => user.role === 'customer');
+    let customers = getCustomerSource();
 
     if (filter && filter !== 'all') {
         customers = customers.filter((user) => getCustomerStatus(user).category === filter);
@@ -642,7 +765,7 @@ function renderCustomers() {
                 <tr>
                     <td data-label="Login">${escapeHtml(user.username)}</td>
                     <td data-label="Ism">${escapeHtml(user.displayName)}</td>
-                    <td data-label="Packs">${escapeHtml((user.accessPacks || []).join(', ') || '-')}</td>
+                    <td data-label="Packs">${Array.isArray(user.accessPacks) ? escapeHtml(user.accessPacks.join(', ') || '-') : '—'}</td>
                     <td data-label="Obuna">
                         <div class="sub-lines">
                             ${subPill}
@@ -650,7 +773,7 @@ function renderCustomers() {
                             <small>${escapeHtml(remainText)}</small>
                         </div>
                     </td>
-                    <td data-label="Qurilmalar">${user.deviceCount || 0}/3</td>
+                    <td data-label="Qurilmalar">${Number.isFinite(user.deviceCount) ? `${user.deviceCount || 0}/3` : '—'}</td>
                     <td data-label="Status"><span class="${status.cls}">${escapeHtml(status.label)}</span></td>
                     <td data-label="Amallar" class="actions-cell">
                         <div class="actions-row">
@@ -659,7 +782,7 @@ function renderCustomers() {
                             ${canEditSubscription() ? `<button class="btn btn-ghost" data-action="subscription" data-uid="${user.uid}" type="button">Obuna</button>` : ''}
                             ${can(CAPABILITIES.CERTIFICATES_READ) ? `<button class="btn btn-ghost" data-action="certificates" data-uid="${user.uid}" type="button">Sertifikatlar</button>` : ''}
                             ${can(CAPABILITIES.USERS_BLOCK) ? `<button class="btn btn-ghost" data-action="unblock" data-uid="${user.uid}" type="button">Unblock</button>` : ''}
-                            ${can(CAPABILITIES.USERS_DELETE) && state.role === 'developer' ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${user.uid}" type="button">Delete</button>` : ''}
+                            ${deleteButtonHtml(user)}
                             ${dayAdjustControls}
                         </div>
                     </td>
@@ -714,7 +837,7 @@ function renderStaff() {
                                 <button class="btn btn-ghost" data-action="set-role" data-uid="${user.uid}" type="button">Saqlash</button>
                             ` : ''}
                             ${canModify && can(CAPABILITIES.USERS_PASSWORD) ? `<button class="btn btn-ghost" data-action="reset" data-uid="${user.uid}" type="button">Reset parol</button>` : ''}
-                            ${can(CAPABILITIES.USERS_DELETE) && state.role === 'developer' ? `<button class="btn btn-ghost btn-danger-soft" data-action="delete" data-uid="${user.uid}" type="button">Delete</button>` : ''}
+                            ${deleteButtonHtml(user)}
                         </div>
                     </td>
                 </tr>
@@ -728,12 +851,28 @@ function renderAll() {
     renderStaff();
 }
 
+/** Skeleton rows keep the table at its final height, so nothing jumps when
+ *  the real data lands (the old plain-text placeholder was one line tall and
+ *  every load produced a visible layout shift). */
+function skeletonRows(columns, rows = 4) {
+    const widths = ['70%', '55%', '40%', '85%', '35%', '60%', '78%'];
+    let html = '';
+    for (let r = 0; r < rows; r += 1) {
+        html += '<tr class="skeleton-row">';
+        for (let c = 0; c < columns; c += 1) {
+            html += `<td><span class="skeleton-bar" style="width:${widths[(r + c) % widths.length]}"></span></td>`;
+        }
+        html += '</tr>';
+    }
+    return html;
+}
+
 function renderLoadingState() {
     if (customersBody) {
-        customersBody.innerHTML = '<tr><td colspan="7" class="table-loading">Yuklanmoqda…</td></tr>';
+        customersBody.innerHTML = skeletonRows(7);
     }
     if (staffBody) {
-        staffBody.innerHTML = '<tr><td colspan="5" class="table-loading">Yuklanmoqda…</td></tr>';
+        staffBody.innerHTML = skeletonRows(5, 2);
     }
 }
 
@@ -746,7 +885,11 @@ async function loadUsers() {
 
 async function loadStats() {
     const result = await callApi('/api/admin?action=stats', 'GET');
-    const stats = result?.stats || {};
+    renderStats(result?.stats);
+}
+
+function renderStats(rawStats) {
+    const stats = rawStats || {};
 
     if (statTotalUsers) {
         statTotalUsers.textContent = String(stats.totalUsers || 0);
@@ -767,12 +910,31 @@ async function loadStats() {
 
 async function loadOverview() {
     try {
+        /* Stamp the realtime baseline BEFORE the request goes out. Anything a
+           student does from this instant on carries a later `updatedAt` than
+           the snapshot we are about to receive, so the live subscription picks
+           it up and nothing can fall through the gap between the two. */
+        REALTIME_STATE.since = Date.now();
+
         const result = await callApi('/api/admin?action=students-overview', 'GET');
         const rows = Array.isArray(result.students) ? result.students : [];
         const map = {};
         rows.forEach((r) => { if (r && r.uid) map[r.uid] = r; });
         state.overview = map;
+
+        /* The header counters now ride along on this response (see
+           students-overview.js) — the server computed them from the scan it had
+           to do anyway. Recording that here lets refreshData() skip the separate
+           stats call entirely, removing one FULL users-collection scan from
+           every admin startup and every manual refresh. */
+        if (result.stats && typeof result.stats === 'object') {
+            state.statsFromOverview = true;
+            renderStats(result.stats);
+        } else {
+            state.statsFromOverview = false;
+        }
     } catch (error) {
+        state.statsFromOverview = false;
         // Analytics overview is best-effort; the customer list still works.
         console.warn('students-overview load failed:', error?.message || error);
     }
@@ -795,17 +957,26 @@ async function loadOverview() {
  */
 async function refreshData() {
     const tasks = [];
+    const readsStats = can(CAPABILITIES.STATS_READ);
 
     if (can(CAPABILITIES.STUDENTS_READ)) {
-        tasks.push(loadOverview().then(() => renderCustomers()));
+        /* The overview response carries the header counters (see
+           students-overview.js), so the standalone stats endpoint — a SECOND
+           full scan of the same collection — is only called when the response
+           did not include them: an older deployment, or a failed overview.
+           This is the single biggest read saving on the startup path. */
+        tasks.push(loadOverview().then(async () => {
+            renderCustomers();
+            if (readsStats && state.statsFromOverview !== true) {
+                await loadStats();
+            }
+        }));
+    } else if (readsStats) {
+        tasks.push(loadStats());
     }
 
     if (can(CAPABILITIES.USERS_READ)) {
         tasks.push(loadUsers());
-    }
-
-    if (can(CAPABILITIES.STATS_READ)) {
-        tasks.push(loadStats());
     }
 
     /* allSettled: one failing section must never blank the whole panel. */
@@ -817,6 +988,10 @@ async function refreshData() {
     });
 
     renderCustomers();
+
+    /* The HTTP baseline is in place — hand over to the live stream. Idempotent,
+       so the manual "Yangilash" button does not open a second listener. */
+    startRealtime();
 }
 
 /**
@@ -855,12 +1030,24 @@ function applyRoleUi() {
         }
     }
 
-    /* Hide whole tabs a teacher has no business seeing. */
+    /* Customer-creation form lives inside the (student-visible) Customers tab,
+       so it needs its own gate — otherwise a read-only teacher was shown a
+       fully rendered "create user" form that could only ever 403. */
+    const createCustomerCard = document.getElementById('createCustomerCard');
+    if (createCustomerCard) {
+        createCustomerCard.style.display = can(CAPABILITIES.USERS_CREATE) ? '' : 'none';
+    }
+
+    /* Hide whole tabs a role has no business seeing.
+       The keys MUST match the data-tab values in adminpanel.html. They did not:
+       `staff` and `create` are not tabs, while `admin` (Administration — staff
+       creation and the staff roster) was absent from the map entirely, so a
+       teacher was shown the whole administration tab. */
     const tabCapability = {
         customers: CAPABILITIES.STUDENTS_READ,
-        staff: CAPABILITIES.USERS_READ,
-        create: CAPABILITIES.USERS_CREATE,
-        certificates: CAPABILITIES.CERTIFICATES_READ
+        global: CAPABILITIES.STUDENTS_READ,
+        certificates: CAPABILITIES.CERTIFICATES_READ,
+        admin: CAPABILITIES.USERS_READ
     };
     document.querySelectorAll('[data-tab]').forEach((btn) => {
         const capability = tabCapability[btn.dataset.tab];
@@ -952,11 +1139,24 @@ async function establishSession(user, { forceRefresh = false } = {}) {
 
 /** Tear the session down locally (used on denial and on explicit sign-out). */
 async function endSession({ signOutFirebase = true } = {}) {
+    /* Release the live Firestore stream FIRST. A listener left open after
+       sign-out keeps a connection (and its read billing) alive and would start
+       throwing permission errors the moment the token is gone. */
+    stopRealtime();
+
     state.user = null;
     state.profile = null;
     state.role = 'customer';
     state.capabilities = new Set();
     state.bootstrapped = false;
+    state.users = [];
+    state.overview = {};
+    globalState.data = null;
+    globalState.loaded = false;
+    if (globalState.refreshTimer) {
+        clearTimeout(globalState.refreshTimer);
+        globalState.refreshTimer = 0;
+    }
     if (signOutFirebase) {
         await signOut(auth).catch(() => null);
     }
@@ -1038,12 +1238,17 @@ function initLoginForm() {
 
 async function initGate() {
     initLoginForm();
-    hideProtectedUi();
     setGateInfo('Sessiya tekshirilmoqda...');
     clearNotice(gateError);
 
     /* THE session-restoration path. Fires once on load with either the
-       restored user or null, and again on every sign-in/sign-out. */
+       restored user or null, and again on every sign-in/sign-out.
+
+       NOTE: hideProtectedUi() is deliberately NOT called here any more. Doing
+       so forced the login card to paint on every load — including the common
+       case of a valid restored session — which is precisely the flash this
+       stage removes. The first paint is chosen by the inline boot script and
+       is corrected below by whichever branch Firebase actually reports. */
     onAuthStateChanged(auth, async (user) => {
         if (!user) {
             await endSession({ signOutFirebase: false });
@@ -1055,6 +1260,9 @@ async function initGate() {
         if (state.bootstrapped && state.user && state.user.uid === user.uid) {
             return;                       // already inside; nothing to redo
         }
+
+        /* Session confirmed -> shell up immediately, authorization in flight. */
+        revealShell();
 
         try {
             await establishSession(user);
@@ -1375,13 +1583,36 @@ async function setRoleFlow(userId, button) {
 }
 
 async function deleteFlow(userId, button) {
+    const target = state.users.find((user) => user.uid === userId) || null;
+    const expected = target ? target.username : '';
+
+    /* Deletion is irreversible — recursiveDelete() destroys the profile,
+       every quizResult, the whole event stream and the certificate records,
+       and the Auth account goes with it. Now that Administrators (not only
+       Developers) can reach this button, a single mis-click must not be
+       enough: the exact login has to be typed back. */
     const confirmed = await openModal({
-        title: 'Tasdiqlash',
-        action: 'Foydalanuvchini butunlay o‘chirish',
+        title: 'Foydalanuvchini o‘chirish',
+        action: expected
+            ? `${expected} — profil, progress, sertifikatlar va analitika butunlay o‘chiriladi. Bu amalni ortga qaytarib bo‘lmaydi.`
+            : 'Foydalanuvchini butunlay o‘chirish. Bu amalni ortga qaytarib bo‘lmaydi.',
         confirmLabel: 'O‘chirish',
-        danger: true
+        danger: true,
+        fields: expected
+            ? [{
+                name: 'confirmUsername',
+                label: `Tasdiqlash uchun loginni kiriting: ${expected}`,
+                required: true,
+                placeholder: expected
+            }]
+            : []
     });
     if (!confirmed) {
+        return false;
+    }
+
+    if (expected && String(confirmed.confirmUsername || '').trim().toLowerCase() !== expected) {
+        showError('Login mos kelmadi — o‘chirish bekor qilindi.');
         return false;
     }
 
@@ -1696,7 +1927,11 @@ initCreateStaff();
 initRowActions();
 initActions();
 initCertificates();
-initGate();
+// NOTE: initGate() is intentionally NOT called here either — see the note at
+// the very bottom of the file. Its auth callback reaches REALTIME_STATE and
+// globalState, which are `const` declarations further down; if Firebase were
+// to dispatch the first auth event before module evaluation finished, the
+// callback would hit the temporal dead zone and abort the whole module.
 // NOTE: initStudentAnalytics() is intentionally NOT called here. Its module
 // state (_saOverlay/_saData/_saTab) is declared with `let` further down the
 // file, so calling it at this point would hit the temporal dead zone
@@ -2184,3 +2419,459 @@ function injectAnalyticsStyles() {
 // (_saOverlay, _saData, _saTab) and every helper it uses are now declared and
 // initialized above, so this runs outside the temporal dead zone.
 initStudentAnalytics();
+
+/* ====================================================================== *
+ *  REALTIME (Stage 6)
+ *  ----------------------------------------------------------------------
+ *  The panel must reflect a student's action the moment it happens — no
+ *  refresh, no reload, no polling.
+ *
+ *  HOW IT WORKS
+ *  ------------
+ *  The server publishes a narrow, learner-only projection of each student's
+ *  admin-list row to `studentPulse/{uid}` whenever anything meaningful
+ *  changes (analytics flush, certificate issue, admin mutation — see
+ *  api/_lib/analytics-store.js). The panel subscribes with
+ *
+ *      where('updatedAt', '>', <the moment our HTTP baseline was taken>)
+ *
+ *  so the FIRST snapshot is empty and every subsequent one carries only the
+ *  documents that actually changed. Steady-state cost is one document read
+ *  per student action and exactly zero while nobody is studying — as opposed
+ *  to a poll, which pays for the whole collection on a timer forever.
+ *
+ *  The Firestore query machinery is imported LAZILY, after the panel is
+ *  already interactive, so it never sits on the startup critical path.
+ * ====================================================================== */
+
+const REALTIME_STATE = {
+    unsubscribe: null,
+    since: 0,
+    frame: 0,
+    dirty: false,
+    connected: false
+};
+
+/** Coalesce bursts of snapshots into ONE render on the next animation frame. */
+function scheduleRealtimeRender() {
+    REALTIME_STATE.dirty = true;
+
+    if (REALTIME_STATE.frame) {
+        return;
+    }
+
+    REALTIME_STATE.frame = requestAnimationFrame(() => {
+        REALTIME_STATE.frame = 0;
+        if (!REALTIME_STATE.dirty) {
+            return;
+        }
+        REALTIME_STATE.dirty = false;
+        renderCustomers();
+        if (globalState.loaded) {
+            scheduleGlobalRefresh();
+        }
+    });
+}
+
+/** Merge one pulse document into the in-memory overview map. */
+function applyPulseRow(uid, row, removed) {
+    /* A retraction arrives as a tombstone (`deleted: true`) rather than a
+       document deletion, because a deletion produces no snapshot event for
+       panels whose filtered result set never contained the document. */
+    if (removed || (row && row.deleted === true)) {
+        delete state.overview[uid];
+
+        /* Keep the identity list consistent too, so a deleted account cannot
+           linger as a ghost row for an admin who also holds users:read. */
+        const index = state.users.findIndex((u) => u.uid === uid);
+        if (index >= 0) {
+            state.users.splice(index, 1);
+        }
+        return;
+    }
+
+    state.overview[uid] = { ...row, uid };
+
+    /* Mirror the fields the customer table reads straight from state.users so
+       a live subscription/block change is visible without a reload. */
+    const existing = state.users.find((u) => u.uid === uid);
+    if (existing) {
+        existing.blocked = Boolean(row.blocked);
+        if (row.subscription && typeof row.subscription === 'object') {
+            existing.subscription = { ...existing.subscription, ...row.subscription };
+        }
+        if (row.displayName) {
+            existing.displayName = row.displayName;
+        }
+        return;
+    }
+
+    /* An account we have never seen — created by ANOTHER admin while this
+       panel was open. The pulse row deliberately omits the fields that need
+       users:read (access packs, device count), so rather than render a
+       half-invented row we reconcile from the authoritative endpoint. Debounced,
+       because a burst of new accounts must cost one request, not one each. */
+    if (can(CAPABILITIES.USERS_READ)) {
+        reconcileUsers();
+    }
+}
+
+const reconcileUsers = debounce(() => {
+    loadUsers().catch((error) => console.warn('user list reconcile failed:', error?.message || error));
+}, 1200);
+
+async function startRealtime() {
+    if (REALTIME_STATE.unsubscribe || !can(CAPABILITIES.STUDENTS_READ)) {
+        return;
+    }
+
+    /* Baseline moment: everything up to here already arrived over HTTP. Using
+       the moment the overview LOAD STARTED (not "now") closes the window in
+       which a student could act between the read and the subscription. */
+    const since = REALTIME_STATE.since || Date.now();
+
+    try {
+        const { db, collection, query, where, onSnapshot, Timestamp } = await import('./firebase-client.js');
+
+        const liveQuery = query(
+            collection(db, 'studentPulse'),
+            where('updatedAt', '>', Timestamp.fromMillis(since))
+        );
+
+        REALTIME_STATE.unsubscribe = onSnapshot(
+            liveQuery,
+            (snapshot) => {
+                if (snapshot.empty && !snapshot.docChanges().length) {
+                    REALTIME_STATE.connected = true;
+                    updateLiveBadge();
+                    return;
+                }
+
+                let changed = 0;
+                snapshot.docChanges().forEach((change) => {
+                    applyPulseRow(change.doc.id, change.doc.data(), change.type === 'removed');
+                    changed += 1;
+                });
+
+                REALTIME_STATE.connected = true;
+                updateLiveBadge();
+
+                if (changed) {
+                    scheduleRealtimeRender();
+                }
+            },
+            (error) => {
+                /* A denied or dropped listener must never break the panel: the
+                   manual refresh path is still fully functional. */
+                console.warn('realtime pulse unavailable:', error?.message || error);
+                REALTIME_STATE.connected = false;
+                updateLiveBadge();
+                stopRealtime();
+            }
+        );
+    } catch (error) {
+        console.warn('realtime pulse could not start:', error?.message || error);
+    }
+}
+
+function stopRealtime() {
+    if (REALTIME_STATE.unsubscribe) {
+        try { REALTIME_STATE.unsubscribe(); } catch (e) { /* already gone */ }
+        REALTIME_STATE.unsubscribe = null;
+    }
+
+    if (REALTIME_STATE.frame) {
+        cancelAnimationFrame(REALTIME_STATE.frame);
+        REALTIME_STATE.frame = 0;
+    }
+
+    REALTIME_STATE.dirty = false;
+    REALTIME_STATE.connected = false;
+    updateLiveBadge();
+}
+
+function updateLiveBadge() {
+    const badge = document.getElementById('gaLive');
+    if (badge) {
+        badge.hidden = !REALTIME_STATE.connected;
+    }
+}
+
+/* The listener is a long-lived resource. Releasing it on sign-out and on page
+   teardown is what keeps a logged-out tab from holding an open stream (and
+   being billed for it). */
+window.addEventListener('pagehide', stopRealtime);
+
+/* ====================================================================== *
+ *  GLOBAL ANALYTICS (Stage 7)
+ *  ----------------------------------------------------------------------
+ *  Platform-wide statistics from GET /api/admin?action=global-analytics.
+ *  Everything is aggregated server-side; this file only renders.
+ * ====================================================================== */
+
+const globalState = {
+    data: null,
+    loaded: false,
+    loading: false,
+    refreshTimer: 0,
+    lastLoadedAt: 0
+};
+
+const GLOBAL_MIN_REFRESH_MS = 20000;
+
+function gaNum(value) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toLocaleString('uz-UZ') : '—';
+}
+
+function gaPercent(value) {
+    return Number.isFinite(Number(value)) ? `${Math.round(Number(value))}%` : '—';
+}
+
+function gaHours(ms) {
+    const n = Number(ms);
+    if (!Number.isFinite(n) || n <= 0) return '0 soat';
+    const hours = n / 3600000;
+    if (hours < 1) return `${Math.round(n / 60000)} daqiqa`;
+    return `${Math.round(hours).toLocaleString('uz-UZ')} soat`;
+}
+
+function gaTile(label, value, sub, tone) {
+    return `<article class="ga-tile${tone ? ` ga-${tone}` : ''}">
+        <span class="ga-label">${escapeHtml(label)}</span>
+        <strong class="ga-value">${escapeHtml(value)}</strong>
+        ${sub ? `<span class="ga-sub">${escapeHtml(sub)}</span>` : ''}
+    </article>`;
+}
+
+function gaHealthTone(score) {
+    if (score >= 70) return 'good';
+    if (score >= 40) return 'warn';
+    return 'bad';
+}
+
+function gaTopicList(rows, kind) {
+    if (!rows || !rows.length) {
+        return '<div class="ga-empty">Yetarli ma’lumot yig‘ilmagan.</div>';
+    }
+
+    return `<div class="ga-topics">${rows.map((t) => {
+        const metric = kind === 'hard'
+            ? `${gaPercent(t.averageScore)} · ${gaNum(t.attempts)} urinish`
+            : `${gaNum(t.completions)} marta`;
+        const cls = kind === 'hard' ? 'is-hard' : (kind === 'most' ? 'is-easy' : '');
+        return `<div class="ga-topic-row ${cls}">
+            <span><b>${escapeHtml(t.course)}</b> · Mavzu ${escapeHtml(String(t.topic))}</span>
+            <span class="ga-topic-score">${escapeHtml(metric)}</span>
+        </div>`;
+    }).join('')}</div>`;
+}
+
+function gaActivityChart(daily) {
+    if (!daily || !daily.length) {
+        return '<div class="ga-empty">Faollik hali qayd etilmagan.</div>';
+    }
+
+    const max = Math.max(...daily.map((d) => d.ms), 1);
+    const bars = daily.map((d) => {
+        const pct = Math.round((d.ms / max) * 100);
+        const minutes = Math.round(d.ms / 60000);
+        return `<span class="ga-spark-bar" data-empty="${d.ms ? '0' : '1'}"
+            style="height:${Math.max(2, pct)}%"
+            title="${escapeHtml(d.day)}: ${minutes} daqiqa, ${d.sessions} sessiya"></span>`;
+    }).join('');
+
+    return `<div class="ga-spark">${bars}</div>
+        <div class="ga-axis"><span>${escapeHtml(daily[0].day)}</span><span>${escapeHtml(daily[daily.length - 1].day)}</span></div>`;
+}
+
+function renderGlobalAnalytics() {
+    const root = document.getElementById('globalAnalyticsBody');
+    const meta = document.getElementById('gaMeta');
+    if (!root) {
+        return;
+    }
+
+    const data = globalState.data;
+
+    if (!data) {
+        root.innerHTML = globalState.loading
+            ? `<div class="ga-grid">${Array.from({ length: 8 })
+                .map(() => '<article class="ga-tile"><span class="skeleton-bar" style="width:60%"></span><span class="skeleton-bar" style="width:40%;height:20px"></span></article>')
+                .join('')}</div>`
+            : '<div class="ga-empty">Ma’lumot yuklanmadi. «Yangilash» tugmasini bosing.</div>';
+        return;
+    }
+
+    const u = data.users;
+    const p = data.progress;
+    const h = data.health;
+
+    if (meta) {
+        meta.textContent = `Yangilandi: ${new Date(data.generatedAt).toLocaleTimeString('uz-UZ')}`;
+    }
+
+    root.innerHTML = `
+        <section class="ga-section">
+            <h3>Foydalanuvchilar</h3>
+            <div class="ga-grid">
+                ${gaTile('Jami o‘quvchi', gaNum(u.total))}
+                ${gaTile('Faol (7 kun)', gaNum(u.active), `Bugun: ${gaNum(u.activeToday)}`, 'good')}
+                ${gaTile('Nofaol (30+ kun)', gaNum(u.inactive), null, u.inactive > u.active ? 'bad' : null)}
+                ${gaTile('Yangi (30 kun)', gaNum(u.new30), `7 kun: ${gaNum(u.new7)}`)}
+                ${gaTile('Qaytgan o‘quvchi', gaNum(u.returning), '30 kun ichida faol')}
+                ${gaTile('Hozir o‘qiyapti', gaNum(u.currentlyStudying))}
+                ${gaTile('Kursni tugatgan', gaNum(u.completedAll))}
+                ${gaTile('Faol obuna', gaNum(u.subscribed), `Bloklangan: ${gaNum(u.blocked)}`)}
+            </div>
+        </section>
+
+        <section class="ga-section">
+            <h3>Natijalar</h3>
+            <div class="ga-grid">
+                ${gaTile('O‘rtacha yakunlanish', gaPercent(p.averageCompletion))}
+                ${gaTile('O‘rtacha ball', p.averageScore == null ? '—' : gaPercent(p.averageScore))}
+                ${gaTile('Sertifikatlar', gaNum(p.certificates))}
+                ${gaTile('Topshirilgan imtihon', gaNum(p.examsPassed))}
+                ${gaTile('O‘rganilgan so‘z', gaNum(p.wordsLearned))}
+                ${gaTile('Umumiy o‘qish vaqti', gaHours(p.learningMs))}
+            </div>
+        </section>
+
+        <section class="ga-section">
+            <h3>Kurslar bo‘yicha progress</h3>
+            <div>
+                ${data.courses.map((c) => `
+                    <div class="ga-course-row">
+                        <span class="ga-course-code">${escapeHtml(c.code)}</span>
+                        <div class="ga-track"><div class="ga-fill" style="width:${Math.max(0, Math.min(100, c.averageProgress))}%"></div></div>
+                        <span class="ga-course-meta">${gaPercent(c.averageProgress)} · ${gaNum(c.studying)} o‘qiyapti · ${gaNum(c.completed)} tugatgan · ${gaNum(c.certificates)} sertifikat</span>
+                    </div>
+                `).join('')}
+            </div>
+            <p class="ga-hint">Yakunlash darajasi: ${data.courses.map((c) => `${c.code} ${gaPercent(c.completionRate)}`).join(' · ')}</p>
+        </section>
+
+        <section class="ga-section">
+            <h3>Kunlik faollik (30 kun)</h3>
+            ${gaActivityChart(data.activity.daily)}
+            <p class="ga-hint">
+                Bugun: ${gaHours(data.activity.today.ms)} · Haftalik: ${gaHours(data.activity.weekly.ms)} · Oylik: ${gaHours(data.activity.monthly.ms)}
+            </p>
+        </section>
+
+        <section class="ga-two-col">
+            <div class="ga-section">
+                <h3>Eng qiyin mavzular</h3>
+                <p class="ga-hint">Eng past o‘rtacha ball (kamida ${gaNum(3)} urinish)</p>
+                ${gaTopicList(data.topics.hardest, 'hard')}
+            </div>
+            <div class="ga-section">
+                <h3>Eng ko‘p yakunlangan</h3>
+                <p class="ga-hint">Talabalar eng ko‘p tugatgan mavzular</p>
+                ${gaTopicList(data.topics.mostCompleted, 'most')}
+            </div>
+            <div class="ga-section">
+                <h3>Eng kam yakunlangan</h3>
+                <p class="ga-hint">E’tibor talab qiladigan mavzular</p>
+                ${gaTopicList(data.topics.leastCompleted, 'least')}
+            </div>
+        </section>
+
+        <section class="ga-section">
+            <h3>Platforma salomatligi</h3>
+            <div class="ga-grid">
+                ${gaTile('Umumiy ko‘rsatkich', gaPercent(h.score), 'Quyidagi 4 signal o‘rtachasi', gaHealthTone(h.score))}
+                ${gaTile('Jalb qilinganlik', gaPercent(h.engagement), '7 kunda faol ulush')}
+                ${gaTile('Ushlab qolish', gaPercent(h.retention), 'Qaytgan / faol')}
+                ${gaTile('Boshlaganlar', gaPercent(h.progression), 'Kamida 1 mavzu')}
+                ${gaTile('Natijadorlik', h.outcomes == null ? '—' : gaPercent(h.outcomes), 'O‘rtacha ball')}
+            </div>
+        </section>
+    `;
+}
+
+async function loadGlobalAnalytics({ silent = false } = {}) {
+    if (globalState.loading || !can(CAPABILITIES.STUDENTS_READ)) {
+        return;
+    }
+
+    globalState.loading = true;
+    if (!silent) {
+        renderGlobalAnalytics();
+    }
+
+    try {
+        const result = await callApi('/api/admin?action=global-analytics', 'GET');
+        globalState.data = result?.analytics || null;
+        globalState.loaded = true;
+        globalState.lastLoadedAt = Date.now();
+        renderGlobalAnalytics();
+    } catch (error) {
+        console.warn('global analytics load failed:', error?.message || error);
+        if (!silent) {
+            const meta = document.getElementById('gaMeta');
+            if (meta) {
+                meta.textContent = 'Yuklab bo‘lmadi';
+            }
+            showError(mapApiError(error, 'Global analitikani yuklab bo‘lmadi.'));
+        }
+    } finally {
+        globalState.loading = false;
+    }
+}
+
+/**
+ * Recompute the platform view after live student activity.
+ *
+ * Global numbers aggregate the whole user base, so they cannot be patched from
+ * a single pulse row — they need the endpoint. That call is therefore
+ * rate-limited to at most once per GLOBAL_MIN_REFRESH_MS: a burst of student
+ * actions produces ONE refresh, not one per event. This is event-driven, not
+ * polling — an idle platform issues no requests at all.
+ */
+function scheduleGlobalRefresh() {
+    if (globalState.refreshTimer || !globalState.loaded) {
+        return;
+    }
+
+    const elapsed = Date.now() - globalState.lastLoadedAt;
+    const delay = Math.max(0, GLOBAL_MIN_REFRESH_MS - elapsed);
+
+    globalState.refreshTimer = window.setTimeout(() => {
+        globalState.refreshTimer = 0;
+        loadGlobalAnalytics({ silent: true });
+    }, delay);
+}
+
+function initGlobalAnalytics() {
+    const refreshBtn = document.getElementById('gaRefreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            setButtonLoading(refreshBtn, true);
+            try {
+                await loadGlobalAnalytics();
+            } finally {
+                setButtonLoading(refreshBtn, false);
+            }
+        });
+    }
+
+    /* Lazy: the platform view costs a full users scan, so it is only fetched
+       when the tab is actually opened — never on panel startup. */
+    if (tabsNav) {
+        tabsNav.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-tab="global"]');
+            if (button && !globalState.loaded) {
+                loadGlobalAnalytics();
+            }
+        });
+    }
+}
+
+initGlobalAnalytics();
+
+/* Everything the gate's auth callback can touch — including the realtime and
+   global-analytics module state declared above — is now initialized, so it is
+   finally safe to subscribe. This MUST remain the last statement in the file. */
+initGate();

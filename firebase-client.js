@@ -18,6 +18,8 @@ import {
     query,
     where,
     limit,
+    orderBy,
+    onSnapshot,
     Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
@@ -90,8 +92,26 @@ if (typeof window !== 'undefined') {
  *  /api/analytics, so Firestore cost stays minimal.                   *
  * ------------------------------------------------------------------ */
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-    const isDemoPage = /-demo/.test((window.location?.pathname || '').toLowerCase());
-    if (!isDemoPage && !window.__uzTrackerInjected) {
+    const path = (window.location?.pathname || '').toLowerCase();
+    const isDemoPage = /-demo/.test(path);
+
+    /* ------------------------------------------------------------------ *
+     * STAFF PAGES ARE NOT LEARNING PAGES.
+     * ------------------------------------------------------------------
+     * The admin panel used to load the tracker like any course page. That
+     * was wrong on three counts:
+     *   1. CORRECTNESS — it emitted a `login` event and periodic `session`
+     *      events for the STAFF account, so every admin who opened the
+     *      panel was written into users/{adminUid}/events and counted as an
+     *      active learner in the very analytics they were reading.
+     *   2. COST — those are real Firestore writes (events + summary +
+     *      user doc) for a page that teaches nobody.
+     *   3. STARTUP — an extra script request, a second onAuthStateChanged
+     *      subscription and a 45s interval on the panel's critical path.
+     * ------------------------------------------------------------------ */
+    const isStaffPage = path.includes('adminpanel');
+
+    if (!isDemoPage && !isStaffPage && !window.__uzTrackerInjected) {
         window.__uzTrackerInjected = true;
         try {
             const s = document.createElement('script');
@@ -416,6 +436,8 @@ export {
     query,
     where,
     limit,
+    orderBy,
+    onSnapshot,
     Timestamp,
     onAuthStateChanged,
     signInWithEmailAndPassword,

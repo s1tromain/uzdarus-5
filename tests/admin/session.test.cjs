@@ -87,7 +87,7 @@ function makeDom(onNavigate) {
  *  authUser   : the user onAuthStateChanged should emit (null = signed out)
  *  profile    : the Firestore profile getUserProfile should return
  */
-async function bootGate({ authUser = null, profile = null, apiCalls = null } = {}) {
+async function bootGate({ authUser = null, profile = null, apiCalls = null, overviewStats = null } = {}) {
     const calls = apiCalls || [];
     let authCb = null;
     let signOutCount = 0;
@@ -108,7 +108,11 @@ async function bootGate({ authUser = null, profile = null, apiCalls = null } = {
         clearLocalUser: () => {},
         callApi: async (url) => {
             calls.push(url);
-            if (/students-overview/.test(url)) return { ok: true, students: [] };
+            if (/students-overview/.test(url)) {
+                return overviewStats
+                    ? { ok: true, students: [], stats: overviewStats }
+                    : { ok: true, students: [] };
+            }
             if (/list-users/.test(url)) return { ok: true, users: [] };
             if (/action=stats/.test(url)) return { ok: true, stats: {} };
             return { ok: true };
@@ -303,17 +307,129 @@ console.log('\n[S8] Ordinary IP / network change must NOT cause a logout loop');
 
 console.log('\n[S9] Startup cost: redundant full-collection reads removed');
 {
-    const admin = await bootGate({ authUser: USER, profile: { uid: 'a', username: 'boss', role: 'admin' } });
+    /* Every one of these endpoints scans the ENTIRE users collection server
+       side. students-overview now returns the header counters from the scan it
+       already performs, so an admin startup costs two scans instead of three. */
+    const admin = await bootGate({
+        authUser: USER,
+        profile: { uid: 'a', username: 'boss', role: 'admin' },
+        overviewStats: { totalUsers: 7, activeSubscriptions: 3, blockedUsers: 1, registeredDevices: 9 },
+    });
     const adminUrls = admin.calls.filter(u => /action=(list-users|stats|students-overview)/.test(u));
-    eq('admin startup issues exactly 3 data calls (one per section)', adminUrls.length, 3);
+    eq('admin startup issues 2 data calls, not 3', adminUrls.length, 2);
+    ok('the duplicate stats scan is gone', !adminUrls.some(u => /action=stats/.test(u)));
     ok('no duplicate endpoint call', new Set(adminUrls).size === adminUrls.length);
+    eq('the counters still render', admin.w.document.getElementById('statTotalUsers').textContent, '7');
+    eq('and every counter is populated', admin.w.document.getElementById('statDevices').textContent, '9');
     admin.close();
+
+    /* Backwards compatibility: against a deployment whose students-overview
+       does not yet fold the counters in, the panel must still fetch them. */
+    const legacy = await bootGate({ authUser: USER, profile: { uid: 'a', username: 'boss', role: 'admin' } });
+    const legacyUrls = legacy.calls.filter(u => /action=(list-users|stats|students-overview)/.test(u));
+    eq('an older server still gets its 3 calls', legacyUrls.length, 3);
+    ok('and the stats endpoint is the fallback', legacyUrls.some(u => /action=stats/.test(u)));
+    legacy.close();
 
     const teacher = await bootGate({ authUser: { ...USER, uid: 't' }, profile: { uid: 't', username: 'u', role: 'teacher' } });
     const teacherUrls = teacher.calls.filter(u => /action=(list-users|stats|students-overview)/.test(u));
     eq('teacher startup issues exactly 1 data call', teacherUrls.length, 1);
     ok('and it is the students overview', /students-overview/.test(teacherUrls[0] || ''));
     teacher.close();
+}
+
+console.log('\n[S10] Startup: the login form never flashes for a restored staff session');
+{
+    /* ROOT CAUSE (fixed): #adminGate is visible in the static markup and
+       initGate() called hideProtectedUi() unconditionally, so the login card
+       was the FIRST paint on every load — including the common case of a
+       valid session — and stayed up for the whole module-load + auth-restore
+       + profile-read window. */
+    ok('the gate no longer force-shows the login card before auth speaks',
+       !/initLoginForm\(\);\s*\n\s*hideProtectedUi\(\);/.test(PANEL_SRC));
+    ok('the shell is revealed as soon as Firebase reports a user',
+       /revealShell\(\);[\s\S]{0,200}await establishSession\(user\)/.test(PANEL_SRC));
+    ok('role-dependent chrome is withheld until the role is known',
+       /data-phase', 'resolving'/.test(PANEL_SRC));
+    ok('and released only after applyRoleUi() has run',
+       /data-phase', 'ready'/.test(PANEL_SRC));
+
+    /* The first paint is decided synchronously from a LOCAL hint. */
+    ok('adminpanel.html chooses the first paint before any module loads',
+       /data-boot/.test(PANEL_HTML) && /localStorage\.getItem\('currentUser'\)/.test(PANEL_HTML));
+    ok('a staff hint paints a neutral splash, never the login form',
+       /phase = 'restoring'/.test(PANEL_HTML));
+    ok('CSS hides the gate during restoration',
+       /html\[data-boot="restoring"\] #adminGate \{\s*display: none/.test(
+           fs.readFileSync(path.join(ROOT, 'adminpanel.css'), 'utf8')));
+
+    /* The hint must NOT be treated as authorization. */
+    ok('the hint only selects a skeleton — authorization still comes from the profile',
+       /const role = normalizeRole\(profile\.role\)/.test(PANEL_SRC));
+    ok('no capability is derived from localStorage',
+       !/capabilitiesForRole\([^)]*localStorage/.test(PANEL_SRC));
+
+    /* Module graph: the startup waterfall is preloaded, and the unused
+       render-blocking icon stylesheet is gone. */
+    ok('the Firebase module graph is preloaded in parallel',
+       (PANEL_HTML.match(/rel="modulepreload"/g) || []).length >= 5);
+    ok('auth and Firestore hosts are preconnected',
+       /preconnect[^>]*gstatic/.test(PANEL_HTML) && /preconnect[^>]*firestore\.googleapis/.test(PANEL_HTML));
+    ok('the unused Font Awesome stylesheet is no longer render-blocking',
+       !/font-awesome/i.test(PANEL_HTML));
+
+    /* The analytics tracker must not run on a staff page. */
+    const fc = fs.readFileSync(path.join(ROOT, 'firebase-client.js'), 'utf8');
+    ok('the learning tracker is not injected on the admin panel',
+       /isStaffPage/.test(fc) && /!isStaffPage/.test(fc));
+}
+
+console.log('\n[S11] A restored session opens the panel without a login paint');
+{
+    const h = await bootGate({ authUser: USER, profile: { uid: 'admin1', username: 'boss', role: 'admin' } });
+    ok('panel open', panelVisible(h.w));
+    ok('login card hidden', !loginVisible(h.w));
+    eq('boot phase handed over to the panel', h.w.document.documentElement.getAttribute('data-boot'), 'ready');
+    eq('the shell is fully released', h.w.document.getElementById('adminApp').getAttribute('data-phase'), 'ready');
+    h.close();
+}
+
+console.log('\n[S12] Signing out releases the live listener and the cached data');
+{
+    const h = await bootGate({ authUser: USER, profile: { uid: 'admin1', username: 'boss', role: 'admin' } });
+    ok('panel open before sign-out', panelVisible(h.w));
+
+    await h.emitAuth(null);
+    ok('login card shown after sign-out', loginVisible(h.w));
+    eq('boot phase reset', h.w.document.documentElement.getAttribute('data-boot'), 'anonymous');
+    eq('cached user list cleared', h.w.__state.users.length, 0);
+    eq('cached overview cleared', Object.keys(h.w.__state.overview).length, 0);
+    eq('capabilities dropped', h.w.__state.capabilities.size, 0);
+    eq('bootstrap flag reset', h.w.__state.bootstrapped, false);
+    h.close();
+
+    ok('the realtime listener is torn down on session end',
+       /async function endSession[\s\S]{0,400}stopRealtime\(\);/.test(PANEL_SRC));
+    ok('and on page teardown', /addEventListener\('pagehide', stopRealtime\)/.test(PANEL_SRC));
+}
+
+console.log('\n[S13] Realtime is incremental, not a poll');
+{
+    ok('the live query filters on the HTTP baseline',
+       /where\('updatedAt', '>', Timestamp\.fromMillis\(since\)\)/.test(PANEL_SRC));
+    ok('the baseline is stamped BEFORE the overview request',
+       /REALTIME_STATE\.since = Date\.now\(\);[\s\S]{0,200}students-overview/.test(PANEL_SRC));
+    ok('no setInterval polling was introduced', !/setInterval\(/.test(PANEL_SRC));
+    ok('snapshot bursts are coalesced into one render',
+       /requestAnimationFrame\(/.test(PANEL_SRC) && /scheduleRealtimeRender/.test(PANEL_SRC));
+    ok('the Firestore query modules are imported lazily, off the critical path',
+       /await import\('\.\/firebase-client\.js'\)/.test(PANEL_SRC));
+    ok('a denied listener degrades to the manual refresh instead of breaking',
+       /realtime pulse unavailable/.test(PANEL_SRC));
+    ok('the global view is rate-limited, not refreshed per event',
+       /GLOBAL_MIN_REFRESH_MS/.test(PANEL_SRC));
+    ok('the global view is fetched lazily, only when its tab is opened',
+       /data-tab="global"[\s\S]{0,200}loadGlobalAnalytics\(\)/.test(PANEL_SRC));
 }
 
 console.log('\n' + '─'.repeat(64));

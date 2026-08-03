@@ -510,7 +510,13 @@ export function buildStudentOverviewRow(uid, data = {}, nowMs = Date.now()) {
         const cp = data?.courses?.[code] || null;
         const total = COURSE_TOTAL_TOPICS[code] || 0;
         const done = Math.min(total, completedTopicsCount(cp));
-        return { code, completedTopics: done, totalTopics: total, progressPercent: total ? Math.round((done / total) * 100) : 0 };
+        return {
+            code,
+            completedTopics: done,
+            totalTopics: total,
+            progressPercent: total ? Math.round((done / total) * 100) : 0,
+            certificate: Boolean(cp && cp.certificateNumber),
+        };
     });
     const totalDone = courses.reduce((s, c) => s + c.completedTopics, 0);
     const totalTopics = courses.reduce((s, c) => s + c.totalTopics, 0);
@@ -524,6 +530,10 @@ export function buildStudentOverviewRow(uid, data = {}, nowMs = Date.now()) {
     return {
         uid,
         username: data.username || null,
+        /* The teacher surface renders the student list from these rows alone
+           (a teacher may not call list-users), so the human-readable name has
+           to travel with the row. */
+        displayName: data.displayName || data.username || null,
         email: data.email || null,
         role: String(data.role || 'customer').toLowerCase(),
         blocked: Boolean(data.blocked),
@@ -536,5 +546,307 @@ export function buildStudentOverviewRow(uid, data = {}, nowMs = Date.now()) {
         examsPassed: st.examsPassed || 0,
         wordsLearned: st.words || 0,
         certificates,
+        /* Cohort analysis (Stage 7) needs to tell a brand-new account apart
+           from a returning one. Cheap: it is already on the user document.
+           Two field names exist in production data — self-registered accounts
+           carry `registeredAt`, admin-created ones `createdAt` — so both are
+           accepted rather than silently reporting half the base as undated. */
+        registeredAt: toMs(data.registeredAt) ?? toMs(data.createdAt),
+        learningMs: st.learningMs || 0,
+    };
+}
+
+/* ================================================================== */
+/*  GLOBAL AGGREGATES (Stage 6/7)                                      */
+/*  --------------------------------------------------------------    */
+/*  Platform-wide numbers must never be computed by fanning out over   */
+/*  every learner's subcollections — that would be O(users) reads per  */
+/*  page view. Instead the ingest path folds each batch into a handful */
+/*  of counter documents, and the admin page reads those.              */
+/*                                                                     */
+/*  Everything here is PURE. The Firestore glue lives in               */
+/*  analytics-store.js and the unit tests drive these functions        */
+/*  directly.                                                          */
+/* ================================================================== */
+
+/** Day buckets kept in the global activity document. */
+export const GLOBAL_ACTIVITY_RETENTION_DAYS = 92;
+
+/** An attempt is only meaningful for difficulty ranking above this count. */
+export const TOPIC_MIN_ATTEMPTS = 3;
+
+/** Percentage at or above which an attempt counts as a pass. */
+export const PASS_THRESHOLD = 60;
+
+/**
+ * Fold one sanitized batch into the deltas that must be applied to the global
+ * counter documents.
+ *
+ * @returns {{
+ *   days: Record<string, { ms:number, events:number, sessions:number, pron:number, words:number }>,
+ *   topics: Record<string, Record<string, { att:number, sum:number, done:number, fail:number }>>
+ * }}
+ */
+export function buildGlobalDelta(events = []) {
+    const days = {};
+    const topics = {};
+
+    const day = (ms) => {
+        const key = dayKey(ms);
+        return days[key] || (days[key] = { ms: 0, events: 0, sessions: 0, pron: 0, words: 0 });
+    };
+    const topic = (course, topicId) => {
+        const bucket = topics[course] || (topics[course] = {});
+        const key = String(topicId);
+        return bucket[key] || (bucket[key] = { att: 0, sum: 0, done: 0, fail: 0 });
+    };
+
+    for (const ev of events) {
+        const d = day(ev.cts);
+        d.events += 1;
+
+        const data = ev.data || {};
+
+        switch (ev.t) {
+            case 'session': {
+                const ms = clampNum(data.activeMs, 0, 6 * 60 * 60 * 1000) || 0;
+                d.ms += ms;
+                d.sessions += 1;
+                break;
+            }
+            case 'pron':
+                d.pron += 1;
+                break;
+            case 'vocab_done':
+                d.words += clampNum(data.learned, 0, 10000) || 0;
+                break;
+            default:
+                break;
+        }
+
+        /* Topic difficulty needs a course AND a topic to attribute a score to.
+           Events that carry neither (login, session) are activity-only. */
+        if (!ev.course || ev.topic == null) continue;
+
+        if (ev.t === 'ex_done') {
+            const total = clampNum(data.total, 1, 10000);
+            const score = clampNum(data.score, 0, 10000);
+            if (total && score != null) {
+                const percent = Math.round((score / total) * 100);
+                const t = topic(ev.course, ev.topic);
+                t.att += 1;
+                t.sum += percent;
+                if (percent < PASS_THRESHOLD) t.fail += 1;
+            }
+        } else if (ev.t === 'topic_pass') {
+            const t = topic(ev.course, ev.topic);
+            t.done += 1;
+            const percent = clampNum(data.score, 0, 100);
+            if (percent != null) {
+                t.att += 1;
+                t.sum += percent;
+                if (percent < PASS_THRESHOLD) t.fail += 1;
+            }
+        }
+    }
+
+    return { days, topics };
+}
+
+/** Drop day buckets older than the retention window. Returns the keys removed. */
+export function staleActivityDays(activity, nowMs = Date.now()) {
+    const days = (activity && activity.days) || {};
+    const cutoff = nowMs - GLOBAL_ACTIVITY_RETENTION_DAYS * 86400000;
+    return Object.keys(days).filter((key) => {
+        const t = new Date(`${key}T00:00:00Z`).getTime();
+        return !Number.isFinite(t) || t < cutoff;
+    });
+}
+
+function seriesFor(days, nowMs, count) {
+    const out = [];
+    for (let i = count - 1; i >= 0; i -= 1) {
+        const key = dayKey(nowMs - i * 86400000);
+        const bucket = days[key] || null;
+        out.push({
+            day: key,
+            ms: Number(bucket?.ms) || 0,
+            sessions: Number(bucket?.sessions) || 0,
+            events: Number(bucket?.events) || 0,
+        });
+    }
+    return out;
+}
+
+function sumRange(days, nowMs, count) {
+    return seriesFor(days, nowMs, count).reduce((acc, p) => {
+        acc.ms += p.ms;
+        acc.sessions += p.sessions;
+        acc.events += p.events;
+        return acc;
+    }, { ms: 0, sessions: 0, events: 0 });
+}
+
+/**
+ * Assemble the whole platform dashboard.
+ *
+ * @param {object} input
+ *   rows      compact overview rows (buildStudentOverviewRow) — LEARNERS only
+ *   activity  analyticsGlobal/activity document data (or null)
+ *   topics    { A1: {topicKey: {att,sum,done,fail}}, ... } (or null)
+ *   nowMs
+ */
+export function buildGlobalAnalytics(input = {}) {
+    const { rows = [], activity = null, topics = null, nowMs = Date.now() } = input;
+
+    const DAY = 86400000;
+    const learners = rows.filter((r) => r && r.role === 'customer');
+    const totalUsers = learners.length;
+
+    const activeSince = (windowMs) => learners.filter((r) => r.lastActivity && (nowMs - r.lastActivity) <= windowMs);
+    const activeToday = activeSince(DAY).length;
+    const active7 = activeSince(7 * DAY);
+    const active30 = activeSince(30 * DAY);
+
+    const newUsers30 = learners.filter((r) => r.registeredAt && (nowMs - r.registeredAt) <= 30 * DAY);
+    const newUsers7 = learners.filter((r) => r.registeredAt && (nowMs - r.registeredAt) <= 7 * DAY);
+
+    /* A "returning" learner is one who came back AFTER their first week —
+       i.e. recent activity on an account that is no longer new. That is the
+       number that actually says whether the platform retains people. */
+    const returning = active30.filter((r) => r.registeredAt && (nowMs - r.registeredAt) > 7 * DAY).length;
+
+    const inactive = learners.filter((r) => !r.lastActivity || (nowMs - r.lastActivity) > 30 * DAY).length;
+    const blocked = learners.filter((r) => r.blocked).length;
+    const subscribed = learners.filter((r) => r.subscription && r.subscription.active).length;
+
+    // ---- per-course progress ----
+    const courses = COURSE_ORDER.map((code) => {
+        const withCourse = learners.filter((r) => {
+            const c = (r.courses || []).find((x) => x.code === code);
+            return c && c.completedTopics > 0;
+        });
+        const completed = learners.filter((r) => {
+            const c = (r.courses || []).find((x) => x.code === code);
+            return c && c.totalTopics > 0 && c.completedTopics >= c.totalTopics;
+        }).length;
+        const progressSum = withCourse.reduce((sum, r) => {
+            const c = (r.courses || []).find((x) => x.code === code);
+            return sum + (c ? c.progressPercent : 0);
+        }, 0);
+        const certificates = learners.reduce((sum, r) => {
+            const c = (r.courses || []).find((x) => x.code === code);
+            return sum + (c && c.certificate ? 1 : 0);
+        }, 0);
+        return {
+            code,
+            totalTopics: COURSE_TOTAL_TOPICS[code] || 0,
+            studying: Math.max(0, withCourse.length - completed),
+            started: withCourse.length,
+            completed,
+            completionRate: withCourse.length ? Math.round((completed / withCourse.length) * 100) : 0,
+            averageProgress: withCourse.length ? Math.round(progressSum / withCourse.length) : 0,
+            certificates,
+        };
+    });
+
+    const startedAny = learners.filter((r) => (r.overallProgress || 0) > 0);
+    const finishedAll = learners.filter((r) => (r.overallProgress || 0) >= 100).length;
+    const currentlyStudying = startedAny.filter((r) => (r.overallProgress || 0) < 100).length;
+    const averageCompletion = totalUsers
+        ? Math.round(learners.reduce((s, r) => s + (r.overallProgress || 0), 0) / totalUsers)
+        : 0;
+
+    // ---- topic difficulty ----
+    const topicRows = [];
+    for (const code of COURSE_ORDER) {
+        const bucket = (topics && topics[code]) || {};
+        for (const [key, raw] of Object.entries(bucket)) {
+            const att = Number(raw?.att) || 0;
+            const done = Number(raw?.done) || 0;
+            const fail = Number(raw?.fail) || 0;
+            const sum = Number(raw?.sum) || 0;
+            topicRows.push({
+                course: code,
+                topic: Number(key),
+                attempts: att,
+                completions: done,
+                failures: fail,
+                averageScore: att ? Math.round(sum / att) : null,
+                failRate: att ? Math.round((fail / att) * 100) : null,
+            });
+        }
+    }
+
+    const ranked = topicRows.filter((t) => t.attempts >= TOPIC_MIN_ATTEMPTS && t.averageScore != null);
+    const hardest = ranked.slice().sort((a, b) =>
+        (a.averageScore - b.averageScore) || (b.failRate - a.failRate)).slice(0, 8);
+    const mostCompleted = topicRows
+        .filter((t) => t.completions > 0)
+        .sort((a, b) => b.completions - a.completions)
+        .slice(0, 8);
+
+    /* "Least completed" is keyed off ATTEMPTS, not completions: a topic that
+       learners keep opening and nobody ever finishes is the single most
+       important row on this list, and filtering on completions > 0 would have
+       hidden exactly that case. */
+    const leastCompleted = topicRows
+        .filter((t) => t.attempts > 0)
+        .sort((a, b) => (a.completions - b.completions) || (b.attempts - a.attempts))
+        .slice(0, 8);
+
+    const scoredAttempts = topicRows.reduce((s, t) => s + t.attempts, 0);
+    const scoreWeighted = topicRows.reduce((s, t) => s + (t.averageScore != null ? t.averageScore * t.attempts : 0), 0);
+    const averageScore = scoredAttempts ? Math.round(scoreWeighted / scoredAttempts) : null;
+
+    // ---- activity series ----
+    const days = (activity && activity.days) || {};
+    const daily = seriesFor(days, nowMs, 30);
+    const weekly = sumRange(days, nowMs, 7);
+    const monthly = sumRange(days, nowMs, 30);
+    const today = daily[daily.length - 1] || { ms: 0, sessions: 0, events: 0 };
+
+    /* ---- platform health ----
+       A single 0-100 number an admin can glance at, built from four signals
+       that each say something different, so one good number cannot mask a bad
+       one: engagement (are people here), retention (do they come back),
+       progression (are they moving) and outcomes (are they succeeding). */
+    const engagement = totalUsers ? Math.round((active7.length / totalUsers) * 100) : 0;
+    const retention = active30.length ? Math.round((returning / active30.length) * 100) : 0;
+    const progression = totalUsers ? Math.round((startedAny.length / totalUsers) * 100) : 0;
+    const outcomes = averageScore == null ? null : averageScore;
+    const healthParts = [engagement, retention, progression].concat(outcomes == null ? [] : [outcomes]);
+    const healthScore = healthParts.length
+        ? Math.round(healthParts.reduce((a, b) => a + b, 0) / healthParts.length)
+        : 0;
+
+    return {
+        generatedAt: nowMs,
+        users: {
+            total: totalUsers,
+            active: active7.length,
+            activeToday,
+            active30: active30.length,
+            inactive,
+            new30: newUsers30.length,
+            new7: newUsers7.length,
+            returning,
+            blocked,
+            subscribed,
+            currentlyStudying,
+            completedAll: finishedAll,
+        },
+        progress: {
+            averageCompletion,
+            averageScore,
+            certificates: learners.reduce((s, r) => s + (r.certificates || 0), 0),
+            examsPassed: learners.reduce((s, r) => s + (r.examsPassed || 0), 0),
+            wordsLearned: learners.reduce((s, r) => s + (r.wordsLearned || 0), 0),
+            learningMs: learners.reduce((s, r) => s + (r.learningMs || 0), 0),
+        },
+        courses,
+        topics: { hardest, mostCompleted, leastCompleted, ranked: ranked.length, tracked: topicRows.length },
+        activity: { daily, today, weekly, monthly },
+        health: { score: healthScore, engagement, retention, progression, outcomes },
     };
 }

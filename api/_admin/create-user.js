@@ -12,6 +12,7 @@ import {
 import { normalizeRole, CAPABILITIES } from '../_lib/roles.js';
 import { usernameToEmail, normalizeUsername, normalizePacks, buildSubscription } from '../_lib/user-helpers.js';
 import { writeAuditLog } from '../_lib/audit.js';
+import { syncPulse } from '../_lib/analytics-store.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -106,6 +107,14 @@ export default async function handler(req, res) {
             targetUsername: username,
             details: { role: targetRole, accessPacks: packs }
         });
+
+        /* Publish the new learner to the realtime projection so every open
+           admin panel shows the row immediately (Stage 6). Staff accounts are
+           never projected, so calling this for them would only write a useless
+           tombstone. */
+        if (isCustomer) {
+            await syncPulse({ adminDb, FieldValue }, created.uid);
+        }
 
         sendJson(res, 200, {
             ok: true,

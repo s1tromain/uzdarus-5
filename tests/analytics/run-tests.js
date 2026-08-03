@@ -11,8 +11,13 @@
 import {
     sanitizeEvent, sanitizeBatch, applyEventsToSummary, summaryToStats,
     buildStudentDashboard, buildStudentOverviewRow, dayKey,
+    buildGlobalDelta, buildGlobalAnalytics, staleActivityDays,
+    GLOBAL_ACTIVITY_RETENTION_DAYS,
 } from '../../api/_lib/analytics.js';
-import { ingestEvents, readStudentDashboard } from '../../api/_lib/analytics-store.js';
+import {
+    ingestEvents, readStudentDashboard, readGlobalAnalytics, syncPulse,
+    PULSE_COLLECTION, GLOBAL_COLLECTION,
+} from '../../api/_lib/analytics-store.js';
 import { makeAdmin } from './mock-firestore.js';
 
 let pass = 0, fail = 0;
@@ -243,6 +248,343 @@ async function storeTests() {
 }
 
 await storeTests();
+
+// ================= GLOBAL AGGREGATES + REALTIME PULSE =================
+async function globalTests() {
+section('buildGlobalDelta — activity + topic difficulty folding');
+{
+    const events = [
+        { t: 'session', cts: NOW, data: { activeMs: 600000 } },
+        { t: 'session', cts: NOW - DAY, data: { activeMs: 300000 } },
+        { t: 'pron', cts: NOW, course: 'A1', topic: 2, data: { score: 80 } },
+        { t: 'vocab_done', cts: NOW, course: 'A1', topic: 2, data: { learned: 12 } },
+        { t: 'ex_done', cts: NOW, course: 'A1', topic: 3, data: { score: 4, total: 10 } },   // 40%
+        { t: 'ex_done', cts: NOW, course: 'A1', topic: 3, data: { score: 9, total: 10 } },   // 90%
+        { t: 'topic_pass', cts: NOW, course: 'A1', topic: 3, data: { score: 95 } },
+        { t: 'topic_pass', cts: NOW, course: 'B1', topic: 7, data: { score: 55 } },
+        { t: 'login', cts: NOW },
+    ];
+    const d = buildGlobalDelta(events);
+
+    const today = dayKey(NOW);
+    const yesterday = dayKey(NOW - DAY);
+    eq(d.days[today].ms, 600000, 'global: today learning ms');
+    eq(d.days[yesterday].ms, 300000, 'global: yesterday learning ms');
+    eq(d.days[today].sessions, 1, 'global: one session today');
+    eq(d.days[today].pron, 1, 'global: pronunciation counted');
+    eq(d.days[today].words, 12, 'global: words counted');
+    eq(d.days[today].events, 8, 'global: every event counted for the day');
+
+    const a1t3 = d.topics.A1['3'];
+    eq(a1t3.att, 3, 'global: 3 scored attempts on A1/3');
+    eq(a1t3.sum, 40 + 90 + 95, 'global: score sum on A1/3');
+    eq(a1t3.done, 1, 'global: one completion on A1/3');
+    eq(a1t3.fail, 1, 'global: the 40% attempt counted as a failure');
+
+    eq(d.topics.B1['7'].fail, 1, 'global: 55% is below the 60% pass line');
+    ok(!d.topics.A1['2'], 'global: pron/vocab do not create a difficulty bucket');
+    ok(!d.topics.undefined, 'global: events without a course are activity-only');
+}
+
+section('buildGlobalDelta — hostile / partial input');
+{
+    eq(buildGlobalDelta([]).days, {}, 'global: empty batch → no days');
+    eq(buildGlobalDelta().topics, {}, 'global: undefined batch is safe');
+    const d = buildGlobalDelta([
+        { t: 'ex_done', cts: NOW, course: 'A1', topic: 1, data: { score: 5 } },      // no total
+        { t: 'ex_done', cts: NOW, course: 'A1', topic: 1, data: { total: 0 } },      // zero total
+        { t: 'topic_pass', cts: NOW, course: 'A1', topic: 1 },                       // no score
+        { t: 'session', cts: NOW, data: { activeMs: 999 * 3600000 } },               // absurd time
+    ]);
+    eq(d.topics.A1['1'].att, 0, 'global: unscorable attempts add no score');
+    eq(d.topics.A1['1'].done, 1, 'global: the completion still counts');
+    ok(d.days[dayKey(NOW)].ms <= 6 * 3600000, 'global: session time is capped at 6h');
+}
+
+section('staleActivityDays — retention');
+{
+    const days = {};
+    days[dayKey(NOW)] = { ms: 1 };
+    days[dayKey(NOW - 10 * DAY)] = { ms: 1 };
+    days[dayKey(NOW - (GLOBAL_ACTIVITY_RETENTION_DAYS + 5) * DAY)] = { ms: 1 };
+    days['not-a-date'] = { ms: 1 };
+    const stale = staleActivityDays({ days }, NOW);
+    ok(stale.includes(dayKey(NOW - (GLOBAL_ACTIVITY_RETENTION_DAYS + 5) * DAY)), 'retention: expired bucket flagged');
+    ok(stale.includes('not-a-date'), 'retention: malformed key flagged');
+    ok(!stale.includes(dayKey(NOW)), 'retention: today kept');
+    ok(!stale.includes(dayKey(NOW - 10 * DAY)), 'retention: recent bucket kept');
+    eq(staleActivityDays(null, NOW), [], 'retention: missing document is safe');
+}
+
+section('buildGlobalAnalytics — platform dashboard');
+{
+    const learner = (over) => buildStudentOverviewRow(over.uid, {
+        username: over.uid, displayName: over.uid.toUpperCase(), role: 'customer',
+        registeredAt: over.registeredAt, lastActivity: over.lastActivity,
+        blocked: over.blocked || false,
+        subscription: { active: over.sub !== false, endAt: NOW + 30 * DAY },
+        stats: { examsPassed: over.exams || 0, words: over.words || 0, learningMs: over.ms || 0,
+                 lastActiveAt: over.lastActivity },
+        courses: over.courses || {},
+    }, NOW);
+
+    const full = {};
+    for (let i = 1; i <= 12; i++) full[i] = true;
+
+    const rows = [
+        learner({ uid: 'veteran', registeredAt: NOW - 200 * DAY, lastActivity: NOW - 2 * DAY,
+                  exams: 2, words: 300, ms: 40 * 3600000,
+                  courses: { A1: { completedTopics: full } } }),                       // A1 complete
+        learner({ uid: 'active', registeredAt: NOW - 40 * DAY, lastActivity: NOW - 1000,
+                  exams: 1, words: 90, ms: 6 * 3600000,
+                  courses: { A1: { completedTopics: { 1: true, 2: true, 3: true } } } }),
+        learner({ uid: 'rookie', registeredAt: NOW - 2 * DAY, lastActivity: NOW - 3600000,
+                  courses: { A1: { completedTopics: { 1: true } } } }),
+        learner({ uid: 'lapsed', registeredAt: NOW - 300 * DAY, lastActivity: NOW - 90 * DAY,
+                  courses: { A1: { completedTopics: { 1: true, 2: true } } } }),
+        learner({ uid: 'ghost', registeredAt: NOW - 5 * DAY, lastActivity: null }),
+    ];
+    rows.forEach(r => { r.role = 'customer'; });
+    const staff = { ...rows[0], uid: 'boss', role: 'admin' };
+
+    const days = {};
+    days[dayKey(NOW)] = { ms: 7200000, sessions: 4, events: 40 };
+    days[dayKey(NOW - 3 * DAY)] = { ms: 3600000, sessions: 2, events: 20 };
+    days[dayKey(NOW - 20 * DAY)] = { ms: 1800000, sessions: 1, events: 10 };
+
+    const g = buildGlobalAnalytics({
+        rows: rows.concat([staff]),
+        activity: { days },
+        topics: {
+            A1: { 3: { att: 10, sum: 350, done: 6, fail: 7 },     // avg 35 — hardest
+                  1: { att: 12, sum: 1080, done: 11, fail: 0 },   // avg 90 — most completed
+                  5: { att: 2,  sum: 40,   done: 1, fail: 2 } },  // below the attempt floor
+            B1: { 7: { att: 8, sum: 480, done: 2, fail: 3 } },    // avg 60
+        },
+        nowMs: NOW,
+    });
+
+    eq(g.users.total, 5, 'global: staff accounts are excluded from the learner total');
+    eq(g.users.activeToday, 2, 'global: active today');
+    eq(g.users.active, 3, 'global: active in 7 days');
+    eq(g.users.inactive, 2, 'global: inactive (30+ days or never)');
+    eq(g.users.new30, 2, 'global: new in 30 days');
+    eq(g.users.new7, 2, 'global: new in 7 days');
+    eq(g.users.returning, 2, 'global: returning = active-30 minus first-week accounts');
+    eq(g.users.completedAll, 0, 'global: nobody finished every course');
+    eq(g.users.currentlyStudying, 4, 'global: started but not finished');
+
+    const a1 = g.courses.find(c => c.code === 'A1');
+    eq(a1.started, 4, 'global: A1 learners with progress');
+    eq(a1.completed, 1, 'global: A1 completions');
+    eq(a1.completionRate, 25, 'global: A1 completion rate');
+    ok(a1.averageProgress > 0 && a1.averageProgress <= 100, 'global: A1 average progress in range');
+    const b2 = g.courses.find(c => c.code === 'B2');
+    eq(b2.started, 0, 'global: an untouched course reports zero, not NaN');
+    eq(b2.completionRate, 0, 'global: no division by zero');
+
+    eq(g.topics.hardest[0].course + '/' + g.topics.hardest[0].topic, 'A1/3', 'global: hardest topic identified');
+    eq(g.topics.hardest[0].averageScore, 35, 'global: hardest topic average score');
+    ok(!g.topics.hardest.some(t => t.topic === 5), 'global: low-sample topics are not ranked');
+    eq(g.topics.mostCompleted[0].topic, 1, 'global: most-completed topic');
+    eq(g.topics.leastCompleted[0].topic, 5, 'global: least-completed topic (fewest completions)');
+    ok(g.topics.leastCompleted.some(t => t.topic === 7), 'global: a heavily-attempted, rarely-finished topic is listed');
+
+    eq(g.activity.today.ms, 7200000, 'global: today activity');
+    eq(g.activity.daily.length, 30, 'global: 30-day series is dense');
+    eq(g.activity.weekly.ms, 7200000 + 3600000, 'global: 7-day window sums correctly');
+    eq(g.activity.monthly.ms, 7200000 + 3600000 + 1800000, 'global: 30-day window sums correctly');
+    ok(g.activity.daily.every(d => typeof d.ms === 'number'), 'global: no gaps in the series');
+
+    ok(g.health.score >= 0 && g.health.score <= 100, 'global: health score is a percentage');
+    eq(g.progress.examsPassed, 3, 'global: exams passed summed');
+    eq(g.progress.wordsLearned, 390, 'global: words summed');
+
+    const emptyPlatform = buildGlobalAnalytics({ rows: [], nowMs: NOW });
+    eq(emptyPlatform.users.total, 0, 'global: empty platform is safe');
+    eq(emptyPlatform.progress.averageCompletion, 0, 'global: no NaN on an empty platform');
+    eq(emptyPlatform.progress.averageScore, null, 'global: unknown average score is null, not 0');
+    eq(emptyPlatform.health.score, 0, 'global: health on an empty platform');
+    eq(emptyPlatform.activity.daily.length, 30, 'global: series still dense with no data');
+}
+
+section('ingestEvents — realtime pulse + global counters (mock Firestore)');
+{
+    const { admin, db } = makeAdmin();
+    db.seed('users/s9', {
+        username: 'sardor', displayName: 'Sardor', role: 'customer',
+        registeredAt: NOW - 30 * DAY,
+        subscription: { active: true, endAt: NOW + 30 * DAY },
+        courses: { A1: { completedTopics: { 1: true, 2: true } } },
+    });
+
+    await ingestEvents(admin, 's9', [
+        { t: 'session', cts: NOW, data: { activeMs: 900000 } },
+        { t: 'ex_done', cts: NOW, course: 'A1', topic: 3, data: { score: 5, total: 10 } },
+        { t: 'topic_pass', cts: NOW, course: 'A1', topic: 3, data: { score: 70 } },
+    ], NOW);
+
+    const pulse = db.docs.get(`${PULSE_COLLECTION}/s9`);
+    ok(!!pulse, 'pulse: a learner row is published on ingest');
+    eq(pulse.uid, 's9', 'pulse: carries the uid');
+    eq(pulse.username, 'sardor', 'pulse: carries the login');
+    eq(pulse.displayName, 'Sardor', 'pulse: carries the display name for teachers');
+    eq(pulse.role, 'customer', 'pulse: role recorded');
+    eq(pulse.completedTopics, 2, 'pulse: progress mirrored from the user document');
+    ok(typeof pulse.updatedAt === 'number', 'pulse: updatedAt is set (client filters on it)');
+    ok(pulse.learningMs >= 900000, 'pulse: learning time mirrored from the fresh stats');
+
+    const activity = db.docs.get(`${GLOBAL_COLLECTION}/activity`);
+    eq(activity.days[dayKey(NOW)].ms, 900000, 'global doc: activity ms incremented');
+    eq(activity.days[dayKey(NOW)].sessions, 1, 'global doc: sessions incremented');
+
+    const topicsA1 = db.docs.get(`${GLOBAL_COLLECTION}/topics_A1`);
+    eq(topicsA1['3'].att, 2, 'global doc: attempts incremented');
+    eq(topicsA1['3'].sum, 50 + 70, 'global doc: score sum incremented');
+    eq(topicsA1['3'].done, 1, 'global doc: completion incremented');
+    eq(topicsA1['3'].fail, 1, 'global doc: the 50% attempt is a failure');
+
+    // A SECOND flush must ADD to the counters, never replace them.
+    await ingestEvents(admin, 's9', [
+        { t: 'session', cts: NOW, data: { activeMs: 60000 } },
+        { t: 'topic_pass', cts: NOW, course: 'A1', topic: 3, data: { score: 100 } },
+    ], NOW);
+    const activity2 = db.docs.get(`${GLOBAL_COLLECTION}/activity`);
+    eq(activity2.days[dayKey(NOW)].ms, 960000, 'global doc: increments accumulate across flushes');
+    const topics2 = db.docs.get(`${GLOBAL_COLLECTION}/topics_A1`);
+    eq(topics2['3'].done, 2, 'global doc: second completion accumulated');
+    eq(topics2['3'].att, 3, 'global doc: third attempt accumulated');
+
+    // Staff must NEVER be projected.
+    db.seed('users/boss', { username: 'boss', role: 'admin' });
+    await ingestEvents(admin, 'boss', [{ t: 'session', cts: NOW, data: { activeMs: 5000 } }], NOW);
+    ok(!db.docs.get(`${PULSE_COLLECTION}/boss`), 'pulse: staff accounts are never projected');
+
+    // A user with no document must not create a phantom row.
+    await ingestEvents(admin, 'nosuchuser', [{ t: 'session', cts: NOW, data: { activeMs: 5000 } }], NOW);
+    ok(!db.docs.get(`${PULSE_COLLECTION}/nosuchuser`), 'pulse: unknown users are not projected');
+}
+
+section('syncPulse — admin mutations and deletions');
+{
+    const { admin, db } = makeAdmin();
+    db.seed('users/m1', {
+        username: 'learner', role: 'customer',
+        subscription: { active: false }, courses: {},
+    });
+
+    await syncPulse(admin, 'm1', {}, NOW);
+    ok(!!db.docs.get(`${PULSE_COLLECTION}/m1`), 'syncPulse: publishes on demand');
+    eq(db.docs.get(`${PULSE_COLLECTION}/m1`).subscription.active, false, 'syncPulse: reflects the current subscription');
+
+    db.seed('users/m1', {
+        username: 'learner', role: 'customer',
+        subscription: { active: true, endAt: NOW + DAY }, courses: {},
+    });
+    await syncPulse(admin, 'm1', {}, NOW);
+    eq(db.docs.get(`${PULSE_COLLECTION}/m1`).subscription.active, true, 'syncPulse: republishes after an admin edit');
+
+    // Promotion to staff retracts the learner projection.
+    db.seed('users/m1', { username: 'learner', role: 'teacher', courses: {} });
+    await syncPulse(admin, 'm1', {}, NOW);
+    eq(db.docs.get(`${PULSE_COLLECTION}/m1`).deleted, true, 'syncPulse: promotion to staff retracts the row');
+    eq(db.docs.get(`${PULSE_COLLECTION}/m1`).username, null, 'syncPulse: a tombstone carries no learner data');
+
+    /* Retraction must be a TOMBSTONE, not a hard delete: subscribers filter on
+       updatedAt > baseline, and a deleted document produces no snapshot event
+       for a panel whose result set never contained it — the row would survive
+       as a ghost everywhere else. */
+    db.seed('users/m2', { username: 'gone', role: 'customer', courses: {} });
+    await syncPulse(admin, 'm2', {}, NOW);
+    eq(db.docs.get(`${PULSE_COLLECTION}/m2`).username, 'gone', 'syncPulse: row exists before deletion');
+    await syncPulse(admin, 'm2', { deleted: true }, NOW);
+    const tomb = db.docs.get(`${PULSE_COLLECTION}/m2`);
+    eq(tomb.deleted, true, 'syncPulse: deletion writes a tombstone every listener can see');
+    ok(typeof tomb.updatedAt === 'number', 'syncPulse: the tombstone carries a fresh updatedAt');
+
+    // A vanished user document also retracts the row.
+    db.seed('users/m3', { username: 'vanishing', role: 'customer', courses: {} });
+    await syncPulse(admin, 'm3', {}, NOW);
+    db.docs.delete('users/m3');
+    await syncPulse(admin, 'm3', {}, NOW);
+    eq(db.docs.get(`${PULSE_COLLECTION}/m3`).deleted, true, 'syncPulse: a missing user document retracts the row');
+
+    // Never throws — an analytics failure must not roll back an admin action.
+    const broken = { adminDb: { collection() { throw new Error('boom'); } }, FieldValue: {} };
+    const result = await syncPulse(broken, 'x', {}, NOW);
+    eq(result, false, 'syncPulse: reports failure instead of throwing');
+}
+
+section('readGlobalAnalytics — endpoint assembly + visibility + pruning');
+{
+    const { admin, db } = makeAdmin();
+    db.seed('users/a', { username: 'a', role: 'customer', lastActivity: NOW - 1000,
+                         registeredAt: NOW - 50 * DAY, courses: { A1: { completedTopics: { 1: true } } } });
+    db.seed('users/b', { username: 'b', role: 'customer', lastActivity: NOW - 60 * DAY,
+                         registeredAt: NOW - 400 * DAY, courses: {} });
+    db.seed('users/root', { username: 'root', role: 'developer' });
+
+    const days = {};
+    days[dayKey(NOW)] = { ms: 60000, sessions: 1, events: 3 };
+    days[dayKey(NOW - (GLOBAL_ACTIVITY_RETENTION_DAYS + 3) * DAY)] = { ms: 60000, sessions: 1, events: 3 };
+    db.seed(`${GLOBAL_COLLECTION}/activity`, { days });
+    db.seed(`${GLOBAL_COLLECTION}/topics_A1`, { 1: { att: 5, sum: 400, done: 4, fail: 1 } });
+
+    const all = await readGlobalAnalytics(admin, { nowMs: NOW });
+    eq(all.users.total, 2, 'readGlobal: staff excluded from the learner total');
+    eq(all.users.active, 1, 'readGlobal: active learners');
+    eq(all.topics.hardest.length, 1, 'readGlobal: topic aggregates loaded');
+    eq(all.activity.today.ms, 60000, 'readGlobal: activity document loaded');
+
+    // Visibility predicate is honoured (this is how the teacher scope works).
+    const scoped = await readGlobalAnalytics(admin, {
+        nowMs: NOW,
+        canView: (data) => String(data.role || 'customer') === 'customer',
+    });
+    eq(scoped.users.total, 2, 'readGlobal: teacher scope still sees every learner');
+
+    const none = await readGlobalAnalytics(admin, { nowMs: NOW, canView: () => false });
+    eq(none.users.total, 0, 'readGlobal: a predicate that denies everything yields zero');
+
+    await new Promise(r => setTimeout(r, 5)); // the prune write is fire-and-forget
+    const pruned = db.docs.get(`${GLOBAL_COLLECTION}/activity`);
+    ok(!pruned.days[dayKey(NOW - (GLOBAL_ACTIVITY_RETENTION_DAYS + 3) * DAY)], 'readGlobal: expired day buckets are pruned');
+    ok(!!pruned.days[dayKey(NOW)], 'readGlobal: current day survives pruning');
+
+    // An entirely empty platform must not throw.
+    const { admin: emptyAdmin } = makeAdmin();
+    const empty = await readGlobalAnalytics(emptyAdmin, { nowMs: NOW });
+    eq(empty.users.total, 0, 'readGlobal: empty database is safe');
+    eq(empty.topics.tracked, 0, 'readGlobal: no topic data is not an error');
+}
+
+section('overview row — new fields are populated and backwards compatible');
+{
+    const withRegistered = buildStudentOverviewRow('r1', {
+        username: 'u', role: 'customer', registeredAt: NOW - 10 * DAY, courses: {},
+    }, NOW);
+    eq(withRegistered.registeredAt, NOW - 10 * DAY, 'row: registeredAt read');
+
+    const adminCreated = buildStudentOverviewRow('r2', {
+        username: 'u', role: 'customer', createdAt: NOW - 3 * DAY, courses: {},
+    }, NOW);
+    eq(adminCreated.registeredAt, NOW - 3 * DAY, 'row: admin-created accounts fall back to createdAt');
+
+    const undated = buildStudentOverviewRow('r3', { username: 'u', role: 'customer', courses: {} }, NOW);
+    eq(undated.registeredAt, null, 'row: an undated account reports null, not 0');
+    eq(undated.displayName, 'u', 'row: displayName falls back to the login');
+
+    const certified = buildStudentOverviewRow('r4', {
+        username: 'u', role: 'customer',
+        courses: { A1: { completedTopics: { 1: true }, certificateNumber: 'UZD-A1-2026-000001' } },
+    }, NOW);
+    eq(certified.courses.find(c => c.code === 'A1').certificate, true, 'row: per-course certificate flag');
+    eq(certified.courses.find(c => c.code === 'A2').certificate, false, 'row: uncertified course is false');
+    eq(certified.certificates, 1, 'row: legacy total certificate count unchanged');
+}
+}
+
+await globalTests();
 
 // ============================ report ============================
 console.log('\n' + '─'.repeat(56));

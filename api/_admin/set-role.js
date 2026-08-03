@@ -12,6 +12,7 @@ import {
 import { normalizeRole, CAPABILITIES } from '../_lib/roles.js';
 import { buildSubscription } from '../_lib/user-helpers.js';
 import { writeAuditLog } from '../_lib/audit.js';
+import { syncPulse } from '../_lib/analytics-store.js';
 
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) {
@@ -98,6 +99,10 @@ export default async function handler(req, res) {
             targetUsername: targetData.username || null,
             details: { previousRole: targetRole, newRole, sessionsRevoked }
         });
+
+        /* A promotion to staff must RETRACT the learner projection (staff are
+           never listed as students); a demotion to customer must publish it. */
+        await syncPulse({ adminDb, FieldValue }, userId);
 
         sendJson(res, 200, { ok: true, role: newRole, sessionsRevoked });
     } catch (error) {

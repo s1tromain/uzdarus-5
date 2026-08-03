@@ -7,11 +7,77 @@
     <title>UZDARUS | Admin Panel</title>
     <link rel="icon" href="./images/shared/logo.png" type="image/png">
     <link rel="apple-touch-icon" href="./images/shared/logo.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- STARTUP CRITICAL PATH ------------------------------------------------
+         The panel's boot cost used to be a three-level module waterfall: the
+         browser could not discover the Firebase CDN modules until adminpanel.js
+         AND firebase-client.js had been downloaded and parsed. Preconnecting the
+         auth/Firestore hosts and preloading the module graph collapses that into
+         one parallel fetch round. (The Font Awesome stylesheet that used to sit
+         here was render-blocking and referenced by exactly zero icons — removed.)
+    -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://securetoken.googleapis.com">
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    <link rel="modulepreload" href="./firebase-client.js">
+    <link rel="modulepreload" href="./admin-roles.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js">
+
     <link rel="stylesheet" href="./adminpanel.css">
+
+    <!-- FIRST-PAINT DECISION -------------------------------------------------
+         Previously the login card was the FIRST thing painted, unconditionally,
+         because #adminGate is visible in the static markup — so a staff member
+         with a perfectly valid Firebase session stared at a login form for the
+         whole module-load + auth-restore window and then watched it disappear.
+
+         This picks the correct first paint from a purely LOCAL hint that
+         firebase-client.saveLocalUser() writes on every successful sign-in. It
+         is deliberately NOT authorization: it only decides which SKELETON is
+         painted. No data is fetched and nothing privileged is rendered until
+         onAuthStateChanged + the Firestore profile have both been verified, and
+         every API call is independently enforced server-side.
+    -->
+    <script>
+        (function () {
+            var STAFF = { teacher: 1, moderator: 1, admin: 1, developer: 1 };
+            var phase = 'anonymous';
+            try {
+                var raw = localStorage.getItem('currentUser');
+                var parsed = raw ? JSON.parse(raw) : null;
+                var role = parsed && String(parsed.role || '').trim().toLowerCase();
+                if (role && STAFF[role]) {
+                    phase = 'restoring';
+                }
+            } catch (e) { /* corrupt storage → treat as anonymous */ }
+            document.documentElement.setAttribute('data-boot', phase);
+
+            /* The splash carries `hidden` in the markup so it stays invisible
+               even if the stylesheet is slow or fails outright — CSS is never
+               the only thing standing between a visitor and a wrong screen. */
+            if (phase === 'restoring') {
+                document.addEventListener('DOMContentLoaded', function () {
+                    var boot = document.getElementById('adminBoot');
+                    if (boot) boot.hidden = false;
+                }, { once: true });
+            }
+        })();
+    </script>
 </head>
 
 <body>
+    <!-- Neutral restoration splash. Shown INSTEAD of the login form while a
+         known staff session is being restored, so there is no login flash. -->
+    <section id="adminBoot" class="boot-shell" aria-live="polite" aria-busy="true" hidden>
+        <div class="boot-card">
+            <span class="boot-spinner" aria-hidden="true"></span>
+            <p>Sessiya tiklanmoqda…</p>
+        </div>
+    </section>
+
     <section id="adminGate" class="gate-shell">
         <main class="gate-card">
             <h1>Admin Panelga kirish</h1>
@@ -65,12 +131,13 @@
 
         <nav class="tabs" id="tabsNav">
             <button class="tab-btn active" data-tab="customers" type="button">Customers</button>
+            <button class="tab-btn" data-tab="global" type="button">Global Analitika</button>
             <button class="tab-btn" data-tab="certificates" type="button">Sertifikatlar</button>
             <button class="tab-btn" data-tab="admin" id="adminTabBtn" type="button">Administration</button>
         </nav>
 
         <section class="tab-panel active" id="tab-customers">
-            <div class="card">
+            <div class="card" id="createCustomerCard">
                 <h2>Yangi customer yaratish</h2>
                 <form id="createCustomerForm" class="form-grid">
                     <label>
@@ -172,6 +239,23 @@
                         <tbody id="customersBody"></tbody>
                     </table>
                 </div>
+            </div>
+        </section>
+
+        <!-- GLOBAL ANALYTICS (Stage 7) — platform-wide statistics. Rendered by
+             adminpanel.js from GET /api/admin?action=global-analytics, which
+             aggregates server-side so the browser never scans collections. -->
+        <section class="tab-panel" id="tab-global">
+            <div class="card">
+                <div class="card-title-row">
+                    <h2>Platforma bo‘yicha umumiy statistika</h2>
+                    <div class="card-controls">
+                        <span class="ga-live" id="gaLive" hidden>● Jonli</span>
+                        <span class="table-meta" id="gaMeta">Yuklanmoqda…</span>
+                        <button class="btn btn-ghost" id="gaRefreshBtn" type="button">Yangilash</button>
+                    </div>
+                </div>
+                <div id="globalAnalyticsBody" class="ga-root"></div>
             </div>
         </section>
 

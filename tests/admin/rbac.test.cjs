@@ -208,6 +208,7 @@ console.log('\n[R8] Endpoint guards — read from the real source files');
         'stats.js':                  'STATS_READ',
         'students-overview.js':      'STUDENTS_READ',
         'student-analytics.js':      'STUDENTS_READ',
+        'global-analytics.js':       'STUDENTS_READ',
         'create-user.js':            'USERS_CREATE',
         'delete-user.js':            'USERS_DELETE',
         'reset-password.js':         'USERS_PASSWORD',
@@ -236,12 +237,25 @@ console.log('\n[R8] Endpoint guards — read from the real source files');
         ok(`${f}: requires a verified session first`, src.includes('await requireSession(req)'));
     });
 
-    /* Teacher must reach exactly the two analytics endpoints and no other. */
+    /* Teacher must reach exactly the read-only analytics endpoints, no other. */
+    const TEACHER_ENDPOINTS = new Set([
+        'students-overview.js', 'student-analytics.js', 'global-analytics.js',
+    ]);
     Object.entries(EXPECTED_GUARD).forEach(([file, capName]) => {
         const cap = CAPABILITIES[capName];
         const teacherReaches = roleHasCapability('teacher', cap);
-        const isAnalytics = file === 'students-overview.js' || file === 'student-analytics.js';
+        const isAnalytics = TEACHER_ENDPOINTS.has(file);
         eq(`teacher reaches ${file}: ${isAnalytics}`, teacherReaches, isAnalytics);
+    });
+
+    /* Every teacher-reachable endpoint must be a READ. A mutation that ever
+       lands behind students:read would silently hand a teacher write access. */
+    TEACHER_ENDPOINTS.forEach((file) => {
+        const src = fs.readFileSync(path.join(dir, file), 'utf8');
+        ok(`${file}: GET only (teacher surface is read-only)`,
+           /assertMethod\(req,\s*res,\s*'GET'\)/.test(src) && !/assertMethod\(req,\s*res,\s*'POST'\)/.test(src));
+        ok(`${file}: performs no Firestore writes`,
+           !/\.(set|update|delete|add|create)\(/.test(src.replace(/^import[\s\S]*?;$/gm, '')));
     });
 }
 
@@ -371,6 +385,119 @@ console.log('\n[R12] Admin panel UI is capability-driven, not role-name-driven')
     const html = fs.readFileSync(path.join(ROOT, 'adminpanel.html'), 'utf8');
     ok('staff role select offers Teacher', /value="teacher"/.test(html));
     ok('teacher option carries the Uzbek label', /O‘qituvchi/.test(html));
+}
+
+/* ------------------------------------------------------------------ */
+console.log('\n[R13] Deletion is capability + hierarchy driven, not role-name driven');
+{
+    const ui = fs.readFileSync(path.join(ROOT, 'adminpanel.js'), 'utf8');
+
+    ok('the developer-only hard-coded delete gate is gone',
+       !/USERS_DELETE\)\s*&&\s*state\.role\s*===\s*'developer'/.test(ui));
+    ok('a single canDeleteUser() decides both tables', /function canDeleteUser\(/.test(ui));
+    ok('it consults the capability', /can\(CAPABILITIES\.USERS_DELETE\)/.test(ui));
+    ok('it consults the management hierarchy', /canManageRole\(state\.role,\s*user\.role\)/.test(ui));
+    ok('it refuses self-deletion (the server returns 400)',
+       /user\.uid === state\.user\.uid/.test(ui));
+    ok('destructive deletion requires typing the login back',
+       /confirmUsername/.test(ui));
+
+    /* Reproduce canDeleteUser()'s decision with the REAL shared model, for
+       every actor x target pair, and compare against the server's answer. */
+    const serverAllows = (actor, target) =>
+        roleHasCapability(actor, CAPABILITIES.USERS_DELETE) && canManageRole(actor, target);
+
+    const EXPECT = {
+        developer: { customer: true, teacher: true, moderator: true, admin: true, developer: true },
+        admin:     { customer: true, teacher: true, moderator: true, admin: false, developer: false },
+        moderator: { customer: true, teacher: false, moderator: false, admin: false, developer: false },
+        teacher:   { customer: false, teacher: false, moderator: false, admin: false, developer: false },
+        customer:  { customer: false, teacher: false, moderator: false, admin: false, developer: false },
+    };
+
+    ROLES.forEach((actor) => ROLES.forEach((target) => {
+        eq(`${actor} may delete ${target}: ${EXPECT[actor][target]}`,
+           serverAllows(actor, target), EXPECT[actor][target]);
+    }));
+
+    /* The specification's headline requirement. */
+    ok('ADMINISTRATOR can delete user accounts', serverAllows('admin', 'customer'));
+    ok('ADMINISTRATOR can delete staff below them', serverAllows('admin', 'moderator'));
+    ok('ADMINISTRATOR still cannot delete a developer', !serverAllows('admin', 'developer'));
+    ok('DEVELOPER retains full access', ROLES.every(r => serverAllows('developer', r)));
+    ROLES.forEach(r => ok(`TEACHER cannot delete ${r}`, !serverAllows('teacher', r)));
+}
+
+/* ------------------------------------------------------------------ */
+console.log('\n[R14] Teacher read-only surface is complete in the UI');
+{
+    const ui = fs.readFileSync(path.join(ROOT, 'adminpanel.js'), 'utf8');
+    const html = fs.readFileSync(path.join(ROOT, 'adminpanel.html'), 'utf8');
+
+    /* Every tab in the markup must be covered by the capability map — the map
+       previously named two tabs that do not exist and omitted `admin`, so the
+       whole Administration tab was visible to a teacher. */
+    const tabs = Array.from(html.matchAll(/data-tab="([a-z-]+)"/g)).map(m => m[1]);
+    const uniqueTabs = Array.from(new Set(tabs));
+    const mapBlock = (ui.match(/const tabCapability = \{[\s\S]*?\};/) || [''])[0];
+    uniqueTabs.forEach((tab) => {
+        ok(`tab "${tab}" is capability-gated`, new RegExp(`\\b${tab}:\\s*CAPABILITIES\\.`).test(mapBlock));
+    });
+    ok('the Administration tab is gated by users:read',
+       /admin:\s*CAPABILITIES\.USERS_READ/.test(mapBlock));
+    ok('no phantom tab names remain in the map',
+       !/\bstaff:\s*CAPABILITIES\./.test(mapBlock) && !/\bcreate:\s*CAPABILITIES\./.test(mapBlock));
+
+    ok('the create-customer form is gated by users:create',
+       /createCustomerCard[\s\S]{0,220}can\(CAPABILITIES\.USERS_CREATE\)/.test(ui));
+    ok('the create-staff form needs users:create AND role:write',
+       /createStaffCard[\s\S]{0,260}can\(CAPABILITIES\.USERS_CREATE\)\s*&&\s*can\(CAPABILITIES\.ROLE_WRITE\)/.test(ui));
+
+    /* A teacher cannot call list-users, so the student table must be able to
+       render from the students-overview rows they ARE entitled to. */
+    ok('the student list falls back to the overview rows without users:read',
+       /function getCustomerSource\(/.test(ui));
+    ok('and fields requiring users:read are omitted, not fabricated',
+       /accessPacks: null/.test(ui) && /deviceCount: null/.test(ui));
+}
+
+/* ------------------------------------------------------------------ */
+console.log('\n[R15] Realtime + global analytics respect the same boundary');
+{
+    const rules = fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8');
+
+    ok('studentPulse is readable by panel staff only', /match \/studentPulse\/\{userId\}[\s\S]*?allow read: if isPanelStaff\(\);/.test(rules));
+    ok('studentPulse is NEVER client-writable', /match \/studentPulse\/\{userId\}[\s\S]*?allow write: if false;/.test(rules));
+    ok('analyticsGlobal is readable by panel staff only', /match \/analyticsGlobal\/\{docId\}[\s\S]*?allow read: if isPanelStaff\(\);/.test(rules));
+    ok('analyticsGlobal is NEVER client-writable', /match \/analyticsGlobal\/\{docId\}[\s\S]*?allow write: if false;/.test(rules));
+    ok('isPanelStaff excludes customers', /function isPanelStaff\(\)[\s\S]*?\["teacher", "moderator", "admin", "developer"\]/.test(rules));
+    ok('the catch-all deny is still last', /match \/\{document=\*\*\} \{\s*allow read, write: if false;\s*\}\s*\}\s*\}\s*$/.test(rules.trim() + '\n'));
+
+    /* activityLogs could previously be forged under anyone's identity. */
+    ok('activityLogs may only be filed under the caller\'s own identity',
+       /request\.resource\.data\.userEmail == request\.auth\.token\.email/.test(rules));
+    ok('activityLogs action strings are bounded',
+       /request\.resource\.data\.action\.size\(\) <= 500/.test(rules));
+
+    /* The startup optimisation folds the header counters into students-overview.
+       Those counters are stats:read data, which a teacher does NOT hold — the
+       fold must not become a side door around that. */
+    const overview = fs.readFileSync(path.join(ROOT, 'api', '_admin', 'students-overview.js'), 'utf8');
+    ok('folded counters stay behind the stats:read capability',
+       /roleHasCapability\(session\.role,\s*CAPABILITIES\.STATS_READ\)/.test(overview));
+    ok('and the counter computation is the SAME code the stats endpoint runs',
+       /computePlatformStats/.test(overview)
+       && /computePlatformStats/.test(fs.readFileSync(path.join(ROOT, 'api', '_admin', 'stats.js'), 'utf8')));
+    eq('a teacher does not hold stats:read', roleHasCapability('teacher', CAPABILITIES.STATS_READ), false);
+    ['moderator', 'admin', 'developer'].forEach(r =>
+        ok(`${r} still receives the folded counters`, roleHasCapability(r, CAPABILITIES.STATS_READ)));
+
+    const store = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'analytics-store.js'), 'utf8');
+    ok('only learners are ever projected into studentPulse',
+       /if \(role !== 'customer'\) \{\s*\n\s*return false;/.test(store));
+    ok('deleting a user retracts their projection',
+       /syncPulse\([\s\S]{0,80}\{ deleted: true \}\)/.test(
+           fs.readFileSync(path.join(ROOT, 'api', '_admin', 'delete-user.js'), 'utf8')));
 }
 
 /* ------------------------------------------------------------------ */

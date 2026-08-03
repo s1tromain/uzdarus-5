@@ -10,6 +10,7 @@ import {
 } from '../_lib/request.js';
 import { CAPABILITIES, normalizeRole } from '../_lib/roles.js';
 import { normalizeUserDocument, toDate } from '../_lib/user-helpers.js';
+import { syncPulse } from '../_lib/analytics-store.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -131,6 +132,8 @@ export default async function handler(req, res) {
                 newEndAt: nextEndDate.toISOString().slice(0, 10)
             };
         });
+
+        await syncPulse({ adminDb, FieldValue }, userId);
 
         sendJson(res, 200, { ok: true, result });
     } catch (error) {

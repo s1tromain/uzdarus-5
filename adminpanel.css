@@ -905,3 +905,302 @@ body.role-teacher .admin-shell::before {
     font-weight: 700;
     font-size: .86rem;
 }
+
+/* ============================================================================
+   STARTUP / BOOT PHASES  (Stage 3)
+   ----------------------------------------------------------------------------
+   Three mutually exclusive first paints, chosen by the inline boot script in
+   adminpanel.html and then handed over to adminpanel.js:
+
+     data-boot="anonymous"  no local staff hint  -> login card (correct)
+     data-boot="restoring"  staff hint present   -> neutral splash, NEVER a
+                                                    login form (no flash)
+     data-boot="ready"      session verified     -> the panel itself
+
+   Only the splash is speculative. Nothing privileged renders until the
+   Firestore profile has been read and the role verified.
+   ========================================================================== */
+/* `hidden` in the markup is the primary defence (it survives a missing
+   stylesheet); this makes the flex layout apply once the boot script reveals
+   it, and re-hides it the moment the phase moves on. */
+#adminBoot[hidden] {
+    display: none;
+}
+
+html[data-boot="restoring"] #adminBoot:not([hidden]) {
+    display: flex;
+}
+
+html[data-boot="restoring"] #adminGate {
+    display: none !important;
+}
+
+.boot-shell {
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.boot-card {
+    display: grid;
+    justify-items: center;
+    gap: 14px;
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.boot-spinner {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid var(--border);
+    border-top-color: var(--primary);
+    animation: boot-spin 0.8s linear infinite;
+}
+
+@keyframes boot-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+   RESOLVING PHASE
+   The shell is revealed the instant Firebase reports a restored user, which is
+   long before the profile read finishes. Role-dependent chrome (tabs, stats,
+   action buttons) must NOT paint yet — otherwise a teacher would see admin tabs
+   flash. Skeletons stand in until applyRoleUi() has run.
+   -------------------------------------------------------------------------- */
+.admin-shell[data-phase="resolving"] .tabs,
+.admin-shell[data-phase="resolving"] .tab-panel,
+.admin-shell[data-phase="resolving"] .header-actions {
+    visibility: hidden;
+}
+
+.admin-shell[data-phase="resolving"] .stats-grid .stat-card strong,
+.admin-shell[data-phase="resolving"] #adminMeta {
+    color: transparent;
+    background: linear-gradient(90deg, #e9eefb 25%, #f4f7ff 37%, #e9eefb 63%);
+    background-size: 400% 100%;
+    animation: skeleton-sheen 1.3s ease-in-out infinite;
+    border-radius: 6px;
+}
+
+@keyframes skeleton-sheen {
+    0%   { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+
+/* Table skeleton rows (replaces the bare "Yuklanmoqda…" text). */
+.skeleton-row td {
+    padding: 14px 10px;
+}
+
+.skeleton-bar {
+    display: block;
+    height: 11px;
+    border-radius: 6px;
+    background: linear-gradient(90deg, #e9eefb 25%, #f4f7ff 37%, #e9eefb 63%);
+    background-size: 400% 100%;
+    animation: skeleton-sheen 1.3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .boot-spinner,
+    .skeleton-bar,
+    .admin-shell[data-phase="resolving"] .stats-grid .stat-card strong,
+    .admin-shell[data-phase="resolving"] #adminMeta {
+        animation: none;
+    }
+}
+
+/* ============================================================================
+   GLOBAL ANALYTICS  (Stage 7)
+   ========================================================================== */
+.ga-root {
+    display: grid;
+    gap: 18px;
+}
+
+.ga-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #0b7a4b;
+    background: #e6f7ee;
+    border-radius: 999px;
+    padding: 4px 11px;
+    white-space: nowrap;
+}
+
+.ga-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 12px;
+}
+
+.ga-tile {
+    background: #f7f9ff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: grid;
+    gap: 4px;
+    align-content: start;
+}
+
+.ga-tile .ga-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.ga-tile .ga-value {
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.ga-tile .ga-sub {
+    font-size: 0.76rem;
+    color: var(--muted);
+}
+
+.ga-tile.ga-good .ga-value { color: #0b7a4b; }
+.ga-tile.ga-warn .ga-value { color: #b26a00; }
+.ga-tile.ga-bad  .ga-value { color: var(--danger); }
+
+.ga-section {
+    display: grid;
+    gap: 10px;
+}
+
+.ga-section > h3 {
+    font-size: 1.02rem;
+    font-weight: 700;
+}
+
+.ga-section > .ga-hint {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: -6px;
+}
+
+.ga-course-row {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.ga-course-row:last-child { border-bottom: 0; }
+
+.ga-course-code {
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+.ga-track {
+    height: 9px;
+    border-radius: 6px;
+    background: #e8ebf5;
+    overflow: hidden;
+}
+
+.ga-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    transition: width 320ms ease;
+}
+
+.ga-course-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.ga-topics {
+    display: grid;
+    gap: 6px;
+}
+
+.ga-topic-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 10px;
+    border-radius: 9px;
+    background: #f7f9ff;
+    font-size: 0.85rem;
+}
+
+.ga-topic-row b { font-weight: 700; }
+
+.ga-topic-score {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.ga-topic-row.is-hard .ga-topic-score { color: var(--danger); }
+.ga-topic-row.is-easy .ga-topic-score { color: #0b7a4b; }
+
+.ga-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 96px;
+    padding: 8px 0 0;
+    overflow-x: auto;
+}
+
+.ga-spark-bar {
+    flex: 1 0 7px;
+    min-width: 7px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, var(--primary), var(--primary-dark));
+    min-height: 2px;
+    transition: height 300ms ease;
+}
+
+.ga-spark-bar[data-empty="1"] { background: #e8ebf5; }
+
+.ga-axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.ga-two-col {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+}
+
+.ga-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.88rem;
+    background: #f7f9ff;
+    border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+    .ga-course-row {
+        grid-template-columns: 44px 1fr;
+        row-gap: 4px;
+    }
+    .ga-course-meta { grid-column: 2; }
+    .ga-tile .ga-value { font-size: 1.32rem; }
+}
