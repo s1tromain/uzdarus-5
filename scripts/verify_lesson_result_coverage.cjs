@@ -54,9 +54,12 @@ const COURSES = [
    reached the shared feedback screen. Documented, not silently tolerated: any
    family NOT listed here that turns up missing fails the audit. */
 const KNOWN_GAPS = {
-    // A2 topics 1-3 render bespoke data-t1-*/data-t2-*/data-t3-* hooks and are
-    // graded by window.checkTopic{1,2,3}Exercises in a2-course.html.
-    A2: ['topic1Exercises', 'topic2Exercises', 'topic3Exercises'],
+    /* A2 no longer has any gap. Topics 1-5 were migrated onto the SHARED
+       exercise engine (the one b1-course.html uses), so they now emit the very
+       data-t1-* hooks the collectors query and their answers reach the shared
+       feedback screen like every other course. The three bespoke per-topic
+       renderers that used to own them were deleted with the migration. */
+    A2: [],
 };
 
 /* detectExerciseType is extracted from the file under audit, never re-implemented. */
