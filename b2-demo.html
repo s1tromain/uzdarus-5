@@ -16,6 +16,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./demo-public.js"></script>
     <link rel="stylesheet" href="./course-global-fixes.css">
+    <script defer src="./exercise-session.js"></script>
+    <script defer src="./b2-host.js"></script>
+    <script defer src="./b2-lesson-data.js"></script>
     <script defer src="./course-global-fixes.js"></script>
     <style>
         * {
@@ -1518,8 +1521,8 @@
                     id: 2,
                     title: "Ta'lim tizimi va kasbiy rivojlanish",
                     description: "Grammatika: страдательный залог. Muloqot: ta'lim sifati, malaka oshirish",
-                    isLocked: false,
-                    isSubscriptionLocked: false,
+                    isLocked: true,
+                    isSubscriptionLocked: true,
                     grammar: `
                         <h4>1. Страдательный залог (Passiv)</h4>
                         <p>Страдательный залог harakat natijasiga e'tibor qaratadi:</p>
@@ -1663,8 +1666,8 @@
                     id: 3,
                     title: "Ish bozori va professional muhit",
                     description: "Grammatika: rasmiy-uslub konstruktsiyalar. Muloqot: ish bozori, martaba strategiyasi",
-                    isLocked: false,
-                    isSubscriptionLocked: false,
+                    isLocked: true,
+                    isSubscriptionLocked: true,
                     grammar: `
                         <h4>1. Rasmiy uslub konstruktsiyalari</h4>
                         <p>Professional muloqotda rasmiy uslubdan foydalanish:</p>
@@ -1921,11 +1924,119 @@
             return icons[id - 1] || 'circle';
         }
 
+        /* ==================================================================
+         * B2 PRACTICE SESSION — host glue for the shared Exercise Session
+         * Engine (exercise-session.js). Dispatch is SHAPE-BASED, exactly like
+         * A2: a topic is claimed only if B2_LESSON_DATA carries an
+         * `exercises` array for it. Legacy topics keep the mcQuestions /
+         * blankQuestions / matchingGame path untouched.
+         * ================================================================== */
+
+        /** Draft storage — the SAME localStorage key and the SAME Firestore
+         *  field the page already uses, so there is one store, not two. */
+        var _b2SessionDraftTimer = null;
+        function b2SessionDraftKey(topicId) {
+            if (typeof _b2QuizDraftKey === 'function') return _b2QuizDraftKey(topicId);
+            var uid = (typeof currentUserId !== 'undefined' && currentUserId) ? currentUserId : 'guest';
+            return 'b2_quiz_draft_' + uid + '_' + topicId;
+        }
+        function b2SessionDraftSave(topicId, draft) {
+            try { localStorage.setItem(b2SessionDraftKey(topicId), JSON.stringify(draft)); } catch (e) {}
+            try {
+                if (typeof currentUserId !== 'undefined' && currentUserId && window.saveQuizResult) {
+                    clearTimeout(_b2SessionDraftTimer);
+                    _b2SessionDraftTimer = setTimeout(function () {
+                        window.saveQuizResult(currentUserId, topicId, { draft: draft }, 'B2').catch(function () {});
+                    }, 600);
+                }
+            } catch (e) {}
+        }
+        function b2SessionDraftLoad(topicId) {
+            try {
+                var raw = localStorage.getItem(b2SessionDraftKey(topicId));
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+        function b2SessionDraftClear(topicId) {
+            if (typeof clearB2QuizDraft === 'function') { clearB2QuizDraft(topicId); return; }
+            try { localStorage.removeItem(b2SessionDraftKey(topicId)); } catch (e) {}
+        }
+
+        /** The topic's exercise data, or null when the topic is legacy-shaped. */
+        function b2ExerciseData(topicId) {
+            if (!window.B2_LESSON_DATA || !Array.isArray(window.B2_LESSON_DATA.topics)) return null;
+            var t = window.B2_LESSON_DATA.topics.filter(function (x) {
+                return x.id === topicId && Array.isArray(x.exercises) && x.exercises.length;
+            })[0];
+            return t || null;
+        }
+
+        /** Mount the practice card. Reuses the page's EXISTING result screen,
+         *  progress bar and Firebase sync — nothing here is a second copy. */
+        function mountB2Practice(topicId) {
+            var data = b2ExerciseData(topicId);
+            var mountEl = document.getElementById('b2PracticeMount');
+            if (!data || !mountEl || !window.B2Host || !window.UzExerciseSession) return;
+
+            var sessionTopic = { id: topicId, exercises: data.exercises };
+
+            window.B2Host.mountPractice({
+                mountEl: mountEl,
+                title: 'Amaliy mashqlar',
+                subtitle: data.exercises.length + ' ta mashq — bittadan bajariladi, javoblar avtomatik saqlanadi.',
+                deps: {
+                    getTopic: function () { return sessionTopic; },
+                    passPercent: 70,
+
+                    /* The page's own #quizResults block, filled with the page's
+                       own markup — the same screen submitQuiz() has always used. */
+                    showResults: function (r) {
+                        var box = document.getElementById('quizResults');
+                        if (!box) return;
+                        var passed = r.percent >= 70;
+                        box.innerHTML =
+                            '<i class="fas fa-' + (passed ? 'check-circle' : 'times-circle') + '"' +
+                            ' style="font-size: 4rem; color: ' + (passed ? 'var(--success)' : 'var(--error)') +
+                            '; margin-bottom: 20px;"></i>' +
+                            '<div class="quiz-score">' + r.score + '/' + r.total + '</div>' +
+                            '<div class="quiz-message">' +
+                            (passed ? 'Ajoyib! Testdan muvaffaqiyatli o\'tdingiz!' : 'Yana bir bor urinib ko\'ring!') +
+                            '</div>' +
+                            '<p style="font-size: 1.1rem; margin-top: 15px;">Natija: ' + r.percent + '%</p>';
+                        box.classList.add('show');
+                        try { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+                    },
+
+                    /* The page's own progress path: local mirror + completedTopics. */
+                    saveProgress: function (id) {
+                        if (typeof saveProgress === 'function') return saveProgress(id);
+                    },
+                    saveResult: function (id, r) {
+                        if (typeof currentUserId !== 'undefined' && currentUserId && window.saveQuizResult) {
+                            return window.saveQuizResult(currentUserId, id, {
+                                score: r.score, total: r.total, percent: r.percent,
+                                passed: r.passed, timestamp: r.timestamp
+                            }, 'B2');
+                        }
+                    },
+
+                    saveDraft: b2SessionDraftSave,
+                    loadDraft: b2SessionDraftLoad,
+                    clearDraft: b2SessionDraftClear
+                }
+            });
+        }
+
+
         function loadTopic(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
 
             currentTopic = topic; // Save current topic
+
+            /* Shape-based dispatch: a topic runs on the shared Exercise Session
+               Engine only when B2_LESSON_DATA supplies exercises for it. */
+            const b2Ex = (typeof b2ExerciseData === 'function') ? b2ExerciseData(topicId) : null;
 
             const lessonContent = document.getElementById('lessonContent');
             lessonContent.className = 'lesson-content active';
@@ -1945,11 +2056,16 @@
                 
                 <div class="topic-explanation">${topic.content}</div>
                 
-                ${topic.quiz.mcQuestions.length > 0 ? renderQuiz(topic) : ''}
-                ${topic.quiz.blankQuestions.length > 0 ? renderBlankTest(topic) : ''}
-                ${topic.quiz.matchingGame ? renderMatchingGame(topic) : ''}
+                ${b2Ex ? `
+                <div id="b2PracticeMount"></div>
+                <div class="quiz-results" id="quizResults"></div>
+                ` : `
+                ${topic.quiz && topic.quiz.mcQuestions.length > 0 ? renderQuiz(topic) : ''}
+                ${topic.quiz && topic.quiz.blankQuestions.length > 0 ? renderBlankTest(topic) : ''}
+                ${topic.quiz && topic.quiz.matchingGame ? renderMatchingGame(topic) : ''}
+                `}
                 
-                ${!topic.isSubscriptionLocked ? `
+                ${!topic.isSubscriptionLocked && !b2Ex ? `
                 <div style="text-align: center; margin-top: 40px;">
                     <button class="subscribe-btn" onclick="window.completeTopicHandler(${topicId})">
                         <i class="fas fa-check"></i> Mavzuni tugatish
@@ -1961,9 +2077,13 @@
             // Scroll to lesson section
             document.getElementById('lesson').scrollIntoView({ behavior: 'smooth' });
             
-            if (topic.quiz.mcQuestions.length > 0) initQuiz();
-            if (topic.quiz.blankQuestions.length > 0) initBlankTest(topic);
-            if (topic.quiz.matchingGame) initMatchingGame(topic);
+            if (b2Ex) {
+                mountB2Practice(topicId);
+            } else {
+                if (topic.quiz && topic.quiz.mcQuestions.length > 0) initQuiz();
+                if (topic.quiz && topic.quiz.blankQuestions.length > 0) initBlankTest(topic);
+                if (topic.quiz && topic.quiz.matchingGame) initMatchingGame(topic);
+            }
         }
 
         window.completeTopicHandler = async function(topicId) {
