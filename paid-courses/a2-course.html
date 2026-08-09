@@ -4277,6 +4277,13 @@
                             {
                                 id: "ex5", type: "choice", style: "chips", icon: "fa-clock",
                                 title: "5-mashq. Sutka qismlarini qo'ying",
+                                /* Items 3 and 8 ("Я читаю книгу ___", "Самолёт прилетел ___")
+                                   are genuinely unconstrained — all four parts of the day are
+                                   correct Russian and the resource supplies no key. They are
+                                   therefore non-discriminating (any option scores). Narrowing
+                                   them would mean REJECTING correct answers, which the spec
+                                   forbids, so all four stay accepted and the limitation is
+                                   recorded here instead. */
                                 intro: "Kerakli so'zni tanlang: утром, днём, вечером, ночью.",
                                 items: [
                                     { q: "Я завтракаю ________.", options: ["утром", "днём", "вечером", "ночью"], answer: "утром" },
@@ -4345,6 +4352,17 @@
                             {
                                 id: "ex9", type: "input", icon: "fa-circle-question",
                                 title: "9-mashq. Savol tuzing",
+                                /* KNOWN LIMITATION — deliberately left as free text.
+                                   The resource asks for an INTONATION question, whose text is
+                                   identical to the statement apart from the final mark. The
+                                   shared normaliser (t1Norm) strips punctuation, so these ten
+                                   items cannot be graded: pasting the prompt back scores correct.
+                                   Re-expressing them as `choice` does NOT help — both options
+                                   collapse to the same normalised string, which would let the
+                                   WRONG option score correct too, i.e. strictly worse. The only
+                                   real fixes are to change the normaliser (shared with A1/B1/B2 —
+                                   out of scope) or to change the exercise text (the resource is
+                                   the source of truth). Documented rather than papered over. */
                                 intro: "Namuna: Сегодня жарко. → Сегодня жарко? Savol intonatsiya orqali yasaladi.",
                                 items: [
                                     { q: "Сегодня понедельник.", answer: ["Сегодня понедельник?"] },
