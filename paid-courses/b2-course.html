@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="../course-global-fixes.css">
     <script defer src="../b2-topics.js"></script>
     <script defer src="../exercise-session.js"></script>
+    <script defer src="../sentence-builder.js"></script>
     <script defer src="../b2-host.js"></script>
     <script defer src="../b2-lesson-data.js"></script>
     <script defer src="../course-global-fixes.js"></script>
@@ -506,13 +507,25 @@
         }
 
         /* Grammar Section */
+        /* Grammar surface. Light card, dark text — the old bright-blue gradient
+           put near-black body copy on a saturated background, which is what
+           made the lesson tiring to read. Shared by every topic. */
         .grammar-section {
-            background: linear-gradient(135deg, var(--blue), #1976D2);
-            color: white;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 25px;
+            background: #FFFFFF;
+            color: #1F2430;
+            padding: clamp(18px, 4vw, 34px);
+            border: 1px solid #E6EAF2;
+            border-radius: 18px;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 24px rgba(16, 24, 40, .04);
         }
+        .grammar-section .grammar-header {
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid #EEF1F7;
+        }
+        .grammar-section .grammar-header h3 { color: #1F2430; font-weight: 700; }
+        .grammar-section .grammar-header i { color: #2563EB; }
 
         .grammar-header {
             display: flex;
@@ -551,12 +564,16 @@
             table-layout: auto;
         }
 
+        /* `word-break: break-word` is the legacy alias that WebKit treats like
+           `anywhere`, so on a 375px screen it split words mid-letter
+           ("bog'lovchida" / "n oldin"). Standard wrapping only: a word breaks
+           just when it genuinely cannot fit, and never gets hyphenated. */
         .grammar-section table td,
         .grammar-section table th {
-            word-wrap: break-word;
-            word-break: break-word;
-            white-space: normal;
+            word-break: normal;
             overflow-wrap: break-word;
+            white-space: normal;
+            hyphens: none;
         }
 
         /* Topic Explanation */

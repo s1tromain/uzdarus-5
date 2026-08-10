@@ -21,6 +21,7 @@ const ok = (c, l) => { if (c) pass++; else { fail++; failures.push(l); } };
 
 const ENGINE = fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8');
 const HOST = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
+const BUILDER = fs.readFileSync(path.join(ROOT, 'sentence-builder.js'), 'utf8');
 const DATA = fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8');
 
 /* ------------------------------------------------------------------ page */
@@ -48,6 +49,7 @@ function boot(opts) {
     w.console.error = (...a) => { errors.push(a.join(' ')); realErr.apply(w.console, a); };
 
     w.eval(ENGINE);
+    w.eval(BUILDER);
     w.eval(HOST);
     w.eval(DATA);
 
@@ -101,6 +103,23 @@ const byText = (w, sel, txt) =>
     Array.from(w.document.querySelectorAll(sel)).find(b => (b.textContent || '').includes(txt));
 const stepHost = (w) => w.document.querySelector('.uz-step-host');
 
+/** Split an accepted answer into cards the way the host's bank does. */
+function splitAnswer(sentence, glue) {
+    const phrases = (glue || []).slice().sort((a, b) => b.length - a.length);
+    const out = [];
+    let rest = String(sentence || '').trim();
+    while (rest) {
+        rest = rest.replace(/^\s+/, '');
+        if (!rest) break;
+        const low = rest.toLowerCase();
+        const hit = phrases.find(ph => low.indexOf(ph.toLowerCase()) === 0);
+        const tok = hit ? rest.slice(0, hit.length) : /^\S+/.exec(rest)[0];
+        out.push(tok);
+        rest = rest.slice(tok.length);
+    }
+    return out;
+}
+
 /**
  * Answer the visible step. `wrongCount` items are deliberately answered wrong,
  * so a step's exact percentage can be dialled in.
@@ -117,6 +136,21 @@ function answerStep(ctx, wrongCount) {
         const want = Array.isArray(item.answer) ? item.answer[0] : item.answer;
         const makeWrong = wrongLeft > 0;
         if (makeWrong) wrongLeft--;
+        if (g.type === 'builder') {
+            /* Assemble by clicking the word cards in order; a "wrong" item is
+               left deliberately incomplete. The bank is derived from the
+               answers, so the tap order is derived the same way. */
+            const wrap = host.querySelector(`[data-uzb="${key}"]`);
+            if (!wrap) return;
+            const order = splitAnswer(Array.isArray(item.answer) ? item.answer[0] : item.answer, g.glue);
+            const toks = makeWrong ? order.slice(0, 1) : order;
+            toks.forEach(tk => {
+                const c = Array.from(wrap.querySelectorAll('.uzb-bank .uzb-tok'))
+                    .find(x => x.textContent === tk);
+                if (c) click(w, c);
+            });
+            return;
+        }
         if (g.type === 'choice') {
             const row = host.querySelector(`[data-b2h-row="${key}"]`);
             if (!row) return;

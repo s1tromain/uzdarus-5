@@ -20,7 +20,13 @@ console.log('\n[1] Content vs resource');
 eq('10 exercise groups', GROUPS.length, 10);
 eq('100 graded items', GROUPS.reduce((s,g)=>s+g.items.length,0), 100);
 eq('group ids/order', GROUPS.map(g=>g.id).join(','), 'ex1,ex2,ex3,ex4,ex5,ex6,ex7,ex8,ex9,audio');
-ok('only existing engine types', GROUPS.every(g=>['input','choice'].includes(g.type)));
+/* The types the host actually implements. `builder` was added for the
+   sentence-assembly exercise; anything outside this list would render blank. */
+const HOST_TYPES=['input','choice','builder'];
+ok('only host-implemented types', GROUPS.every(g=>HOST_TYPES.includes(g.type)));
+ok('every declared type is handled by the host',
+   HOST_TYPES.every(t=>t==='input'||new RegExp("g\\.type === '"+t+"'").test(
+       fs.readFileSync(path.join(ROOT,'b2-host.js'),'utf8'))));
 ok('only existing choice styles', GROUPS.filter(g=>g.type==='choice').every(g=>['chips','test','tf'].includes(g.style)));
 // resource keys, verbatim
 eq('3-mashq key is «что» for all 10 (resource: A,B,C,A,C,B,C,A,D,B)',

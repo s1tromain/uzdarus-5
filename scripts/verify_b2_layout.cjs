@@ -47,23 +47,80 @@ for (const p of PAGES) {
     ok(!/if\s*\(\s*topic(Id)?\s*[=!]==?\s*1\s*\)/.test(s), `${T} no per-topic hardcode introduced`);
 }
 
-/* ------------------------------------------------ 2. grammar tokens */
+/* ------------------------------------------------ 2. grammar design system */
 {
-    ok(/'\.b2h,\.b2g\{--b2-ink:/.test(HOST),
-        'design tokens are declared on BOTH .b2h and .b2g');
-    ok(!/'\.b2h\{--b2-ink:/.test(HOST), 'the old .b2h-only token block is gone');
+    ok(/'\.b2h,\.b2g\{--b2-ink:/.test(HOST), 'shared tokens cover both mount roots');
 
-    /* Every var() inside the grammar block must carry a literal fallback, so an
-       unresolved token can never drop text to `inherit` again. */
-    const gram = (HOST.split('/* ---- grammar lesson ---- */')[1] || '')
+    const gram = (HOST.split('/* ---- grammar lesson ---')[1] || '')
         .split('/* ---- results screen ---- */')[0];
-    ok(gram.length > 500, 'grammar style block located');
-    const bare = (gram.match(/var\(--b2-[a-z]+\)/g) || []);
+    ok(gram.length > 1500, 'grammar design system located');
+    /* The stylesheet is built from an array of string fragments, so a single
+       CSS rule can straddle two array entries. Join them back before matching,
+       otherwise the test reports a false failure on perfectly good CSS. */
+    const gramCss = gram.replace(/',\s*\n\s*'/g, '').replace(/'/g, '');
+
+    /* Every var() must carry a literal fallback, so an unresolved token can
+       never drop text to `inherit` again (the old white-on-white bug). */
+    const bare = (gramCss.match(/var\(--[a-z0-9-]+\)/g) || []);
     ok(bare.length === 0, `no fallback-less var() in the grammar block (${bare.join(', ')})`);
 
-    ok(/'\.b2g-t td\{[^']*color:#1a1c2e/.test(HOST), 'table cells set an explicit colour');
-    ok(/'\.b2g-t td\{[^']*background:#fff/.test(HOST), 'table cells set an explicit background');
-    ok(/'\.b2g-t th\{color:#fff\}'/.test(HOST), 'table headers set an explicit colour');
+    /* THE mobile bug: legacy `word-break: break-word` behaves like `anywhere`
+       in WebKit and split words mid-letter. It must be gone, everywhere. */
+    ok(!/word-break:break-word|word-break:break-all|word-break:anywhere/.test(gramCss),
+        'grammar never uses a break value that splits words mid-letter');
+    ok(/\.b2g\{[^']*word-break:normal/.test(gramCss) || /word-break:normal/.test(gramCss),
+        'grammar pins word-break to normal');
+    ok(/hyphens:none/.test(gramCss), 'grammar disables hyphenation');
+    ok(/\.b2g \*\{word-break:normal;hyphens:none/.test(gramCss),
+        'the rule is inherited by every descendant, including table cells');
+
+    /* modern table treatment */
+    ok(/\.b2g-t\{[^']*border-radius:14px/.test(gramCss), 'tables are rounded');
+    ok(/border-collapse:separate/.test(gramCss), 'tables use separate borders (radii survive)');
+    ok(/\.b2g-t th\{[^']*background:var\(--g-tint/.test(gramCss),
+        'table header is a light tint, not a saturated purple bar');
+    ok(/\.b2g-t td\{padding:14px 16px/.test(gramCss), 'cells have generous padding');
+    ok(/@media\(hover:hover\)\{\.b2g-t tr:hover td/.test(gramCss), 'row hover, desktop only');
+    ok(/box-shadow:0 1px 2px rgba\(16,24,40,\.03\)/.test(gramCss), 'tables carry a soft shadow');
+
+    /* callout component with an icon */
+    ok(/\.b2g-tip::before,\.b2g-warn::before\{position:absolute/.test(gramCss),
+        'callouts are one component with an icon slot');
+    ok(/\.b2g-tip::before\{content:"\\\\1F4A1"\}/.test(gramCss), 'tip renders the 💡 icon');
+    ok(/\.b2g-warn::before\{content:"\\\\26A0/.test(gramCss), 'warning renders its own icon');
+    ok(/padding:16px 20px 16px 52px/.test(gramCss), 'callout text clears the icon');
+
+    /* branded list markers */
+    ok(/\.b2g-list\{list-style:none/.test(gramCss), 'default bullets removed');
+    ok(/\.b2g-list li::before\{content:""/.test(gramCss), 'list uses a custom marker');
+    ok(/\.b2g-list li::after\{content:""/.test(gramCss), 'marker draws a check');
+
+    /* typography + rhythm */
+    ok(/font-size:clamp\(15px/.test(gramCss), 'body type is fluid');
+    ok(/\.b2g h4\{margin:40px 0 16px/.test(gramCss), 'sections have real breathing room');
+    ok(/max-width:68ch/.test(gramCss), 'measure is capped for readability');
+
+    /* mobile */
+    ok(/@media\(max-width:640px\)\{/.test(gramCss), 'grammar has a mobile breakpoint');
+    ok(/\.b2g-t\{display:block;overflow-x:auto/.test(gramCss),
+        'tables scroll inside themselves on mobile — the page never scrolls sideways');
+}
+
+/* ---------------------------------- 2a. the page surface behind the grammar */
+for (const p of PAGES) {
+    const s = fs.readFileSync(path.join(ROOT, p.file), 'utf8');
+    const T = p.label;
+    ok(!/\.grammar-section\s*\{[^}]*linear-gradient\(135deg, var\(--blue\)/.test(s),
+        `${T} the saturated blue grammar background is gone`);
+    ok(/\.grammar-section\s*\{[^}]*background:\s*#FFFFFF/.test(s),
+        `${T} grammar sits on a light surface`);
+    ok(/\.grammar-section\s*\{[^}]*color:\s*#1F2430/.test(s), `${T} grammar text is dark grey`);
+    ok(!/\.grammar-section table td,\s*\n\s*\.grammar-section table th \{[^}]*word-break:\s*break-word/.test(s),
+        `${T} the legacy word-break:break-word rule is removed`);
+    ok(/\.grammar-section table td,\s*\n\s*\.grammar-section table th \{[^}]*word-break:\s*normal/.test(s),
+        `${T} table cells wrap normally`);
+    ok(/\.grammar-section table td,\s*\n\s*\.grammar-section table th \{[^}]*hyphens:\s*none/.test(s),
+        `${T} table cells are never hyphenated`);
 }
 
 /* ------------------------------------------------ 2b. it actually renders */
@@ -75,7 +132,7 @@ for (const p of PAGES) {
     w.eval(fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8'));
     w.eval(HOST);
     w.eval(fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8'));
-    w.B2Host.create({ getTopic: () => w.B2_LESSON_DATA.topics[0] });   // injects styles
+    const api = w.B2Host.create({ getTopic: () => w.B2_LESSON_DATA.topics[0] });
 
     const box = w.document.createElement('div');
     box.className = 'grammar-content';
@@ -84,26 +141,51 @@ for (const p of PAGES) {
     const cs = (el) => w.getComputedStyle(el);
 
     ok(!!box.querySelector('.b2g'), 'grammar mounts under .b2g');
-    ok(box.querySelectorAll('h4').length >= 8, 'all grammar sections present');
-    ok(box.querySelectorAll('table').length >= 3, 'all tables present');
+    ok(box.querySelectorAll('h4').length >= 8, 'all grammar sections still present');
+    ok(box.querySelectorAll('table').length >= 3, 'all tables still present');
+    ok(cs(box.querySelector('.b2g')).wordBreak === 'normal', 'computed word-break is normal');
 
     const cells = Array.from(box.querySelectorAll('.b2g-t td'));
     ok(cells.length > 40, `tables are populated (${cells.length} cells)`);
-    ok(cells.filter(c => c.textContent.trim()).length === cells.length,
-        'every table cell has content — no empty tables');
-    ok(cs(cells[0]).color === 'rgb(26, 28, 46)', 'table text is dark, not inherited white');
-    ok(cs(cells[0]).backgroundColor !== 'rgba(0, 0, 0, 0)', 'table cells have a solid background');
-    ok(cs(box.querySelector('.b2g-t th')).color === 'rgb(255, 255, 255)',
-        'table headers stay white on their gradient');
-
+    ok(cells.every(c => c.textContent.trim()), 'every table cell has content');
     const empties = Array.from(box.querySelectorAll('div,li,p,td,th'))
         .filter(e => !e.textContent.trim() && !e.querySelector('*'));
-    ok(empties.length === 0, `no empty blocks anywhere in the lesson (${empties.length})`);
+    ok(empties.length === 0, `no empty blocks in the lesson (${empties.length})`);
 
-    /* nothing in the lesson may render as white-on-white */
-    const white = Array.from(box.querySelectorAll('*')).filter(e =>
-        cs(e).color === 'rgb(255, 255, 255)' && !e.closest('.b2g-t th') && !e.closest('.b2g-scheme'));
-    ok(white.length === 0, `no white text outside the coloured headers (${white.length})`);
+    /* content preserved: the redesign was visual only */
+    const txt = box.textContent;
+    ['что', 'чтобы', 'если', 'когда', 'потому что', 'поэтому', 'хотя', 'несмотря на то']
+        .forEach(c => ok(txt.includes(c), `grammar still explains "${c}"`));
+
+    /* ---------------- how-to briefings ---------------- */
+    const groups = w.B2_LESSON_DATA.topics[0].exercises;
+    ok(groups.length === 10, 'all 10 exercises present');
+    ok(groups.every(g => Array.isArray(g.howTo) && g.howTo.length >= 2),
+        'every exercise carries its own multi-part briefing');
+    const texts = groups.map(g => g.howTo.join(' '));
+    ok(new Set(texts).size === texts.length, 'no briefing is copied between exercises');
+    ok(texts.every(t => t.length > 150), 'every briefing is substantial, not a stub');
+
+    groups.forEach(g => {
+        const d = w.document.createElement('div');
+        d.innerHTML = api.renderGroup(g);
+        ok(!!d.querySelector('.b2h-howto'), `${g.id}: briefing card rendered`);
+        ok(!!d.querySelector('.b2h-howto-t'), `${g.id}: exercise name shown`);
+        ok(/Как выполнять/.test(d.querySelector('.b2h-howto-h').textContent),
+            `${g.id}: "Как выполнять" heading shown`);
+        ok(d.querySelectorAll('.b2h-howto p').length === g.howTo.length,
+            `${g.id}: every paragraph rendered`);
+        ok(d.querySelectorAll('.b2h-item').length === g.items.length,
+            `${g.id}: the briefing does not disturb the question list`);
+        /* the briefing comes BEFORE the first question */
+        ok(d.innerHTML.indexOf('b2h-howto') < d.innerHTML.indexOf('b2h-item'),
+            `${g.id}: briefing appears before the exercise`);
+    });
+
+    ok(/\.b2h-howto\{/.test(HOST), 'briefing is a shared component, not inline style');
+    ok(/if \(g\.howTo\)/.test(HOST), 'briefing renders from data — generic for any course');
+    ok(!/ex1|ex2|topicId/.test((HOST.split('if (g.howTo)')[1] || '').slice(0, 500)),
+        'briefing rendering contains no per-exercise special-casing');
 }
 
 /* ------------------------------------------------ 3. vocabulary card */

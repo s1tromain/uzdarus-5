@@ -43,6 +43,10 @@
     /** The single threshold. Both gates read this, so they can never differ. */
     var PASS_PERCENT = 85;
 
+    /* The sentence-builder component. Resolved lazily so load order does not
+       matter and a page that never uses builders need not ship it. */
+    function builder() { return global.UzSentenceBuilder || null; }
+
     /* The platform's normalisation, character-for-character identical to the
        one the shared engine's other hosts use. Case, ё/е, punctuation and
        whitespace are ignored; everything else must match. */
@@ -136,6 +140,21 @@
             'font-weight:800;font-size:.8rem;display:flex;align-items:center;justify-content:center;transition:all .18s}',
             '.b2h-opt.selected .b2h-key{background:var(--b2-accent);color:#fff}',
 
+            /* ---- "how to do it" briefing -----------------------------
+               Rendered for any group that supplies `howTo`. Purely presentational:
+               it never participates in grading, scoring or progress. Generic, so
+               every future exercise in every course gets it for free. */
+            '.b2h-howto{background:#F7F9FC;border:1px solid #E6EAF2;border-left:3px solid #2563EB;',
+            'border-radius:14px;padding:18px 20px 16px;margin-bottom:20px}',
+            '.b2h-howto-h{display:flex;align-items:center;gap:9px;margin-bottom:10px;',
+            'font-weight:700;font-size:.95rem;color:#1D4ED8;letter-spacing:.01em}',
+            '.b2h-howto-h::before{content:"\\1F4A1";font-size:1.05rem}',
+            '.b2h-howto p{margin:0 0 9px;color:#4A5468;font-size:.97rem;line-height:1.72;',
+            'word-break:normal;overflow-wrap:break-word;hyphens:none;max-width:70ch}',
+            '.b2h-howto p:last-child{margin-bottom:0}',
+            '.b2h-howto-t{font-weight:700;color:#1F2430;font-size:1.02rem;margin-bottom:6px}',
+            '@media(max-width:640px){.b2h-howto{padding:15px 16px 14px}}',
+
             /* ---- audio ---- */
             '.b2h-audio{background:linear-gradient(135deg,#EEF0FF,#F6F7FF);border:1px solid #dfe3f7;',
             'border-radius:16px;padding:20px 22px;margin-bottom:20px}',
@@ -143,48 +162,130 @@
             '.b2h-audio small{color:var(--b2-dim)}',
             '.b2h-audio audio{width:100%;margin-top:12px}',
 
-            /* ---- grammar lesson ---- */
-            '.b2g{color:var(--b2-ink,#1a1c2e);line-height:1.8;font-size:1.02rem}',
-            '.b2g h4{margin:30px 0 12px;font-size:1.18rem;color:var(--b2-primary,#3B3F8F);font-weight:800;',
-            'padding-left:14px;border-left:4px solid var(--b2-accent,#6C63FF)}',
-            '.b2g p{margin:0 0 12px}',
-            '.b2g-lead{background:linear-gradient(135deg,#F4F5FF,#FAFAFF);border:1px solid #e0e4f7;',
-            'border-radius:18px;padding:22px 26px;margin-bottom:8px}',
-            '.b2g-lead h4{margin-top:0;border-left:0;padding-left:0}',
-            '.b2g-scheme{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:18px 0;',
-            'padding:16px 18px;background:#fff;border:1.5px dashed #c3c8ee;border-radius:14px;font-size:1.06rem}',
-            '.b2g-main{background:#E8ECFF;color:#2B3080;padding:5px 12px;border-radius:8px;font-weight:700}',
-            '.b2g-sub{background:#FFF3E0;color:#8A5200;padding:5px 12px;border-radius:8px;font-weight:700}',
-            '.b2g-link{color:var(--b2-accent,#6C63FF);font-weight:900}',
-            '.b2g-scheme-note{font-size:.92rem;color:var(--b2-dim,#6b7290);margin:0}',
-            '.b2g-t{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:.98rem;',
-            'background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(26,28,46,.06);display:table}',
-            '.b2g-t th{background:linear-gradient(135deg,#3B3F8F,#5A5FC0);color:#fff;text-align:left;',
-            'padding:12px 14px;font-weight:700;font-size:.93rem}',
-            '.b2g-t td{padding:11px 14px;border-top:1px solid #eef0f7;vertical-align:top;color:#1a1c2e;background:#fff}',
-            '.b2g-t tr:nth-child(even) td{background:#FAFBFF}',
-            '.b2g-t th{color:#fff}',
-            '.b2g-t.b2g-err td:first-child{color:#C63B4E}',
-            '.b2g-t.b2g-err td:nth-child(2){color:#1F8A5B}',
-            '.b2g-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:16px 0 20px}',
-            '.b2g-half{background:#fff;border:1px solid var(--b2-line,#e4e7f2);border-left:4px solid var(--b2-accent,#6C63FF);',
-            'border-radius:14px;padding:16px 18px}',
-            '.b2g-half>b{color:var(--b2-primary,#3B3F8F);font-size:1.04rem}',
-            '.b2g-half p{margin:8px 0 0;font-size:.96rem}',
-            '.b2g-ex{background:#F7F8FC;border-radius:10px;padding:10px 12px;margin-top:10px!important}',
-            '.b2g-ex small{color:var(--b2-dim,#6b7290)}',
-            '.b2g-list{margin:10px 0 18px;padding-left:22px}',
-            '.b2g-list li{margin:7px 0}',
-            '.b2g-tip{background:#EEF7F1;border:1px solid #BFE3CE;border-radius:12px;padding:13px 16px;color:#14603F}',
-            '.b2g-warn{background:#FFF4E5;border:1px solid #FFD8A8;border-radius:12px;padding:13px 16px;color:#8A5200}',
-            '.b2g-warn s,.b2g-t s{color:#C63B4E;text-decoration-thickness:2px}',
-            '.b2g-chips{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 20px}',
-            '.b2g-chips span{background:linear-gradient(135deg,#EEF0FF,#E6E9FF);color:var(--b2-primary,#3B3F8F);',
-            'border:1px solid #d3d8f5;border-radius:20px;padding:8px 16px;font-weight:600;font-size:.94rem}',
-            '.b2g-check{background:linear-gradient(135deg,#FFFBF0,#FFF7E4);border:1px solid #F0E0B8;',
-            'border-radius:18px;padding:20px 26px;margin-top:24px}',
-            '.b2g-check h4{margin-top:0;border-left-color:#C9A227;color:#8A6D0B}',
-            '@media(max-width:640px){.b2g-t{font-size:.9rem}.b2g-t th,.b2g-t td{padding:9px 10px}}',
+            /* ---- grammar lesson --------------------------------------
+               A small design system, not a pile of one-off rules. Restraint
+               over decoration: one accent colour, one neutral ramp, a 4px
+               spacing rhythm, fluid type. Every component below is generic —
+               topics 2-16 inherit it with no new CSS. */
+            '.b2g{--g-ink:#1F2430;--g-ink-2:#4A5468;--g-mute:#6B7688;--g-line:#E6EAF2;',
+            '--g-line-2:#F0F3F9;--g-surface:#FFFFFF;--g-tint:#F7F9FC;--g-accent:#2563EB;',
+            '--g-accent-soft:#EFF4FF;--g-accent-line:#C7D9FF;--g-warn:#B45309;',
+            '--g-warn-soft:#FFF9EC;--g-warn-line:#FCE3B4;--g-ok:#047857;--g-ok-soft:#EFFAF4;',
+            '--g-ok-line:#BCE9D4;--g-bad:#BE2E45;--g-bad-soft:#FEF2F3;--g-bad-line:#F8CDD3}',
+
+            /* base rhythm + honest wrapping (never mid-word, never hyphenated) */
+            '.b2g{color:var(--g-ink,#1F2430);font-size:clamp(15px,.4vw + 14.4px,17px);',
+            'line-height:1.75;word-break:normal;overflow-wrap:break-word;hyphens:none;',
+            '-webkit-hyphens:none;text-rendering:optimizeLegibility}',
+            '.b2g *{word-break:normal;hyphens:none;-webkit-hyphens:none}',
+            '.b2g p{margin:0 0 14px;color:var(--g-ink-2,#4A5468);max-width:68ch}',
+            '.b2g b,.b2g strong{color:var(--g-ink,#1F2430);font-weight:650}',
+            '.b2g i{color:inherit}',
+            '.b2g s{color:var(--g-bad,#BE2E45);text-decoration-thickness:2px}',
+            '.b2g u{text-decoration-color:var(--g-accent,#2563EB);text-underline-offset:3px}',
+
+            /* section heading: number-free, quiet rule above, generous air */
+            '.b2g h4{margin:40px 0 16px;font-size:clamp(17px,.5vw + 16px,20px);line-height:1.35;',
+            'font-weight:700;color:var(--g-ink,#1F2430);letter-spacing:-.011em;',
+            'padding-top:22px;border-top:1px solid var(--g-line-2,#F0F3F9)}',
+            '.b2g h4:first-child,.b2g-lead h4{margin-top:0;padding-top:0;border-top:0}',
+
+            /* opening panel */
+            '.b2g-lead{background:var(--g-tint,#F7F9FC);border:1px solid var(--g-line,#E6EAF2);',
+            'border-radius:16px;padding:clamp(18px,3vw,26px);margin-bottom:8px}',
+
+            /* sentence schema */
+            '.b2g-scheme{display:flex;flex-wrap:wrap;align-items:center;gap:6px;',
+            'margin:18px 0;padding:16px 18px;background:var(--g-surface,#fff);',
+            'border:1px solid var(--g-line,#E6EAF2);border-radius:14px;line-height:2.1}',
+            '.b2g-main{background:var(--g-accent-soft,#EFF4FF);color:#1D4ED8;padding:5px 12px;',
+            'border-radius:8px;font-weight:650}',
+            '.b2g-sub{background:var(--g-warn-soft,#FFF9EC);color:var(--g-warn,#B45309);',
+            'padding:5px 12px;border-radius:8px;font-weight:650}',
+            '.b2g-link{color:var(--g-accent,#2563EB);font-weight:750}',
+            '.b2g-scheme-note{font-size:.92em;color:var(--g-mute,#6B7688);margin:0}',
+
+            /* ---- tables: rounded, hairline, tinted header, row hover ---- */
+            '.b2g-t{width:100%;margin:16px 0 26px;border-collapse:separate;border-spacing:0;',
+            'background:var(--g-surface,#fff);border:1px solid var(--g-line,#E6EAF2);',
+            'border-radius:14px;overflow:hidden;font-size:.96em;',
+            'box-shadow:0 1px 2px rgba(16,24,40,.03)}',
+            '.b2g-t th{background:var(--g-tint,#F7F9FC);color:var(--g-ink,#1F2430);text-align:left;',
+            'font-weight:650;font-size:.86em;letter-spacing:.02em;text-transform:uppercase;',
+            'padding:13px 16px;border-bottom:1px solid var(--g-line,#E6EAF2);white-space:nowrap}',
+            '.b2g-t td{padding:14px 16px;color:var(--g-ink-2,#4A5468);background:var(--g-surface,#fff);',
+            'border-top:1px solid var(--g-line-2,#F0F3F9);vertical-align:top;line-height:1.65}',
+            '.b2g-t tbody tr:first-child td,.b2g-t tr:first-child td{border-top:0}',
+            '.b2g-t td:first-child{color:var(--g-ink,#1F2430);font-weight:600}',
+            '@media(hover:hover){.b2g-t tr:hover td{background:#FBFCFE}}',
+            '.b2g-t.b2g-err td:first-child{color:var(--g-bad,#BE2E45);font-weight:600}',
+            '.b2g-t.b2g-err td:nth-child(2){color:var(--g-ok,#047857);font-weight:600}',
+
+            /* two-up comparison */
+            '.b2g-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));',
+            'gap:14px;margin:18px 0 26px}',
+            '.b2g-half{background:var(--g-surface,#fff);border:1px solid var(--g-line,#E6EAF2);',
+            'border-radius:14px;padding:18px 20px;transition:border-color .2s,box-shadow .2s}',
+            '@media(hover:hover){.b2g-half:hover{border-color:var(--g-accent-line,#C7D9FF);',
+            'box-shadow:0 6px 20px rgba(37,99,235,.07)}}',
+            '.b2g-half>b{display:block;color:var(--g-accent,#2563EB);font-size:.94em;',
+            'letter-spacing:.02em;margin-bottom:8px}',
+            '.b2g-half p{margin:0;font-size:.96em}',
+            '.b2g-ex{background:var(--g-tint,#F7F9FC);border-radius:10px;padding:12px 14px;',
+            'margin-top:12px!important}',
+            '.b2g-ex small{display:block;margin-top:6px;color:var(--g-mute,#6B7688);font-size:.86em}',
+
+            /* ---- lists with a branded check marker ---- */
+            '.b2g-list{list-style:none;margin:12px 0 24px;padding:0}',
+            '.b2g-list li{position:relative;padding-left:30px;margin:10px 0;',
+            'color:var(--g-ink-2,#4A5468);max-width:68ch}',
+            '.b2g-list li::before{content:"";position:absolute;left:0;top:.55em;width:18px;height:18px;',
+            'border-radius:50%;background:var(--g-accent-soft,#EFF4FF);',
+            'box-shadow:inset 0 0 0 1px var(--g-accent-line,#C7D9FF)}',
+            '.b2g-list li::after{content:"";position:absolute;left:6px;top:calc(.55em + 5px);',
+            'width:5px;height:8px;border:solid var(--g-accent,#2563EB);border-width:0 2px 2px 0;',
+            'transform:rotate(45deg)}',
+
+            /* ---- callouts: one component, three tones ---- */
+            '.b2g-tip,.b2g-warn{position:relative;margin:18px 0 26px;padding:16px 20px 16px 52px;',
+            'border-radius:14px;border:1px solid;line-height:1.7;font-size:.97em}',
+            '.b2g-tip::before,.b2g-warn::before{position:absolute;left:18px;top:15px;font-size:1.15em;',
+            'line-height:1.4}',
+            '.b2g-tip{background:var(--g-ok-soft,#EFFAF4);border-color:var(--g-ok-line,#BCE9D4);',
+            'color:#0B5D46}',
+            '.b2g-tip::before{content:"\\1F4A1"}',
+            '.b2g-warn{background:var(--g-warn-soft,#FFF9EC);border-color:var(--g-warn-line,#FCE3B4);',
+            'color:#8A5A08}',
+            '.b2g-warn::before{content:"\\26A0\\FE0F"}',
+            '.b2g-tip b,.b2g-warn b{color:inherit}',
+
+            /* ---- phrase chips ---- */
+            '.b2g-chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 26px}',
+            '.b2g-chips span{background:var(--g-surface,#fff);color:#1D4ED8;',
+            'border:1px solid var(--g-accent-line,#C7D9FF);border-radius:999px;padding:8px 16px;',
+            'font-weight:600;font-size:.92em;transition:background .18s,transform .18s}',
+            '@media(hover:hover){.b2g-chips span:hover{background:var(--g-accent-soft,#EFF4FF);',
+            'transform:translateY(-1px)}}',
+
+            /* ---- closing checklist ---- */
+            '.b2g-check{background:var(--g-accent-soft,#EFF4FF);border:1px solid var(--g-accent-line,#C7D9FF);',
+            'border-radius:16px;padding:clamp(18px,3vw,26px);margin-top:32px}',
+            '.b2g-check h4{margin-top:0;padding-top:0;border-top:0;color:#1D4ED8}',
+            '.b2g-check .b2g-list li{color:#24324A}',
+            '.b2g-check .b2g-list li::before{background:#fff}',
+
+            /* ---- mobile: tables scroll inside themselves, page never does ---- */
+            '@media(max-width:640px){',
+            '.b2g h4{margin:30px 0 12px;padding-top:18px}',
+            '.b2g-scheme{line-height:2.3;padding:14px}',
+            '.b2g-t{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;',
+            'white-space:normal;font-size:.94em}',
+            '.b2g-t th,.b2g-t td{padding:11px 13px;min-width:104px}',
+            '.b2g-t td:last-child{min-width:180px}',
+            '.b2g-tip,.b2g-warn{padding:14px 16px 14px 46px}',
+            '.b2g-tip::before,.b2g-warn::before{left:15px}',
+            '.b2g-list li{padding-left:27px}',
+            '}',
             /* ---- results screen ---- */
             '.b2h-res{max-width:840px;margin:0 auto;padding:8px 0 28px;color:var(--b2-ink)}',
             '.b2h-res-hero{text-align:center;padding:34px 22px;border-radius:22px;margin-bottom:22px;',
@@ -275,6 +376,18 @@
 
         function renderGroup(g) {
             var html = '<div class="b2h">';
+
+            /* Tell the learner what this exercise asks of them BEFORE the first
+               question. Content only — nothing here is graded or stored. */
+            if (g.howTo) {
+                var lines = Array.isArray(g.howTo) ? g.howTo : [g.howTo];
+                html += '<div class="b2h-howto">' +
+                        (g.title ? '<div class="b2h-howto-t">' + escHtml(g.title) + '</div>' : '') +
+                        '<div class="b2h-howto-h">Как выполнять</div>' +
+                        lines.map(function (t) { return '<p>' + escHtml(t) + '</p>'; }).join('') +
+                        '</div>';
+            }
+
             if (g.audioSrc) {
                 var src = String(g.audioSrc);
                 /* b2-course.html lives in /paid-courses/, b2-demo.html at the
@@ -302,6 +415,10 @@
                     }).join('');
                     cell = '<div class="b2h-opts b2h-opts-' + style + '" data-b2h-row="' + escAttr(key) + '">' +
                            opts + '</div>';
+                } else if (g.type === 'builder') {
+                    /* Delegated wholesale to the standalone component. */
+                    cell = builder() ? builder().renderItem(key, item, g) : '';
+                    if (item.hint) cell += '<div class="b2h-hint">' + escHtml(item.hint) + '</div>';
                 } else {
                     cell = '<input type="text" class="b2h-input" data-b2h-input="' + escAttr(key) + '" ' +
                            'placeholder="' + escAttr(item.placeholder || 'Javobingizni yozing...') + '" ' +
@@ -315,6 +432,7 @@
             });
             return html + '</div>';
         }
+
 
         /** Put the chosen word into the sentence (and swap it on re-selection). */
         function fillSlot(root, key, value) {
@@ -337,6 +455,8 @@
 
         /** One delegated listener pair for the whole step, not one per widget. */
         function bindGroup(root) {
+            if (builder()) builder().bind(root);
+
             root.addEventListener('click', function (e) {
                 var btn = e.target && e.target.closest ? e.target.closest('.b2h-opt') : null;
                 if (!btn || !root.contains(btn)) return;
@@ -356,6 +476,9 @@
         }
 
         function readAnswer(root, key, g) {
+            if (g.type === 'builder') {
+                return builder() ? builder().read(root, key) : '';
+            }
             if (g.type === 'choice') {
                 var sel = root.querySelector('[data-b2h-row="' + key + '"] .b2h-opt.selected');
                 return sel ? (sel.getAttribute('data-value') || '') : '';
@@ -365,6 +488,10 @@
         }
 
         function writeAnswer(root, key, value, g) {
+            if (g.type === 'builder') {
+                if (builder()) builder().write(root, key, value);
+                return;
+            }
             if (g.type === 'choice') {
                 var row = root.querySelector('[data-b2h-row="' + key + '"]');
                 if (!row) return;
@@ -387,6 +514,23 @@
             if (!nv) return false;
             var expected = Array.isArray(item.answer) ? item.answer : [item.answer];
             return expected.some(function (e) { return norm(e) === nv; });
+        }
+
+
+        /**
+         * The engine has just graded a step. Give every builder on it a
+         * per-card verdict — correct words green, wrong words red, plus a
+         * message — so the learner can see and fix the mistake. Presentation
+         * only: the score was already decided and is not touched here.
+         */
+        function afterCheck(result, g, root) {
+            var b = builder();
+            if (!b || !g || g.type !== 'builder' || !root) return;
+            var wrongIdx = {};
+            (result && result.wrong || []).forEach(function (w) { wrongIdx[w.n - 1] = true; });
+            (g.items || []).forEach(function (item, i) {
+                b.markResult(root, g.id + '-' + i, item, g, !wrongIdx[i]);
+            });
         }
 
         /* ------------------------------------------------------------ gate */
@@ -638,7 +782,7 @@
         return {
             renderGroup: renderGroup, bindGroup: bindGroup,
             readAnswer: readAnswer, writeAnswer: writeAnswer,
-            matchItem: matchItem, stepGate: stepGate,
+            matchItem: matchItem, stepGate: stepGate, afterCheck: afterCheck,
             finish: finish, renderSummary: renderSummary, bindSummary: bindSummary,
             draft: draft, score: score, buildResultsHtml: buildResultsHtml,
             passPercent: passPercent, _norm: norm
@@ -695,6 +839,7 @@
             writeAnswer: api.writeAnswer,
             matchItem: api.matchItem,
             stepGate: api.stepGate,
+            afterCheck: api.afterCheck,
             finish: api.finish,
             renderSummary: api.renderSummary,
             bindSummary: api.bindSummary,

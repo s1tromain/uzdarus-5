@@ -470,6 +470,14 @@
         this._lastResult = result;
         this._save();
         this._showVerdict(result, g, root);
+
+        /* Let the host decorate the step it just graded — per-item highlighting,
+           a success flourish, whatever that course needs. Generic: the engine
+           passes the result and the DOM and forms no opinion about either, and
+           a host that supplies nothing sees no change in behaviour. */
+        if (typeof this.cfg.afterCheck === 'function') {
+            try { this.cfg.afterCheck(result, g, root, passed); } catch (e) { /* never break practice */ }
+        }
     };
 
     /**
