@@ -14,6 +14,7 @@
     <link rel="icon" href="./images/shared/logo.png" type="image/png">
     <link rel="apple-touch-icon" href="./images/shared/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./shared-normalizer.js"></script>
     <script src="./demo-public.js"></script>
     <link rel="stylesheet" href="./course-global-fixes.css">
     <script defer src="./course-global-fixes.js"></script>
@@ -4632,12 +4633,12 @@
         //   hook: window.checkTopic1Exercises(topicId)
 
         function t1Norm(v) {
-            return String(v == null ? "" : v)
-                .toLowerCase()
-                .replace(/ё/g, "е")
-                .replace(/[.,!?;:()"'«»—–\-]/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
+            /* Delegates to the one platform normaliser (shared-normalizer.js) so
+               this course can never grade differently from the others. */
+            if (window.UzNormalize) return window.UzNormalize(v);
+            return String(v == null ? "" : v).toLowerCase().replace(/\u0451/g, "\u0435")
+                .replace(/[.,!?;:()"'\u00ab\u00bb\u2014\u2013\-]/g, " ")
+                .replace(/\s+/g, " ").trim();
         }
 
         function t1Match(userValue, expected) {
@@ -5259,54 +5260,8 @@
         }
 
         // ==================== DEVELOPER TOOLS ====================
-        // Команда для разблокировки всех уроков (только для локального тестирования)
-        window.unlockAllLessons = function() {
-            console.log('🔓 Разблокировка всех уроков...');
-            
-            // Разблокируем все темы
-            courseData.topics.forEach(topic => {
-                topic.isLocked = false;
-                topic.isSubscriptionLocked = false;
-            });
-            
-            // Перезагружаем топики на странице
-            loadTopics();
-            
-            console.log('✅ Все 12 уроков разблокированы!');
-            console.log('📚 Теперь можете открывать любой урок для проверки');
-            alert('🎓 Все уроки разблокированы!\n\nТеперь вы можете открыть любую тему для проверки.');
-            
-            return 'Все уроки разблокированы!';
-        };
 
-        // Команда для блокировки уроков обратно
-        window.lockLessons = function() {
-            console.log('🔒 Возврат блокировки уроков...');
-            
-            // Блокируем темы 4-12
-            courseData.topics.forEach(topic => {
-                if (topic.id >= 4) {
-                    topic.isLocked = true;
-                    topic.isSubscriptionLocked = true;
-                }
-            });
-            
-            // Перезагружаем топики
-            loadTopics();
-            
-            console.log('✅ Уроки 4-12 заблокированы обратно');
-            alert('🔒 Блокировка восстановлена!\n\nУроки 4-12 снова заблокированы.');
-            
-            return 'Блокировка восстановлена!';
-        };
 
-        // Вывод подсказки в консоль при загрузке
-        console.log('%c🎓 DEVELOPER COMMANDS 🎓', 'background: #FF9800; color: white; padding: 8px 15px; font-size: 16px; font-weight: bold; border-radius: 4px;');
-        console.log('%cДля разблокировки всех 12 уроков введите:', 'color: #2196F3; font-weight: bold; margin-top: 10px;');
-        console.log('%cunlockAllLessons()', 'background: #1e1e1e; color: #4EC9B0; padding: 5px 10px; font-family: monospace; font-size: 14px;');
-        console.log('%cДля возврата блокировки (уроки 4-12):', 'color: #2196F3; font-weight: bold; margin-top: 10px;');
-        console.log('%clockLessons()', 'background: #1e1e1e; color: #4EC9B0; padding: 5px 10px; font-family: monospace; font-size: 14px;');
-        console.log(' ');
 
         // Initialize the page when DOM is loaded
         if (document.readyState === 'loading') {

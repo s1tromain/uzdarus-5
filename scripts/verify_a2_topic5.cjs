@@ -117,7 +117,11 @@ ok('summary lists all 8 points', lc.textContent.includes('лечит, учит, 
 ok('no template placeholder leaked', !lc.textContent.includes('${'));
 ok('grammar tables rendered', lc.querySelectorAll('.b2g-t').length >= 14);
 ok('vocabulary card rendered', lc.textContent.includes("Lug'atni ochish"));
-ok('vocabulary card deep-links to topic 5', /a2-vocabulary\.html\?topic=5/.test(t5.content));
+/* One shared vocabulary card now; it deep-links with the live topic id. */
+ok('single shared vocabulary card deep-links by topic id',
+   /a2-vocabulary\.html\?topic=\$\{topic\.id\}/.test(SRC));
+ok('no per-topic vocabulary card left in lesson content',
+   !/a2-vocabulary\.html\?topic=\d/.test(t5.content));
 ok('exercises rendered', !!qs.querySelector('.t1-wrap'));
 eq('11 exercise cards', qs.querySelectorAll('.t1-card').length, 11);
 eq('audio player present exactly once', qs.querySelectorAll('audio').length, 1);

@@ -83,12 +83,13 @@
     /* The platform's normalisation: case, ё/е, punctuation and spacing are all
        ignored, so a card reading "работаю," matches the word "работаю". */
     function norm(v) {
-        return String(v == null ? '' : v)
-            .toLowerCase()
-            .replace(/ё/g, 'е')
-            .replace(/[.,!?;:()"'«»—–\-]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+        /* The platform normaliser — one implementation, in shared-normalizer.js.
+           A local fallback keeps this module usable on its own, and it is the
+           same rule, not a second opinion. */
+        if (global.UzNormalize) return global.UzNormalize(v);
+        return String(v == null ? '' : v).toLowerCase().replace(/\u0451/g, '\u0435')
+            .replace(/[.,!?;:()"'\u00ab\u00bb\u2014\u2013\-]/g, ' ')
+            .replace(/\s+/g, ' ').trim();
     }
 
     /* ---------------------------------------------------------------- styles */

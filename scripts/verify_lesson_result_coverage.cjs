@@ -574,6 +574,76 @@ for (const [code, rel] of COURSES) {
 }
 
 console.log('\n' + '='.repeat(64));
+
+/* ==========================================================================
+   ENGINE-PATH COVERAGE
+   ==========================================================================
+   The collectors above audit courses whose exercises render legacy data-* hooks.
+   B2 has none: it runs entirely on the shared session engine, so it used to be
+   reported as "0 answers audited" — a hole in a platform-wide guarantee.
+
+   The guarantee itself is the same either way: NO learner answer may be
+   silently dropped between the UI and the grader. On the engine path that is
+   measured directly — render every group through the shared UI, fill in the
+   expected answer, read it back, and grade it with the same matcher the course
+   uses. Every item must round-trip.
+   ======================================================================== */
+{
+    const { JSDOM } = require('jsdom');
+    const ENGINE_COURSES = [
+        ['B2', ['b2-lesson-data.js'], (w) => (w.B2_LESSON_DATA || {}).topics || []],
+    ];
+
+    for (const [code, dataFiles, pick] of ENGINE_COURSES) {
+        const dom = new JSDOM('<!doctype html><html><body></body></html>',
+            { runScripts: 'outside-only', pretendToBeVisual: true,
+              url: 'https://uzdarus.uz/paid-courses/x.html' });
+        const w = dom.window;
+        w.Element.prototype.scrollIntoView = function () {};
+        ['shared-normalizer.js', 'sentence-builder.js', 'course-exercise-ui.js']
+            .concat(dataFiles)
+            .forEach(f => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
+
+        const topics = pick(w);
+        let topicsWith = 0, items = 0, roundTripped = 0, graded = 0;
+        const lost = [];
+
+        topics.forEach((topic) => {
+            const groups = (topic.exercises || []).filter(g => Array.isArray(g.items) && g.items.length);
+            if (!groups.length) return;
+            topicsWith++;
+            groups.forEach((g) => {
+                const host = w.document.createElement('div');
+                host.innerHTML = w.UzExerciseUI.renderGroup(g);
+                w.document.body.appendChild(host);
+                w.UzExerciseUI.bindGroup(host, g);
+
+                g.items.forEach((item, i) => {
+                    items++;
+                    const key = g.id + '-' + i;
+                    const want = Array.isArray(item.answer) ? item.answer[0] : item.answer;
+                    if (want == null || String(want).trim() === '') { roundTripped++; graded++; return; }
+                    w.UzExerciseUI.writeAnswer(host, key, want, g);
+                    const back = w.UzExerciseUI.readAnswer(host, key, g);
+                    if (String(back || '').trim() !== '') roundTripped++;
+                    else lost.push(`${code} topic ${topic.id} ${key}: answer not readable back`);
+                    if (w.UzExerciseUI.matchItem(item, back)) graded++;
+                    else lost.push(`${code} topic ${topic.id} ${key}: "${back}" not graded correct`);
+                });
+                host.remove();
+            });
+        });
+
+        okc(`${code}: engine-path topics found`, topicsWith > 0, `${topicsWith} topics`);
+        okc(`${code}: every answer survives the UI round-trip`, roundTripped === items,
+            `${roundTripped}/${items}`);
+        okc(`${code}: every answer grades correctly`, graded === items, `${graded}/${items}`);
+        lost.slice(0, 5).forEach(l => console.log('      · ' + l));
+        console.log(`  ${code}: ${topics.length} topics — ${topicsWith} with engine exercises, ${items} answers audited (engine path)`);
+    }
+}
+
+
 console.log(fail === 0
     ? `=== COVERAGE OK: ${topicsAudited} paid topics audited, ${pass} checks passed, ${warn} documented gap(s) ===`
     : `=== COVERAGE FAILED: ${fail} problem(s) across ${topicsAudited} topics ===`);

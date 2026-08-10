@@ -22,7 +22,7 @@ const PAGES = [
     { file: 'a2-demo.html', label: 'demo', prefix: './' }
 ];
 const MODULES = ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js',
-                 'exercise-cards.js', 'a2-host.js'];
+                 'a2-host.js'];
 
 console.log('\n=== A2 ON THE SHARED EXERCISE STACK ===\n');
 
@@ -36,10 +36,22 @@ for (const p of PAGES) {
         ok(fs.existsSync(path.resolve(path.dirname(path.join(ROOT, p.file)), p.prefix + m)),
             `${T} ${m} resolves on disk`);
     });
-    ok(/function mountA2ExerciseCards/.test(s), `${T} defines the card mount`);
-    ok(/mountA2ExerciseCards\(topicId\);/.test(s), `${T} calls it after the legacy render`);
-    ok(/legacy\.style\.display = 'none'/.test(s), `${T} the legacy markup is hidden, not removed`);
-    ok(/data-a2-legacy/.test(s), `${T} the legacy block is marked for the scorer`);
+    ok(/function mountA2Practice/.test(s), `${T} defines the practice mount`);
+    ok(/mountA2Practice\(topicId\);/.test(s), `${T} calls it after the legacy render`);
+    ok(/id="a2LegacyBridge"[^>]*style="display:none"/.test(s),
+        `${T} the legacy substrate is display:none — it renders nothing`);
+    ok(/aria-hidden="true"/.test(s), `${T} the substrate is out of the accessibility tree`);
+    ok(/id="a2PracticeMount"/.test(s), `${T} the visible quiz area holds only the practice mount`);
+    ok(/id="a2QuizResults"/.test(s), `${T} results container present`);
+    ok(!/UzExerciseCards|mountCards/.test(s), `${T} the old card grid is gone`);
+    const gsec = (s.match(/\.grammar-section\s*\{[^}]*\}/) || [''])[0];
+    ok(!/linear-gradient/.test(gsec), `${T} the blue grammar block is gone`);
+    ok(/background:\s*#FFFFFF/.test(gsec), `${T} grammar uses B2's light surface`);
+    ok(!/class="b2-vocab-card"/.test(s),
+        `${T} the page holds no private vocabulary card markup`);
+    ok(/UzExerciseUI\.renderVocabCard/.test(s),
+        `${T} the vocabulary card comes from the shared component`);
+    ok(/var A2_VOCAB_COUNTS/.test(s), `${T} per-topic word counts are preserved`);
 
     /* behaviour must be untouched */
     ok(/window\.checkTopic1Exercises = async function/.test(s), `${T} the original scorer is intact`);
@@ -115,22 +127,18 @@ for (const p of PAGES) {
         const mountEl = w.document.createElement('div');
         qs.appendChild(mountEl);
         const topic = { id: n, exercises: groups };
-        const mounted = w.A2Host.mountCards({
+        const mounted = w.A2Host.mountPractice({
             mountEl, deps: { getTopic: () => topic, getScope: () => qs }
         });
-        ok(!!mounted, `topic ${n}: cards mount`);
+        ok(!!mounted, `topic ${n}: practice card mounts`);
+        ok(!w.document.querySelector('.uzc-grid'), `topic ${n}: no exercise grid — B2 model`);
+        const openBtn = w.document.querySelector('.uz-practice-btn');
+        ok(!!openBtn, `topic ${n}: one practice card with an open button`);
 
-        const cards = w.document.querySelectorAll('.uzc-card');
-        ok(cards.length === groups.length,
-            `topic ${n}: one card per exercise (${cards.length}/${groups.length})`);
-        ok(Array.from(cards).every(c => c.querySelector('.uzc-name').textContent.trim() !== ''),
-            `topic ${n}: every card is labelled`);
-
-        /* open the first exercise */
-        cards[0].dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+        openBtn.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
         const sess = w.UzExerciseSession.current();
-        ok(!!sess && sess.cfg.groups.length === 1,
-            `topic ${n}: a card opens exactly its own exercise`);
+        ok(!!sess && sess.cfg.groups.length === groups.length,
+            `topic ${n}: the session steps through every exercise (${sess && sess.cfg.groups.length}/${groups.length})`);
         ok(!sess.cfg.passScore && !sess.cfg.stepGate,
             `topic ${n}: no pass gate is applied — A2 progression is unchanged`);
 
@@ -164,6 +172,65 @@ for (const p of PAGES) {
             `topic ${n}: the answer is mirrored into the legacy field (${JSON.stringify(readLegacy())})`);
         ok(errors.length === 0, `topic ${n}: no console errors (${errors[0] || ''})`);
     }
+}
+
+
+/* ------------------------------------------------ pass/fail agreement
+ * The results screen must never disagree with the legacy scorer about whether
+ * a topic was passed. Both read ONE rule — a2PassNeeded — so this test walks
+ * the whole range, including both sides of the boundary.
+ * ------------------------------------------------------------------- */
+{
+    const html = fs.readFileSync(path.join(ROOT, 'paid-courses/a2-course.html'), 'utf8');
+
+    ok((html.match(/function a2PassNeeded/g) || []).length === 1,
+        'A2 declares its pass rule exactly once');
+    ok(/var passNeeded = a2PassNeeded\(total\);/.test(html),
+        'the legacy scorer uses that rule');
+    ok(/passNeeded: a2PassNeeded/.test(html), 'the new UI is handed the same rule');
+    const hostSrc = fs.readFileSync(path.join(ROOT, 'a2-host.js'), 'utf8');
+    ok(!/0\.6|PASSING_SCORE|passed: true/.test(hostSrc),
+        'the host hardcodes no threshold and no verdict');
+    ok(/if \(getT1ExData\(topic\)\) resultsSection\.classList\.remove\('show'\)/.test(html),
+        'the legacy results panel never appears beside the new screen');
+
+    const grab = (name) => {
+        const i = html.indexOf('function ' + name + '(');
+        if (i < 0) return null;
+        let d = 0, st = false;
+        for (let k = html.indexOf('{', i); k < html.length; k++) {
+            if (html[k] === '{') { d++; st = true; }
+            else if (html[k] === '}') { d--; if (st && d === 0) return html.slice(i, k + 1); }
+        }
+        return null;
+    };
+    const sandbox = { PASSING_SCORE: 7 };
+    vm.runInNewContext(grab('a2PassNeeded') + ';this.__f = a2PassNeeded;', sandbox);
+    const passNeeded = sandbox.__f;
+
+    const dom = new JSDOM('<!doctype html><body></body></html>', { runScripts: 'outside-only' });
+    const w = dom.window;
+    ['sentence-builder.js', 'course-exercise-ui.js'].forEach(f =>
+        w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
+
+    const TOTAL = 110;
+    const need = passNeeded(TOTAL);
+    ok(need === Math.max(7, Math.ceil(TOTAL * 0.6)), `pass threshold for ${TOTAL} items is ${need}`);
+
+    [0, 1, need - 2, need - 1, need, need + 1, TOTAL - 1, TOTAL].forEach(correct => {
+        const legacyPassed = correct >= passNeeded(TOTAL);
+        const r = {
+            score: correct, total: TOTAL, errors: TOTAL - correct,
+            percent: Math.round(correct / TOTAL * 100),
+            passed: correct >= passNeeded(TOTAL),
+            passPercent: Math.round(passNeeded(TOTAL) / TOTAL * 100),
+            breakdown: [], wrong: []
+        };
+        const txt = w.UzExerciseUI.renderResults(r, {}).replace(/<[^>]+>/g, ' ');
+        const uiPassed = /Тема пройдена/.test(txt) && !/Тема не пройдена/.test(txt);
+        ok(uiPassed === legacyPassed,
+            `${correct}/${TOTAL}: screen says "${uiPassed ? 'пройдена' : 'не пройдена'}", scorer says "${legacyPassed ? 'пройдена' : 'не пройдена'}"`);
+    });
 }
 
 console.log('='.repeat(56));

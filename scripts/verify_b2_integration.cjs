@@ -194,7 +194,7 @@ for (const p of PAGES) {
     ok(/function stepGate/.test(host), 'host implements the per-exercise gate');
     ok(/function buildResultsHtml/.test(host), 'host owns ONE results builder');
     ok((host.match(/function buildResultsHtml/g) || []).length === 1, 'exactly one results builder');
-    ok(/data-b2h-act="complete"/.test(host), 'results screen offers explicit completion');
+    ok(/data-b2h-act="complete"/.test(SHARED_UI), 'the shared results screen offers explicit completion');
     ok(/b2h-slot/.test(SHARED_UI), 'the shared UI renders inline answer slots');
     ok(/@keyframes b2hPop/.test(SHARED_UI), 'the shared UI ships the selection animation');
     ok(/b2g-t|b2g-scheme/.test(SHARED_UI), 'the shared UI styles the grammar lesson');

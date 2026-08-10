@@ -1,5 +1,5 @@
 'use strict';
-const fs = require('fs'), path = require('path');
+const fs = require('fs'), path = require('path'), vm = require('vm');
 const { JSDOM, VirtualConsole } = require('jsdom');
 const ROOT = path.join(__dirname, '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'paid-courses/a2-vocabulary.html'), 'utf8');
@@ -123,14 +123,19 @@ ok('topic 3 vocabulary untouched', v.topics.find(t => t.id === 3).words.length >
 
 // course card + deep link
 const COURSE = fs.readFileSync(path.join(ROOT, 'paid-courses/a2-course.html'), 'utf8');
-ok('topic 1 card advertises 45 words', /45 ta so'z/.test(COURSE));
-ok('topic 2 card advertises 79 words', /79 ta so'z/.test(COURSE));
+/* The word count and the deep link moved out of per-topic markup into
+   A2_VOCAB_COUNTS + the shared vocabulary component. Same guarantees, new
+   home: the figures are asserted against the real word lists further down. */
 const DEMO = fs.readFileSync(path.join(ROOT, 'a2-demo.html'), 'utf8');
-ok('demo topic 1 card also says 45', /45 ta so'z/.test(DEMO));
-ok('demo topic 2 card also says 79', /79 ta so'z/.test(DEMO));
+ok('topic 1 card advertises 45 words', /\b1\s*:\s*45\b/.test(COURSE));
+ok('topic 2 card advertises 79 words', /\b2\s*:\s*79\b/.test(COURSE));
+ok('demo topic 1 card also says 45', /\b1\s*:\s*45\b/.test(DEMO));
+ok('demo topic 2 card also says 79', /\b2\s*:\s*79\b/.test(DEMO));
 ok('no stale 40-word label remains anywhere', !/40 ta so'z/.test(COURSE) && !/40 ta so'z/.test(DEMO));
-ok('course card deep-links to topic 1 vocabulary', /a2-vocabulary\.html\?topic=1/.test(COURSE));
-ok('course card deep-links to topic 2 vocabulary', /a2-vocabulary\.html\?topic=2/.test(COURSE));
+ok('course card deep-links by topic id',
+   /a2-vocabulary\.html\?topic=' \+ topicId/.test(COURSE));
+ok('demo card deep-links to its own vocabulary page',
+   /a2-demo-vocabulary\.html\?topic=' \+ topicId/.test(DEMO));
 ok('vocabulary page declares its course for speech.js', /window\.VOCAB_COURSE\s*=\s*'a2'/.test(SRC));
 ok('speech engine loaded on the vocabulary page', /paid-courses\/speech\.js/.test(SRC));
 
@@ -169,20 +174,66 @@ ok('demo topics 4-16 left untouched (they carry no words, as before)',
    dv.topics.filter(t => t.id >= 4).every(t => t.words.length === 0));
 ok('demo vocabulary page uses the same speech engine', /paid-courses\/speech\.js/.test(DVOC) || /speech\.js/.test(DVOC));
 ok('demo course deep-links to the DEMO vocabulary page',
-   /a2-demo-vocabulary\.html\?topic=1/.test(DEMO) &&
-   /a2-demo-vocabulary\.html\?topic=2/.test(DEMO) &&
-   /a2-demo-vocabulary\.html\?topic=3/.test(DEMO));
+   /a2-demo-vocabulary\.html\?topic=' \+ topicId/.test(DEMO) &&
+   !/[^-]a2-vocabulary\.html\?topic=' \+ topicId/.test(DEMO));
 
-/* AUTO word-count sync must hold for the DEMO page too. */
+/* AUTO word-count sync must hold for the DEMO page too — now read from
+   A2_VOCAB_COUNTS, which the shared vocabulary component renders. */
 [1, 2, 3].forEach((tid) => {
   const actual = dv.topics.find(t => t.id === tid).words.length;
-  const a = DEMO.indexOf(`id: ${tid},`), b = DEMO.indexOf(`id: ${tid + 1},`);
-  const m = /<strong>(\d+) ta so.z<\/strong>/.exec(DEMO.slice(a, b));
-  ok(`demo T${tid} card label present`, !!m);
-  if (m) eq(`demo T${tid} label (${m[1]}) equals demo vocabulary count (${actual})`, Number(m[1]), actual);
+  const block = (DEMO.match(/var A2_VOCAB_COUNTS = \{([^}]*)\}/) || [])[1];
+  ok(`demo T${tid} card knows its word count`,
+     !!block && new RegExp('\\b' + tid + '\\s*:').test(block));
+  if (!block) return;
+  const mm = new RegExp('\\b' + tid + '\\s*:\\s*(\\d+)').exec(block);
+  if (mm) eq(`demo T${tid}: shown count (${mm[1]}) equals imported count (${actual})`,
+             Number(mm[1]), actual);
 });
 
 console.log('\n' + '─'.repeat(60));
 console.log(fail === 0 ? `  ✅ A2 VOCAB (paid+demo): ${pass}/${pass} passed` : `  ❌ A2 VOCAB (paid+demo): ${fail} failed / ${pass + fail}`);
+
+/* ---------------------------------------------------------------------------
+ * The vocabulary card's word count must equal the real word list. A2 showed
+ * this figure before the UI migration and still must; this is what stops the
+ * displayed number drifting away from the data.
+ * ------------------------------------------------------------------------ */
+{
+  const pairs = [
+    ['paid-courses/a2-course.html', 'paid-courses/a2-vocabulary.html'],
+    ['a2-demo.html', 'a2-demo-vocabulary.html']
+  ];
+  for (const [page, vocabFile] of pairs) {
+    const src = fs.readFileSync(path.join(ROOT, page), 'utf8');
+    const m = src.match(/var A2_VOCAB_COUNTS = \{([^}]*)\}/);
+    ok(`${page}: declares per-topic word counts`, !!m);
+    if (!m) continue;
+    const declared = {};
+    m[1].split(',').forEach(part => {
+      const kv = part.split(':').map(x => x.trim());
+      if (kv.length === 2 && kv[0]) declared[+kv[0]] = +kv[1];
+    });
+
+    const vh = fs.readFileSync(path.join(ROOT, vocabFile), 'utf8');
+    const i = vh.search(/(?:const|let|var)\s+vocabularyData\s*=/);
+    let d = 0, o = vh.indexOf('{', i), e = -1;
+    for (let k = o; k < vh.length; k++) {
+      if (vh[k] === '{') d++;
+      else if (vh[k] === '}') { d--; if (d === 0) { e = k; break; } }
+    }
+    const data = vm.runInNewContext('(' + vh.slice(o, e + 1) + ')', { generateLockedTopics: () => [] });
+    const real = {};
+    (data.topics || []).forEach(t => { real[t.id] = (t.words || []).length; });
+
+    Object.keys(declared).forEach(id => {
+      eq(`${page}: topic ${id} card count equals the real word list`, declared[id], real[id]);
+    });
+    ok(`${page}: the card renders through the shared component`,
+       /window\.UzExerciseUI\.renderVocabCard/.test(src));
+    ok(`${page}: exactly one vocabulary card implementation`,
+       (src.match(/class="b2-vocab-card"/g) || []).length === 0);
+  }
+}
+
 console.log('─'.repeat(60));
 process.exit(fail ? 1 : 0);

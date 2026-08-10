@@ -346,9 +346,11 @@ Object.entries(EXPECT).forEach(([t,n])=>{
   const pairs=w.words.map(x=>x.ru+'||'+x.uz);
   const dups=pairs.filter((x,i)=>pairs.indexOf(x)!==i);
   if(dups.length) console.log('      · T'+t+' duplicate entries: '+[...new Set(dups)].join(' , '));
-  const a=PAID.SRC.indexOf(`id: ${t},`), b2=PAID.SRC.indexOf(`id: ${+t+1},`);
-  const m=/<strong>(\d+) ta so.z<\/strong>/.exec(PAID.SRC.slice(a,b2));
-  ok(`paid card T${t} label equals the imported count`, m && +m[1]===n, m?m[1]:'no label');
+  /* The count moved from per-topic markup into A2_VOCAB_COUNTS, which the
+     shared vocabulary component renders. The guarantee is unchanged. */
+  const blk=(PAID.SRC.match(/var A2_VOCAB_COUNTS = \{([^}]*)\}/)||[])[1];
+  const m=blk?new RegExp('\\b'+t+'\\s*:\\s*(\\d+)').exec(blk):null;
+  ok(`paid card T${t} count equals the imported count`, m && +m[1]===n, m?m[1]:'no count');
 });
 [1,2,3].forEach(t=>{
   const p=VP.v.topics.find(x=>x.id===t), dd=VD.v.topics.find(x=>x.id===t);

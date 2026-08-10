@@ -36,12 +36,13 @@
        ignored; everything else must match. Shared by every course, so an answer
        accepted in one is accepted identically in another. */
     function norm(v) {
-        return String(v == null ? '' : v)
-            .toLowerCase()
-            .replace(/ё/g, 'е')
-            .replace(/[.,!?;:()"'«»—–\-]/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
+        /* The platform normaliser — one implementation, in shared-normalizer.js.
+           A local fallback keeps this module usable on its own, and it is the
+           same rule, not a second opinion. */
+        if (global.UzNormalize) return global.UzNormalize(v);
+        return String(v == null ? '' : v).toLowerCase().replace(/\u0451/g, '\u0435')
+            .replace(/[.,!?;:()"'\u00ab\u00bb\u2014\u2013\-]/g, ' ')
+            .replace(/\s+/g, ' ').trim();
     }
 
     function escHtml(s) {
@@ -556,6 +557,136 @@
     }
 
 
+    /* ---------------------------------------------------------------------
+     * RESULTS SCREEN. One implementation, used by every course, so a finished
+     * topic looks the same everywhere. The caller supplies the scored result;
+     * this never decides anything about passing or progression.
+     *   r = { score, total, errors, percent, passed, passPercent,
+     *         breakdown:[{ id, title, correct, total, percent }], wrong:[…] }
+     * ------------------------------------------------------------------- */
+        /** Advice derived from the attempt itself, not canned filler. */
+    function recommendations(r) {
+        var out = [];
+        var weak = r.breakdown
+            .filter(function (b) { return b.total && b.percent < r.passPercent; })
+            .sort(function (a, b) { return a.percent - b.percent; });
+        if (weak.length) {
+            out.push('Слабые упражнения: ' + weak.slice(0, 3).map(function (b) {
+                return b.title + ' (' + b.percent + '%)';
+            }).join(', ') + ' — повторите их в первую очередь.');
+        }
+        var explained = r.wrong.filter(function (w) { return w.explanation; });
+        if (explained.length) {
+            out.push('В ' + explained.length + ' ошибках есть разбор — прочитайте пояснения к ним.');
+        }
+        var blank = r.wrong.filter(function (w) { return w.given == null; }).length;
+        if (blank) {
+            out.push('Без ответа осталось: ' + blank +
+                     '. Не оставляйте пропуски — отвечайте даже при сомнении.');
+        }
+        if (r.passed) {
+            out.push('Порог ' + r.passPercent + '% пройден. Закрепите тему на словаре и переходите дальше.');
+        } else {
+            out.push('До порога ' + r.passPercent + '% не хватает ' + (r.passPercent - r.percent) +
+                     '%. Разберите грамматику темы и пройдите упражнения заново.');
+        }
+        return out;
+    }
+
+    /**
+     * ONE results builder. Its HTML is mounted in the modal (the screen the
+     * learner sees at the end) and written into the page's existing
+     * #quizResults block (so a finished topic can be reopened to it).
+     * One generator, two mount points — not two result screens.
+     */
+    function renderResults(r, opts) {
+        opts = opts || {};
+        var passed = !!r.passed;
+
+        var rows = (r.breakdown || []).map(function (b) {
+            var good = b.percent >= r.passPercent;
+            return '<div class="b2h-row">' +
+                   '<span class="b2h-row-name">' + escHtml(b.title) + '</span>' +
+                   '<span class="b2h-row-bar' + (good ? '' : ' bad') + '">' +
+                   '<i style="width:' + b.percent + '%"></i></span>' +
+                   '<span class="b2h-row-val" style="color:' +
+                   (good ? 'var(--b2-ok)' : 'var(--b2-bad)') + '">' +
+                   b.correct + '/' + b.total + '</span></div>';
+        }).join('');
+
+        var tips = recommendations(r).map(function (t) {
+            return '<li>' + escHtml(t) + '</li>';
+        }).join('');
+
+        var acts;
+        if (opts.archived) {
+            acts = '<div class="b2h-done-note">&#10004; Тема завершена. ' +
+                   'Это результат вашей последней попытки.</div>';
+        } else if (passed) {
+            acts = '<div class="b2h-res-acts">' +
+                   '<button type="button" class="b2h-cta b2h-cta-done" data-b2h-act="complete">' +
+                   'Завершить тему</button></div>';
+        } else {
+            acts = '<div class="b2h-res-acts">' +
+                   '<button type="button" class="b2h-cta b2h-cta-retry" data-b2h-act="restart">' +
+                   'Пройти тему заново</button></div>' +
+                   '<div class="b2h-done-note" style="color:var(--b2-bad)">' +
+                   'Тема не засчитана: нужно минимум ' + r.passPercent + '%.</div>';
+        }
+
+        return '<div class="b2h"><div class="b2h-res">' +
+            '<div class="b2h-res-hero' + (passed ? '' : ' fail') + '">' +
+                '<div class="b2h-res-pct">' + r.percent + '%</div>' +
+                '<div class="b2h-res-title">' +
+                (passed ? 'Тема пройдена' : 'Тема не пройдена') + '</div>' +
+                '<div class="b2h-res-sub">' + (passed
+                    ? 'Отличная работа — вы уверенно владеете материалом темы.'
+                    : 'Проходной балл — ' + r.passPercent + '%. Разберите ошибки и попробуйте ещё раз.') +
+                '</div>' +
+                '<div class="b2h-res-ring"><i style="width:' + r.percent + '%"></i></div>' +
+            '</div>' +
+            '<div class="b2h-stats">' +
+                '<div class="b2h-stat neutral"><b>' + r.score + '/' + r.total + '</b><span>Общий балл</span></div>' +
+                '<div class="b2h-stat ok"><b>' + r.score + '</b><span>Правильных</span></div>' +
+                '<div class="b2h-stat bad"><b>' + r.errors + '</b><span>Ошибок</span></div>' +
+                '<div class="b2h-stat neutral"><b>' + (r.breakdown || []).length +
+                '</b><span>Упражнений</span></div>' +
+            '</div>' +
+            '<h3 class="b2h-sec">Статистика по упражнениям</h3>' +
+            '<div class="b2h-brk">' + rows + '</div>' +
+            '<div class="b2h-tips"><h4>Рекомендации</h4><ul>' + tips + '</ul></div>' +
+            acts +
+        '</div></div>';
+    }
+
+    /* ---------------------------------------------------------------------
+     * VOCABULARY CARD. One component for every course.
+     *
+     * `count` is optional and shown only when a course actually knows how many
+     * words a topic has. A2 has always shown it and must keep doing so; B2 has
+     * never had the figure, and simply omits the line. Neither course loses
+     * anything, and there is still exactly one card implementation.
+     *
+     *   href   where the vocabulary lives, topic id already applied
+     *   count  words in this topic, or falsy to omit the line
+     *   icon / title / lead / cta  optional overrides
+     * ------------------------------------------------------------------- */
+    function renderVocabCard(opts) {
+        opts = opts || {};
+        var count = Number(opts.count);
+        var lead = opts.lead || (count > 0
+            ? 'Ushbu mavzuda <strong>' + count + ' ta so\'z</strong> o\'rganasiz'
+            : 'Ushbu mavzuning lug\'atini o\'rganing va so\'z boyligingizni mustahkamlang.');
+        return '<div class="b2-vocab-card">' +
+               '<div class="b2-vocab-ico">' + (opts.icon || '\uD83C\uDF93') + '</div>' +
+               '<h3>' + escHtml(opts.title || 'So\'zlar lug\'ati') + '</h3>' +
+               '<p>' + lead + '</p>' +
+               '<button type="button" onclick="window.location.href=\'' +
+               escAttr(opts.href || '#') + '\'">' +
+               '<i class="fas fa-book-open"></i> ' + escHtml(opts.cta || 'Lug\'atni ochish') +
+               '</button></div>';
+    }
+
     global.UzExerciseUI = {
         VERSION: 1,
         injectStyles: injectStyles,
@@ -565,6 +696,8 @@
         writeAnswer: writeAnswer,
         matchItem: matchItem,
         afterCheck: afterCheck,
+        renderResults: renderResults,
+        renderVocabCard: renderVocabCard,
         norm: norm,
         escHtml: escHtml
     };

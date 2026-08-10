@@ -20,7 +20,8 @@ for (const rel of ['paid-courses/a2-course.html','a2-demo.html']) {
 
   const t2=w.__api.courseData.topics.find(t=>t.id===2);
   ok('T2 explanation preserved',!!(t2.explanation&&t2.explanation.uz));
-  ok('T2 content (vocabulary card) preserved',/Lug.atni ochish/.test(t2.content));
+  ok('T2 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
+  ok('T2 content carries no private vocabulary card', !/Lug.atni ochish/.test(t2.content));
   ok('T2 description preserved',/O.tgan zamon/.test(t2.description));
 
   // render the same topic 5x — listener/markup leaks would show up as growth
@@ -34,14 +35,16 @@ for (const rel of ['paid-courses/a2-course.html','a2-demo.html']) {
     ok('T4 renders one audio',q4.querySelectorAll('audio').length===1);
     const t4o=w.__api.courseData.topics.find(t=>t.id===4);
     ok('T4 explanation preserved',!!(t4o.explanation&&t4o.explanation.uz));
-    ok('T4 content (vocabulary card) preserved',/Lug.atni ochish/.test(t4o.content));
+    ok('T4 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
+  ok('T4 content carries no private vocabulary card', !/Lug.atni ochish/.test(t4o.content));
     w.__api.loadLesson(5);
     const q5=w.document.getElementById('quizSection');
     ok('T5 renders 11 cards after interleaving',q5.querySelectorAll('.t1-card').length===11);
     ok('T5 renders one audio',q5.querySelectorAll('audio').length===1);
     const t5o=w.__api.courseData.topics.find(t=>t.id===5);
     ok('T5 explanation preserved',!!(t5o.explanation&&t5o.explanation.uz));
-    ok('T5 content (vocabulary card) preserved',/Lug.atni ochish/.test(t5o.content));
+    ok('T5 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
+  ok('T5 content carries no private vocabulary card', !/Lug.atni ochish/.test(t5o.content));
   }
   w.__api.loadLesson(2);
   const qs=w.document.getElementById('quizSection');
@@ -60,7 +63,8 @@ for (const rel of ['paid-courses/a2-course.html','a2-demo.html']) {
   // builder: click a word, it moves to the slot exactly once
   const t3o=w.__api.courseData.topics.find(t=>t.id===3);
   ok('T3 explanation preserved',!!(t3o.explanation&&t3o.explanation.uz));
-  ok('T3 content (vocabulary card) preserved',/Lug.atni ochish/.test(t3o.content));
+  ok('T3 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
+  ok('T3 content carries no private vocabulary card', !/Lug.atni ochish/.test(t3o.content));
   w.__api.loadLesson(3);
   const qs3=w.document.getElementById('quizSection');
   ok('T3 renders 11 cards',qs3.querySelectorAll('.t1-card').length===11);

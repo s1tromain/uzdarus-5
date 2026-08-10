@@ -11,12 +11,12 @@
     <link rel="icon" href="./images/shared/logo.png" type="image/png">
     <link rel="apple-touch-icon" href="./images/shared/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./shared-normalizer.js"></script>
     <script src="./demo-public.js"></script>
     <link rel="stylesheet" href="./course-global-fixes.css">
     <script defer src="./exercise-session.js"></script>
     <script defer src="./sentence-builder.js"></script>
     <script defer src="./course-exercise-ui.js"></script>
-    <script defer src="./exercise-cards.js"></script>
     <script defer src="./a2-host.js"></script>
     <script defer src="./course-global-fixes.js"></script>
     <style>
@@ -422,12 +422,30 @@
         }
 
         /* Grammar Section */
+        /* Identical to B2. The old blue gradient put dark grammar copy on a
+           saturated background; the shared components assume a light surface. */
         .grammar-section {
-            background: linear-gradient(135deg, var(--blue), #1976D2);
-            color: white;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 25px;
+            background: #FFFFFF;
+            color: #1F2430;
+            padding: clamp(18px, 4vw, 34px);
+            border: 1px solid #E6EAF2;
+            border-radius: 18px;
+            margin-bottom: 28px;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 8px 24px rgba(16, 24, 40, .04);
+        }
+        .grammar-section .grammar-header {
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid #EEF1F7;
+        }
+        .grammar-section .grammar-header h3 { color: #1F2430; font-weight: 700; }
+        .grammar-section .grammar-header i { color: #2563EB; }
+        .grammar-section table td,
+        .grammar-section table th {
+            word-break: normal;
+            overflow-wrap: break-word;
+            white-space: normal;
+            hyphens: none;
         }
 
         .grammar-header {
@@ -2873,23 +2891,7 @@
                         uz: "A2 darajasida siz o'zingiz haqida to'liqroq ma'lumot berishni va kundalik ishlaringiz haqida gapira olishni o'rganasiz."
                     },
                     content: `
-                        <div style="background: linear-gradient(135deg, #4CAF50, #45a049); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);">
-                            <div style="font-size: 4rem; margin-bottom: 15px;">🗣️</div>
-                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">So'zlar lug'ati</h3>
-                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
-                                Ushbu mavzuda <strong>45 ta so'z</strong> o'rganasiz
-                            </p>
-                            <button onclick="window.location.href='a2-demo-vocabulary.html?topic=1'" 
-                                    style="background: white; color: #4CAF50; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
-                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
-                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
-                                <i class="fas fa-book-open"></i> Lug'atni ochish
-                            </button>
-                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
-                                <i class="fas fa-graduation-cap"></i> Kundalik hayot so'zlarini o'rganing
-                            </p>
-                        </div>
-                        
+                                                
                         <h3>Muhim qoidalar:</h3>
                         <p>• "У меня есть" konstruksiyasida "есть" so'zi muhim - uni tushirib bo'lmaydi.</p>
                         <p>• Hozirgi zamonda "быть" fe'li ishlatilmaydi, faqat o'tgan va kelasi zamonda.</p>
@@ -3314,23 +3316,7 @@
                         uz: "A2 darajasida siz oila a\'zolaringiz va do\'stlaringiz haqida o\'tgan zamonda gapira olishni o\'rganasiz."
                     },
                     content: `
-                        <div style="background: linear-gradient(135deg, #E91E63, #C2185B); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(233, 30, 99, 0.3);">
-                            <div style="font-size: 4rem; margin-bottom: 15px;">👨‍👩‍👧‍👦</div>
-                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Oila va munosabatlar lug'ati</h3>
-                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
-                                Ushbu mavzuda <strong>79 ta so'z</strong> o'rganasiz
-                            </p>
-                            <button onclick="window.location.href='a2-demo-vocabulary.html?topic=2'" 
-                                    style="background: white; color: #E91E63; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
-                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
-                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
-                                <i class="fas fa-book-open"></i> Lug'atni ochish
-                            </button>
-                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
-                                <i class="fas fa-users"></i> Oila va munosabatlar haqida so'zlashni o'rganing
-                            </p>
-                        </div>
-                        
+                                                
                         <h3>Muhim qoidalar:</h3>
                         <p>• o'tgan zamonda jins va ko'plikka e'tibor bering.</p>
                         <p>• Egalik olmoshlari otning jinsi bilan mos kelishi kerak.</p>
@@ -3709,22 +3695,6 @@
                         uz: "A2 darajasida siz o\'z uyingiz va uning ichki qismini tasvirlashni o\'rganasiz."
                     },
                     content: `
-                        <div style="background: linear-gradient(135deg, #FF9800, #F57C00); padding: 30px; border-radius: 15px; text-align: center; margin: 20px 0; box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);">
-                            <div style="font-size: 4rem; margin-bottom: 15px;">🏠</div>
-                            <h3 style="color: white; margin-bottom: 15px; font-size: 1.8rem;">Uy va joy lug'ati</h3>
-                            <p style="color: rgba(255,255,255,0.9); margin-bottom: 25px; font-size: 1.1rem;">
-                                Ushbu mavzuda <strong>73 ta so'z</strong> o'rganasiz
-                            </p>
-                            <button onclick="window.location.href='a2-demo-vocabulary.html?topic=3'" 
-                                    style="background: white; color: #FF9800; border: none; padding: 15px 40px; border-radius: 50px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0,0,0,0.2);"
-                                    onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)'"
-                                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)'">
-                                <i class="fas fa-book-open"></i> Lug'atni ochish
-                            </button>
-                            <p style="color: rgba(255,255,255,0.8); margin-top: 15px; font-size: 0.9rem;">
-                                <i class="fas fa-home"></i> Uy va yashash joyi haqida so'zlashni o'rganing
-                            </p>
-                        </div>
                         
                         <h3>Muhim qoidalar:</h3>
                         <p>• "В" yopiq joylar uchun ishlatiladi (в комнате).</p>
@@ -4687,6 +4657,20 @@
         }
 
         // Load lesson content
+
+        /* Words per topic, mirrored from the vocabulary page. A2 has always shown
+           this figure and must keep showing it; verify_a2_vocab1.cjs fails the
+           build if it ever drifts from the real word lists. */
+        var A2_VOCAB_COUNTS = { 1: 45, 2: 79, 3: 73 };
+
+        function a2VocabCard(topicId) {
+            if (!window.UzExerciseUI || !window.UzExerciseUI.renderVocabCard) return '';
+            return window.UzExerciseUI.renderVocabCard({
+                href: 'a2-demo-vocabulary.html?topic=' + topicId,
+                count: A2_VOCAB_COUNTS[topicId] || 0
+            });
+        }
+
         function loadLesson(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
@@ -4715,21 +4699,19 @@
                         <div class="grammar-content">
                             ${topic.grammar}
                         </div>
+                    </div>                    <div class="topic-explanation">
+                        <h3>Mavzu Tushuntirish</h3>
+                        <p>${topic.explanation.uz}</p>
+                        ${topic.content}
                     </div>
                     
 
-                    <div class="b2-vocab-card">
-                        <div class="b2-vocab-ico">🎓</div>
+                    ${a2VocabCard(topic.id)}
                         <h3>So'zlar lug'ati</h3>
                         <p>Ushbu mavzuning lug'atini o'rganing va so'z boyligingizni mustahkamlang.</p>
                         <button type="button" onclick="window.location.href='a2-demo-vocabulary.html?topic=${topic.id}'">
                             <i class="fas fa-book-open"></i> Lug'atni ochish
                         </button>
-                    </div>
-                    <div class="topic-explanation">
-                        <h3>Mavzu Tushuntirish</h3>
-                        <p>${topic.explanation.uz}</p>
-                        ${topic.content}
                     </div>
                 `;
             } else {
@@ -4892,7 +4874,11 @@
                 correctAnswers.appendChild(answerItem);
             });
             
-            resultsSection.classList.add('show');
+            /* Engine-driven topics show the shared results screen instead; this
+               panel is legacy UI and must not appear beside it. Its buttons are
+               still wired, because completion is driven from them. */
+            if (getT1ExData(topic)) resultsSection.classList.remove('show');
+            else resultsSection.classList.add('show');
             
             // Buttons
             if (topicResults.score >= PASSING_SCORE) {
@@ -5192,12 +5178,12 @@
         //   hook: window.checkTopic1Exercises(topicId)
 
         function t1Norm(v) {
-            return String(v == null ? "" : v)
-                .toLowerCase()
-                .replace(/ё/g, "е")
-                .replace(/[.,!?;:()"'«»—–\-]/g, " ")
-                .replace(/\s+/g, " ")
-                .trim();
+            /* Delegates to the one platform normaliser (shared-normalizer.js) so
+               this course can never grade differently from the others. */
+            if (window.UzNormalize) return window.UzNormalize(v);
+            return String(v == null ? "" : v).toLowerCase().replace(/\u0451/g, "\u0435")
+                .replace(/[.,!?;:()"'\u00ab\u00bb\u2014\u2013\-]/g, " ")
+                .replace(/\s+/g, " ").trim();
         }
 
         function t1Match(userValue, expected) {
@@ -5507,40 +5493,58 @@
         }
 
 
+
         /* ------------------------------------------------------------------
-         * NEW UI, SAME BEHAVIOUR.
+         * PRACTICE — the B2 model, exactly: one card that opens the shared
+         * session and steps through every exercise.
          *
-         * The legacy exercise markup above is still rendered and still carries
-         * every data hook window.checkTopic1Exercises reads — it is simply
-         * hidden. The card grid is mounted in its place, and each answer given
-         * in the session is mirrored straight back into the legacy field, so
-         * scoring, drafts, Firebase, statistics and completion run through
-         * exactly the code they always did.
+         * The legacy markup is still produced, because window.checkTopic1Exercises
+         * scores from it, but it is rendered OFF-SCREEN and never participates in
+         * the interface. It is a backend compatibility layer, nothing more.
          * ---------------------------------------------------------------- */
-        function mountA2ExerciseCards(topicId) {
-            if (!window.A2Host || !window.UzExerciseCards || !quizSection) return;
+        /** The hidden compatibility substrate the legacy scorer reads. */
+        /* A2's pass rule, in one place. The legacy scorer below and the new
+           results screen both call this, so the interface can never disagree
+           with the scorer about whether a topic was passed. */
+        function a2PassNeeded(total) {
+            return Math.max(PASSING_SCORE, Math.ceil(total * 0.6));
+        }
+
+        function a2LegacyScope() {
+            return document.getElementById('a2LegacyBridge') || quizSection;
+        }
+
+        function mountA2Practice(topicId) {
+            if (!window.A2Host || !quizSection) return;
             var topic = courseData.topics.find(function (t) { return t.id === topicId; });
             var exData = getT1ExData(topic);
             if (!topic || !exData) return;
 
-            var legacy = quizSection.querySelector('.t1-wrap');
-            if (!legacy) return;
-            legacy.setAttribute('data-a2-legacy', '1');
-            legacy.style.display = 'none';          // present for the scorer, hidden from view
+            var mount = document.getElementById('a2PracticeMount');
+            if (!mount) return;
 
-            var mount = document.getElementById('a2CardsMount');
-            if (!mount) {
-                mount = document.createElement('div');
-                mount.id = 'a2CardsMount';
-                quizSection.insertBefore(mount, quizSection.firstChild);
-            }
-
-            window.A2Host.mountCards({
+            window.A2Host.mountPractice({
                 mountEl: mount,
-                title: 'Mavzu mashqlari',
+                title: 'Amaliy mashqlar',
                 deps: {
                     getTopic: function () { return { id: topicId, exercises: exData.exercises || [] }; },
-                    getScope: function () { return quizSection; }
+                    getScope: a2LegacyScope,
+                    runLegacyCheck: function (id) { return window.checkTopic1Exercises(id); },
+                    /* the scorer's own rule — never a second implementation */
+                    passNeeded: a2PassNeeded,
+                    /* completion is the legacy button's job; the new screen only
+                       presses it, so progress/Firebase stay on one path */
+                    completeTopic: function () {
+                        var btn = document.getElementById('completeBtn');
+                        if (btn && btn.style.display !== 'none' &&
+                            !/tugatilmadi/i.test(btn.textContent)) btn.click();
+                    },
+                    showResults: function (html) {
+                        var box = document.getElementById('a2QuizResults');
+                        if (!box) return;
+                        box.innerHTML = html;
+                        box.classList.add('show');
+                    }
                 }
             });
         }
@@ -5586,9 +5590,19 @@
                 }
             });
             html += "</div>";
-            quizSection.innerHTML = html;
+            /* Off-screen: the scorer needs these nodes, the learner never sees them. */
+            /* One write. The practice mount and the results container are the only
+               things the learner sees; the legacy substrate follows them inside the
+               same element because window.checkTopic1Exercises scopes its queries to
+               #quizSection. It is display:none — it renders nothing, ever. */
+            quizSection.innerHTML =
+                  '<div id="a2PracticeMount"></div>'
+                + '<div class="quiz-results" id="a2QuizResults"></div>'
+                + '<div id="a2LegacyBridge" data-a2-legacy="1" aria-hidden="true" style="display:none">'
+                + html
+                + '</div>';
 
-            quizSection.querySelectorAll(".t1-opt").forEach(function (btn) {
+            a2LegacyScope().querySelectorAll(".t1-opt").forEach(function (btn) {
                 btn.addEventListener("click", function () {
                     var row = this.closest(".t1-opts");
                     if (!row) return;
@@ -5650,7 +5664,7 @@
                 });
             });
 
-            mountA2ExerciseCards(topicId);
+            mountA2Practice(topicId);
 
             if (topic.quiz && topic.quiz.matchingGame && typeof loadMatchingGame === "function") {
                 setTimeout(function () {
@@ -5732,7 +5746,7 @@
             try { await saveQuizResultToFirebase(topicId, data); } catch (e) { console.error("T1 save error", e); }
             userQuizResults["topic_" + topicId] = data;
 
-            var passNeeded = Math.max(PASSING_SCORE, Math.ceil(total * 0.6));
+            var passNeeded = a2PassNeeded(total);
             var pct = total ? Math.round(correct / total * 100) : 0;
             var passed = correct >= passNeeded;
 
@@ -6118,54 +6132,8 @@
         }
 
         // ==================== DEVELOPER TOOLS ====================
-        // Команда для разблокировки всех уроков (только для локального тестирования)
-        window.unlockAllLessons = function() {
-            console.log('🔓 Разблокировка всех уроков...');
-            
-            // Разблокируем все темы
-            courseData.topics.forEach(topic => {
-                topic.isLocked = false;
-                topic.isSubscriptionLocked = false;
-            });
-            
-            // Перезагружаем топики на странице
-            loadTopics();
-            
-            console.log('✅ Все 12 уроков разблокированы!');
-            console.log('📚 Теперь можете открывать любой урок для проверки');
-            alert('🎓 Все уроки разблокированы!\n\nТеперь вы можете открыть любую тему для проверки.');
-            
-            return 'Все уроки разблокированы!';
-        };
 
-        // Команда для блокировки уроков обратно
-        window.lockLessons = function() {
-            console.log('🔒 Возврат блокировки уроков...');
-            
-            // Блокируем темы 4-12
-            courseData.topics.forEach(topic => {
-                if (topic.id >= 4) {
-                    topic.isLocked = true;
-                    topic.isSubscriptionLocked = true;
-                }
-            });
-            
-            // Перезагружаем топики
-            loadTopics();
-            
-            console.log('✅ Уроки 4-12 заблокированы обратно');
-            alert('🔒 Блокировка восстановлена!\n\nУроки 4-12 снова заблокированы.');
-            
-            return 'Блокировка восстановлена!';
-        };
 
-        // Вывод подсказки в консоль при загрузке
-        console.log('%c🎓 DEVELOPER COMMANDS 🎓', 'background: #FF9800; color: white; padding: 8px 15px; font-size: 16px; font-weight: bold; border-radius: 4px;');
-        console.log('%cДля разблокировки всех 12 уроков введите:', 'color: #2196F3; font-weight: bold; margin-top: 10px;');
-        console.log('%cunlockAllLessons()', 'background: #1e1e1e; color: #4EC9B0; padding: 5px 10px; font-family: monospace; font-size: 14px;');
-        console.log('%cДля возврата блокировки (уроки 4-12):', 'color: #2196F3; font-weight: bold; margin-top: 10px;');
-        console.log('%clockLessons()', 'background: #1e1e1e; color: #4EC9B0; padding: 5px 10px; font-family: monospace; font-size: 14px;');
-        console.log(' ');
 
         // Initialize the page when DOM is loaded
         if (document.readyState === 'loading') {

@@ -10,6 +10,10 @@ const dom=new JSDOM(SRC.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/
  {url:'https://uzdarus.uz/paid-courses/a2-course.html',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole:vc});
 const w=dom.window;w.HTMLElement.prototype.scrollIntoView=function(){};w.alert=()=>{};
 w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};");
+/* Production loads these via <script defer>; the harness must do the same or
+   the shared components (vocabulary card, exercise UI) are simply absent. */
+['exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js']
+  .forEach(f=>w.eval(fs.readFileSync(path.join(ROOT,f),'utf8')));
 if(pre)w.eval(pre);
 w.eval(main+'\n;window.__api={courseData:courseData,loadLesson:loadLesson};');
 const t1=w.__api.courseData.topics.find(t=>t.id===1);

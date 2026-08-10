@@ -29,7 +29,6 @@
  *   course-exercise-ui.js   rendering, binding, reading, matching  (with B2)
  *   sentence-builder.js     word-card exercises                    (with B2)
  *   exercise-session.js     the stepping modal, autosave, resume   (with B2)
- *   exercise-cards.js       the per-exercise card grid
  *
  * A2 supplies no passScore and no completion gate: progression rules are
  * exactly what they were before this file existed.
@@ -40,7 +39,6 @@
     if (global.A2Host) return;
 
     function ui() { return global.UzExerciseUI; }
-    function cards() { return global.UzExerciseCards; }
     function session() { return global.UzExerciseSession; }
 
     /* ------------------------------------------------- the legacy substrate */
@@ -239,29 +237,149 @@
     }
 
     /**
-     * Render the exercise grid for a topic. Tapping a card opens that exercise;
-     * closing it refreshes the grid from the page's own markup.
+     * Mount the practice card for a topic — the same shape B2 uses: ONE card
+     * that opens the shared session and steps through every exercise. There is
+     * no second exercise UI and no grid.
+     *
+     * Completion is the legacy system's decision, not ours: the answers are
+     * mirrored into the legacy fields and the page's own checker is invoked.
+     * We only display the outcome, using the shared results screen.
      */
-    function mountCards(opts) {
+    function mountPractice(opts) {
         var deps = opts.deps;
         var topic = deps.getTopic();
         if (!topic || !Array.isArray(topic.exercises) || !topic.exercises.length) return null;
-        if (!cards()) return null;
+        if (!session()) return null;
 
         var api = create(deps);
-        var grid = cards().mount({
+        var groups = topic.exercises;
+
+        function mirrorAll(answers) {
+            groups.forEach(function (g) {
+                (g.items || []).forEach(function (item, i) {
+                    var key = g.id + '-' + i;
+                    if (Object.prototype.hasOwnProperty.call(answers, key)) {
+                        api.writeLegacy(g, i, answers[key]);
+                    }
+                });
+            });
+        }
+
+        /** Score from the legacy markup the page's own checker also reads. */
+        function scoreFromLegacy() {
+            var total = 0, correct = 0, breakdown = [], wrong = [];
+            groups.forEach(function (g) {
+                var gT = 0, gC = 0;
+                (g.items || []).forEach(function (item, i) {
+                    total++; gT++;
+                    var given = api.readLegacy(g, i);
+                    if (ui().matchItem(item, given)) { correct++; gC++; }
+                    else {
+                        wrong.push({
+                            group: g.id, index: i + 1, question: item.q,
+                            given: (given == null || String(given).trim() === '') ? null : String(given),
+                            expected: Array.isArray(item.answer) ? item.answer[0] : item.answer,
+                            explanation: item.explanation || item.hint || null
+                        });
+                    }
+                });
+                breakdown.push({
+                    id: g.id, title: g.title || g.id, correct: gC, total: gT,
+                    percent: gT ? Math.round(gC / gT * 100) : 0
+                });
+            });
+            var percent = total ? Math.round(correct / total * 100) : 0;
+            /* THE pass decision is A2's own, taken from the very function the
+               legacy scorer uses. Nothing is re-derived, nothing is hardcoded,
+               and B2's threshold is never consulted — so the screen and the
+               scorer cannot disagree. A host that supplies no rule gets a
+               factual screen rather than an invented verdict. */
+            var needed = (typeof deps.passNeeded === 'function' && total)
+                ? deps.passNeeded(total) : null;
+            return {
+                topicId: topic.id, score: correct, total: total, errors: total - correct,
+                percent: percent,
+                passed: needed === null ? null : correct >= needed,
+                passPercent: needed === null ? null : Math.round(needed / total * 100),
+                passNeeded: needed,
+                breakdown: breakdown, wrong: wrong, timestamp: new Date().toISOString()
+            };
+        }
+
+        return session().mount({
+            course: 'a2',
+            topicId: topic.id,
+            groups: groups,
             mountEl: opts.mountEl,
-            groups: topic.exercises,
             title: opts.title || 'Amaliy mashqlar',
             subtitle: opts.subtitle ||
-                (topic.exercises.length + ' ta mashq. Har birini alohida bajaring.'),
-            stateOf: api.stateOf,
-            onOpen: function (i) {
-                api.open(i, function () { if (grid) grid.refresh(); });
+                (groups.length + ' ta mashq. Javoblar avtomatik saqlanadi.'),
+            summaryLabel: 'Natijalar',
+            renderGroup: ui().renderGroup,
+            bindGroup: function (root, g) {
+                ui().bindGroup(root, g);
+                var sync = function () { api.mirror(root, g); };
+                root.addEventListener('input', sync);
+                root.addEventListener('change', sync);
+                root.addEventListener('click', function () { setTimeout(sync, 0); });
+            },
+            readAnswer: ui().readAnswer,
+            writeAnswer: ui().writeAnswer,
+            matchItem: ui().matchItem,
+            afterCheck: ui().afterCheck,
+            /* No passScore and no stepGate: A2 progression is untouched. */
+            draft: {
+                load: function () {
+                    var answers = {}, any = false;
+                    groups.forEach(function (g) {
+                        (g.items || []).forEach(function (item, i) {
+                            var v = api.readLegacy(g, i);
+                            answers[g.id + '-' + i] = v;
+                            if (v) any = true;
+                        });
+                    });
+                    return any ? { v: 1, cursor: 0, answers: answers, checked: {} } : null;
+                },
+                save: function (state) { mirrorAll((state && state.answers) || {}); },
+                clear: function () { /* draft lifetime belongs to the page */ }
+            },
+            finish: function (answers) {
+                mirrorAll(answers || {});
+                var r = scoreFromLegacy();
+                /* The page's own checker owns scoring, progress and Firebase. */
+                if (typeof deps.runLegacyCheck === 'function') {
+                    try {
+                        var p = deps.runLegacyCheck(topic.id);
+                        if (p && typeof p.catch === 'function') p.catch(function () {});
+                    } catch (e) { /* never cost the learner their screen */ }
+                }
+                if (typeof deps.showResults === 'function') {
+                    try { deps.showResults(ui().renderResults(r, {}), r); } catch (e) {}
+                }
+                return r;
+            },
+            renderSummary: function (payload) {
+                return ui().renderResults(payload || scoreFromLegacy(), {});
+            },
+            bindSummary: function (root, payload, sess) {
+                root.addEventListener('click', function (e) {
+                    var b = e.target && e.target.closest ? e.target.closest('[data-b2h-act]') : null;
+                    if (!b) return;
+                    var act = b.getAttribute('data-b2h-act');
+                    if (act === 'complete' && typeof deps.completeTopic === 'function') {
+                        /* presses the page's own completion button: one path to
+                           progress, Firebase and statistics */
+                        try { deps.completeTopic(topic.id, payload); } catch (err) {}
+                    }
+                    if (act === 'restart') {
+                        if (sess && typeof sess.reset === 'function') sess.reset();
+                        if (sess && typeof sess.open === 'function') { sess.open(); return; }
+                    }
+                    if (sess && typeof sess.close === 'function') sess.close();
+                });
             }
         });
-        return { grid: grid, api: api };
     }
 
-    global.A2Host = { create: create, mountCards: mountCards };
+    global.A2Host = { create: create, mountPractice: mountPractice };
 })(typeof window !== 'undefined' ? window : this);

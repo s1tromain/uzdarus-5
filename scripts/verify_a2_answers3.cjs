@@ -194,14 +194,23 @@ ok('lesson 2 vocabulary untouched (79)', vdom.window.__v.topics.find(t=>t.id===2
 
 /* AUTO: the card label must equal the ACTUAL imported word count. */
 console.log('\n─── word-count auto-sync ───');
+/* The count now lives in A2_VOCAB_COUNTS and is rendered by the shared
+   vocabulary component, instead of being copied into each topic's markup.
+   The guarantee is unchanged: what the learner sees must equal what was
+   actually imported. */
 [1, 2, 3].forEach((tid) => {
   const actual = vdom.window.__v.topics.find(t => t.id === tid).words.length;
   ['paid-courses/a2-course.html', 'a2-demo.html'].forEach((rel) => {
     const S = fs.readFileSync(path.join(ROOT, rel), 'utf8');
-    const a = S.indexOf(`id: ${tid},`), b = S.indexOf(`id: ${tid + 1},`);
-    const m = /<strong>(\d+) ta so.z<\/strong>/.exec(S.slice(a, b));
-    ok(`${rel} T${tid}: card label has a word count`, !!m);
-    if (m) eq(`${rel} T${tid}: label (${m[1]}) equals imported count (${actual})`, Number(m[1]), actual);
+    const block = (S.match(/var A2_VOCAB_COUNTS = \{([^}]*)\}/) || [])[1];
+    ok(`${rel} T${tid}: the card knows this topic's word count`,
+       !!block && new RegExp('\\b' + tid + '\\s*:').test(block));
+    if (!block) return;
+    const m = new RegExp('\\b' + tid + '\\s*:\\s*(\\d+)').exec(block);
+    if (m) eq(`${rel} T${tid}: shown count (${m[1]}) equals imported count (${actual})`,
+              Number(m[1]), actual);
+    ok(`${rel} T${tid}: rendered through the shared component`,
+       /UzExerciseUI\.renderVocabCard/.test(S));
   });
 });
 

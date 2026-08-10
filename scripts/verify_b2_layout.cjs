@@ -198,7 +198,9 @@ for (const p of PAGES) {
 for (const p of PAGES) {
     const s = fs.readFileSync(path.join(ROOT, p.file), 'utf8');
     const T = p.label;
-    ok(s.includes('class="b2-vocab-card"'), `${T} vocabulary card is in the lesson template`);
+    ok(/UzExerciseUI\.renderVocabCard/.test(s),
+        `${T} vocabulary card comes from the shared component`);
+    ok(!/class="b2-vocab-card"/.test(s), `${T} no private copy of the card markup`);
     /* styled once, in the shared component — not copied into each page */
     ok(!/\.b2-vocab-card\s*\{/.test(s), `${T} carries no private copy of the card CSS`);
     ok(/\.b2-vocab-card\{/.test(UI), `${T} vocabulary card is styled by the shared component`);
@@ -208,7 +210,8 @@ for (const p of PAGES) {
         `${T} links to ${p.vocab} with the topic id`);
     /* rendered for every topic, from the shared template — no per-topic content */
     const tpl = s.slice(s.indexOf('lessonContent.innerHTML'), s.indexOf('lessonContent.innerHTML') + 2600);
-    ok(tpl.includes('b2-vocab-card'), `${T} the card sits in the single lesson template`);
+    ok(/\$\{b2VocabCard\(topic\.id\)\}/.test(tpl),
+        `${T} the card sits in the single lesson template`);
     ok(!/topic\.content\}<\/div>\s*\n\s*<div class="b2-vocab-card"/.test(tpl) ||
         tpl.includes('${topic.content ?'), `${T} no empty explanation div is rendered`);
     ok(tpl.includes('${topic.content ?'), `${T} the explanation block is skipped when empty`);

@@ -199,12 +199,19 @@ ok('lessons 1-4 vocabulary untouched',
    [45,79,73,106].every((n,i) => vdom.window.__v.topics.find(t=>t.id===i+1).words.length === n));
 ok('vocabulary topics 6-16 still empty',
    vdom.window.__v.topics.filter(t=>t.id>=6).every(t=>t.words.length===0));
+/* The count now lives in A2_VOCAB_COUNTS and is rendered by the shared
+   vocabulary component; the guarantee is unchanged. */
 [1,2,3,4,5].forEach((tid) => {
   const actual = vdom.window.__v.topics.find(t => t.id === tid).words.length;
-  const a = SRC.indexOf(`id: ${tid},`), b = SRC.indexOf(`id: ${tid+1},`);
-  const m = /<strong>(\d+) ta so.z<\/strong>/.exec(SRC.slice(a, b));
-  ok(`T${tid}: card label present`, !!m);
-  if (m) eq(`T${tid}: label (${m[1]}) equals imported count (${actual})`, Number(m[1]), actual);
+  const block = (SRC.match(/var A2_VOCAB_COUNTS = \{([^}]*)\}/) || [])[1];
+  ok(`T${tid}: the card knows this topic's word count`,
+     !!block && new RegExp('\\b' + tid + '\\s*:').test(block));
+  if (!block) return;
+  const mm = new RegExp('\\b' + tid + '\\s*:\\s*(\\d+)').exec(block);
+  if (mm) eq(`T${tid}: shown count (${mm[1]}) equals imported count (${actual})`,
+             Number(mm[1]), actual);
+  ok(`T${tid}: rendered through the shared component`,
+     /UzExerciseUI\.renderVocabCard/.test(SRC));
 });
 
 console.log('\n' + '─'.repeat(64));

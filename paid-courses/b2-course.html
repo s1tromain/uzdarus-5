@@ -1786,6 +1786,14 @@
         }
 
 
+
+        /** The shared vocabulary card. B2 has no per-topic word count, so the
+            component omits that line rather than inventing a figure. */
+        function b2VocabCard(topicId) {
+            if (!window.UzExerciseUI || !window.UzExerciseUI.renderVocabCard) return '';
+            return window.UzExerciseUI.renderVocabCard({ href: 'b2-vocabulary.html?topic=' + topicId });
+        }
+
         function loadTopic(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
@@ -1814,8 +1822,7 @@
                 
                 ${topic.content ? `<div class="topic-explanation">${topic.content}</div>` : ''}
 
-                <div class="b2-vocab-card">
-                    <div class="b2-vocab-ico">🎓</div>
+                ${b2VocabCard(topic.id)}
                     <h3>So'zlar lug'ati</h3>
                     <p>Ushbu mavzuning lug'atini o'rganing va so'z boyligingizni mustahkamlang.</p>
                     <button type="button" onclick="window.location.href='b2-vocabulary.html?topic=${topic.id}'">
