@@ -191,8 +191,22 @@ for (const p of PAGES) {
     const hostSrc = fs.readFileSync(path.join(ROOT, 'a2-host.js'), 'utf8');
     ok(!/0\.6|PASSING_SCORE|passed: true/.test(hostSrc),
         'the host hardcodes no threshold and no verdict');
-    ok(/if \(getT1ExData\(topic\)\) resultsSection\.classList\.remove\('show'\)/.test(html),
+    /* the generic scorer populates the legacy panel but must never reveal it */
+    const scorer = (() => {
+        const i = html.indexOf('window.checkTopic1Exercises = async function');
+        if (i < 0) return '';
+        let d = 0, st = false;
+        for (let k = html.indexOf('{', i); k < html.length; k++) {
+            if (html[k] === '{') { d++; st = true; }
+            else if (html[k] === '}') { d--; if (st && d === 0) return html.slice(i, k + 1); }
+        }
+        return '';
+    })();
+    ok(scorer.length > 0, 'the generic scorer was located');
+    ok(!/resultsSection\.classList\.add\(["']show["']\)/.test(scorer),
         'the legacy results panel never appears beside the new screen');
+    ok(/id="resultsWrap"[^>]*display:none/.test(html),
+        'the legacy results section reserves no layout space by default');
 
     const grab = (name) => {
         const i = html.indexOf('function ' + name + '(');
@@ -231,6 +245,64 @@ for (const p of PAGES) {
         ok(uiPassed === legacyPassed,
             `${correct}/${TOTAL}: screen says "${uiPassed ? 'пройдена' : 'не пройдена'}", scorer says "${legacyPassed ? 'пройдена' : 'не пройдена'}"`);
     });
+}
+
+
+/* ------------------------------------------------ RC polish invariants
+ * Everything the release-candidate pass fixed, asserted so it cannot come back.
+ * ------------------------------------------------------------------- */
+{
+    const vm2 = require('vm');
+    for (const p of PAGES) {
+        const s = fs.readFileSync(path.join(ROOT, p.file), 'utf8');
+        const T = p.label;
+
+        /* one vocabulary card, no orphaned debris from the old inline card */
+        ok((s.match(/\$\{a2VocabCard\(topic\.id\)\}/g) || []).length === 1,
+            `${T} exactly one vocabulary card call`);
+        ok(!/Lug'atni ochish/.test(s), `${T} no leftover vocabulary markup in the page`);
+
+        /* the legacy results surface never occupies the layout */
+        ok(/id="resultsWrap"[^>]*style="display:none"/.test(s),
+            `${T} the legacy results section is out of the layout by default`);
+        ok(/function setResultsWrapVisible/.test(s),
+            `${T} the wrapper is toggled together with the panel`);
+
+        /* every exercise group carries an instruction card */
+        const topics = T === 'paid' ? [1, 2, 3, 4, 5] : [1, 2, 3];
+        topics.forEach(n => {
+            const key = `topic${n}Exercises: {`;
+            const i = s.indexOf(key);
+            ok(i > 0, `${T} topic ${n} exercise data found`);
+            if (i < 0) return;
+            let d = 0, o = s.indexOf('{', i + key.length - 1), end = -1;
+            for (let k = o; k < s.length; k++) {
+                if (s[k] === '{') d++;
+                else if (s[k] === '}') { d--; if (d === 0) { end = k; break; } }
+            }
+            const data = vm2.runInNewContext('(' + s.slice(o, end + 1) + ')', {});
+            const missing = data.exercises.filter(g => !Array.isArray(g.howTo) || g.howTo.length < 2);
+            ok(missing.length === 0,
+                `${T} topic ${n}: every exercise has an instruction (${missing.map(g => g.id).join(',') || 'all present'})`);
+            const texts = data.exercises.map(g => (g.howTo || []).join(' '));
+            ok(new Set(texts).size === texts.length,
+                `${T} topic ${n}: no instruction is copied between exercises`);
+            ok(texts.every(t => t.length > 80),
+                `${T} topic ${n}: every instruction is substantial`);
+        });
+    }
+
+    /* the instruction card actually renders through the shared component */
+    const w = new JSDOM('<!doctype html><html><body></body></html>',
+        { runScripts: 'outside-only', pretendToBeVisual: true }).window;
+    w.Element.prototype.scrollIntoView = function () {};
+    ['shared-normalizer.js', 'sentence-builder.js', 'course-exercise-ui.js']
+        .forEach(f => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
+    const html = w.UzExerciseUI.renderGroup({
+        id: 'g', type: 'input', title: 'T', howTo: ['a', 'b'], items: [{ q: 'q', answer: 'a' }]
+    });
+    ok(/b2h-howto/.test(html), 'the shared UI renders the instruction card');
+    ok(/Как выполнять/.test(html), 'the instruction card carries the B2 heading');
 }
 
 console.log('='.repeat(56));

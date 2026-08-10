@@ -32,6 +32,20 @@
     /* The sentence-builder component, resolved lazily so load order is free. */
     function builder() { return global.UzSentenceBuilder || null; }
 
+    /* ------------------------------------------------------------------
+     * Per-course display options.
+     *
+     * `showTaskLine` renders the group's own `intro` — the task stated in the
+     * learner's language — above the guidance. It defaults to OFF so that a
+     * course which never displayed it keeps rendering exactly as before; a
+     * course that needs it opts in. No course is named here.
+     * ------------------------------------------------------------------ */
+    var OPTIONS = { showTaskLine: false };
+    function setOptions(o) {
+        if (!o) return;
+        if (o.showTaskLine !== undefined) OPTIONS.showTaskLine = !!o.showTaskLine;
+    }
+
     /* The platform's normalisation. Case, ё/е, punctuation and whitespace are
        ignored; everything else must match. Shared by every course, so an answer
        accepted in one is accepted identically in another. */
@@ -138,6 +152,9 @@
             'word-break:normal;overflow-wrap:break-word;hyphens:none;max-width:70ch}',
             '.b2h-howto p:last-child{margin-bottom:0}',
             '.b2h-howto-t{font-weight:700;color:#1F2430;font-size:1.02rem;margin-bottom:6px}',
+            '.b2h-howto-task{color:#1F2430;font-size:.99rem;line-height:1.7;margin-bottom:12px;',
+            'padding-bottom:12px;border-bottom:1px solid #E3E9F3;word-break:normal;',
+            'overflow-wrap:break-word;hyphens:none}',
             '@media(max-width:640px){.b2h-howto{padding:15px 16px 14px}}',
 
             /* ---- audio ---- */
@@ -402,12 +419,19 @@
 
         /* Tell the learner what this exercise asks of them BEFORE the first
            question. Content only — nothing here is graded or stored. */
-        if (g.howTo) {
-            var lines = Array.isArray(g.howTo) ? g.howTo : [g.howTo];
+        if (g.howTo || (OPTIONS.showTaskLine && g.intro)) {
+            var lines = g.howTo ? (Array.isArray(g.howTo) ? g.howTo : [g.howTo]) : [];
             html += '<div class="b2h-howto">' +
                     (g.title ? '<div class="b2h-howto-t">' + escHtml(g.title) + '</div>' : '') +
-                    '<div class="b2h-howto-h">Как выполнять</div>' +
-                    lines.map(function (t) { return '<p>' + escHtml(t) + '</p>'; }).join('') +
+                    /* The task itself, in the learner's own language. Courses author
+                       it as `intro`; dropping it costs worked examples and word
+                       lists that appear nowhere else. */
+                    (OPTIONS.showTaskLine && g.intro
+                        ? '<div class="b2h-howto-task">' + escHtml(g.intro) + '</div>' : '') +
+                    (lines.length
+                        ? '<div class="b2h-howto-h">Как выполнять</div>' +
+                          lines.map(function (t) { return '<p>' + escHtml(t) + '</p>'; }).join('')
+                        : '') +
                     '</div>';
         }
 
@@ -690,6 +714,7 @@
     global.UzExerciseUI = {
         VERSION: 1,
         injectStyles: injectStyles,
+        setOptions: setOptions,
         renderGroup: renderGroup,
         bindGroup: bindGroup,
         readAnswer: readAnswer,

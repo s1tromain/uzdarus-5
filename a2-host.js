@@ -115,6 +115,9 @@
             throw new Error('A2Host.create: deps.getTopic is required');
         }
         ui().injectStyles();
+        /* A2's lessons state the task in `intro` — worked examples and word
+           lists live only there, so A2 opts in to displaying it. */
+        if (typeof ui().setOptions === 'function') ui().setOptions({ showTaskLine: true });
 
         var scope = function () {
             return typeof deps.getScope === 'function' ? deps.getScope() : document;

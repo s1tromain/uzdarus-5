@@ -189,7 +189,13 @@ for (const p of PAGES) {
     });
 
     ok(/\.b2h-howto\{/.test(HOST), 'briefing is a shared component, not inline style');
-    ok(/if \(g\.howTo\)/.test(HOST), 'briefing renders from data — generic for any course');
+    ok(/if \(g\.howTo \|\| \(OPTIONS\.showTaskLine && g\.intro\)\)/.test(HOST),
+        'briefing renders from data — generic for any course');
+    /* the task line is opt-in and OFF by default, so B2 renders exactly as before */
+    ok(/var OPTIONS = \{ showTaskLine: false \}/.test(HOST),
+        'the task line defaults to off — no course changes without asking');
+    ok(!/setOptions\(\{ showTaskLine: true \}\)/.test(fs.readFileSync(path.join(ROOT,'b2-host.js'),'utf8')),
+        'B2 does not opt in, so its appearance is unchanged');
     ok(!/ex1|ex2|topicId/.test((HOST.split('if (g.howTo)')[1] || '').slice(0, 500)),
         'briefing rendering contains no per-exercise special-casing');
 }

@@ -2574,8 +2574,10 @@
         </div>
     </section>
 
-    <!-- Results Section -->
-    <section class="content-section">
+    <!-- Results Section — legacy compatibility surface.
+         Hidden by default so it occupies no space; the legacy quiz path reveals
+         it, engine-driven topics never do. -->
+    <section class="content-section" id="resultsWrap" style="display:none">
         <div class="container">
             <div class="results-section" id="resultsSection">
                 <div class="score-display" id="scoreDisplay">Sizning natijangiz: 0/10</div>
@@ -2901,6 +2903,11 @@
                         exercises: [
                             {
                                 id: "ex1", type: "input", icon: "fa-pen",
+                                howTo: [
+                                    "Раскройте скобки и поставьте глагол «быть» в прошедшее время.",
+                                    "Форма зависит от подлежащего: он — был, она — была, оно — было, они и вы — были.",
+                                    "Смотрите на род и число подлежащего, а не на окончание соседнего слова."
+                                ],
                                 title: "1-mashq. Qavsni ochib, «быть» fe'lini o'tgan zamon shaklida yozing",
                                 intro: "Ega jinsiga va soniga mos shaklni yozing: был / была / было / были.",
                                 items: [
@@ -2918,6 +2925,11 @@
                             },
                             {
                                 id: "ex2", type: "input", icon: "fa-rotate-left",
+                                howTo: [
+                                    "Переведите предложение в отрицательную форму.",
+                                    "В отрицании подлежащее переходит в родительный падеж, а «был/была» заменяется на «не было»: Я был дома → Меня не было дома.",
+                                    "«Не было» не меняется по роду и числу — оно одинаково для всех."
+                                ],
                                 title: "2-mashq. Gaplarni inkor shakliga o'tkazing",
                                 intro: "Namuna: Я был дома. → Меня не было дома.",
                                 items: [
@@ -2935,6 +2947,12 @@
                             },
                             {
                                 id: "ex3", type: "input", icon: "fa-user-minus",
+                                howTo: [
+                                    "Замените конструкцию «кто не был» на «кого не было».",
+                                    "Личное местоимение становится родительным: я → меня, ты → тебя, он → его, она → её, мы → нас, вы → вас, они → их.",
+                                    "Глагол при этом всегда один и тот же — «не было».",
+                                    "Частая ошибка — оставить форму «не был»: в этой конструкции глагол всегда «не было», даже во множественном числе."
+                                ],
                                 title: "3-mashq. «Меня / тебя / его / её / нас / вас / их не было» konstruktsiyasini ishlating",
                                 intro: "Namuna: Я не был дома. → Меня не было дома.",
                                 items: [
@@ -2952,6 +2970,11 @@
                             },
                             {
                                 id: "ex4", type: "input", icon: "fa-hand-holding-heart",
+                                howTo: [
+                                    "Составьте предложение с конструкцией «У кого? + есть».",
+                                    "Схема: У + родительный падеж местоимения + есть + предмет. Menda → У меня есть…",
+                                    "Слово «есть» здесь опускать нельзя — именно оно передаёт наличие."
+                                ],
                                 title: "4-mashq. «У кого? + есть» konstruktsiyasini to'ldiring",
                                 intro: "Я, ты, он, она, мы, вы, они so'zlaridan foydalaning. Namuna: Menda → У меня есть...",
                                 items: [
@@ -2969,6 +2992,11 @@
                             },
                             {
                                 id: "ex5", type: "input", icon: "fa-circle-minus",
+                                howTo: [
+                                    "Переведите предложение с «есть» в отрицание.",
+                                    "«Есть» заменяется на «нет», а предмет переходит в родительный падеж: У меня есть книга → У меня нет книги.",
+                                    "Чаще всего ошибаются в окончании предмета — проверьте родительный падеж."
+                                ],
                                 title: "5-mashq. Gaplarni inkor shakliga o'tkazing",
                                 intro: "Namuna: У меня есть книга. → У меня нет книги.",
                                 items: [
@@ -2986,6 +3014,11 @@
                             },
                             {
                                 id: "ex6", type: "input", icon: "fa-clock-rotate-left",
+                                howTo: [
+                                    "Переведите предложение в прошедшее время.",
+                                    "«Есть» заменяется формой «был/была/было/были», согласованной с предметом: книга → была, дом → был.",
+                                    "Согласование идёт с тем, что есть у человека, а не с самим человеком."
+                                ],
                                 title: "6-mashq. O'tgan zamonga o'tkazing",
                                 intro: "Namuna: У меня есть книга. → У меня была книга.",
                                 items: [
@@ -3003,6 +3036,11 @@
                             },
                             {
                                 id: "ex7", type: "input", icon: "fa-forward",
+                                howTo: [
+                                    "Переведите предложение в будущее время.",
+                                    "«Есть» заменяется на «будет» для единственного числа и «будут» для множественного.",
+                                    "Предмет остаётся в именительном падеже — падеж здесь не меняется."
+                                ],
                                 title: "7-mashq. Kelasi zamonga o'tkazing",
                                 intro: "Namuna: У меня есть книга. → У меня будет книга.",
                                 items: [
@@ -3020,6 +3058,12 @@
                             },
                             {
                                 id: "ex8", type: "input", icon: "fa-language",
+                                howTo: [
+                                    "Переведите предложение с узбекского на русский.",
+                                    "Используйте конструкцию «У кого? + есть + что?» и не забывайте про слово «есть».",
+                                    "Пишите предложение целиком, а не только недостающее слово.",
+                                    "Предлог «у» требует родительного падежа местоимения: у меня, у тебя, у него. Частая ошибка — сказать «у я»."
+                                ],
                                 title: "8-mashq. Tarjima qiling",
                                 intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
                                 items: [
@@ -3037,6 +3081,11 @@
                             },
                             {
                                 id: "ex9", type: "choice", style: "test", icon: "fa-list-check",
+                                howTo: [
+                                    "Выберите правильную форму глагола «быть» из предложенных.",
+                                    "Определите род и число подлежащего, и только затем выбирайте вариант.",
+                                    "Прочитайте предложение до конца: подлежащее не всегда стоит первым."
+                                ],
                                 title: "9-mashq. To'g'ri variantni tanlang",
                                 intro: "Har bir savol uchun to'g'ri javobni belgilang.",
                                 items: [
@@ -3054,6 +3103,11 @@
                             },
                             {
                                 id: "ex10", type: "input", icon: "fa-keyboard",
+                                howTo: [
+                                    "Напишите предложение по-русски целиком.",
+                                    "Опирайтесь на конструкции темы: «У меня есть…», «У меня был(а)…», «У меня будет…».",
+                                    "Проверьте падеж предмета и наличие слова «есть»."
+                                ],
                                 title: "10-mashq. Gaplarni rus tilida yozing",
                                 intro: "To'liq gapni rus tilida yozing.",
                                 items: [
@@ -3071,6 +3125,12 @@
                             },
                             {
                                 id: "audio", type: "choice", style: "tf", icon: "fa-circle-question",
+                                howTo: [
+                                    "Сначала прослушайте аудиозапись «Моя жизнь» — при необходимости несколько раз.",
+                                    "Затем отметьте каждое утверждение как «Правда» или «Ложь».",
+                                    "Отвечайте строго по тексту, а не по собственным предположениям.",
+                                    "В записи звучат конструкции «у меня есть» и формы прошедшего времени — слушайте именно их."
+                                ],
                                 audioSrc: "audios/%D0%902%201%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
                                 title: "«Правда или ложь?» (Rost yoki yolg'on)",
                                 intro: "«Моя жизнь» audio matnini tinglang va gaplarni Правда yoki Ложь deb belgilang.",
@@ -3326,6 +3386,11 @@
                         exercises: [
                             {
                                 id: "ex1", type: "input", icon: "fa-pen",
+                                howTo: [
+                                    "Поставьте глагол из скобок в прошедшее время.",
+                                    "Окончание зависит от подлежащего: -л (он), -ла (она), -ло (оно), -ли (они, вы).",
+                                    "Определяйте род по подлежащему, а не по профессии или роли в предложении."
+                                ],
                                 title: "1-mashq. Qavs ichidagi fe'lni o'tgan zamonga qo'ying",
                                 intro: "Namuna: Я (жить) в Ташкенте. → Я жил(а) в Ташкенте.",
                                 items: [
@@ -3343,6 +3408,11 @@
                             },
                             {
                                 id: "ex2", type: "choice", style: "test", icon: "fa-list-check",
+                                howTo: [
+                                    "Выберите правильную форму прошедшего времени.",
+                                    "Согласуйте её с родом и числом подлежащего: сестра — была, брат — был, родители — были.",
+                                    "Не ориентируйтесь на ближайшее существительное — ищите именно подлежащее."
+                                ],
                                 title: "2-mashq. To'g'ri o'tgan zamon shaklini tanlang",
                                 intro: "Har bir gap uchun ega jinsiga va soniga mos shaklni belgilang.",
                                 items: [
@@ -3360,6 +3430,11 @@
                             },
                             {
                                 id: "ex3", type: "input", icon: "fa-ban",
+                                howTo: [
+                                    "Поставьте предложение в отрицательную форму.",
+                                    "Частица «не» ставится перед глаголом, сам глагол не меняется: Он был уставший → Он не был уставший.",
+                                    "Порядок остальных слов сохраняется."
+                                ],
                                 title: "3-mashq. Inkor shaklini yozing",
                                 intro: "Namuna: Он был уставший. → Он не был уставший.",
                                 items: [
@@ -3377,6 +3452,12 @@
                             },
                             {
                                 id: "ex4", type: "input", icon: "fa-circle-question", free: true,
+                                howTo: [
+                                    "Составьте специальный вопрос к выделенной части предложения.",
+                                    "Подберите вопросительное слово по смыслу: где — место, кем — профессия, когда — время, что — предмет.",
+                                    "В вопросе сохраняется прошедшее время глагола.",
+                                    "Частая ошибка — сохранить порядок утверждения: в специальном вопросе сказуемое обычно идёт перед подлежащим."
+                                ],
                                 title: "4-mashq. Berilgan gaplar asosida maxsus savollar tuzing",
                                 intro: "Namuna: Моя семья жила в Ташкенте. → Где жила ваша семья?",
                                 items: [
@@ -3394,6 +3475,11 @@
                             },
                             {
                                 id: "ex5", type: "choice", style: "test", icon: "fa-hand-pointer",
+                                howTo: [
+                                    "Выберите притяжательное местоимение, подходящее к существительному.",
+                                    "Оно согласуется с родом и числом: мой отец, моя мама, моё окно, мои родители.",
+                                    "Ориентируйтесь на само существительное, а не на того, кому принадлежит предмет."
+                                ],
                                 title: "5-mashq. To'g'ri egalik olmoshini tanlang",
                                 intro: "Egalik olmoshi otning jinsi va soniga moslashadi.",
                                 items: [
@@ -3411,6 +3497,11 @@
                             },
                             {
                                 id: "ex6", type: "input", icon: "fa-user-pen",
+                                howTo: [
+                                    "Впишите подходящее притяжательное местоимение.",
+                                    "Выбирайте из мой / моя / моё / мои, наш / наша / наше / наши, а также его, её, их.",
+                                    "«Его», «её» и «их» не изменяются по родам — это частая ошибка."
+                                ],
                                 title: "6-mashq. Nuqtalar o'rniga mos egalik olmoshini yozing",
                                 intro: "мой / моя / моё / мои, наш / наша / наше / наши, его, её, их …",
                                 items: [
@@ -3428,6 +3519,11 @@
                             },
                             {
                                 id: "ex7", type: "input", icon: "fa-language",
+                                howTo: [
+                                    "Переведите предложение на русский язык.",
+                                    "Понадобятся прошедшее время и притяжательные местоимения из этой темы.",
+                                    "Проверьте согласование местоимения с существительным и глагола с подлежащим."
+                                ],
                                 title: "7-mashq. Gaplarni rus tiliga tarjima qiling",
                                 intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
                                 items: [
@@ -3445,6 +3541,12 @@
                             },
                             {
                                 id: "ex8", type: "builder", icon: "fa-shuffle",
+                                howTo: [
+                                    "Соберите предложение из слов, нажимая на карточки в правильном порядке.",
+                                    "Обычный порядок: притяжательное местоимение → существительное → глагол → определение.",
+                                    "Используйте все карточки: лишних слов в задании нет.",
+                                    "Частая ошибка — поставить определение перед сказуемым: «Моя добрая бабушка была» вместо «Моя бабушка была добрая»."
+                                ],
                                 title: "8-mashq. So'zlardan to'g'ri gap tuzing",
                                 intro: "So'zlarni bosib to'g'ri tartibda joylashtiring.",
                                 items: [
@@ -3462,6 +3564,12 @@
                             },
                             {
                                 id: "ex9", type: "input", icon: "fa-clock-rotate-left",
+                                howTo: [
+                                    "Впишите подходящий глагол из списка в прошедшем времени.",
+                                    "Сначала определите по смыслу, какое действие нужно, затем согласуйте форму с подлежащим.",
+                                    "Каждый глагол из списка используется один раз.",
+                                    "Частая ошибка — подобрать глагол по смыслу и забыть про род: мама работала, а не работал."
+                                ],
                                 title: "9-mashq. Nuqtalar o'rniga mos fe'lni o'tgan zamonda yozing",
                                 intro: "Fe'llar: жил, работала, приготовила, были, познакомились, приехал, окончила, играли, купил, родился",
                                 items: [
@@ -3479,6 +3587,12 @@
                             },
                             {
                                 id: "audio", type: "choice", style: "tf", icon: "fa-circle-question",
+                                howTo: [
+                                    "Сначала прослушайте аудиозапись «Моя семья» — при необходимости несколько раз.",
+                                    "Затем отметьте каждое утверждение как «Правда» или «Ложь».",
+                                    "Отвечайте строго по тексту, а не по собственным предположениям.",
+                                    "В записи звучат формы прошедшего времени и притяжательные местоимения — на них и опирайтесь."
+                                ],
                                 audioSrc: "audios/%D0%902%202%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
                                 title: "Rost yoki yolg'on? (Правда или ложь?)",
                                 intro: "«Моя семья» audio matnini tinglang va gaplarni Правда yoki Ложь deb belgilang.",
@@ -3705,6 +3819,12 @@
                         exercises: [
                             {
                                 id: "ex1", type: "input", icon: "fa-location-dot",
+                                howTo: [
+                                    "Раскройте скобки: нужен предлог и предложный падеж.",
+                                    "Предложный падеж отвечает на вопрос «где?»: в доме, на кухне, в квартире.",
+                                    "«В» — внутри помещения, «на» — на поверхности или на открытом месте.",
+                                    "Частая ошибка — поставить винительный падеж: «в дом» отвечает на «куда?», а здесь нужно «в доме»."
+                                ],
                                 title: "1-mashq. Qavsni oching. Kerakli predlog va kelishikni qo'llang. (Где?)",
                                 intro: "Namuna: Я живу (дом) → Я живу в доме. Predlog + Предложный падеж yozing.",
                                 items: [
@@ -3722,6 +3842,11 @@
                             },
                             {
                                 id: "ex2", type: "input", icon: "fa-arrow-right-to-bracket",
+                                howTo: [
+                                    "Раскройте скобки: нужен предлог и винительный падеж.",
+                                    "Винительный отвечает на вопрос «куда?»: в комнату, на работу, в парк.",
+                                    "Здесь речь о направлении движения, поэтому падеж отличается от «где?»."
+                                ],
                                 title: "2-mashq. Qavsni oching. Kerakli predlog va kelishikni qo'llang. (Куда?)",
                                 intro: "Namuna: Я иду (дом) → Я иду в дом. Predlog + Винительный падеж yozing.",
                                 items: [
@@ -3739,6 +3864,12 @@
                             },
                             {
                                 id: "ex3", type: "input", icon: "fa-arrow-right-from-bracket",
+                                howTo: [
+                                    "Раскройте скобки: нужен предлог и родительный падеж.",
+                                    "Родительный отвечает на вопрос «откуда?»: из комнаты, с работы, от врача.",
+                                    "«Из» противоположно «в», «с» противоположно «на» — выбирайте пару правильно.",
+                                    "Частая ошибка — сказать «из работы»: если на вопрос «где?» слово требует «на», то на «откуда?» оно требует «с» — с работы."
+                                ],
                                 title: "3-mashq. Qavsni oching. Kerakli predlog va kelishikni qo'llang. (Откуда?)",
                                 intro: "Namuna: Я пришёл (дом) → Я пришёл из дома. Predlog + Родительный падеж yozing.",
                                 items: [
@@ -3756,6 +3887,11 @@
                             },
                             {
                                 id: "ex4", type: "choice", style: "chips", icon: "fa-hand-pointer",
+                                howTo: [
+                                    "Выберите подходящий предлог из предложенных.",
+                                    "Сначала определите вопрос: «где?» — в/на, «куда?» — в/на, «откуда?» — из/с.",
+                                    "Обратите внимание на падеж существительного: он подсказывает нужный предлог."
+                                ],
                                 title: "4-mashq. Kerakli predlogni tanlang",
                                 intro: "Namuna: Я живу ___ квартире. → в",
                                 items: [
@@ -3773,6 +3909,12 @@
                             },
                             {
                                 id: "ex5", type: "input", icon: "fa-pen",
+                                howTo: [
+                                    "Впишите нужный предлог: в, во, на, из, с или от.",
+                                    "Определите по смыслу: место, направление или исходная точка.",
+                                    "«Во» используется перед словами, начинающимися со стечения согласных: во дворе.",
+                                    "Частая ошибка — перепутать «в» и «на» у похожих слов: в школе, но на почте. Эти сочетания заучиваются целиком."
+                                ],
                                 title: "5-mashq. Gaplarni to'ldiring",
                                 intro: "Kerakli so'zni yozing (в / во / на / из / с / от).",
                                 items: [
@@ -3790,6 +3932,12 @@
                             },
                             {
                                 id: "ex6", type: "input", icon: "fa-language",
+                                howTo: [
+                                    "Переведите предложение с узбекского на русский.",
+                                    "Понадобятся предлоги места и правильный падеж после них.",
+                                    "Сначала решите, отвечает предложение на «где?», «куда?» или «откуда?».",
+                                    "Частая ошибка — перевести дословно и потерять предлог: в русском языке он обязателен."
+                                ],
                                 title: "6-mashq. Tarjima qiling (O'zbekchadan ruschaga)",
                                 intro: "Quyidagi gaplarni rus tiliga tarjima qiling.",
                                 items: [
@@ -3807,6 +3955,11 @@
                             },
                             {
                                 id: "ex7", type: "input", icon: "fa-comments",
+                                howTo: [
+                                    "Ответьте на вопрос полным предложением.",
+                                    "Ответ должен повторять конструкцию вопроса: Где ты живёшь? → Я живу в квартире.",
+                                    "Следите за падежом: у «где?» — предложный, у «куда?» — винительный."
+                                ],
                                 title: "7-mashq. Savolga javob bering",
                                 intro: "Namuna: Где ты живёшь? → Я живу в квартире.",
                                 items: [
@@ -3824,6 +3977,11 @@
                             },
                             {
                                 id: "ex8", type: "choice", style: "test", icon: "fa-list-check",
+                                howTo: [
+                                    "Выберите правильный вариант из предложенных.",
+                                    "Проверяйте не только предлог, но и окончание существительного.",
+                                    "Читайте предложение целиком: вопрос «где?» или «куда?» определяет весь выбор."
+                                ],
                                 title: "8-mashq. To'g'ri variantni tanlang",
                                 intro: "Har bir savol uchun to'g'ri variantni belgilang.",
                                 items: [
@@ -3841,6 +3999,11 @@
                             },
                             {
                                 id: "ex9", type: "input", icon: "fa-wrench",
+                                howTo: [
+                                    "Найдите ошибку и запишите предложение правильно.",
+                                    "Типичные ошибки: перепутаны предлоги в/из, на/с, либо падеж не соответствует вопросу.",
+                                    "Записывайте исправленное предложение целиком, а не только изменённое слово."
+                                ],
                                 title: "9-mashq. Gaplarni tuzating",
                                 intro: "Xatolarni topib, to'g'ri yozing.",
                                 items: [
@@ -3858,6 +4021,12 @@
                             },
                             {
                                 id: "ex10", type: "choice", style: "chips", icon: "fa-circle-question",
+                                howTo: [
+                                    "Выберите подходящее вопросительное слово: Где? Куда? Откуда?",
+                                    "«Где?» — местонахождение, «Куда?» — направление, «Откуда?» — исходная точка.",
+                                    "Подсказка в глаголе: жить и находиться — где, идти и ехать — куда, прийти и выйти — откуда.",
+                                    "Частая ошибка — выбрать «Где?» при глаголе движения: идти и ехать всегда требуют «Куда?»."
+                                ],
                                 title: "10-mashq. Kerakli savolni tanlang",
                                 intro: "Variantlar: Где? / Куда? / Откуда? — Namuna: ___ ты живёшь? → Где?",
                                 items: [
@@ -3875,6 +4044,12 @@
                             },
                             {
                                 id: "audio", type: "choice", style: "tf", icon: "fa-headphones",
+                                howTo: [
+                                    "Сначала прослушайте аудиозапись — при необходимости несколько раз.",
+                                    "Затем отметьте каждое утверждение как «Правда» или «Ложь».",
+                                    "Отвечайте строго по тексту, а не по собственным предположениям.",
+                                    "В записи звучат предлоги места и вопросы «где?», «куда?», «откуда?» — слушайте именно их."
+                                ],
                                 audioSrc: "audios/%D0%902%203%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
                                 title: "Matn bo'yicha «Rost yoki yolg'on»",
                                 intro: "«Дом моей семьи» audio matnini tinglang va gaplar rost yoki yolg'on ekanligini aniqlang.",
@@ -4317,8 +4492,11 @@
                     return false;
                 }
             } else {
-                console.error('❌ Cannot save: user not authenticated or Firebase not loaded');
-                alert('Ошибка: требуется авторизация');
+                /* The demo is meant to be usable without an account, so having no
+                   signed-in user is the normal case here — not a failure. Nothing
+                   was ever persisted on this path; the only change is that we no
+                   longer show the learner an authorisation error for finishing a
+                   free lesson. B2's demo behaves the same way. */
                 return false;
             }
         }
@@ -4544,6 +4722,7 @@
                     });
                     if (resultsSection) {
                         resultsSection.classList.remove('show');
+                        setResultsWrapVisible(false);
                     }
                     if (completeBtn) {
                         completeBtn.style.display = 'none';
@@ -4671,6 +4850,13 @@
             });
         }
 
+        /** The legacy results panel lives in its own page section; keep that
+            section out of the layout whenever the panel itself is hidden. */
+        function setResultsWrapVisible(on) {
+            var wrap = document.getElementById('resultsWrap');
+            if (wrap) wrap.style.display = on ? '' : 'none';
+        }
+
         function loadLesson(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
@@ -4707,12 +4893,6 @@
                     
 
                     ${a2VocabCard(topic.id)}
-                        <h3>So'zlar lug'ati</h3>
-                        <p>Ushbu mavzuning lug'atini o'rganing va so'z boyligingizni mustahkamlang.</p>
-                        <button type="button" onclick="window.location.href='a2-demo-vocabulary.html?topic=${topic.id}'">
-                            <i class="fas fa-book-open"></i> Lug'atni ochish
-                        </button>
-                    </div>
                 `;
             } else {
                 lessonHTML += topic.content + '</div>';
@@ -4874,11 +5054,9 @@
                 correctAnswers.appendChild(answerItem);
             });
             
-            /* Engine-driven topics show the shared results screen instead; this
-               panel is legacy UI and must not appear beside it. Its buttons are
-               still wired, because completion is driven from them. */
-            if (getT1ExData(topic)) resultsSection.classList.remove('show');
-            else resultsSection.classList.add('show');
+            resultsSection.classList.add('show');
+            
+            setResultsWrapVisible(true);
             
             // Buttons
             if (topicResults.score >= PASSING_SCORE) {
@@ -5573,6 +5751,7 @@
             if (staleMatch) staleMatch.remove();
             if (typeof resultsSection !== "undefined" && resultsSection) {
                 resultsSection.classList.remove("show");
+                setResultsWrapVisible(false);
             }
             var groups = exData.exercises || [];
             var html = '<div class="t1-wrap">'
@@ -5759,7 +5938,10 @@
                 ? "Ajoyib! Mavzu mashqlarini muvaffaqiyatli bajardingiz. Endi mavzuni tugatishingiz mumkin."
                 : ("Mavzuni tugatish uchun kamida " + passNeeded
                    + " ta to'g'ri javob kerak. Javoblaringizni qayta ko'rib chiqing.");
-            if (resultsSection) resultsSection.classList.add("show");
+            /* The legacy results panel stays hidden for engine-driven topics: the
+               shared results screen is the only one the learner sees. It is still
+               populated above, because its completion button remains the single
+               path to progress, Firebase and statistics. */
 
             if (passed) {
                 completeBtn.textContent = "Mavzuni tugatish";
@@ -5789,6 +5971,7 @@
                         }, 300);
                     }
                     if (resultsSection) resultsSection.classList.remove("show");
+                    setResultsWrapVisible(false);
                     var topicsEl = document.getElementById("topics");
                     if (topicsEl) topicsEl.scrollIntoView({ behavior: "smooth", block: "start" });
                 };
@@ -6031,6 +6214,7 @@
 
             // Show results section
             resultsSection.classList.add('show');
+            setResultsWrapVisible(true);
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             // Show appropriate buttons based on score
@@ -6088,6 +6272,7 @@
                     
                     console.log('🔄 CLOSING: Hiding results and scrolling to topics...');
                     resultsSection.classList.remove('show');
+                    setResultsWrapVisible(false);
                     
                     // Прокрутка к темам
                     document.getElementById('topics').scrollIntoView({ behavior: 'smooth', block: 'start' });
