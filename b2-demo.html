@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="./course-global-fixes.css">
     <script defer src="./b2-topics.js"></script>
     <script defer src="./exercise-session.js"></script>
+    <script defer src="./course-exercise-ui.js"></script>
     <script defer src="./sentence-builder.js"></script>
     <script defer src="./b2-host.js"></script>
     <script defer src="./b2-lesson-data.js"></script>
@@ -457,26 +458,6 @@
         @media (max-width: 900px)  { .topics-grid { grid-template-columns: 1fr; } }
 
         /* --- Topic vocabulary card (generic, every topic) ----------------- */
-        .b2-vocab-card {
-            background: linear-gradient(135deg, #FF9800, #F57C00);
-            padding: 30px; border-radius: 15px; text-align: center; margin: 24px 0;
-            box-shadow: 0 8px 25px rgba(255, 152, 0, 0.3);
-        }
-        .b2-vocab-card .b2-vocab-ico { font-size: 4rem; margin-bottom: 15px; }
-        .b2-vocab-card h3 { color: #fff; margin-bottom: 12px; font-size: 1.8rem; }
-        .b2-vocab-card p { color: rgba(255,255,255,.92); margin-bottom: 24px; font-size: 1.1rem; }
-        .b2-vocab-card button {
-            background: #fff; color: #F57C00; border: none; padding: 15px 40px;
-            border-radius: 50px; font-size: 1.15rem; font-weight: 700; cursor: pointer;
-            font-family: inherit; box-shadow: 0 4px 15px rgba(0,0,0,.2);
-            transition: transform .25s ease, box-shadow .25s ease;
-        }
-        .b2-vocab-card button:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
-        @media (max-width: 640px) {
-            .b2-vocab-card { padding: 24px 18px; }
-            .b2-vocab-card h3 { font-size: 1.4rem; }
-            .b2-vocab-card button { width: 100%; padding: 14px 20px; }
-        }
         .b2-meta{display:flex;flex-direction:column;gap:4px;margin-top:6px}
         .b2-meta span{font-size:.86rem;line-height:1.5;opacity:.92}
         .b2-meta b{font-weight:700}

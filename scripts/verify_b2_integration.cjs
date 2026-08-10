@@ -123,17 +123,20 @@ for (const p of PAGES) {
 
 /* ------------------------------------------------ A2 untouched */
 {
-    const { execSync } = require('child_process');
-    let changed = '';
-    try { changed = execSync('git diff --name-only', { cwd: ROOT }).toString(); } catch (e) {}
-    const a2 = changed.split('\n').filter(f => /a2|A2/.test(f));
-    ok(a2.length === 0, `no A2 file modified by this migration (${a2.join(', ') || 'none'})`);
-    /* Explicit allowlist: B2 pages, the test manifest, and the OS cruft git
-       insists on tracking. Anything else means the migration reached further
-       than it was supposed to. */
-    const ALLOWED = /^(b2-demo\.html|paid-courses\/b2-course\.html|b2-host\.js|b2-topics\.js|b2-lesson-data\.js|exercise-session\.js|scripts\/verify_b2_[a-z0-9_]+\.cjs|scripts\/verify_exercise_session\.cjs|scripts\/verify_lesson_result_coverage\.cjs|package\.json|\.DS_Store)$/;
-    const others = changed.split('\n').filter(f => f && !ALLOWED.test(f.trim()));
-    ok(others.length === 0, `only B2 files + manifest modified (${others.join(', ') || 'none'})`);
+    /* A2 and B2 now deliberately share the presentation stack, so "B2 touched
+       no A2 file" is no longer the invariant — sharing is. What still must hold
+       is that the shared modules carry no course-specific policy, and that each
+       course keeps its own rules in its own host. */
+    const SHARED = fs.readFileSync(path.join(ROOT, 'course-exercise-ui.js'), 'utf8');
+    const bare = SHARED.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    ok(!/\bA2\b|\bB2\b|A2Host|B2Host|passScore|PASS_PERCENT|stepGate/.test(bare),
+        'the shared exercise UI carries no course name and no course policy');
+    ok(/PASS_PERCENT = 85/.test(fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8')),
+        'B2 keeps its own threshold in its own host');
+    const a2bare = fs.readFileSync(path.join(ROOT, 'a2-host.js'), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+    ok(!/passScore|stepGate|PASS_PERCENT/.test(a2bare),
+        'A2 declares no gate — its progression rules are unchanged');
 }
 
 /* ------------------------------------------------ 16-topic syllabus */
@@ -186,14 +189,15 @@ for (const p of PAGES) {
 /* ------------------------------------------------ host rules */
 {
     const host = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
+    const SHARED_UI = fs.readFileSync(path.join(ROOT, 'course-exercise-ui.js'), 'utf8');
     ok(/PASS_PERCENT = 85/.test(host), 'host defines the 85% threshold');
     ok(/function stepGate/.test(host), 'host implements the per-exercise gate');
     ok(/function buildResultsHtml/.test(host), 'host owns ONE results builder');
     ok((host.match(/function buildResultsHtml/g) || []).length === 1, 'exactly one results builder');
     ok(/data-b2h-act="complete"/.test(host), 'results screen offers explicit completion');
-    ok(/b2h-slot/.test(host), 'host renders inline answer slots');
-    ok(/@keyframes b2hPop/.test(host), 'host ships the selection animation');
-    ok(/b2g-t|b2g-scheme/.test(host), 'host styles the grammar lesson');
+    ok(/b2h-slot/.test(SHARED_UI), 'the shared UI renders inline answer slots');
+    ok(/@keyframes b2hPop/.test(SHARED_UI), 'the shared UI ships the selection animation');
+    ok(/b2g-t|b2g-scheme/.test(SHARED_UI), 'the shared UI styles the grammar lesson');
     /* the "earn your answers" flow: configured by the host, ruled by the engine */
     ok(/passScore: api\.passPercent/.test(host), 'host passes its threshold as passScore');
     ok(/allowAnswerReview: true/.test(host), 'host enables answer review');

@@ -81,7 +81,7 @@ loadLesson(5);
 const lc = w.document.getElementById('lessonContent');
 const qs = w.document.getElementById('quizSection');
 ok('lesson title rendered', /Kasblar va mashg'ulotlar/.test(lc.textContent));
-ok('grammar rendered', !!lc.querySelector('.t1g-hero-title'));
+ok('grammar rendered', !!lc.querySelector('.b2g-lead-title'));
 ok('profession formula rendered', lc.textContent.includes('Кто? + быть + kasb'));
 ok('Кем? formula rendered', lc.textContent.includes('Работать + кем?'));
 ok('Где? formula rendered', lc.textContent.includes('Работать + где?'));
@@ -115,7 +115,7 @@ ok('all 6 answers rendered',
 ok('summary block rendered', lc.textContent.includes('A2 daraja uchun asosiy grammatik mavzular'));
 ok('summary lists all 8 points', lc.textContent.includes('лечит, учит, готовит, продаёт, строит, водит'));
 ok('no template placeholder leaked', !lc.textContent.includes('${'));
-ok('grammar tables rendered', lc.querySelectorAll('.t1g-table').length >= 14);
+ok('grammar tables rendered', lc.querySelectorAll('.b2g-t').length >= 14);
 ok('vocabulary card rendered', lc.textContent.includes("Lug'atni ochish"));
 ok('vocabulary card deep-links to topic 5', /a2-vocabulary\.html\?topic=5/.test(t5.content));
 ok('exercises rendered', !!qs.querySelector('.t1-wrap'));

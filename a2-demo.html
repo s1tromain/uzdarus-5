@@ -13,6 +13,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="./demo-public.js"></script>
     <link rel="stylesheet" href="./course-global-fixes.css">
+    <script defer src="./exercise-session.js"></script>
+    <script defer src="./sentence-builder.js"></script>
+    <script defer src="./course-exercise-ui.js"></script>
+    <script defer src="./exercise-cards.js"></script>
+    <script defer src="./a2-host.js"></script>
     <script defer src="./course-global-fixes.js"></script>
     <style>
         * {
@@ -2673,57 +2678,57 @@
                     isLocked: false,
                     isSubscriptionLocked: false,
                     grammar: `
-                        <div class="t1g">
-                          <div class="t1g-hero">
-                            <span class="t1g-hero-badge"><i class="fas fa-language"></i> Grammatika</span>
-                            <h3 class="t1g-hero-title">«Быть» fe'li va «У меня есть»</h3>
-                            <p class="t1g-hero-sub"><b>Быть</b> — rus tilidagi "bo'lmoq" fe'li. U odam yoki narsaning
+                        <div class="b2g">
+                          <div class="b2g-lead">
+                            <span class="b2g-lead-badge"><i class="fas fa-language"></i> Grammatika</span>
+                            <h3 class="b2g-lead-title">«Быть» fe'li va «У меня есть»</h3>
+                            <p class="b2g-lead-sub"><b>Быть</b> — rus tilidagi "bo'lmoq" fe'li. U odam yoki narsaning
                             mavjudligini, holatini yoki kelajakdagi bo'lishini bildiradi.</p>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-1"></i> "Быть" fe'li nima?</h4>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Я хочу быть врачом.</span>
-                            <span class="t1g-uz">Men shifokor bo'lmoqchiman.</span>
+                          <h4 class="b2g-h"><i class="fas fa-1"></i> "Быть" fe'li nima?</h4>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Я хочу быть врачом.</span>
+                            <span class="b2g-ex-uz">Men shifokor bo'lmoqchiman.</span>
                           </div>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Он был дома.</span>
-                            <span class="t1g-uz">U uyda edi.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Он был дома.</span>
+                            <span class="b2g-ex-uz">U uyda edi.</span>
                           </div>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Мы будем вместе.</span>
-                            <span class="t1g-uz">Biz birga bo'lamiz.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Мы будем вместе.</span>
+                            <span class="b2g-ex-uz">Biz birga bo'lamiz.</span>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-2"></i> Hozirgi zamon (Настоящее время)</h4>
+                          <h4 class="b2g-h"><i class="fas fa-2"></i> Hozirgi zamon (Настоящее время)</h4>
                           <p>Hozirgi zamonda <b>быть</b> fe'li deyarli ishlatilmaydi. Shuning uchun:</p>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Я студент.</span>
-                            <span class="t1g-uz">Men talaba(man).</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Я студент.</span>
+                            <span class="b2g-ex-uz">Men talaba(man).</span>
                           </div>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Она красивая.</span>
-                            <span class="t1g-uz">U chiroyli.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Она красивая.</span>
+                            <span class="b2g-ex-uz">U chiroyli.</span>
                           </div>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Мы дома.</span>
-                            <span class="t1g-uz">Biz uydamiz.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Мы дома.</span>
+                            <span class="b2g-ex-uz">Biz uydamiz.</span>
                           </div>
-                          <div class="t1g-remember">
-                            <div class="t1g-remember-head"><i class="fas fa-triangle-exclamation"></i> Diqqat</div>
+                          <div class="b2g-tip">
+                            <div class="b2g-tip-head"><i class="fas fa-triangle-exclamation"></i> Diqqat</div>
                             <ul>
                               <li>&#10060; <b>Я есть студент.</b> — noto'g'ri</li>
                               <li>Rus tilida <b>есть</b> odatda tushirib qoldiriladi.</li>
                             </ul>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-3"></i> "Есть" qachon ishlatiladi?</h4>
+                          <h4 class="b2g-h"><i class="fas fa-3"></i> "Есть" qachon ishlatiladi?</h4>
                           <p><b>Есть</b> hozirgi zamonda "bor" ma'nosini beradi. Eng ko'p ishlatiladigan shakl:</p>
-                          <div class="t1g-card t1g-card-sv" style="position:static;">
+                          <div class="b2g-half b2g-card-sv" style="position:static;">
                             <h4>У + kim + есть + nima</h4>
-                            <p class="t1g-card-uz">Bu konstruktsiya "Kimdadir nimadir bor" degani.</p>
+                            <p class="b2g-card-uz">Bu konstruktsiya "Kimdadir nimadir bor" degani.</p>
                           </div>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>У меня есть книга.</td><td>Menda kitob bor.</td></tr>
@@ -2736,25 +2741,25 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-4"></i> "Есть" qachon tushirib qoldiriladi?</h4>
+                          <h4 class="b2g-h"><i class="fas fa-4"></i> "Есть" qachon tushirib qoldiriladi?</h4>
                           <p>Agar <b>yo'q</b> ma'nosi bo'lsa, <b>есть</b> ishlatilmaydi:</p>
-                          <div class="t1g-ex"><span class="t1g-ru">У меня нет машины.</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">У него нет времени.</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">У нас нет денег.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">У меня нет машины.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">У него нет времени.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">У нас нет денег.</span></div>
 
-                          <h4 class="t1g-h"><i class="fas fa-5"></i> O'tgan zamon (Прошедшее время)</h4>
+                          <h4 class="b2g-h"><i class="fas fa-5"></i> O'tgan zamon (Прошедшее время)</h4>
                           <p>O'tgan zamonda <b>быть</b> ishlatiladi. Shakllari:</p>
-                          <div class="t1g-usage">
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-mars"></i></div>
-                              <h5>был</h5><p class="t1g-use-uz">erkak</p></div>
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-venus"></i></div>
-                              <h5>была</h5><p class="t1g-use-uz">ayol</p></div>
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-circle"></i></div>
-                              <h5>было</h5><p class="t1g-use-uz">o'rta jins</p></div>
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-users"></i></div>
-                              <h5>были</h5><p class="t1g-use-uz">ko'plik</p></div>
+                          <div class="b2g-list">
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-mars"></i></div>
+                              <h5>был</h5><p class="b2g-list-uz">erkak</p></div>
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-venus"></i></div>
+                              <h5>была</h5><p class="b2g-list-uz">ayol</p></div>
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-circle"></i></div>
+                              <h5>было</h5><p class="b2g-list-uz">o'rta jins</p></div>
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-users"></i></div>
+                              <h5>были</h5><p class="b2g-list-uz">ko'plik</p></div>
                           </div>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <tbody>
                               <tr><td>Я был дома.</td><td>Я была дома.</td></tr>
                               <tr><td>Он был врачом.</td><td>Она была студенткой.</td></tr>
@@ -2762,10 +2767,10 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-ban"></i> Inkor shakli</h4>
+                          <h4 class="b2g-h"><i class="fas fa-ban"></i> Inkor shakli</h4>
                           <p>"Kimning yo'qligi"ni bildiruvchi konstruktsiya (eng ko'p ishlatiladi). Bu yerda ega
                           bosh kelishikda emas, balki <b>qaratqich (родительный)</b> kelishigida keladi.</p>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>Меня не было дома.</td><td>Men uyda yo'q edim.</td></tr>
@@ -2777,51 +2782,51 @@
                               <tr><td>Их не было здесь.</td><td>Ular bu yerda yo'q edi.</td></tr>
                             </tbody>
                           </table>
-                          <div class="t1g-remember">
-                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Eslab qoling</div>
+                          <div class="b2g-tip">
+                            <div class="b2g-tip-head"><i class="fas fa-lightbulb"></i> Eslab qoling</div>
                             <ul>
                               <li>&#10060; <b>Мы не было</b> — noto'g'ri.</li>
                               <li>&#9989; <b>Нас не было дома.</b> — Biz uyda yo'q edik. (mavjud emasligimizni bildiradi)</li>
                             </ul>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-6"></i> Kelasi zamon (Будущее время)</h4>
-                          <div class="t1g-usage">
-                            <div class="t1g-use t1g-nsv"><h5>буду</h5><p class="t1g-use-ru">Я буду дома.</p></div>
-                            <div class="t1g-use t1g-nsv"><h5>будешь</h5><p class="t1g-use-ru">Ты будешь учителем.</p></div>
-                            <div class="t1g-use t1g-nsv"><h5>будет</h5><p class="t1g-use-ru">Он будет врачом.</p></div>
-                            <div class="t1g-use t1g-nsv"><h5>будем</h5><p class="t1g-use-ru">Мы будем вместе.</p></div>
-                            <div class="t1g-use t1g-nsv"><h5>будете</h5><p class="t1g-use-ru">Вы будете счастливы.</p></div>
-                            <div class="t1g-use t1g-nsv"><h5>будут</h5><p class="t1g-use-ru">Они будут работать.</p></div>
+                          <h4 class="b2g-h"><i class="fas fa-6"></i> Kelasi zamon (Будущее время)</h4>
+                          <div class="b2g-list">
+                            <div class="b2g-list-item b2g-tone-nsv"><h5>буду</h5><p class="b2g-list-ru">Я буду дома.</p></div>
+                            <div class="b2g-list-item b2g-tone-nsv"><h5>будешь</h5><p class="b2g-list-ru">Ты будешь учителем.</p></div>
+                            <div class="b2g-list-item b2g-tone-nsv"><h5>будет</h5><p class="b2g-list-ru">Он будет врачом.</p></div>
+                            <div class="b2g-list-item b2g-tone-nsv"><h5>будем</h5><p class="b2g-list-ru">Мы будем вместе.</p></div>
+                            <div class="b2g-list-item b2g-tone-nsv"><h5>будете</h5><p class="b2g-list-ru">Вы будете счастливы.</p></div>
+                            <div class="b2g-list-item b2g-tone-nsv"><h5>будут</h5><p class="b2g-list-ru">Они будут работать.</p></div>
                           </div>
-                          <div class="t1g-ex"><span class="t1g-ru">Она будет счастлива.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Она будет счастлива.</span></div>
 
-                          <h4 class="t1g-h"><i class="fas fa-7"></i> "Быть" infinitiv shakli</h4>
+                          <h4 class="b2g-h"><i class="fas fa-7"></i> "Быть" infinitiv shakli</h4>
                           <p>Infinitivdan keyin ko'p ishlatiladi:</p>
-                          <div class="t1g-ex"><span class="t1g-ru">Я хочу быть врачом.</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">Она мечтает быть переводчиком.</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">Нам нужно быть внимательными.</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">Он любит быть первым.</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">Они хотят быть богатыми.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Я хочу быть врачом.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Она мечтает быть переводчиком.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Нам нужно быть внимательными.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Он любит быть первым.</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Они хотят быть богатыми.</span></div>
 
-                          <h4 class="t1g-h"><i class="fas fa-8"></i> "У меня есть" o'tgan va kelasi zamonda</h4>
-                          <div class="t1g-comp-row">
-                            <div class="t1g-comp-cell t1g-sv">
-                              <span class="t1g-mini">O'TGAN</span>
+                          <h4 class="b2g-h"><i class="fas fa-8"></i> "У меня есть" o'tgan va kelasi zamonda</h4>
+                          <div class="b2g-split">
+                            <div class="b2g-half b2g-tone-sv">
+                              <span class="b2g-scheme">O'TGAN</span>
                               <b>У + kim + был/была/было/были + nima</b>
                               <small>У меня была машина. &middot; У него был телефон. &middot;
                               У неё была собака. &middot; У нас были гости.</small>
                             </div>
-                            <div class="t1g-comp-cell t1g-nsv">
-                              <span class="t1g-mini">KELASI</span>
+                            <div class="b2g-half b2g-tone-nsv">
+                              <span class="b2g-scheme">KELASI</span>
                               <b>У + kim + будет/будут + nima</b>
                               <small>У меня будет новая работа. &middot; У тебя будет отпуск. &middot;
                               У него будет дом. &middot; У нас будет экзамен. &middot; У них будут дети.</small>
                             </div>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-9"></i> Kundalik hayotda eng ko'p ishlatiladigan gaplar</h4>
-                          <table class="t1g-table">
+                          <h4 class="b2g-h"><i class="fas fa-9"></i> Kundalik hayotda eng ko'p ishlatiladigan gaplar</h4>
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>У меня есть семья.</td><td>Mening oilam bor.</td></tr>
@@ -2837,9 +2842,9 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-list-check"></i> Eng muhim grammatik qoidalar</h4>
-                          <div class="t1g-remember">
-                            <div class="t1g-remember-head"><i class="fas fa-star"></i> 8 ta qoida</div>
+                          <h4 class="b2g-h"><i class="fas fa-list-check"></i> Eng muhim grammatik qoidalar</h4>
+                          <div class="b2g-tip">
+                            <div class="b2g-tip-head"><i class="fas fa-star"></i> 8 ta qoida</div>
                             <ul>
                               <li><b>Быть</b> — "bo'lmoq" fe'li.</li>
                               <li>Hozirgi zamonda <b>быть</b> odatda ishlatilmaydi.</li>
@@ -2852,8 +2857,8 @@
                             </ul>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-bolt"></i> Eslab qolish uchun qisqa formula</h4>
-                          <table class="t1g-table">
+                          <h4 class="b2g-h"><i class="fas fa-bolt"></i> Eslab qolish uchun qisqa formula</h4>
+                          <table class="b2g-t">
                             <tbody>
                               <tr><td>У меня есть книга.</td><td>Menda kitob bor.</td></tr>
                               <tr><td>У меня нет книги.</td><td>Menda kitob yo'q.</td></tr>
@@ -3090,18 +3095,18 @@
                     isLocked: false,
                     isSubscriptionLocked: false,
                     grammar: `
-                        <div class="t1g">
-                          <div class="t1g-hero">
-                            <span class="t1g-hero-badge"><i class="fas fa-language"></i> Grammatika</span>
-                            <h3 class="t1g-hero-title">O‘tgan zamon + Egalik olmoshlari</h3>
-                            <p class="t1g-hero-sub">Rus tilida o'tgan zamon fe'lning infinitiv shaklidan hosil
+                        <div class="b2g">
+                          <div class="b2g-lead">
+                            <span class="b2g-lead-badge"><i class="fas fa-language"></i> Grammatika</span>
+                            <h3 class="b2g-lead-title">O‘tgan zamon + Egalik olmoshlari</h3>
+                            <p class="b2g-lead-sub">Rus tilida o'tgan zamon fe'lning infinitiv shaklidan hosil
                             qilinadi va <b>jins</b> hamda <b>songa</b> qarab o'zgaradi. Egalik olmoshlari ham
                             xuddi shunday — otning jinsi va soniga moslashadi.</p>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-1"></i> O‘tgan zamon (Прошедшее время)</h4>
+                          <h4 class="b2g-h"><i class="fas fa-1"></i> O‘tgan zamon (Прошедшее время)</h4>
                           <p>Fe'lning oxiridagi <b>-ть</b> olib tashlanadi va quyidagi qo'shimchalar qo'shiladi.</p>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Kim?</th><th>Qo'shimcha</th><th>Misol</th></tr></thead>
                             <tbody>
                               <tr><td>Erkak</td><td><b>-л</b></td><td>жил, работал, любил</td></tr>
@@ -3110,36 +3115,36 @@
                               <tr><td>Ko'plik</td><td><b>-ли</b></td><td>жили, работали</td></tr>
                             </tbody>
                           </table>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Я жил в Ташкенте.</span>
-                            <span class="t1g-uz">Men Toshkentda yashaganman.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Я жил в Ташкенте.</span>
+                            <span class="b2g-ex-uz">Men Toshkentda yashaganman.</span>
                           </div>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Она работала врачом.</span>
-                            <span class="t1g-uz">U shifokor bo'lib ishlagan.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Она работала врачом.</span>
+                            <span class="b2g-ex-uz">U shifokor bo'lib ishlagan.</span>
                           </div>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Мы отдыхали летом.</span>
-                            <span class="t1g-uz">Biz yozda dam olganmiz.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Мы отдыхали летом.</span>
+                            <span class="b2g-ex-uz">Biz yozda dam olganmiz.</span>
                           </div>
-                          <div class="t1g-ex">
-                            <span class="t1g-ru">Они познакомились в университете.</span>
-                            <span class="t1g-uz">Ular universitetda tanishgan.</span>
+                          <div class="b2g-ex">
+                            <span class="b2g-ex-ru">Они познакомились в университете.</span>
+                            <span class="b2g-ex-uz">Ular universitetda tanishgan.</span>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-2"></i> O‘tgan zamonda «быть»</h4>
+                          <h4 class="b2g-h"><i class="fas fa-2"></i> O‘tgan zamonda «быть»</h4>
                           <p>Hozirgi zamonda <b>быть</b> ishlatilmaydi. Lekin o'tgan zamonda ishlatiladi.</p>
-                          <div class="t1g-usage">
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-mars"></i></div>
-                              <h5>был</h5><p class="t1g-use-uz">Erkak</p></div>
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-venus"></i></div>
-                              <h5>была</h5><p class="t1g-use-uz">Ayol</p></div>
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-circle"></i></div>
-                              <h5>было</h5><p class="t1g-use-uz">O'rta jins</p></div>
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-users"></i></div>
-                              <h5>были</h5><p class="t1g-use-uz">Ko'plik</p></div>
+                          <div class="b2g-list">
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-mars"></i></div>
+                              <h5>был</h5><p class="b2g-list-uz">Erkak</p></div>
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-venus"></i></div>
+                              <h5>была</h5><p class="b2g-list-uz">Ayol</p></div>
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-circle"></i></div>
+                              <h5>было</h5><p class="b2g-list-uz">O'rta jins</p></div>
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-users"></i></div>
+                              <h5>были</h5><p class="b2g-list-uz">Ko'plik</p></div>
                           </div>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>Мой отец был инженером.</td><td>Otam muhandis edi.</td></tr>
@@ -3149,11 +3154,11 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-ban"></i> O‘tgan zamon inkor shakli</h4>
-                          <div class="t1g-card t1g-card-nsv" style="position:static;">
+                          <h4 class="b2g-h"><i class="fas fa-ban"></i> O‘tgan zamon inkor shakli</h4>
+                          <div class="b2g-half b2g-card-nsv" style="position:static;">
                             <h4>не + o‘tgan zamon</h4>
                           </div>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>Я не жил в Москве.</td><td>Men Moskvada yashamaganman.</td></tr>
@@ -3163,15 +3168,15 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-circle-question"></i> O‘tgan zamonda savol</h4>
+                          <h4 class="b2g-h"><i class="fas fa-circle-question"></i> O‘tgan zamonda savol</h4>
                           <p>Savol intonatsiya orqali yoki <b>ли</b> yordamida yasaladi.</p>
-                          <div class="t1g-ex"><span class="t1g-ru">Ты жил в Самарканде?</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">Она была дома?</span></div>
-                          <div class="t1g-ex"><span class="t1g-ru">Вы познакомились?</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Ты жил в Самарканде?</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Она была дома?</span></div>
+                          <div class="b2g-ex"><span class="b2g-ex-ru">Вы познакомились?</span></div>
 
-                          <h4 class="t1g-h"><i class="fas fa-2"></i> Egalik olmoshlari (Притяжательные местоимения)</h4>
+                          <h4 class="b2g-h"><i class="fas fa-2"></i> Egalik olmoshlari (Притяжательные местоимения)</h4>
                           <p>Egalik olmoshlari <b>«kimning?»</b> degan savolga javob beradi.</p>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Ruscha</th><th>O'zbekcha</th></tr></thead>
                             <tbody>
                               <tr><td>мой</td><td>mening</td></tr>
@@ -3180,7 +3185,7 @@
                               <tr><td>мои</td><td>mening</td></tr>
                             </tbody>
                           </table>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Ruscha</th><th>O'zbekcha</th></tr></thead>
                             <tbody>
                               <tr><td>твой</td><td>sening</td></tr>
@@ -3189,7 +3194,7 @@
                               <tr><td>твои</td><td>sening</td></tr>
                             </tbody>
                           </table>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Ruscha</th><th>O'zbekcha</th></tr></thead>
                             <tbody>
                               <tr><td>наш</td><td>bizning</td></tr>
@@ -3198,7 +3203,7 @@
                               <tr><td>наши</td><td>bizning</td></tr>
                             </tbody>
                           </table>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Ruscha</th><th>O'zbekcha</th></tr></thead>
                             <tbody>
                               <tr><td>ваш</td><td>sizning</td></tr>
@@ -3207,7 +3212,7 @@
                               <tr><td>ваши</td><td>sizning</td></tr>
                             </tbody>
                           </table>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Ruscha</th><th>O'zbekcha</th></tr></thead>
                             <tbody>
                               <tr><td>его</td><td>uning (erkak)</td></tr>
@@ -3216,28 +3221,28 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-venus-mars"></i> Egalik olmoshlari jinsga moslashadi</h4>
-                          <div class="t1g-usage">
-                            <div class="t1g-use t1g-nsv">
+                          <h4 class="b2g-h"><i class="fas fa-venus-mars"></i> Egalik olmoshlari jinsga moslashadi</h4>
+                          <div class="b2g-list">
+                            <div class="b2g-list-item b2g-tone-nsv">
                               <h5>Erkak jins</h5>
-                              <p class="t1g-use-ru">мой отец<br>мой брат<br>мой муж<br>мой дедушка</p>
+                              <p class="b2g-list-ru">мой отец<br>мой брат<br>мой муж<br>мой дедушка</p>
                             </div>
-                            <div class="t1g-use t1g-sv">
+                            <div class="b2g-list-item b2g-tone-sv">
                               <h5>Ayol jins</h5>
-                              <p class="t1g-use-ru">моя мама<br>моя сестра<br>моя бабушка<br>моя жена</p>
+                              <p class="b2g-list-ru">моя мама<br>моя сестра<br>моя бабушка<br>моя жена</p>
                             </div>
-                            <div class="t1g-use t1g-nsv">
+                            <div class="b2g-list-item b2g-tone-nsv">
                               <h5>O‘rta jins</h5>
-                              <p class="t1g-use-ru">моё имя<br>моё письмо<br>моё окно</p>
+                              <p class="b2g-list-ru">моё имя<br>моё письмо<br>моё окно</p>
                             </div>
-                            <div class="t1g-use t1g-sv">
+                            <div class="b2g-list-item b2g-tone-sv">
                               <h5>Ko‘plik</h5>
-                              <p class="t1g-use-ru">мои родители<br>мои дети<br>мои друзья</p>
+                              <p class="b2g-list-ru">мои родители<br>мои дети<br>мои друзья</p>
                             </div>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-people-roof"></i> Oila mavzusida egalik olmoshlari</h4>
-                          <table class="t1g-table">
+                          <h4 class="b2g-h"><i class="fas fa-people-roof"></i> Oila mavzusida egalik olmoshlari</h4>
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>мой отец</td><td>mening otam</td></tr>
@@ -3256,8 +3261,8 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-comments"></i> Oila va munosabatlar mavzusida misollar</h4>
-                          <table class="t1g-table">
+                          <h4 class="b2g-h"><i class="fas fa-comments"></i> Oila va munosabatlar mavzusida misollar</h4>
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>Моя семья была очень дружной.</td><td>Mening oilam juda ahil edi.</td></tr>
@@ -3273,8 +3278,8 @@
                             </tbody>
                           </table>
 
-                          <div class="t1g-remember">
-                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Eslab qoling</div>
+                          <div class="b2g-tip">
+                            <div class="b2g-tip-head"><i class="fas fa-lightbulb"></i> Eslab qoling</div>
                             <ul>
                               <li>&#9989; O‘tgan zamonda fe'l <b>jins va songa</b> qarab o'zgaradi:
                                   <b>был</b> — erkak, <b>была</b> — ayol, <b>было</b> — o'rta jins,
@@ -3284,21 +3289,21 @@
                               <li>&#10071; <b>его, её, их</b> egalik olmoshlari <b>hech qachon o'zgarmaydi</b>.</li>
                             </ul>
                           </div>
-                          <div class="t1g-comp-row">
-                            <div class="t1g-comp-cell t1g-nsv">
-                              <span class="t1g-mini">ЕГО</span>
+                          <div class="b2g-split">
+                            <div class="b2g-half b2g-tone-nsv">
+                              <span class="b2g-scheme">ЕГО</span>
                               <b>o‘zgarmaydi</b>
                               <small>его брат &middot; его сестра &middot; его дети</small>
                             </div>
-                            <div class="t1g-comp-cell t1g-sv">
-                              <span class="t1g-mini">ЕЁ</span>
+                            <div class="b2g-half b2g-tone-sv">
+                              <span class="b2g-scheme">ЕЁ</span>
                               <b>o‘zgarmaydi</b>
                               <small>её мама &middot; её брат &middot; её дети</small>
                             </div>
                           </div>
-                          <div class="t1g-comp-row">
-                            <div class="t1g-comp-cell t1g-nsv">
-                              <span class="t1g-mini">ИХ</span>
+                          <div class="b2g-split">
+                            <div class="b2g-half b2g-tone-nsv">
+                              <span class="b2g-scheme">ИХ</span>
                               <b>o‘zgarmaydi</b>
                               <small>их семья &middot; их родители &middot; их дети</small>
                             </div>
@@ -3514,23 +3519,23 @@
                     isLocked: false,
                     isSubscriptionLocked: false,
                     grammar: `
-                        <div class="t1g">
-                          <div class="t1g-hero">
-                            <span class="t1g-hero-badge"><i class="fas fa-language"></i> Grammatika</span>
-                            <h3 class="t1g-hero-title">Predloglar, kelishiklar, joy va yo‘nalish ma’nolari</h3>
-                            <p class="t1g-hero-sub">Rus tilida uy va yashash joyi haqida gapirishning asosi —
+                        <div class="b2g">
+                          <div class="b2g-lead">
+                            <span class="b2g-lead-badge"><i class="fas fa-language"></i> Grammatika</span>
+                            <h3 class="b2g-lead-title">Predloglar, kelishiklar, joy va yo‘nalish ma’nolari</h3>
+                            <p class="b2g-lead-sub">Rus tilida uy va yashash joyi haqida gapirishning asosi —
                             uchta savol: <b>Где?</b> (qayerda), <b>Куда?</b> (qayerga), <b>Откуда?</b> (qayerdan).
                             Har biri o‘z predlogi va o‘z kelishigini talab qiladi.</p>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-1"></i> Где? (Qayerda?) — Предложный падеж (П.п.)</h4>
+                          <h4 class="b2g-h"><i class="fas fa-1"></i> Где? (Qayerda?) — Предложный падеж (П.п.)</h4>
                           <p>Biror narsa yoki odamning qayerda joylashganini bildiradi.</p>
-                          <div class="t1g-card t1g-card-sv" style="position:static;">
+                          <div class="b2g-half b2g-card-sv" style="position:static;">
                             <h4>в / на + Предложный падеж</h4>
-                            <p class="t1g-card-uz">Predloglar: <b>в</b> — ichida &middot; <b>на</b> — ustida, hududida</p>
-                            <p class="t1g-card-uz">So‘roq: <b>Где?</b> — Qayerda?</p>
+                            <p class="b2g-card-uz">Predloglar: <b>в</b> — ichida &middot; <b>на</b> — ustida, hududida</p>
+                            <p class="b2g-card-uz">So‘roq: <b>Где?</b> — Qayerda?</p>
                           </div>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <thead><tr><th>Rus tilida</th><th>O'zbek tilida</th></tr></thead>
                             <tbody>
                               <tr><td>Я живу в Ташкенте.</td><td>Men Toshkentda yashayman.</td></tr>
@@ -3542,12 +3547,12 @@
                               <tr><td>Цветы стоят на балконе.</td><td>Gullar balkonda turibdi.</td></tr>
                             </tbody>
                           </table>
-                          <h5 class="t1g-h" style="font-size:1rem;">Предложный падеж qo‘shimchalari</h5>
-                          <table class="t1g-table">
+                          <h5 class="b2g-h" style="font-size:1rem;">Предложный падеж qo‘shimchalari</h5>
+                          <table class="b2g-t">
                             <thead><tr><th>Erkak jins</th><th>O'rta jins</th><th>Ayol jinsi</th><th>Ko'plik</th></tr></thead>
                             <tbody><tr><td>-е</td><td>-е</td><td>-е</td><td>-ах / -ях</td></tr></tbody>
                           </table>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <tbody>
                               <tr><td>дом</td><td>в доме</td></tr>
                               <tr><td>город</td><td>в городе</td></tr>
@@ -3560,14 +3565,14 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-2"></i> Куда? (Qayerga?) — Винительный падеж (В.п.)</h4>
+                          <h4 class="b2g-h"><i class="fas fa-2"></i> Куда? (Qayerga?) — Винительный падеж (В.п.)</h4>
                           <p>Harakatning yo‘nalishini bildiradi.</p>
-                          <div class="t1g-card t1g-card-nsv" style="position:static;">
+                          <div class="b2g-half b2g-card-nsv" style="position:static;">
                             <h4>в / на + Винительный падеж</h4>
-                            <p class="t1g-card-uz">Predloglar: <b>в</b> — ichiga &middot; <b>на</b> — ustiga</p>
-                            <p class="t1g-card-uz">So‘roq: <b>Куда?</b> — Qayerga?</p>
+                            <p class="b2g-card-uz">Predloglar: <b>в</b> — ichiga &middot; <b>на</b> — ustiga</p>
+                            <p class="b2g-card-uz">So‘roq: <b>Куда?</b> — Qayerga?</p>
                           </div>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <tbody>
                               <tr><td>Я иду в дом.</td></tr>
                               <tr><td>Мы едем в город.</td></tr>
@@ -3578,8 +3583,8 @@
                               <tr><td>Он повесил картину на стену.</td></tr>
                             </tbody>
                           </table>
-                          <h5 class="t1g-h" style="font-size:1rem;">Винительный падеж qo‘shimchalari</h5>
-                          <table class="t1g-table">
+                          <h5 class="b2g-h" style="font-size:1rem;">Винительный падеж qo‘shimchalari</h5>
+                          <table class="b2g-t">
                             <thead><tr><th>Jins</th><th>O'zgarishi</th></tr></thead>
                             <tbody>
                               <tr><td>Erkak</td><td>ko'pincha o'zgarmaydi</td></tr>
@@ -3587,7 +3592,7 @@
                               <tr><td>Ayol</td><td>-а → -у, -я → -ю</td></tr>
                             </tbody>
                           </table>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <tbody>
                               <tr><td>комната</td><td>в комнату</td></tr>
                               <tr><td>кухня</td><td>на кухню</td></tr>
@@ -3598,14 +3603,14 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-3"></i> Откуда? (Qayerdan?) — Родительный падеж (Р.п.)</h4>
+                          <h4 class="b2g-h"><i class="fas fa-3"></i> Откуда? (Qayerdan?) — Родительный падеж (Р.п.)</h4>
                           <p>Biror joydan chiqish yoki kelishni bildiradi.</p>
-                          <div class="t1g-card t1g-card-sv" style="position:static;">
+                          <div class="b2g-half b2g-card-sv" style="position:static;">
                             <h4>из / с / от + Родительный падеж</h4>
-                            <p class="t1g-card-uz">Predloglar: <b>из</b> — ichidan &middot; <b>с</b> — ustidan, hududidan &middot; <b>от</b> — yonidan</p>
-                            <p class="t1g-card-uz">So‘roq: <b>Откуда?</b> — Qayerdan?</p>
+                            <p class="b2g-card-uz">Predloglar: <b>из</b> — ichidan &middot; <b>с</b> — ustidan, hududidan &middot; <b>от</b> — yonidan</p>
+                            <p class="b2g-card-uz">So‘roq: <b>Откуда?</b> — Qayerdan?</p>
                           </div>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <tbody>
                               <tr><td>Я пришёл из дома.</td></tr>
                               <tr><td>Она приехала из Ташкента.</td></tr>
@@ -3615,12 +3620,12 @@
                               <tr><td>Он пришёл от друга.</td></tr>
                             </tbody>
                           </table>
-                          <h5 class="t1g-h" style="font-size:1rem;">Родительный падеж qo‘shimchalari</h5>
-                          <table class="t1g-table">
+                          <h5 class="b2g-h" style="font-size:1rem;">Родительный падеж qo‘shimchalari</h5>
+                          <table class="b2g-t">
                             <thead><tr><th>Erkak</th><th>O'rta</th><th>Ayol</th></tr></thead>
                             <tbody><tr><td>-а / -я</td><td>-а / -я</td><td>-ы / -и</td></tr></tbody>
                           </table>
-                          <table class="t1g-table">
+                          <table class="b2g-t">
                             <tbody>
                               <tr><td>дом</td><td>из дома</td></tr>
                               <tr><td>город</td><td>из города</td></tr>
@@ -3631,8 +3636,8 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-4"></i> Joy va yo‘nalishning asosiy predloglari</h4>
-                          <table class="t1g-table">
+                          <h4 class="b2g-h"><i class="fas fa-4"></i> Joy va yo‘nalishning asosiy predloglari</h4>
+                          <table class="b2g-t">
                             <thead><tr><th>Predlog</th><th>So'roq</th><th>Kelishik</th><th>Ma'nosi</th></tr></thead>
                             <tbody>
                               <tr><td>в</td><td>Где?</td><td>П.п.</td><td>ichida</td></tr>
@@ -3645,18 +3650,18 @@
                             </tbody>
                           </table>
 
-                          <h4 class="t1g-h"><i class="fas fa-5"></i> Uyga oid eng ko‘p ishlatiladigan joy nomlari</h4>
-                          <div class="t1g-comp-row">
-                            <div class="t1g-comp-cell t1g-sv">
-                              <span class="t1g-mini">XONALAR</span>
+                          <h4 class="b2g-h"><i class="fas fa-5"></i> Uyga oid eng ko‘p ishlatiladigan joy nomlari</h4>
+                          <div class="b2g-split">
+                            <div class="b2g-half b2g-tone-sv">
+                              <span class="b2g-scheme">XONALAR</span>
                               <b>Ichki joylar</b>
                               <small>дом — uy &middot; квартира — kvartira &middot; комната — xona &middot;
                               кухня — oshxona &middot; спальня — yotoqxona &middot; гостиная — mehmonxona &middot;
                               ванная — hammom &middot; туалет — hojatxona &middot; коридор — yo'lak &middot;
                               балкон — balkon</small>
                             </div>
-                            <div class="t1g-comp-cell t1g-nsv">
-                              <span class="t1g-mini">TASHQARI</span>
+                            <div class="b2g-half b2g-tone-nsv">
+                              <span class="b2g-scheme">TASHQARI</span>
                               <b>Tashqi joylar</b>
                               <small>двор — hovli &middot; улица — ko'cha &middot; город — shahar &middot;
                               деревня — qishloq &middot; парк — park &middot; сад — bog' &middot;
@@ -3664,8 +3669,8 @@
                             </div>
                           </div>
 
-                          <h4 class="t1g-h"><i class="fas fa-6"></i> Где? — Куда? — Откуда?</h4>
-                          <table class="t1g-table">
+                          <h4 class="b2g-h"><i class="fas fa-6"></i> Где? — Куда? — Откуда?</h4>
+                          <table class="b2g-t">
                             <thead><tr><th>Где?</th><th>Куда?</th><th>Откуда?</th></tr></thead>
                             <tbody>
                               <tr><td>в доме</td><td>в дом</td><td>из дома</td></tr>
@@ -3679,23 +3684,23 @@
                             </tbody>
                           </table>
 
-                          <div class="t1g-remember">
-                            <div class="t1g-remember-head"><i class="fas fa-lightbulb"></i> Eslab qoling!</div>
+                          <div class="b2g-tip">
+                            <div class="b2g-tip-head"><i class="fas fa-lightbulb"></i> Eslab qoling!</div>
                             <ul>
                               <li><b>Где?</b> → в/на + Предложный падеж — <i>Я живу в доме.</i></li>
                               <li><b>Куда?</b> → в/на + Винительный падеж — <i>Я иду в дом.</i></li>
                               <li><b>Откуда?</b> → из/с/от + Родительный падеж — <i>Я вышел из дома.</i></li>
                             </ul>
                           </div>
-                          <div class="t1g-usage">
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-location-dot"></i></div>
-                              <h5>Где?</h5><p class="t1g-use-ru">в, на + П.п.</p></div>
-                            <div class="t1g-use t1g-nsv"><div class="t1g-use-ico"><i class="fas fa-arrow-right-to-bracket"></i></div>
-                              <h5>Куда?</h5><p class="t1g-use-ru">в, на + В.п.</p></div>
-                            <div class="t1g-use t1g-sv"><div class="t1g-use-ico"><i class="fas fa-arrow-right-from-bracket"></i></div>
-                              <h5>Откуда?</h5><p class="t1g-use-ru">из, с, от + Р.п.</p></div>
+                          <div class="b2g-list">
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-location-dot"></i></div>
+                              <h5>Где?</h5><p class="b2g-list-ru">в, на + П.п.</p></div>
+                            <div class="b2g-list-item b2g-tone-nsv"><div class="b2g-list-ico"><i class="fas fa-arrow-right-to-bracket"></i></div>
+                              <h5>Куда?</h5><p class="b2g-list-ru">в, на + В.п.</p></div>
+                            <div class="b2g-list-item b2g-tone-sv"><div class="b2g-list-ico"><i class="fas fa-arrow-right-from-bracket"></i></div>
+                              <h5>Откуда?</h5><p class="b2g-list-ru">из, с, от + Р.п.</p></div>
                           </div>
-                          <p class="t1g-intro" style="margin-top:12px;">Bu uchta model rus tilida uy, yashash joyi va
+                          <p class="b2g-lead" style="margin-top:12px;">Bu uchta model rus tilida uy, yashash joyi va
                           joylashuv mavzusidagi gaplarning asosini tashkil qiladi va kundalik nutqda eng ko‘p
                           qo‘llaniladi.</p>
                         </div>
@@ -4712,6 +4717,15 @@
                         </div>
                     </div>
                     
+
+                    <div class="b2-vocab-card">
+                        <div class="b2-vocab-ico">🎓</div>
+                        <h3>So'zlar lug'ati</h3>
+                        <p>Ushbu mavzuning lug'atini o'rganing va so'z boyligingizni mustahkamlang.</p>
+                        <button type="button" onclick="window.location.href='a2-demo-vocabulary.html?topic=${topic.id}'">
+                            <i class="fas fa-book-open"></i> Lug'atni ochish
+                        </button>
+                    </div>
                     <div class="topic-explanation">
                         <h3>Mavzu Tushuntirish</h3>
                         <p>${topic.explanation.uz}</p>
@@ -5235,69 +5249,6 @@
             st.id = "t1-styles";
             st.textContent = `
             /* ===== Topic 1 grammar explanation ===== */
-            .t1g { margin: 18px 0; }
-            .t1g-hero { background: linear-gradient(135deg,#1976D2,#2196F3); color:#fff;
-                border-radius:16px; padding:24px; box-shadow:0 10px 28px rgba(33,150,243,.28); }
-            .t1g-hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.2);
-                padding:5px 14px; border-radius:30px; font-size:.82rem; font-weight:700; letter-spacing:.3px; }
-            .t1g-hero-title { color:#fff; margin:12px 0 8px; font-size:1.5rem; line-height:1.3; }
-            .t1g-hero-sub { color:rgba(255,255,255,.95); font-size:1rem; line-height:1.6; margin:0; }
-            .t1g-cards { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0; }
-            .t1g-card { border-radius:14px; padding:18px; position:relative; border:2px solid; }
-            .t1g-card-nsv { background:#e8f3ff; border-color:#90caf9; }
-            .t1g-card-sv { background:#e9f8ec; border-color:#a5d6a7; }
-            .t1g-card-tag { position:absolute; top:14px; right:14px; font-weight:800; font-size:.78rem;
-                padding:4px 10px; border-radius:20px; color:#fff; }
-            .t1g-card-nsv .t1g-card-tag { background:#1976D2; }
-            .t1g-card-sv .t1g-card-tag { background:#388E3C; }
-            .t1g-card h4 { margin:0 0 4px; font-size:1.12rem; color:#222; }
-            .t1g-card-uz { font-size:.86rem; color:#555; font-weight:600; margin:0 0 10px; }
-            .t1g-card ul { margin:0 0 12px; padding-left:18px; }
-            .t1g-card ul li { font-size:.92rem; margin:4px 0; color:#333; }
-            .t1g-ex { background:rgba(255,255,255,.75); border-radius:10px; padding:10px 12px; }
-            .t1g-ru { display:block; font-weight:700; color:#111; }
-            .t1g-uz { display:block; font-size:.85rem; color:#555; margin-top:2px; }
-            .t1g-h { margin:22px 0 12px; font-size:1.15rem; color:#1976D2;
-                display:flex; align-items:center; gap:8px; }
-            .t1g-compare { display:flex; flex-direction:column; gap:12px; }
-            .t1g-comp-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-            .t1g-comp-cell { border-radius:12px; padding:14px; border:1.5px solid; }
-            .t1g-comp-cell.t1g-nsv { background:#e8f3ff; border-color:#90caf9; }
-            .t1g-comp-cell.t1g-sv { background:#e9f8ec; border-color:#a5d6a7; }
-            .t1g-comp-cell b { display:block; font-size:1rem; color:#111; margin:6px 0 4px; }
-            .t1g-comp-cell small { color:#555; font-size:.82rem; }
-            .t1g-mini { font-size:.7rem; font-weight:800; color:#fff; padding:3px 9px; border-radius:14px; }
-            .t1g-nsv .t1g-mini { background:#1976D2; }
-            .t1g-sv .t1g-mini { background:#388E3C; }
-            .t1g-usage { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-            .t1g-use { border-radius:12px; padding:14px; text-align:center; border:1.5px solid; }
-            .t1g-use.t1g-nsv { background:#e8f3ff; border-color:#90caf9; }
-            .t1g-use.t1g-sv { background:#e9f8ec; border-color:#a5d6a7; }
-            .t1g-use-ico { width:46px; height:46px; border-radius:50%; margin:0 auto 8px;
-                display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.2rem; }
-            .t1g-use.t1g-nsv .t1g-use-ico { background:#1976D2; }
-            .t1g-use.t1g-sv .t1g-use-ico { background:#388E3C; }
-            .t1g-use h5 { margin:0 0 6px; font-size:.98rem; color:#222; }
-            .t1g-use h5 span { font-size:.66rem; color:#fff; padding:2px 7px; border-radius:12px; vertical-align:middle; }
-            .t1g-use.t1g-nsv h5 span { background:#1976D2; }
-            .t1g-use.t1g-sv h5 span { background:#388E3C; }
-            .t1g-use-ru { font-weight:700; color:#111; font-size:.9rem; margin:0 0 4px; }
-            .t1g-use-uz { font-size:.8rem; color:#555; margin:0; }
-            .t1g-remember { margin-top:20px; background:#FFF8E1; border:2px solid #FFD54F;
-                border-radius:14px; padding:16px 18px; }
-            .t1g-remember-head { font-weight:800; color:#F57C00; font-size:1.05rem;
-                display:flex; align-items:center; gap:8px; margin-bottom:8px; }
-            .t1g-remember ul { margin:0; padding-left:20px; }
-            .t1g-remember ul li { margin:5px 0; font-size:.93rem; color:#5d4037; }
-            .t1g-table { width:100%; max-width:100%; border-collapse:collapse; table-layout:fixed;
-                margin:6px 0 4px; font-size:.86rem; border-radius:12px; overflow:hidden;
-                box-shadow:0 4px 14px rgba(0,0,0,.07); }
-            .t1g-table th { background:#1976D2; color:#fff; padding:10px 11px; text-align:left;
-                font-size:.82rem; }
-            .t1g-table td { padding:10px 11px; border-bottom:1px solid #e8e8e8; color:#333;
-                vertical-align:top; background:#fff; word-break:break-word; }
-            .t1g-table tr:last-child td { border-bottom:none; }
-            .t1g-table td:first-child { color:#1976D2; font-weight:600; }
 
             /* ===== Topic 1 exercises ===== */
             .t1-wrap { margin:10px 0 20px; }
@@ -5406,13 +5357,8 @@
 
             /* ===== Responsive ===== */
             @media (max-width:720px) {
-                .t1g-cards, .t1g-comp-row { grid-template-columns:1fr; }
-                .t1g-usage { grid-template-columns:1fr 1fr; }
-                .t1g-hero-title { font-size:1.25rem; }
             }
             @media (max-width:480px) {
-                .t1g-hero { padding:18px; }
-                .t1g-usage { grid-template-columns:1fr; }
                 .t1-card { padding:15px; }
                 .t1-card-head h4 { font-size:1rem; }
                 .t1-main-title { font-size:1.18rem; }
@@ -5560,6 +5506,45 @@
             return null;
         }
 
+
+        /* ------------------------------------------------------------------
+         * NEW UI, SAME BEHAVIOUR.
+         *
+         * The legacy exercise markup above is still rendered and still carries
+         * every data hook window.checkTopic1Exercises reads — it is simply
+         * hidden. The card grid is mounted in its place, and each answer given
+         * in the session is mirrored straight back into the legacy field, so
+         * scoring, drafts, Firebase, statistics and completion run through
+         * exactly the code they always did.
+         * ---------------------------------------------------------------- */
+        function mountA2ExerciseCards(topicId) {
+            if (!window.A2Host || !window.UzExerciseCards || !quizSection) return;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            var exData = getT1ExData(topic);
+            if (!topic || !exData) return;
+
+            var legacy = quizSection.querySelector('.t1-wrap');
+            if (!legacy) return;
+            legacy.setAttribute('data-a2-legacy', '1');
+            legacy.style.display = 'none';          // present for the scorer, hidden from view
+
+            var mount = document.getElementById('a2CardsMount');
+            if (!mount) {
+                mount = document.createElement('div');
+                mount.id = 'a2CardsMount';
+                quizSection.insertBefore(mount, quizSection.firstChild);
+            }
+
+            window.A2Host.mountCards({
+                mountEl: mount,
+                title: 'Mavzu mashqlari',
+                deps: {
+                    getTopic: function () { return { id: topicId, exercises: exData.exercises || [] }; },
+                    getScope: function () { return quizSection; }
+                }
+            });
+        }
+
         function renderTopic1Exercises(topicId) {
             var topic = courseData.topics.find(function (t) { return t.id === topicId; });
             var exData = getT1ExData(topic);
@@ -5664,6 +5649,8 @@
                     hid.value = "";
                 });
             });
+
+            mountA2ExerciseCards(topicId);
 
             if (topic.quiz && topic.quiz.matchingGame && typeof loadMatchingGame === "function") {
                 setTimeout(function () {

@@ -22,6 +22,7 @@ const ok = (c, l) => { if (c) pass++; else { fail++; failures.push(l); } };
 const ENGINE = fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8');
 const HOST = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
 const BUILDER = fs.readFileSync(path.join(ROOT, 'sentence-builder.js'), 'utf8');
+const UI = fs.readFileSync(path.join(ROOT, 'course-exercise-ui.js'), 'utf8');
 const DATA = fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8');
 
 /* ------------------------------------------------------------------ page */
@@ -50,6 +51,7 @@ function boot(opts) {
 
     w.eval(ENGINE);
     w.eval(BUILDER);
+    w.eval(UI);
     w.eval(HOST);
     w.eval(DATA);
 

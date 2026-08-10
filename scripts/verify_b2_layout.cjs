@@ -20,7 +20,11 @@ let pass = 0, fail = 0;
 const failures = [];
 const ok = (c, l) => { if (c) pass++; else { fail++; failures.push(l); } };
 
-const HOST = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
+const HOST_SRC = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
+const UI = fs.readFileSync(path.join(ROOT, 'course-exercise-ui.js'), 'utf8');
+/* Presentation now lives in the shared layer and policy in the host; both ship
+   to the page, so style assertions span the pair. */
+const HOST = UI + '\n' + HOST_SRC;
 const PAGES = [
     { file: 'paid-courses/b2-course.html', label: 'paid', vocab: 'b2-vocabulary.html' },
     { file: 'b2-demo.html', label: 'demo', vocab: 'b2-demo-vocabulary.html' }
@@ -130,7 +134,9 @@ for (const p of PAGES) {
     const w = dom.window;
     w.Element.prototype.scrollIntoView = function () {};
     w.eval(fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8'));
-    w.eval(HOST);
+    w.eval(fs.readFileSync(path.join(ROOT, 'sentence-builder.js'), 'utf8'));
+    w.eval(UI);
+    w.eval(HOST_SRC);
     w.eval(fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8'));
     const api = w.B2Host.create({ getTopic: () => w.B2_LESSON_DATA.topics[0] });
 
@@ -193,7 +199,9 @@ for (const p of PAGES) {
     const s = fs.readFileSync(path.join(ROOT, p.file), 'utf8');
     const T = p.label;
     ok(s.includes('class="b2-vocab-card"'), `${T} vocabulary card is in the lesson template`);
-    ok(/\.b2-vocab-card\s*\{/.test(s), `${T} vocabulary card is styled`);
+    /* styled once, in the shared component — not copied into each page */
+    ok(!/\.b2-vocab-card\s*\{/.test(s), `${T} carries no private copy of the card CSS`);
+    ok(/\.b2-vocab-card\{/.test(UI), `${T} vocabulary card is styled by the shared component`);
     ok(s.includes("So'zlar lug'ati"), `${T} keeps the original heading`);
     ok(s.includes("Lug'atni ochish"), `${T} keeps the original call to action`);
     ok(s.includes(`${p.vocab}?topic=\${topic.id}`),

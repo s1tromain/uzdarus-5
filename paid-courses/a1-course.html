@@ -1471,6 +1471,22 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
+        /* The Uzbek word being translated. The blank itself is overwritten with
+           the chosen Russian word, so without this the learner loses sight of
+           what they were asked to translate the moment they answer. */
+        .topic6-uz-cue {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            color: #3730a3;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
         .topic6-correct-hint {
             display: none;
             margin-top: 8px;
@@ -6829,7 +6845,13 @@
 
             topic.topic6Exercises.exercise2.items.forEach((item, index) => {
                 const parts = item.template.split('___');
-                const savedValue = ex2Answers[index] || '';
+                /* Only a value the learner could actually have chosen is restored.
+                   A stored answer that is not among this item's options can only
+                   come from stale or corrupted data; showing it would leave the
+                   blank holding a word that matches none of the choices, which
+                   the learner has no way to correct. Treat it as unanswered. */
+                const storedValue = ex2Answers[index] || '';
+                const savedValue = item.options.includes(storedValue) ? storedValue : '';
                 const buttonClasses = ['topic5-select-blank'];
                 if (savedValue) {
                     buttonClasses.push('filled');
@@ -6843,8 +6865,9 @@
                             <button type="button"
                                     class="${buttonClasses.join(' ')}"
                                     data-topic6-select="${index}"
-                                    data-value="${savedValue}">${savedValue || item.placeholder}</button>
+                                    data-value="${savedValue}">${savedValue || 'Variantni tanlang'}</button>
                             <span>${parts[1] || ''}</span>
+                            <span class="topic6-uz-cue"><b>uz:</b> ${item.placeholder}</span>
                         </div>
                         <div class="topic5-options" data-topic6-options="${index}">
                             ${item.options.map((option) => {

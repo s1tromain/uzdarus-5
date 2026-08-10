@@ -81,7 +81,7 @@ loadLesson(4);
 const lc = w.document.getElementById('lessonContent');
 const qs = w.document.getElementById('quizSection');
 ok('lesson title rendered', /Kunlar, oylar va fasllar/.test(lc.textContent));
-ok('grammar rendered', !!lc.querySelector('.t1g-hero-title'));
+ok('grammar rendered', !!lc.querySelector('.b2g-lead-title'));
 ok('all 7 weekdays rendered',
    ['понедельник','вторник','среда','четверг','пятница','суббота','воскресенье'].every(x => lc.textContent.includes(x)));
 ok('во вторник exception documented', lc.textContent.includes('во') && lc.textContent.includes('talaffuz qulayligi'));
@@ -110,7 +110,7 @@ ok('time-expression table rendered',
 ok('Esda saqlang block rendered', lc.textContent.includes('Esda saqlang'));
 ok('closing note rendered', lc.textContent.includes('asosiy va eng ko'));
 ok('no template placeholder leaked', !lc.textContent.includes('${'));
-ok('grammar tables rendered', lc.querySelectorAll('.t1g-table').length >= 12);
+ok('grammar tables rendered', lc.querySelectorAll('.b2g-t').length >= 12);
 ok('vocabulary card rendered', lc.textContent.includes("Lug'atni ochish"));
 ok('vocabulary card deep-links to topic 4', /a2-vocabulary\.html\?topic=4/.test(t4.content));
 ok('exercises rendered', !!qs.querySelector('.t1-wrap'));

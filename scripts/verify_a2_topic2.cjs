@@ -63,7 +63,7 @@ ok('lesson 1 audio is a DIFFERENT file',
 loadLesson(2);
 const lc = w.document.getElementById('lessonContent');
 const qs = w.document.getElementById('quizSection');
-ok('grammar rendered', !!lc.querySelector('.t1g-hero-title'));
+ok('grammar rendered', !!lc.querySelector('.b2g-lead-title'));
 ok('past-tense suffix table rendered', lc.textContent.includes('-ла') && lc.textContent.includes('-ли'));
 ok('быть forms rendered', ['был','была','было','были'].every(f => lc.textContent.includes(f)));
 ok('negation section rendered', lc.textContent.includes('не + o‘tgan zamon'));

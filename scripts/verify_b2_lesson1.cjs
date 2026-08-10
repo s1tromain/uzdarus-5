@@ -24,9 +24,10 @@ eq('group ids/order', GROUPS.map(g=>g.id).join(','), 'ex1,ex2,ex3,ex4,ex5,ex6,ex
    sentence-assembly exercise; anything outside this list would render blank. */
 const HOST_TYPES=['input','choice','builder'];
 ok('only host-implemented types', GROUPS.every(g=>HOST_TYPES.includes(g.type)));
-ok('every declared type is handled by the host',
+/* type dispatch lives in the shared presentation layer, not in any host */
+ok('every declared type is handled by the shared exercise UI',
    HOST_TYPES.every(t=>t==='input'||new RegExp("g\\.type === '"+t+"'").test(
-       fs.readFileSync(path.join(ROOT,'b2-host.js'),'utf8'))));
+       fs.readFileSync(path.join(ROOT,'course-exercise-ui.js'),'utf8'))));
 ok('only existing choice styles', GROUPS.filter(g=>g.type==='choice').every(g=>['chips','test','tf'].includes(g.style)));
 // resource keys, verbatim
 eq('3-mashq key is «что» for all 10 (resource: A,B,C,A,C,B,C,A,D,B)',

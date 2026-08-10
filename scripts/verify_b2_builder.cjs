@@ -23,6 +23,7 @@ const ENGINE = fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8');
 const HOST = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
 const DATA = fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8');
 const COMPONENT = fs.readFileSync(path.join(ROOT, 'sentence-builder.js'), 'utf8');
+const UI = fs.readFileSync(path.join(ROOT, 'course-exercise-ui.js'), 'utf8');
 
 function boot() {
     const dom = new JSDOM('<!doctype html><html><body><div id="r"></div></body></html>',
@@ -38,7 +39,7 @@ function boot() {
     const realErr = w.console.error;
     w.console.error = (...a) => { errors.push(a.join(' ')); realErr.apply(w.console, a); };
 
-    w.eval(ENGINE); w.eval(COMPONENT); w.eval(HOST); w.eval(DATA);
+    w.eval(ENGINE); w.eval(COMPONENT); w.eval(UI); w.eval(HOST); w.eval(DATA);
     const topic = w.B2_LESSON_DATA.topics[0];
     const api = w.B2Host.create({ getTopic: () => topic });
     return { w, topic, api, errors };
@@ -429,8 +430,8 @@ console.log('\n=== SENTENCE BUILDER (exercise type) ===\n');
     const src = HOST.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     ok(!/ex2|'ex\d'/.test(src), '9.1 the host never names exercise 2');
     ok(!/topicId\s*===|topic\.id\s*===/.test(src), '9.2 no per-topic branch');
-    ok(/g\.type === 'builder'/.test(src), '9.3 the builder is selected by data type');
-    ok((src.match(/g\.type === 'builder'/g) || []).length >= 3,
+    ok(/g\.type === 'builder'/.test(UI), '9.3 the builder is selected by data type');
+    ok((UI.match(/g\.type === 'builder'/g) || []).length >= 3,
         '9.4 render, read and write all dispatch on the same generic type');
 
     const eng = fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8');
