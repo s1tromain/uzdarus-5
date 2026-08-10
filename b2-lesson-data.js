@@ -388,7 +388,7 @@
 
         '<h4>3. «Что» va «чтобы» — faktmi yoki maqsadmi?</h4>',
         '<table class="b2g-t">',
-            '<tr><th></th><th>что</th><th>чтобы</th></tr>',
+            '<tr><th>Mezon</th><th>что</th><th>чтобы</th></tr>',
             '<tr><td>Ma‘no</td><td>fakt, haqiqat</td><td>maqsad, xohish, talab</td></tr>',
             '<tr><td>Fe‘l shakli</td><td>istalgan zamon</td><td>faqat <b>o‘tgan zamon</b> yoki ',
                 '<b>infinitiv</b></td></tr>',

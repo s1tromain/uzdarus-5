@@ -76,7 +76,13 @@
         var st = document.createElement('style');
         st.id = 'b2h-styles';
         st.textContent = [
-            '.b2h{--b2-ink:#1a1c2e;--b2-dim:#6b7290;--b2-line:#e4e7f2;--b2-primary:#3B3F8F;',
+            /* Design tokens. BOTH roots must carry them: the exercise UI mounts
+               under .b2h and the grammar lesson under .b2g. A token declared on
+               only one of them is invalid-at-computed-value-time in the other,
+               which silently drops colour to `inherit` — white text on white
+               tables. Every var() below also carries a literal fallback so this
+               can never blank a page again. */
+            '.b2h,.b2g{--b2-ink:#1a1c2e;--b2-dim:#6b7290;--b2-line:#e4e7f2;--b2-primary:#3B3F8F;',
             '--b2-accent:#6C63FF;--b2-ok:#1F8A5B;--b2-bad:#C63B4E}',
 
             /* ---- exercise card ---- */
@@ -138,9 +144,9 @@
             '.b2h-audio audio{width:100%;margin-top:12px}',
 
             /* ---- grammar lesson ---- */
-            '.b2g{color:var(--b2-ink);line-height:1.8;font-size:1.02rem}',
-            '.b2g h4{margin:30px 0 12px;font-size:1.18rem;color:var(--b2-primary);font-weight:800;',
-            'padding-left:14px;border-left:4px solid var(--b2-accent)}',
+            '.b2g{color:var(--b2-ink,#1a1c2e);line-height:1.8;font-size:1.02rem}',
+            '.b2g h4{margin:30px 0 12px;font-size:1.18rem;color:var(--b2-primary,#3B3F8F);font-weight:800;',
+            'padding-left:14px;border-left:4px solid var(--b2-accent,#6C63FF)}',
             '.b2g p{margin:0 0 12px}',
             '.b2g-lead{background:linear-gradient(135deg,#F4F5FF,#FAFAFF);border:1px solid #e0e4f7;',
             'border-radius:18px;padding:22px 26px;margin-bottom:8px}',
@@ -149,30 +155,31 @@
             'padding:16px 18px;background:#fff;border:1.5px dashed #c3c8ee;border-radius:14px;font-size:1.06rem}',
             '.b2g-main{background:#E8ECFF;color:#2B3080;padding:5px 12px;border-radius:8px;font-weight:700}',
             '.b2g-sub{background:#FFF3E0;color:#8A5200;padding:5px 12px;border-radius:8px;font-weight:700}',
-            '.b2g-link{color:var(--b2-accent);font-weight:900}',
-            '.b2g-scheme-note{font-size:.92rem;color:var(--b2-dim);margin:0}',
+            '.b2g-link{color:var(--b2-accent,#6C63FF);font-weight:900}',
+            '.b2g-scheme-note{font-size:.92rem;color:var(--b2-dim,#6b7290);margin:0}',
             '.b2g-t{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:.98rem;',
             'background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(26,28,46,.06);display:table}',
             '.b2g-t th{background:linear-gradient(135deg,#3B3F8F,#5A5FC0);color:#fff;text-align:left;',
             'padding:12px 14px;font-weight:700;font-size:.93rem}',
-            '.b2g-t td{padding:11px 14px;border-top:1px solid #eef0f7;vertical-align:top}',
+            '.b2g-t td{padding:11px 14px;border-top:1px solid #eef0f7;vertical-align:top;color:#1a1c2e;background:#fff}',
             '.b2g-t tr:nth-child(even) td{background:#FAFBFF}',
+            '.b2g-t th{color:#fff}',
             '.b2g-t.b2g-err td:first-child{color:#C63B4E}',
             '.b2g-t.b2g-err td:nth-child(2){color:#1F8A5B}',
             '.b2g-split{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:16px 0 20px}',
-            '.b2g-half{background:#fff;border:1px solid var(--b2-line);border-left:4px solid var(--b2-accent);',
+            '.b2g-half{background:#fff;border:1px solid var(--b2-line,#e4e7f2);border-left:4px solid var(--b2-accent,#6C63FF);',
             'border-radius:14px;padding:16px 18px}',
-            '.b2g-half>b{color:var(--b2-primary);font-size:1.04rem}',
+            '.b2g-half>b{color:var(--b2-primary,#3B3F8F);font-size:1.04rem}',
             '.b2g-half p{margin:8px 0 0;font-size:.96rem}',
             '.b2g-ex{background:#F7F8FC;border-radius:10px;padding:10px 12px;margin-top:10px!important}',
-            '.b2g-ex small{color:var(--b2-dim)}',
+            '.b2g-ex small{color:var(--b2-dim,#6b7290)}',
             '.b2g-list{margin:10px 0 18px;padding-left:22px}',
             '.b2g-list li{margin:7px 0}',
             '.b2g-tip{background:#EEF7F1;border:1px solid #BFE3CE;border-radius:12px;padding:13px 16px;color:#14603F}',
             '.b2g-warn{background:#FFF4E5;border:1px solid #FFD8A8;border-radius:12px;padding:13px 16px;color:#8A5200}',
             '.b2g-warn s,.b2g-t s{color:#C63B4E;text-decoration-thickness:2px}',
             '.b2g-chips{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0 20px}',
-            '.b2g-chips span{background:linear-gradient(135deg,#EEF0FF,#E6E9FF);color:var(--b2-primary);',
+            '.b2g-chips span{background:linear-gradient(135deg,#EEF0FF,#E6E9FF);color:var(--b2-primary,#3B3F8F);',
             'border:1px solid #d3d8f5;border-radius:20px;padding:8px 16px;font-weight:600;font-size:.94rem}',
             '.b2g-check{background:linear-gradient(135deg,#FFFBF0,#FFF7E4);border:1px solid #F0E0B8;',
             'border-radius:18px;padding:20px 26px;margin-top:24px}',
