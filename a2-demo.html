@@ -5095,110 +5095,6 @@
            window.checkTopic3Exercises owner, so leaving it would have kept the dead
            scorer in charge while the new data went unread. */
 
-        function loadExtraExercises(topicId) {
-            const topic = courseData.topics.find(t => t.id === topicId);
-            if (!topic || !topic.extraExercises || topic.id !== 3) return;
-
-            // Загружаем сохраненные результаты упражнений
-            const savedExercises = userQuizResults[`topic_${topicId}_exercises`] || {};
-
-            let exercisesHTML = `
-                <div class="extra-exercises-section" id="extraExercises">
-                    <h2 class="extra-exercises-title">
-                        <i class="fas fa-pencil-alt"></i> Grammatik mashq: Olmosh
-                    </h2>
-                    
-                    <div class="exercise-tabs">
-                        <button class="exercise-tab active" onclick="switchExerciseTab('section1', this)">
-                            <img src="images/a2/img_4634.png" alt="мой/моя/моё/мои">
-                            <span>${topic.extraExercises.section1.title}</span>
-                        </button>
-                        <button class="exercise-tab" onclick="switchExerciseTab('section2', this)">
-                            <img src="images/a2/img_4635.png" alt="твой/твоя/твоё/твои">
-                            <span>${topic.extraExercises.section2.title}</span>
-                        </button>
-                        <button class="exercise-tab" onclick="switchExerciseTab('section3', this)">
-                            <img src="images/a2/img_4636.png" alt="наш/наша/наше/наши">
-                            <span>${topic.extraExercises.section3.title}</span>
-                        </button>
-                        <button class="exercise-tab" onclick="switchExerciseTab('section4', this)">
-                            <img src="images/a2/img_4637.png" alt="ваш/ваша/ваше/ваши">
-                            <span>${topic.extraExercises.section4.title}</span>
-                        </button>
-                    </div>
-            `;
-
-            // Generate sections
-            Object.keys(topic.extraExercises).forEach((sectionKey, sectionIndex) => {
-                const section = topic.extraExercises[sectionKey];
-                const isActive = sectionIndex === 0 ? 'active' : '';
-                const savedAnswers = savedExercises[sectionKey] || [];
-
-                exercisesHTML += `
-                    <div class="exercise-content ${isActive}" id="${sectionKey}">
-                        <div class="exercise-grid">
-                `;
-
-                section.questions.forEach((question, qIndex) => {
-                    const parts = question.split('…');
-                    const savedAnswer = savedAnswers[qIndex] || '';
-                    let inputClass = '';
-                    
-                    if (savedAnswer) {
-                        // Normalize answers for comparison
-                        const normalizedSaved = savedAnswer.toLowerCase().replace(/ё/g, 'е');
-                        const normalizedCorrect = section.answers[qIndex].toLowerCase().replace(/ё/g, 'е');
-                        inputClass = normalizedSaved === normalizedCorrect ? 'correct' : 'incorrect';
-                    }
-
-                    exercisesHTML += `
-                        <div class="exercise-item">
-                            <span>${parts[0]}</span>
-                            <input type="text" 
-                                   class="exercise-input ${inputClass}" 
-                                   data-section="${sectionKey}" 
-                                   data-index="${qIndex}"
-                                   value="${savedAnswer}"
-                                   placeholder="...">
-                            <span>${parts[1] || ''}</span>
-                        </div>
-                    `;
-                });
-
-                exercisesHTML += `
-                        </div>
-                    </div>
-                `;
-            });
-
-            exercisesHTML += `
-                    <button class="check-exercises-btn" onclick="checkExtraExercises(${topicId})">
-                        <i class="fas fa-check-circle"></i> Javoblarni Tekshirish
-                    </button>
-                    
-                    <div class="exercise-results" id="exerciseResults">
-                        <div class="exercise-score" id="exerciseScore"></div>
-                    </div>
-                </div>
-            `;
-
-            // Insert after quiz section
-            const quizSection = document.getElementById('quizSection');
-            if (quizSection) {
-                const existingExercises = document.getElementById('extraExercises');
-                if (existingExercises) {
-                    existingExercises.remove();
-                }
-                quizSection.insertAdjacentHTML('afterend', exercisesHTML);
-                
-                // Add auto-save on input change
-                document.querySelectorAll('.exercise-input').forEach(input => {
-                    input.addEventListener('input', debounce(async function() {
-                        await autoSaveExercises(topicId);
-                    }, 1000));
-                });
-            }
-        }
 
         // Debounce helper function
         function debounce(func, wait) {
@@ -5271,82 +5167,6 @@
         };
 
         // Check extra exercises answers
-        window.checkExtraExercises = async function(topicId) {
-            const topic = courseData.topics.find(t => t.id === topicId);
-            if (!topic || !topic.extraExercises) return;
-
-            let totalCorrect = 0;
-            let totalQuestions = 0;
-            const exerciseAnswers = {};
-
-            Object.keys(topic.extraExercises).forEach(sectionKey => {
-                const section = topic.extraExercises[sectionKey];
-                const sectionAnswers = [];
-
-                section.questions.forEach((question, index) => {
-                    const input = document.querySelector(`input[data-section="${sectionKey}"][data-index="${index}"]`);
-                    if (input) {
-                        const userAnswer = input.value.trim();
-                        const correctAnswer = section.answers[index];
-                        
-                        sectionAnswers.push(userAnswer);
-                        totalQuestions++;
-
-                        // Remove previous classes
-                        input.classList.remove('correct', 'incorrect');
-
-                        // Normalize answers: replace ё with е for comparison
-                        const normalizedUser = userAnswer.toLowerCase().replace(/ё/g, 'е');
-                        const normalizedCorrect = correctAnswer.toLowerCase().replace(/ё/g, 'е');
-
-                        if (normalizedUser === normalizedCorrect) {
-                            input.classList.add('correct');
-                            totalCorrect++;
-                        } else if (userAnswer) {
-                            input.classList.add('incorrect');
-                        }
-                    }
-                });
-
-                exerciseAnswers[sectionKey] = sectionAnswers;
-            });
-
-            // Save results to Firebase
-            const exerciseData = {
-                ...exerciseAnswers,
-                score: totalCorrect,
-                total: totalQuestions,
-                timestamp: new Date().toISOString()
-            };
-
-            await saveQuizResultToFirebase(`${topicId}_exercises`, exerciseData);
-            userQuizResults[`topic_${topicId}_exercises`] = exerciseData;
-
-            // Show results
-            const percentage = Math.round((totalCorrect / totalQuestions) * 100);
-            const resultsDiv = document.getElementById('exerciseResults');
-            const scoreDiv = document.getElementById('exerciseScore');
-
-            let message = '';
-            if (percentage >= 90) {
-                message = '🎉 Ajoyib! Siz mashqlarni mukammal bajardingiz!';
-            } else if (percentage >= 70) {
-                message = '👍 Yaxshi natija! Ko\'proq mashq qiling.';
-            } else if (percentage >= 50) {
-                message = '📝 Qoniqarli. Mavzuni qayta ko\'rib chiqing.';
-            } else {
-                message = '📚 Mavzuni qayta o\'rganing va urinib ko\'ring.';
-            }
-
-            scoreDiv.innerHTML = `
-                <div style="font-size: 2rem; margin-bottom: 10px;">${totalCorrect}/${totalQuestions}</div>
-                <div style="font-size: 1.2rem; color: var(--primary-dark);">${percentage}%</div>
-                <p style="margin-top: 15px; font-size: 1.1rem;">${message}</p>
-            `;
-
-            resultsDiv.classList.add('show');
-            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
 
         // Check answers and show results
         // ==================== A2 SHARED EXERCISE ENGINE (ported from b1-course.html) ====================
@@ -5688,6 +5508,23 @@
             return Math.max(PASSING_SCORE, Math.ceil(total * 0.6));
         }
 
+        /** Last attempt per topic, so a finished topic can be reviewed later.
+            Same conventions as the rest of A2: localStorage, keyed by user. */
+        function a2ResultKey(topicId) {
+            var uid = (typeof window.currentUserId !== 'undefined' && window.currentUserId)
+                ? window.currentUserId : 'guest';
+            return 'a2_topic_result_' + uid + '_' + topicId;
+        }
+        function a2SaveTopicResult(topicId, r) {
+            try { localStorage.setItem(a2ResultKey(topicId), JSON.stringify(r)); } catch (e) {}
+        }
+        function a2LoadTopicResult(topicId) {
+            try {
+                var raw = localStorage.getItem(a2ResultKey(topicId));
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+
         function a2LegacyScope() {
             return document.getElementById('a2LegacyBridge') || quizSection;
         }
@@ -5708,6 +5545,10 @@
                     getTopic: function () { return { id: topicId, exercises: exData.exercises || [] }; },
                     getScope: a2LegacyScope,
                     runLegacyCheck: function (id) { return window.checkTopic1Exercises(id); },
+                    /* a passed topic reopens to its result, never to a new attempt */
+                    isCompleted: function (id) { return completedTopics.indexOf(id) !== -1; },
+                    saveResult: a2SaveTopicResult,
+                    loadResult: a2LoadTopicResult,
                     /* the scorer's own rule — never a second implementation */
                     passNeeded: a2PassNeeded,
                     /* completion is the legacy button's job; the new screen only

@@ -257,6 +257,12 @@
         var api = create(deps);
         var groups = topic.exercises;
 
+        /* A passed topic is finished: the learner may reread the feedback but
+           cannot start another attempt. This mirrors how B2 treats completion. */
+        var isDone = typeof deps.isCompleted === 'function' && !!deps.isCompleted(topic.id);
+        var lastResult = (isDone && typeof deps.loadResult === 'function')
+            ? deps.loadResult(topic.id) : null;
+
         function mirrorAll(answers) {
             groups.forEach(function (g) {
                 (g.items || []).forEach(function (item, i) {
@@ -309,6 +315,53 @@
             };
         }
 
+        if (isDone) {
+            /* Review entry instead of a practice card. */
+            opts.mountEl.innerHTML =
+                '<div class="b2h"><div class="a2-done">' +
+                '<div class="a2-done-badge">&#10004; Mavzu yakunlangan</div>' +
+                '<p>Siz barcha mashqlarni muvaffaqiyatli bajardingiz. ' +
+                'Natijalarni istalgan vaqtda ko\'rishingiz mumkin.</p>' +
+                (lastResult
+                    ? '<button type="button" class="a2-done-btn" data-a2-review>' +
+                      '&#128203; Natijalarni ko\'rish</button>'
+                    : '') +
+                '</div></div>';
+            if (lastResult) {
+                opts.mountEl.addEventListener('click', function (e) {
+                    if (!e.target.closest || !e.target.closest('[data-a2-review]')) return;
+                    var host = document.getElementById('a2ReviewHost') || (function () {
+                        var d = document.createElement('div');
+                        d.id = 'a2ReviewHost';
+                        d.style.display = 'none';
+                        document.body.appendChild(d);
+                        return d;
+                    })();
+                    var s = session().mount({
+                        course: 'a2', topicId: topic.id, groups: groups, mountEl: host,
+                        title: 'Natijalar',
+                        renderGroup: ui().renderGroup, bindGroup: ui().bindGroup,
+                        readAnswer: ui().readAnswer, writeAnswer: ui().writeAnswer,
+                        matchItem: ui().matchItem,
+                        renderSummary: function () {
+                            lastResult.archived = true;
+                            return ui().renderResults(lastResult, { archived: true });
+                        },
+                        bindSummary: function (root, payload, sess) {
+                            root.addEventListener('click', function () {
+                                if (sess && sess.close) sess.close();
+                            });
+                        },
+                        draft: { load: function () { return null; },
+                                 save: function () {}, clear: function () {} },
+                        finish: function () { return lastResult; }
+                    });
+                    if (s) s.showSummary(lastResult);
+                });
+            }
+            return null;
+        }
+
         return session().mount({
             course: 'a2',
             topicId: topic.id,
@@ -349,6 +402,10 @@
             finish: function (answers) {
                 mirrorAll(answers || {});
                 var r = scoreFromLegacy();
+                /* keep the attempt so a completed topic can be reviewed later */
+                if (typeof deps.saveResult === 'function') {
+                    try { deps.saveResult(topic.id, r); } catch (e) {}
+                }
                 /* The page's own checker owns scoring, progress and Firebase. */
                 if (typeof deps.runLegacyCheck === 'function') {
                     try {

@@ -305,6 +305,41 @@ for (const p of PAGES) {
     ok(/Как выполнять/.test(html), 'the instruction card carries the B2 heading');
 }
 
+
+/* ------------------------------------------------ completed-topic behaviour
+ * A passed topic is finished: the lesson page offers review, never a new
+ * attempt, and no legacy check button exists anywhere in the migrated flow.
+ * ------------------------------------------------------------------- */
+{
+    for (const p of PAGES) {
+        const s = fs.readFileSync(path.join(ROOT, p.file), 'utf8');
+        const T = p.label;
+        /* the dead extra-exercises workflow and its check button are gone */
+        ok(!/Javoblarni Tekshirish/.test(s), `${T} the extra-exercises check button is deleted`);
+        ok(!/ExtraExercises/.test(s), `${T} no extra-exercises code remains`);
+        /* the legacy quiz check button survives ONLY for unmigrated topics */
+        const submits = (s.match(/Javoblarni tekshirish/g) || []).length;
+        ok(submits === 1, `${T} exactly one legacy check button, for topics 6-16 (${submits})`);
+        const quiz = s.slice(s.indexOf('function loadQuiz'), s.indexOf('function loadQuiz') + 2000);
+        ok(/if \(getT1ExData\(topic\)\) \{ renderTopic1Exercises\(topicId\); return; \}/.test(quiz),
+            `${T} migrated topics return before that button is ever built`);
+
+        /* completion state */
+        ok(/isCompleted: function \(id\)/.test(s), `${T} the host is told when a topic is done`);
+        ok(/saveResult: a2SaveTopicResult/.test(s), `${T} the attempt is stored for review`);
+        ok(/loadResult: a2LoadTopicResult/.test(s), `${T} the stored attempt is read back`);
+    }
+    const host = fs.readFileSync(path.join(ROOT, 'a2-host.js'), 'utf8');
+    ok(/var isDone =/.test(host), 'the host branches on completion');
+    ok(/a2-done-badge/.test(host), 'a completed topic shows a finished card');
+    ok(/data-a2-review/.test(host), 'a completed topic offers review');
+    const doneBranch = host.slice(host.indexOf('if (isDone) {'), host.indexOf('return session().mount({'));
+    ok(/return null;/.test(doneBranch), 'a completed topic never mounts a new attempt');
+    ok(!/uz-practice/.test(doneBranch), 'no practice card is rendered once the topic is passed');
+    const ui = fs.readFileSync(path.join(ROOT, 'course-exercise-ui.js'), 'utf8');
+    ok(/\.a2-done\{/.test(ui), 'the completed card is styled by the shared component');
+}
+
 console.log('='.repeat(56));
 if (fail) {
     console.log(`  ❌ A2 NEW UI: ${fail} failed / ${pass + fail}\n`);

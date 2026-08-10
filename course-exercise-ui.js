@@ -288,6 +288,18 @@
             '.b2g-tip::before,.b2g-warn::before{left:15px}',
             '.b2g-list li{padding-left:27px}',
             '}',
+            /* ---- completed-topic card ---- */
+            '.a2-done{background:linear-gradient(135deg,#EFFAF4,#F7FCF9);border:1px solid #BCE9D4;',
+            'border-radius:18px;padding:28px 26px;text-align:center;margin:20px 0}',
+            '.a2-done-badge{font-size:1.35rem;font-weight:800;color:#0B5D46;margin-bottom:10px}',
+            '.a2-done p{color:#2E6B55;font-size:1.02rem;line-height:1.7;margin:0 auto 20px;max-width:52ch}',
+            '.a2-done-btn{font-family:inherit;font-size:1.05rem;font-weight:700;color:#fff;border:none;',
+            'border-radius:12px;padding:14px 32px;cursor:pointer;',
+            'background:linear-gradient(135deg,#1F8A5B,#15704A);',
+            'box-shadow:0 6px 20px rgba(31,138,91,.28);transition:transform .18s,filter .18s}',
+            '.a2-done-btn:hover{transform:translateY(-2px);filter:brightness(1.06)}',
+            '@media(max-width:640px){.a2-done{padding:22px 18px}.a2-done-btn{width:100%}}',
+
             /* ---- topic vocabulary card (shared by every course) ---- */
             '.b2-vocab-card{background:linear-gradient(135deg,#FF9800,#F57C00);padding:30px;',
             'border-radius:15px;text-align:center;margin:24px 0;',
