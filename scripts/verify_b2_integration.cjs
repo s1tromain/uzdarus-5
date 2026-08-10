@@ -88,9 +88,12 @@ for (const p of PAGES) {
     /* --------------------------------------- 6. completion path */
     ok(/!topic\.isSubscriptionLocked && !b2Ex \?/.test(s),
         `${T} legacy "finish topic" button suppressed for session topics (one completion path)`);
-    ok(/saveProgress: function \(id\)[\s\S]{0,120}saveProgress\(id\)/.test(s),
+    ok(/completeTopic: function \(id, r\)[\s\S]{0,400}saveProgress\(id\)/.test(s),
         `${T} completion routes through the page's existing saveProgress`);
-    ok(/passPercent: 70/.test(s), `${T} keeps B2's 70% pass threshold`);
+    ok(!/passPercent:\s*\d+/.test(s),
+        `${T} the page does not override the host's threshold`);
+    ok(/b2SaveTopicResult|b2LoadTopicResult/.test(s), `${T} stores the last attempt result`);
+    ok(/isCompleted: function/.test(s), `${T} tells the host whether the topic is finished`);
 
     /* --------------------------------------- 7. file hygiene */
     ok(raw.includes(Buffer.from('\r\n')), `${T} CRLF line endings preserved`);
@@ -101,16 +104,13 @@ for (const p of PAGES) {
 /* ------------------------------------------------ demo access rules */
 {
     const demo = fs.readFileSync(path.join(ROOT, 'b2-demo.html'), 'utf8');
-    const locked = demo.match(/isLocked:\s*(\w+)/g).map(x => x.split(/\s+/)[1]);
-    const sub = demo.match(/isSubscriptionLocked:\s*(\w+)/g).map(x => x.split(/\s+/)[1]);
-    ok(locked[0] === 'false', 'demo Lesson 1 is open');
-    ok(sub[0] === 'false', 'demo Lesson 1 is not subscription-locked');
-    ok(locked.slice(1).every(v => v === 'true'), `demo Lessons 2+ all locked (${locked.join(',')})`);
-    ok(sub.slice(1).every(v => v === 'true'), `demo Lessons 2+ subscription-locked (${sub.join(',')})`);
-
     const paid = fs.readFileSync(path.join(ROOT, 'paid-courses/b2-course.html'), 'utf8');
-    const pl = paid.match(/isLocked:\s*(\w+)/g).map(x => x.split(/\s+/)[1]);
-    ok(pl.every(v => v === 'false'), 'paid course keeps every topic open');
+    ok(/var B2_DEMO_MODE = true;/.test(demo), 'demo declares itself as the demo build');
+    ok(/var B2_DEMO_MODE = false;/.test(paid), 'paid build is not in demo mode');
+    ok(/var locked = B2_DEMO_MODE && t\.id !== 1;/.test(demo),
+        'demo locks every topic except Lesson 1');
+    ok(/var locked = B2_DEMO_MODE && t\.id !== 1;/.test(paid),
+        'paid build applies the same rule, and its flag leaves everything open');
 }
 
 /* ------------------------------------------------ engine stays generic */
@@ -131,9 +131,158 @@ for (const p of PAGES) {
     /* Explicit allowlist: B2 pages, the test manifest, and the OS cruft git
        insists on tracking. Anything else means the migration reached further
        than it was supposed to. */
-    const ALLOWED = /^(b2-demo\.html|paid-courses\/b2-course\.html|package\.json|\.DS_Store)$/;
+    const ALLOWED = /^(b2-demo\.html|paid-courses\/b2-course\.html|b2-host\.js|b2-topics\.js|b2-lesson-data\.js|exercise-session\.js|scripts\/verify_b2_[a-z0-9_]+\.cjs|scripts\/verify_exercise_session\.cjs|scripts\/verify_lesson_result_coverage\.cjs|package\.json|\.DS_Store)$/;
     const others = changed.split('\n').filter(f => f && !ALLOWED.test(f.trim()));
     ok(others.length === 0, `only B2 files + manifest modified (${others.join(', ') || 'none'})`);
+}
+
+/* ------------------------------------------------ 16-topic syllabus */
+{
+    const w = {};
+    // eslint-disable-next-line no-new-func
+    new Function('window', fs.readFileSync(path.join(ROOT, 'b2-topics.js'), 'utf8'))(w);
+    const T = w.B2_TOPICS;
+    const EXPECTED = [
+        'Сложноподчинённые предложения', 'Причастие', 'Деепричастие',
+        'Прямая и косвенная речь', 'Условные предложения', 'Сравнительные конструкции',
+        'Вид глагола', 'Глаголы движения с приставками', 'Модальные конструкции',
+        'Безличные предложения', 'Отглагольные существительные', 'Пассивные конструкции',
+        'Предлоги и управление', 'Средства аргументации', 'Стилистика речи',
+        'Повторение сложных конструкций B2'
+    ];
+    ok(Array.isArray(T) && T.length === 16, `syllabus has 16 topics (${T && T.length})`);
+    EXPECTED.forEach((title, i) => {
+        ok(T[i] && T[i].title === title, `topic ${i + 1} is "${title}"`);
+        ok(T[i] && T[i].id === i + 1, `topic ${i + 1} has id ${i + 1}`);
+    });
+    ok(T.every(t => t.grammatika && t.grammatika.length > 10), 'every topic has a Grammatika line');
+    ok(T.every(t => t.konstruksiya && t.konstruksiya.length > 5), 'every topic has a Konstruksiya line');
+    ok(T.every(t => t.muloqot && t.muloqot.length > 10), 'every topic has a Muloqot line');
+    ok(new Set(T.map(t => t.title)).size === 16, 'no duplicate topic titles');
+}
+
+/* ------------------------------------------------ Lesson 1 grammar */
+{
+    const w = {};
+    // eslint-disable-next-line no-new-func
+    new Function('window', fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8'))(w);
+    const t1 = w.B2_LESSON_DATA.topics[0];
+    const g = t1.grammar || '';
+    ok(g.length > 4000, `Lesson 1 grammar is a full lesson, not a note (${g.length} chars)`);
+    ok((g.match(/<h4>/g) || []).length >= 8, 'grammar has at least 8 sections');
+    ok((g.match(/<table/g) || []).length >= 3, 'grammar has at least 3 tables');
+    ok(/b2g-scheme/.test(g), 'grammar includes a visual schema');
+    ok(/b2g-err/.test(g), 'grammar includes a common-mistakes table');
+    ok(/b2g-check/.test(g), 'grammar includes a self-check list');
+    ok(/b2g-tip|b2g-warn/.test(g), 'grammar includes tips / warnings');
+    ['что', 'чтобы', 'если', 'когда', 'потому что', 'поэтому', 'хотя', 'несмотря на то'].forEach(c => {
+        ok(g.includes(c), `grammar explains the conjunction "${c}" the exercises test`);
+    });
+    ok(t1.exercises.length === 10, 'Lesson 1 still has all 10 exercises');
+    const items = t1.exercises.reduce((n, x) => n + x.items.length, 0);
+    ok(items === 100, `Lesson 1 still has all 100 items (${items})`);
+}
+
+/* ------------------------------------------------ host rules */
+{
+    const host = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
+    ok(/PASS_PERCENT = 85/.test(host), 'host defines the 85% threshold');
+    ok(/function stepGate/.test(host), 'host implements the per-exercise gate');
+    ok(/function buildResultsHtml/.test(host), 'host owns ONE results builder');
+    ok((host.match(/function buildResultsHtml/g) || []).length === 1, 'exactly one results builder');
+    ok(/data-b2h-act="complete"/.test(host), 'results screen offers explicit completion');
+    ok(/b2h-slot/.test(host), 'host renders inline answer slots');
+    ok(/@keyframes b2hPop/.test(host), 'host ships the selection animation');
+    ok(/b2g-t|b2g-scheme/.test(host), 'host styles the grammar lesson');
+    /* the "earn your answers" flow: configured by the host, ruled by the engine */
+    ok(/passScore: api\.passPercent/.test(host), 'host passes its threshold as passScore');
+    ok(/allowAnswerReview: true/.test(host), 'host enables answer review');
+    ok(/requireConfirmationBeforeAnswers: true/.test(host), 'host requires confirmation first');
+    ok(/min: passPercent/.test(host), 'host reports the threshold so the engine can display it');
+    ok(!/Javoblarni ko/.test(host), 'the confirmation text is NOT duplicated in the host');
+    ok(!/uz-ask|askConfirm/.test(host), 'the dialog is NOT reimplemented in the host');
+
+    const eng = fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8');
+    ok(/DEFAULT_CONFIRM/.test(eng), 'the confirmation flow lives in the engine');
+    ok(/allowAnswerReview/.test(eng), 'allowAnswerReview is an engine-level setting');
+    ok(/requireConfirmationBeforeAnswers/.test(eng), 'requireConfirmation is an engine-level setting');
+    ok(!/confirm\(|alert\(/.test(eng.replace(/\/\*[\s\S]*?\*\//g, '')),
+        'no native confirm() / alert() anywhere in the engine');
+    ok(/cfg\.stepGate/.test(eng), 'engine exposes a generic gate hook');
+    ok(/cfg\.renderSummary/.test(eng), 'engine exposes a generic summary hook');
+    ok(!/PASS_PERCENT|passPercent/.test(eng), 'the threshold does not leak into the engine');
+}
+
+/* ------------------------------------------------ RUNTIME: the page's own builder */
+{
+    /* Static checks prove the wiring is written; this proves it RUNS. The
+       page's real buildB2Topics / b2ExerciseData / B2_SOON_HTML are lifted out
+       of the inline script and executed against the real modules. */
+    const { JSDOM } = require('jsdom');
+
+    function runBuilder(file, expectDemo) {
+        const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+        const dom = new JSDOM('<!doctype html><body></body>', { runScripts: 'outside-only' });
+        const w = dom.window;
+        w.eval(fs.readFileSync(path.join(ROOT, 'b2-topics.js'), 'utf8'));
+        w.eval(fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8'));
+
+        const grab = (name) => {
+            const i = src.indexOf('function ' + name + '(');
+            if (i < 0) throw new Error('missing ' + name + ' in ' + file);
+            let depth = 0, started = false;
+            for (let k = src.indexOf('{', i); k < src.length; k++) {
+                if (src[k] === '{') { depth++; started = true; }
+                else if (src[k] === '}') { depth--; if (started && depth === 0) return src.slice(i, k + 1); }
+            }
+            throw new Error('unbalanced ' + name);
+        };
+        const soon = src.match(/var B2_SOON_HTML = \[[\s\S]*?\]\.join\(''\);/)[0];
+        const flag = src.match(/var B2_DEMO_MODE = (true|false);/)[0];
+
+        w.eval([
+            flag, soon,
+            'var B2_TOPICS = window.B2_TOPICS;',
+            'var B2_TOPIC_DESCRIPTION = window.B2_TOPIC_DESCRIPTION;',
+            grab('b2ExerciseData'), grab('buildB2Topics'),
+            'window.__topics = buildB2Topics();'
+        ].join('\n'));
+        return w.__topics;
+    }
+
+    [['paid-courses/b2-course.html', false], ['b2-demo.html', true]].forEach(([file, demo]) => {
+        const L = demo ? 'demo' : 'paid';
+        let topics = null, err = null;
+        try { topics = runBuilder(file, demo); } catch (e) { err = e; }
+        ok(!err, `${L} buildB2Topics() runs without error (${err ? err.message : 'ok'})`);
+        if (!topics) return;
+
+        ok(topics.length === 16, `${L} builder produces 16 topics (${topics.length})`);
+        ok(topics[0].title === 'Сложноподчинённые предложения', `${L} topic 1 is the new title`);
+        ok(topics[15].title === 'Повторение сложных конструкций B2', `${L} topic 16 is the review topic`);
+        ok(topics.every(t => t.grammatika && t.konstruksiya && t.muloqot),
+            `${L} every topic carries all three descriptors`);
+        ok(topics.every(t => t.quiz && Array.isArray(t.quiz.mcQuestions)),
+            `${L} legacy quiz shape kept on every topic (no renderer breaks)`);
+        ok(topics[0].grammar && topics[0].grammar.length > 4000,
+            `${L} topic 1 gets the full grammar lesson (${topics[0].grammar.length} chars)`);
+        ok(topics.slice(1).every(t => !t.grammar), `${L} unauthored topics carry no grammar`);
+        ok(topics.slice(1).every(t => /tayyorlanmoqda/.test(t.content)),
+            `${L} unauthored topics show the "in preparation" panel`);
+        ok(topics[0].content === '', `${L} topic 1 shows its lesson, not the placeholder`);
+        ok(/Grammatika:/.test(topics[0].description) && /Muloqot:/.test(topics[0].description),
+            `${L} legacy one-line description still generated`);
+
+        if (demo) {
+            ok(topics[0].isLocked === false, 'demo topic 1 is UNLOCKED');
+            ok(topics[0].isSubscriptionLocked === false, 'demo topic 1 is not subscription-locked');
+            ok(topics.slice(1).every(t => t.isLocked === true), 'demo topics 2-16 are ALL locked');
+            ok(topics.slice(1).every(t => t.isSubscriptionLocked === true),
+                'demo topics 2-16 are subscription-locked');
+        } else {
+            ok(topics.every(t => t.isLocked === false), 'paid topics are all unlocked');
+        }
+    });
 }
 
 console.log('='.repeat(52));

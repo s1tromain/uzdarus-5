@@ -48,6 +48,50 @@
     var STATE_VERSION = 1;
     var STYLE_ID = 'uz-session-styles';
 
+    /* ------------------------------------------------------------------
+     * PLATFORM DEFAULTS for the "earn your answers" flow.
+     *
+     * Every one of these is overridable per host via mount(cfg), but the
+     * behaviour itself is the engine's, not any course's. A2, A1, B1, B2 and
+     * every future course get it by existing — no host code required.
+     *
+     *   cfg.passScore                        percent (0-100) a step must reach
+     *   cfg.stepGate(result, group)          optional; overrides passScore
+     *   cfg.allowAnswerReview                default true
+     *   cfg.requireConfirmationBeforeAnswers default true
+     *   cfg.confirmationText                 { title, body[], cancel, confirm }
+     *   cfg.labels                           button label overrides
+     * ------------------------------------------------------------------ */
+    var DEFAULT_CONFIRM = {
+        title: '⚠️ Javoblarni ko‘rishni xohlaysizmi?',
+        body: [
+            'Biz ushbu mashqlarni sizning rus tilini mustaqil o‘rganishingiz uchun yaratganmiz.',
+            'Javoblarni ko‘rishdan oldin yana bir marta mustaqil yechishga harakat qilishingizni tavsiya qilamiz.',
+            'Javoblarni ko‘rganingizdan so‘ng ularni yodlab olib testni qayta topshirish oson bo‘ladi, ' +
+            'ammo bu sizning haqiqiy bilim darajangizni oshirmaydi.',
+            'Agar baribir javoblarni ko‘rishni istasangiz, davom etishingiz mumkin.'
+        ],
+        cancel: 'Bekor qilish',
+        confirm: 'Davom etish'
+    };
+
+    var DEFAULT_LABELS = {
+        check: 'Проверить',
+        next: 'Следующее упражнение',
+        finish: 'Завершить и посмотреть результат',
+        retry: 'Пройти упражнение заново',
+        reveal: 'Посмотреть ответы',
+        restart: 'Mashqni qayta boshlash'
+    };
+
+    function opt(cfg, name, dflt) {
+        return (cfg && cfg[name] !== undefined && cfg[name] !== null) ? cfg[name] : dflt;
+    }
+    function labelOf(cfg, key) {
+        var over = cfg && cfg.labels;
+        return (over && over[key]) ? over[key] : DEFAULT_LABELS[key];
+    }
+
     /* ---------------------------------------------------------------- utils */
 
     function esc(s) {
@@ -119,6 +163,27 @@
             '.uz-btn-primary{background:linear-gradient(135deg,#5B6EF5,#3F51B5);color:#fff}',
             '.uz-btn-ghost{background:#eef1f8;color:#3d4663}',
             /* per-exercise verdict */
+            /* blocked / revealed states + the confirmation dialog */
+            '.uz-verdict-score{font-size:1.28rem;margin:6px 0 4px;letter-spacing:.01em}',
+            '.uz-need{font-size:.98rem;margin-bottom:8px;opacity:.9}',
+            '.uz-verdict.uz-locked{background:#FFF7ED;border-color:#F2C078;color:#7A4A0B}',
+            '.uz-verdict.uz-revealed{background:#F4F6FF;border-color:#B9BFE6;color:#2B3080}',
+            '.uz-verdict.uz-revealed .uz-right{color:#2B3080}',
+            '.uz-answers{margin:8px 0 0;padding-left:20px}',
+            '.uz-answers li{margin:5px 0}',
+            '.uz-ask{animation:uzFade .22s ease}',
+            '.uz-ask-card{animation:uzRise .3s cubic-bezier(.22,1,.36,1)}',
+            '@keyframes uzFade{from{opacity:0}to{opacity:1}}',
+            '@keyframes uzRise{from{opacity:0;transform:translateY(18px) scale(.97)}',
+            'to{opacity:1;transform:none}}',
+            '.uz-ask-warn{max-width:520px;text-align:left;border-top:5px solid #F0A63C}',
+            '.uz-ask-warn h3{text-align:center;color:#8A5200;font-size:1.22rem;line-height:1.45}',
+            '.uz-ask-warn p{margin:0 0 12px;font-size:.99rem;line-height:1.7;color:#4c5470}',
+            '.uz-ask-warn p:last-of-type{margin-bottom:20px;font-weight:600;color:#2f3550}',
+            '@media(max-width:520px){.uz-ask-warn{padding:22px 20px}',
+            '.uz-ask-actions .uz-btn{flex:1 1 100%}}',
+            '.uz-gate{margin-top:12px;padding:12px 14px;border-radius:10px;background:#fff4e5;'+
+            'border:1px solid #ffd8a8;color:#8a5200;font-weight:600;line-height:1.5}',
             '.uz-verdict{border-radius:12px;padding:14px 16px;margin:16px 0 4px;font-size:.98rem;line-height:1.6}',
             '.uz-verdict.ok{background:#E8F5E9;border:1.5px solid #4CAF50;color:#1B5E20}',
             '.uz-verdict.bad{background:#FFEBEE;border:1.5px solid #EF5350;color:#B71C1C}',
@@ -154,6 +219,12 @@
         this.checked = {};
         this.dom = null;
         this._onKey = null;
+        this.finished = false;
+        /* Which groups have had their answers revealed. Deliberately NOT
+           persisted and deliberately NOT a pass: revealing is a study aid,
+           never a way through. */
+        this.revealed = {};
+        this._lastResult = null;
     }
 
     Session.prototype.total = function () { return this.groups.length; };
@@ -191,11 +262,22 @@
         });
     };
 
+    /** Only PASSED steps count as solved. Entries written before this field
+     *  existed have no `passed` flag and are still counted, so stored progress
+     *  from an earlier version is never downgraded. */
     Session.prototype.solvedCount = function () {
-        return Object.keys(this.checked).length;
+        var c = this.checked;
+        return Object.keys(c).filter(function (k) {
+            return !c[k] || c[k].passed !== false;
+        }).length;
     };
 
     Session.prototype._save = function () {
+        /* Once the attempt is graded the draft is deliberately gone. Autosave
+           from a click is deferred by a macrotask, so without this guard a
+           late-firing capture would write the draft straight back after the
+           host cleared it, and the finished topic would look resumable. */
+        if (this.finished) return;
         var d = this.cfg.draft;
         if (d && typeof d.save === 'function') {
             try { d.save(this.serialize()); } catch (e) { /* persistence must never break practice */ }
@@ -274,6 +356,27 @@
         });
     };
 
+    /**
+     * Is this attempt good enough to move on? A host may supply a function
+     * (stepGate) or just a number (passScore); the engine understands both and
+     * has no opinion of its own beyond "no rule means always pass".
+     */
+    Session.prototype._gate = function (result, g) {
+        var cfg = this.cfg;
+        if (typeof cfg.stepGate === 'function') {
+            try {
+                var r = cfg.stepGate(result, g);
+                if (r && typeof r === 'object') return r;
+                if (typeof r === 'boolean') return { pass: r };
+            } catch (e) { /* a broken gate must never trap the learner */ }
+        }
+        var min = Number(cfg.passScore);
+        if (!isFinite(min) || min <= 0 || !result || !result.total) return { pass: true };
+        var p = Math.round((result.correct || 0) / result.total * 100);
+        if (p >= min) return { pass: true };
+        return { pass: false, min: min, percent: p };
+    };
+
     /* -------------------------------------------------------------- footer */
 
     Session.prototype._setFooter = function (mode) {
@@ -285,19 +388,55 @@
         f.appendChild(score);
 
         var self = this;
-        if (mode === 'check') {
-            var b = el('button', 'uz-btn uz-btn-primary', 'Проверить');
+        var cfg = this.cfg;
+        var mk = function (key, cls, fn) {
+            var b = el('button', 'uz-btn ' + cls, esc(labelOf(cfg, key)));
             b.type = 'button';
-            b.addEventListener('click', function () { self._check(); });
+            b.setAttribute('data-uz-act', key);
+            b.addEventListener('click', fn);
             f.appendChild(b);
+            return b;
+        };
+
+        if (mode === 'check') {
+            mk('check', 'uz-btn-primary', function () { self._check(); });
+
+        } else if (mode === 'blocked') {
+            /* Failed the gate and has not looked at the answers. Exactly two
+               ways out — try again, or make the deliberate choice to look.
+               There is no "next" button to find. */
+            mk('retry', 'uz-btn-primary', function () { self._retryStep(); });
+            if (opt(cfg, 'allowAnswerReview', true)) {
+                mk('reveal', 'uz-btn-ghost', function () { self._requestReveal(); });
+            }
+
+        } else if (mode === 'revealed') {
+            /* The answers are on screen. Seeing them is not passing, so the
+               only remaining action is a genuine fresh attempt. */
+            mk('restart', 'uz-btn-primary', function () { self._retryStep(); });
+
         } else {
             var last = this.cursor >= this.total() - 1;
-            var n = el('button', 'uz-btn uz-btn-primary',
-                last ? 'Завершить и посмотреть результат' : 'Следующее упражнение');
-            n.type = 'button';
-            n.addEventListener('click', function () { last ? self._finish() : self._next(); });
-            f.appendChild(n);
+            mk(last ? 'finish' : 'next', 'uz-btn-primary', function () {
+                last ? self._finish() : self._next();
+            });
         }
+    };
+
+    /**
+     * Re-run the current exercise from a clean slate. Only this group's answers
+     * are dropped; every other group keeps its result, so a retry never costs
+     * the learner work they already did.
+     */
+    Session.prototype._retryStep = function () {
+        var g = this._group();
+        var self = this;
+        (g.items || []).forEach(function (item, i) { delete self.answers[g.id + '-' + i]; });
+        delete this.checked[g.id];
+        delete this.revealed[g.id];
+        this._lastResult = null;
+        this._save();
+        this._renderStep();
     };
 
     /* -------------------------------------------------------------- grading */
@@ -322,11 +461,28 @@
         }
 
         var result = { correct: correct, total: total, wrong: wrong };
-        this.checked[g.id] = { correct: correct, total: total };
+        var gate = this._gate(result, g);
+        var passed = gate.pass !== false;
+        /* `passed` is what unlocks anything downstream. A failed attempt is
+           still recorded — the learner keeps their draft — but it never counts
+           as solved and never opens the next step. */
+        this.checked[g.id] = { correct: correct, total: total, passed: passed };
+        this._lastResult = result;
         this._save();
         this._showVerdict(result, g, root);
     };
 
+    /**
+     * Show the outcome of one exercise. Three states, and which one appears is
+     * decided entirely by the gate — never by course, lesson or topic:
+     *
+     *   PASSED    full feedback: score, mistakes, correct answers, explanations,
+     *             and the way forward.
+     *   BLOCKED   score and the threshold only. NO correct answers. Two choices:
+     *             try again, or deliberately ask to see the answers.
+     *   REVEALED  the learner chose to look. Full feedback is shown, but seeing
+     *             it is not passing: the only action left is a fresh attempt.
+     */
     Session.prototype._showVerdict = function (result, g, root) {
         var body = this.dom.body;
         var old = body.querySelector('.uz-verdict');
@@ -334,33 +490,89 @@
 
         var total = result.total != null ? result.total : (g.items ? g.items.length : 0);
         var correct = result.correct || 0;
+        var percent = total ? Math.round(correct / total * 100) : 0;
+
+        var gate = this._gate(result, g);
+        var passed = gate.pass !== false;
+        var revealed = !!this.revealed[g.id];
         var perfect = total > 0 && correct === total;
+
+        /* Colour tracks MISTAKES, not the gate: a host with no threshold
+           configured (A1/A2/B1 today) keeps exactly the feedback it had. */
         var v = el('div', 'uz-verdict ' + (perfect ? 'ok' : 'bad'));
+        var head, score = '<div class="uz-verdict-score"><b>' + correct + ' / ' + total +
+                          '</b> &mdash; ' + percent + '%</div>';
 
-        var head = perfect
-            ? '<h4>&#9989; Правильно</h4>'
-            : '<h4>&#10060; Есть ошибки</h4>';
-        var score = '<div><b>' + correct + ' / ' + total + '</b> — ' +
-            (total ? Math.round(correct / total * 100) : 0) + '%</div>';
+        if (passed) {
+            head = perfect ? '<h4>&#9989; Правильно</h4>' : '<h4>&#10060; Есть ошибки</h4>';
+            v.innerHTML = head + score + this._answersHtml(result);
 
-        var detail = '';
-        var wrong = result.wrong || [];
-        if (wrong.length) {
-            detail = '<ul>' + wrong.map(function (w) {
-                var expected = Array.isArray(w.item.answer) ? w.item.answer[0] : w.item.answer;
-                var given = (w.given == null || String(w.given).trim() === '')
-                    ? '<i>нет ответа</i>' : '<span class="uz-your">' + esc(w.given) + '</span>';
-                var why = w.item.explanation || w.item.hint || '';
-                return '<li>№' + w.n + ': ' + given +
-                       ' &rarr; <span class="uz-right">' + esc(expected) + '</span>' +
-                       (why ? '<br><small>' + esc(why) + '</small>' : '') + '</li>';
-            }).join('') + '</ul>';
+        } else if (!revealed) {
+            /* The card that deliberately withholds the answers. */
+            v.classList.add('uz-locked');
+            var need = gate.min || (this.cfg.passScore ? Number(this.cfg.passScore) : null);
+            var needLine = need
+                ? '<div class="uz-need">Проходной балл: <b>' + need + '%</b></div>'
+                : '';
+            var msg = gate.message ||
+                'Упражнение нужно пройти ещё раз — правильные ответы пока скрыты.';
+            v.innerHTML =
+                '<h4>&#10060; Упражнение не пройдено</h4>' + score + needLine +
+                '<div class="uz-gate">' + esc(msg) + '</div>';
+
+        } else {
+            /* Answers shown, but this attempt still did not pass. */
+            v.classList.add('uz-revealed');
+            v.innerHTML =
+                '<h4>&#128065; Правильные ответы</h4>' + score +
+                this._answersHtml(result) +
+                '<div class="uz-gate">Просмотр ответов не засчитывается как прохождение. ' +
+                'Чтобы открыть следующее упражнение, пройдите это упражнение заново.</div>';
         }
 
-        v.innerHTML = head + score + detail;
         body.appendChild(v);
         v.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        this._setFooter('next');
+        this._setFooter(passed ? 'next' : (revealed ? 'revealed' : 'blocked'));
+    };
+
+    /** Mistakes, correct answers and explanations. Shown only when allowed. */
+    Session.prototype._answersHtml = function (result) {
+        var wrong = (result && result.wrong) || [];
+        if (!wrong.length) return '';
+        return '<ul class="uz-answers">' + wrong.map(function (w) {
+            var expected = Array.isArray(w.item.answer) ? w.item.answer[0] : w.item.answer;
+            var given = (w.given == null || String(w.given).trim() === '')
+                ? '<i>нет ответа</i>' : '<span class="uz-your">' + esc(w.given) + '</span>';
+            var why = w.item.explanation || w.item.hint || '';
+            return '<li>№' + w.n + ': ' + given +
+                   ' &rarr; <span class="uz-right">' + esc(expected) + '</span>' +
+                   (why ? '<br><small>' + esc(why) + '</small>' : '') + '</li>';
+        }).join('') + '</ul>';
+    };
+
+    /** "Посмотреть ответы" — never immediate, unless a host opts out. */
+    Session.prototype._requestReveal = function () {
+        var self = this;
+        var cfg = this.cfg;
+        if (opt(cfg, 'allowAnswerReview', true) === false) return;
+        if (opt(cfg, 'requireConfirmationBeforeAnswers', true) === false) {
+            this._reveal();
+            return;
+        }
+        askConfirm(cfg.confirmationText, function (agreed) {
+            if (agreed) self._reveal();
+        });
+    };
+
+    /**
+     * Reveal the answers for the current step. Note what is absent: no _save(),
+     * no change to `checked`, no cursor movement. Looking is not progress.
+     */
+    Session.prototype._reveal = function () {
+        var g = this._group();
+        if (!g || !this._lastResult) return;
+        this.revealed[g.id] = true;
+        this._showVerdict(this._lastResult, g, this.dom.body.querySelector('.uz-step-host'));
     };
 
     /* ----------------------------------------------------------- navigation */
@@ -373,20 +585,56 @@
     };
 
     Session.prototype._finish = function () {
-        this.close();
+        this.finished = true;
+        var payload = null;
         if (typeof this.cfg.finish === 'function') {
-            /* The host restores these answers into its own quizSection and runs
-               its EXISTING scorer — that is what keeps the production results
-               screen, Firebase, completedTopics and unlock untouched. */
-            this.cfg.finish(this.answers, this.checked);
+            /* The host scores the attempt and owns everything that follows:
+               its results markup, its progress store, its Firebase sync. */
+            try { payload = this.cfg.finish(this.answers, this.checked); } catch (e) { payload = null; }
+        }
+        /* A host that can render a summary keeps the learner in place and shows
+           it; one that cannot simply falls back to the previous behaviour. */
+        if (typeof this.cfg.renderSummary === 'function') this.showSummary(payload);
+        else this.close();
+    };
+
+    /**
+     * Show the host's summary in place of the exercise steps. Public, so a host
+     * can open a finished topic straight to its last result without the learner
+     * passing through the exercises again.
+     */
+    Session.prototype.showSummary = function (payload) {
+        if (typeof this.cfg.renderSummary !== 'function') { this.close(); return; }
+        this.open(true);
+
+        var body = this.dom.body;
+        body.innerHTML = '';
+        var host = el('div', 'uz-step-host uz-summary-host');
+        var html = '';
+        try { html = this.cfg.renderSummary(payload, this.answers, this.checked) || ''; }
+        catch (e) { html = ''; }
+        host.innerHTML = html;
+        body.appendChild(host);
+
+        this.dom.step.textContent = this.cfg.summaryLabel || 'Итоги';
+        this.dom.fill.style.width = '100%';
+        this.dom.foot.innerHTML = '';
+        body.scrollTop = 0;
+
+        if (typeof this.cfg.bindSummary === 'function') {
+            try { this.cfg.bindSummary(host, payload, this); } catch (e) {}
         }
     };
 
     /* ---------------------------------------------------------------- modal */
 
-    Session.prototype.open = function () {
+    Session.prototype.open = function (skipRender) {
         injectStyles();
-        if (this.dom) { this.dom.modal.hidden = false; this._renderStep(); return; }
+        if (this.dom) {
+            this.dom.modal.hidden = false;
+            if (!skipRender) this._renderStep();
+            return;
+        }
 
         var modal = el('div', 'uz-modal');
         modal.setAttribute('role', 'dialog');
@@ -417,7 +665,7 @@
         document.addEventListener('keydown', this._onKey);
 
         document.body.style.overflow = 'hidden';
-        this._renderStep();
+        if (!skipRender) this._renderStep();
     };
 
     Session.prototype.close = function () {
@@ -442,6 +690,7 @@
         this.cursor = 0;
         this.answers = {};
         this.checked = {};
+        this.finished = false;
         var d = this.cfg.draft;
         if (d && typeof d.clear === 'function') { try { d.clear(); } catch (e) {} }
     };
@@ -449,6 +698,43 @@
     /* ======================================================= public surface */
 
     var active = null;
+
+    /**
+     * A styled confirmation, never window.confirm(). Generic: the caller
+     * supplies the text, so any course or any future flow can reuse it.
+     */
+    function askConfirm(text, onChoice) {
+        injectStyles();
+        var t = text || {};
+        var lines = Array.isArray(t.body) ? t.body : DEFAULT_CONFIRM.body;
+
+        var ask = el('div', 'uz-ask');
+        var card = el('div', 'uz-ask-card uz-ask-warn');
+        card.innerHTML =
+            '<h3>' + esc(t.title || DEFAULT_CONFIRM.title) + '</h3>' +
+            lines.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
+
+        var acts = el('div', 'uz-ask-actions');
+        var no = el('button', 'uz-btn uz-btn-ghost', esc(t.cancel || DEFAULT_CONFIRM.cancel));
+        var yes = el('button', 'uz-btn uz-btn-primary', esc(t.confirm || DEFAULT_CONFIRM.confirm));
+        no.type = yes.type = 'button';
+        no.setAttribute('data-uz-act', 'cancel');
+        yes.setAttribute('data-uz-act', 'confirm');
+        acts.appendChild(no); acts.appendChild(yes);
+        card.appendChild(acts); ask.appendChild(card);
+        document.body.appendChild(ask);
+
+        var done = function (agreed) {
+            if (ask.parentNode) ask.parentNode.removeChild(ask);
+            document.removeEventListener('keydown', onKey);
+            onChoice(agreed);
+        };
+        var onKey = function (e) { if (e.key === 'Escape') done(false); };
+        document.addEventListener('keydown', onKey);
+        no.addEventListener('click', function () { done(false); });
+        yes.addEventListener('click', function () { done(true); });
+        ask.addEventListener('click', function (e) { if (e.target === ask) done(false); });
+    }
 
     function askResume(session, onChoice) {
         injectStyles();

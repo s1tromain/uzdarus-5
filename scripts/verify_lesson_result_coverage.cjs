@@ -90,8 +90,48 @@ function extractCourseData(html) {
     /* b2-course.html builds part of its topic list with a helper call inside the
        literal; stub it so the data-bearing topics still evaluate. */
     const sandbox = { generateLockedTopics: () => [] };
-    try { return vm.runInNewContext('(' + literal + ')', sandbox, { timeout: 20000 }); }
+    let data;
+    try { data = vm.runInNewContext('(' + literal + ')', sandbox, { timeout: 20000 }); }
     catch (e) { return { __error: e.message }; }
+
+    /* b2-course.html no longer hard-codes its topic list: it builds it in
+       initCourse() from the deferred b2-topics.js module, so the literal is
+       empty by design. Run the page's own builder to get the real topics. */
+    if (data && Array.isArray(data.topics) && !data.topics.length &&
+        /buildB2Topics\(\)/.test(html)) {
+        try { data.topics = runTopicBuilder(html); }
+        catch (e) { return { __error: 'topic builder: ' + e.message }; }
+    }
+    return data;
+}
+
+/** Lift the page's buildB2Topics/b2ExerciseData out of its inline script and
+ *  run them against the real modules — the same code the browser executes. */
+function runTopicBuilder(html) {
+    const grab = (name) => {
+        const i = html.indexOf('function ' + name + '(');
+        if (i < 0) throw new Error('missing ' + name);
+        let depth = 0, started = false;
+        for (let k = html.indexOf('{', i); k < html.length; k++) {
+            if (html[k] === '{') { depth++; started = true; }
+            else if (html[k] === '}') { depth--; if (started && depth === 0) return html.slice(i, k + 1); }
+        }
+        throw new Error('unbalanced ' + name);
+    };
+    const soon = html.match(/var B2_SOON_HTML = \[[\s\S]*?\]\.join\(''\);/)[0];
+    const flag = html.match(/var B2_DEMO_MODE = (true|false);/)[0];
+    const sandbox = { window: {} };
+    vm.createContext(sandbox);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'b2-topics.js'), 'utf8'), sandbox);
+    vm.runInContext(fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8'), sandbox);
+    vm.runInContext([
+        flag, soon,
+        'var B2_TOPICS = window.B2_TOPICS;',
+        'var B2_TOPIC_DESCRIPTION = window.B2_TOPIC_DESCRIPTION;',
+        grab('b2ExerciseData'), grab('buildB2Topics'),
+        'globalThis.__topics = buildB2Topics();'
+    ].join('\n'), sandbox);
+    return sandbox.__topics;
 }
 
 /* --------------------------------------------------- DOM hook synthesis (A) */
