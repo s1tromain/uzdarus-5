@@ -5771,6 +5771,21 @@
             if (wrap) wrap.style.display = on ? '' : 'none';
         }
 
+        /* Does this topic actually have a lesson? Decided by DATA only —
+           generic exercises, grammar, or a non-empty legacy quiz. No id
+           list, no hardcoding: authoring Topic 6 makes it return true and
+           the "coming soon" screen disappears with no code change. */
+        function a2HasLesson(topic) {
+            if (!topic) return false;
+            if (getT1ExData(topic)) return true;
+            if (topic.grammar && String(topic.grammar).trim()) return true;
+            var q = topic.quiz;
+            if (q && ((q.mcQuestions && q.mcQuestions.length)
+                   || (q.blankQuestions && q.blankQuestions.length)
+                   || q.matchingGame)) return true;
+            return false;
+        }
+
         function loadLesson(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
@@ -5782,6 +5797,24 @@
                     `${currentUser.name} открыл тему ${topicId}: "${topic.title}" в курсе A1`,
                     'course_visit'
                 ).catch(err => console.error('❌ Error logging topic visit:', err));
+            }
+
+            /* Lesson not written yet: show the shared "coming soon" screen
+               instead of an empty grammar block and a 0/0 quiz. Subscription
+               locked topics keep their own paywall panel, untouched. */
+            if (!topic.isSubscriptionLocked && !a2HasLesson(topic)
+                && window.UzExerciseUI && window.UzExerciseUI.renderComingSoon) {
+                lessonContent.innerHTML =
+                    '<div class="lesson-content active">'
+                    + '<h3 class="lesson-title">' + topic.id + '. ' + topic.title + '</h3>'
+                    + window.UzExerciseUI.renderComingSoon({
+                          vocabHref: 'a2-vocabulary.html',
+                          homeHref: '../index.html'
+                      })
+                    + '</div>';
+                quizSection.innerHTML = '';
+                quizSection.removeAttribute('data-uz-owned');
+                return;
             }
 
             let lessonHTML = `

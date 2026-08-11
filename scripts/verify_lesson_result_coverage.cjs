@@ -118,7 +118,9 @@ function runTopicBuilder(html) {
         }
         throw new Error('unbalanced ' + name);
     };
-    const soon = html.match(/var B2_SOON_HTML = \[[\s\S]*?\]\.join\(''\);/)[0];
+    /* The "coming soon" screen is a function now (it delegates to the shared
+       UzExerciseUI component), so lift it like any other function. */
+    const soon = grab('b2SoonHtml');
     const flag = html.match(/var B2_DEMO_MODE = (true|false);/)[0];
     const sandbox = { window: {} };
     vm.createContext(sandbox);

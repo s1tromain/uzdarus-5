@@ -155,6 +155,11 @@
             '.b2h-howto-task{color:#1F2430;font-size:.99rem;line-height:1.7;margin-bottom:12px;',
             'padding-bottom:12px;border-bottom:1px solid #E3E9F3;word-break:normal;',
             'overflow-wrap:break-word;hyphens:none}',
+            /* Namuna — the worked example, set apart from the task line. */
+            '.b2h-howto-eg{color:#1F2430;font-size:.97rem;line-height:1.65;',
+            'background:#F4F7FD;border-left:3px solid #5B6EF5;border-radius:0 8px 8px 0;',
+            'padding:10px 14px;word-break:normal;overflow-wrap:break-word;hyphens:none}',
+            '.b2h-howto-eg b{color:#3F51B5;margin-right:6px}',
             '@media(max-width:640px){.b2h-howto{padding:15px 16px 14px}}',
 
             /* ---- audio ---- */
@@ -301,6 +306,23 @@
             '@media(max-width:640px){.a2-done{padding:22px 18px}.a2-done-btn{width:100%}}',
 
             /* ---- topic vocabulary card (shared by every course) ---- */
+            /* ---- "lesson not written yet" screen (shared by every course) ---- */
+            '.uz-soon{background:linear-gradient(135deg,#F7F9FF,#EEF2FC);border:1px solid #DCE4F5;',
+            'border-radius:20px;padding:44px 28px;text-align:center;margin:20px 0}',
+            '.uz-soon-ico{font-size:3.4rem;line-height:1;margin-bottom:16px}',
+            '.uz-soon h3{color:#1F2A44;font-size:1.5rem;font-weight:800;margin:0 0 14px}',
+            '.uz-soon p{color:#41506B;font-size:1.05rem;line-height:1.75;margin:0 auto 10px;',
+            'max-width:56ch;word-break:normal;overflow-wrap:break-word;hyphens:none}',
+            '.uz-soon-note{color:#68779A;font-size:.95rem;margin-top:6px}',
+            '.uz-soon-acts{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:26px}',
+            '.uz-soon-btn{font-family:inherit;font-size:1rem;font-weight:700;border:none;cursor:pointer;',
+            'padding:13px 24px;border-radius:12px;transition:transform .18s,filter .18s;',
+            'background:#fff;color:#3F51B5;border:1px solid #C9D4EE;text-decoration:none;display:inline-block}',
+            '.uz-soon-btn.primary{background:linear-gradient(135deg,#5B6EF5,#3F51B5);color:#fff;border-color:transparent}',
+            '.uz-soon-btn:hover{transform:translateY(-2px);filter:brightness(1.04)}',
+            '@media(max-width:640px){.uz-soon{padding:32px 18px}',
+            '.uz-soon-acts{flex-direction:column}.uz-soon-btn{width:100%}}',
+
             '.b2-vocab-card{background:linear-gradient(135deg,#FF9800,#F57C00);padding:30px;',
             'border-radius:15px;text-align:center;margin:24px 0;',
             'box-shadow:0 8px 25px rgba(255,152,0,.3)}',
@@ -431,15 +453,31 @@
 
         /* Tell the learner what this exercise asks of them BEFORE the first
            question. Content only — nothing here is graded or stored. */
-        if (g.howTo || (OPTIONS.showTaskLine && g.intro)) {
+        /* PER-GROUP OPT-IN (`showTask`). A group that sets it shows its title,
+           its task line and its worked example — and nothing else. It is the
+           format B2 uses: the task is stated once, in the learner's language,
+           with a Namuna where the material provides one. No separate
+           methodological block.
+
+           Opt-in rather than a default so nothing already authored changes: a
+           group without `showTask` renders exactly as before, which keeps A2,
+           B1 and every legacy course untouched. `OPTIONS.showTaskLine` remains
+           the page-wide switch A2 sets. */
+        var showTask = (g.showTask && (g.intro || g.namuna))
+                    || (OPTIONS.showTaskLine && g.intro);
+        if (g.howTo || showTask) {
             var lines = g.howTo ? (Array.isArray(g.howTo) ? g.howTo : [g.howTo]) : [];
             html += '<div class="b2h-howto">' +
                     (g.title ? '<div class="b2h-howto-t">' + escHtml(g.title) + '</div>' : '') +
                     /* The task itself, in the learner's own language. Courses author
                        it as `intro`; dropping it costs worked examples and word
                        lists that appear nowhere else. */
-                    (OPTIONS.showTaskLine && g.intro
+                    (showTask && g.intro
                         ? '<div class="b2h-howto-task">' + escHtml(g.intro) + '</div>' : '') +
+                    /* Namuna — the worked example the material itself supplies. */
+                    (g.showTask && g.namuna
+                        ? '<div class="b2h-howto-eg"><b>Namuna:</b> ' +
+                          escHtml(g.namuna) + '</div>' : '') +
                     (lines.length
                         ? '<div class="b2h-howto-h">Как выполнять</div>' +
                           lines.map(function (t) { return '<p>' + escHtml(t) + '</p>'; }).join('')
@@ -730,6 +768,43 @@
      *   count  words in this topic, or falsy to omit the line
      *   icon / title / lead / cta  optional overrides
      * ------------------------------------------------------------------- */
+    /**
+     * The screen a learner sees when a topic exists in the syllabus but its
+     * lesson has not been written yet. ONE implementation for every course, so
+     * A2 and B2 cannot drift apart again.
+     *
+     * Callers decide by DATA, never by topic id: show this when the topic has
+     * no grammar, no exercises and no quiz. The moment a lesson is authored the
+     * screen disappears on its own — no code change, no id list to maintain.
+     *
+     *   opts.vocabHref  where "Lug'atga o'tish" goes (omit to hide the button)
+     *   opts.homeHref   where "Bosh sahifaga qaytish" goes
+     *   opts.topicsHref anchor for "Mavzularga qaytish" (default '#topics')
+     */
+    function renderComingSoon(opts) {
+        opts = opts || {};
+        var topics = opts.topicsHref || '#topics';
+        var acts = '<a class="uz-soon-btn" href="' + escHtml(topics) + '">' +
+                   '&#8592; Mavzularga qaytish</a>';
+        if (opts.vocabHref) {
+            acts += '<a class="uz-soon-btn primary" href="' + escHtml(opts.vocabHref) + '">' +
+                    '&#128218; Lug\'atga o\'tish</a>';
+        }
+        if (opts.homeHref) {
+            acts += '<a class="uz-soon-btn" href="' + escHtml(opts.homeHref) + '">' +
+                    '&#127968; Bosh sahifaga qaytish</a>';
+        }
+        return '<div class="b2h"><div class="uz-soon">' +
+            '<div class="uz-soon-ico">&#128679;</div>' +
+            '<h3>Bu mavzu tez orada qo\'shiladi</h3>' +
+            '<p>Biz ushbu kursning keyingi darslari ustida faol ishlayapmiz.</p>' +
+            '<p>UzdaRus bilan birga o\'rganayotganingiz uchun rahmat &#10084;&#65039;</p>' +
+            '<p class="uz-soon-note">Yangi mavzular ilovaning navbatdagi ' +
+            'yangilanishlarida qo\'shiladi.</p>' +
+            '<div class="uz-soon-acts">' + acts + '</div>' +
+            '</div></div>';
+    }
+
     function renderVocabCard(opts) {
         opts = opts || {};
         var count = Number(opts.count);
@@ -757,6 +832,7 @@
         matchItem: matchItem,
         afterCheck: afterCheck,
         renderResults: renderResults,
+        renderComingSoon: renderComingSoon,
         renderVocabCard: renderVocabCard,
         norm: norm,
         escHtml: escHtml

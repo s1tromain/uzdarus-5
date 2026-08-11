@@ -163,41 +163,49 @@ for (const p of PAGES) {
     ['что', 'чтобы', 'если', 'когда', 'потому что', 'поэтому', 'хотя', 'несмотря на то']
         .forEach(c => ok(txt.includes(c), `grammar still explains "${c}"`));
 
-    /* ---------------- how-to briefings ---------------- */
+    /* ---------------- task blocks ----------------
+       B2 states each task ONCE, in the learner's language: exercise name, the
+       task itself, and a Namuna where the material supplies one. The old
+       "Как выполнять" briefing — a second, Russian-language explanation of the
+       same task — was deliberately removed from B2. These assertions pin the
+       new format and, just as importantly, pin the absence of the old one. */
     const groups = w.B2_LESSON_DATA.topics[0].exercises;
     ok(groups.length === 10, 'all 10 exercises present');
-    ok(groups.every(g => Array.isArray(g.howTo) && g.howTo.length >= 2),
-        'every exercise carries its own multi-part briefing');
-    const texts = groups.map(g => g.howTo.join(' '));
-    ok(new Set(texts).size === texts.length, 'no briefing is copied between exercises');
-    ok(texts.every(t => t.length > 150), 'every briefing is substantial, not a stub');
+    ok(groups.every(g => !g.howTo), 'no exercise carries a "Как выполнять" briefing');
+    ok(groups.every(g => g.showTask === true), 'every exercise opts into the task block');
+    ok(groups.every(g => typeof g.intro === 'string' && g.intro.length > 20),
+        'every exercise states its task');
+    const texts = groups.map(g => g.intro);
+    ok(new Set(texts).size === texts.length, 'no task line is copied between exercises');
 
     groups.forEach(g => {
         const d = w.document.createElement('div');
         d.innerHTML = api.renderGroup(g);
-        ok(!!d.querySelector('.b2h-howto'), `${g.id}: briefing card rendered`);
+        ok(!!d.querySelector('.b2h-howto'), `${g.id}: task block rendered`);
         ok(!!d.querySelector('.b2h-howto-t'), `${g.id}: exercise name shown`);
-        ok(/Как выполнять/.test(d.querySelector('.b2h-howto-h').textContent),
-            `${g.id}: "Как выполнять" heading shown`);
-        ok(d.querySelectorAll('.b2h-howto p').length === g.howTo.length,
-            `${g.id}: every paragraph rendered`);
+        ok(!!d.querySelector('.b2h-howto-task'), `${g.id}: task line shown`);
+        ok(!d.querySelector('.b2h-howto-h'), `${g.id}: no "Как выполнять" heading`);
+        ok(!/Как выполнять/.test(d.textContent), `${g.id}: the phrase appears nowhere`);
+        ok(!/\u{1F4A1}/u.test(d.textContent), `${g.id}: no lightbulb instruction card`);
         ok(d.querySelectorAll('.b2h-item').length === g.items.length,
-            `${g.id}: the briefing does not disturb the question list`);
-        /* the briefing comes BEFORE the first question */
+            `${g.id}: the task block does not disturb the question list`);
         ok(d.innerHTML.indexOf('b2h-howto') < d.innerHTML.indexOf('b2h-item'),
-            `${g.id}: briefing appears before the exercise`);
+            `${g.id}: task block appears before the exercise`);
+        if (g.namuna) {
+            ok(/Namuna:/.test(d.textContent), `${g.id}: Namuna shown`);
+        }
     });
 
-    ok(/\.b2h-howto\{/.test(HOST), 'briefing is a shared component, not inline style');
-    ok(/if \(g\.howTo \|\| \(OPTIONS\.showTaskLine && g\.intro\)\)/.test(HOST),
-        'briefing renders from data — generic for any course');
-    /* the task line is opt-in and OFF by default, so B2 renders exactly as before */
+    ok(/\.b2h-howto\{/.test(HOST), 'task block is a shared component, not inline style');
+    ok(/g\.showTask && \(g\.intro \|\| g\.namuna\)/.test(HOST),
+        'the task block is a per-group opt-in, generic for any course');
+    /* still opt-in and still OFF by default, so no other course moved */
     ok(/var OPTIONS = \{ showTaskLine: false \}/.test(HOST),
-        'the task line defaults to off — no course changes without asking');
-    ok(!/setOptions\(\{ showTaskLine: true \}\)/.test(fs.readFileSync(path.join(ROOT,'b2-host.js'),'utf8')),
-        'B2 does not opt in, so its appearance is unchanged');
-    ok(!/ex1|ex2|topicId/.test((HOST.split('if (g.howTo)')[1] || '').slice(0, 500)),
-        'briefing rendering contains no per-exercise special-casing');
+        'the page-wide task line still defaults to off');
+    ok(!/setOptions\(\{ showTaskLine: true \}\)/.test(fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8')),
+        'B2 opts in per group, never page-wide');
+    ok(!/ex1|ex2|topicId/.test((HOST.split('if (g.howTo || showTask)')[1] || '').slice(0, 500)),
+        'task-block rendering contains no per-exercise special-casing');
 }
 
 /* ------------------------------------------------ 3. vocabulary card */

@@ -258,10 +258,23 @@ async function walk(rel, topicIds, legacyTopicId) {
         const legacy = lessonButtons(w);
         console.log(`\n  Topic ${legacyTopicId} (legacy quiz — control group)`);
         console.log(`    Visible buttons: ${legacy.join(' | ') || '(none)'}`);
-        ok(!!w.document.querySelector('#submitQuiz'),
-            `${rel} topic ${legacyTopicId}: legacy topics keep their own submit button`);
-        ok(!!w.document.querySelector('.check-topic-btn'),
-            `${rel} topic ${legacyTopicId}: legacy topics keep the global check button`);
+        /* A2 topics 6-16 have no authored lesson, so they now render the shared
+           "coming soon" screen instead of an empty quiz. There is nothing to
+           submit and nothing to check — so BOTH the page's own submit button and
+           the global check button must be absent. Before the placeholder existed
+           this topic rendered a 0-question quiz with a live "check" button.
+
+           The ownership rule is still proven scoped: the global layer stands
+           down here because there is no exercise markup at all, not because a
+           topic id was special-cased. */
+        ok(!w.document.querySelector('#submitQuiz'),
+            `${rel} topic ${legacyTopicId}: no submit button on a coming-soon topic`);
+        ok(!w.document.querySelector('.check-topic-btn'),
+            `${rel} topic ${legacyTopicId}: no global check button on a coming-soon topic`);
+        ok(/tez orada qo/.test(w.document.getElementById('lessonContent').textContent),
+            `${rel} topic ${legacyTopicId}: the coming-soon screen is shown`);
+        ok(w.document.getElementById('quizSection').innerHTML.trim() === '',
+            `${rel} topic ${legacyTopicId}: no empty quiz container left behind`);
     }
 }
 

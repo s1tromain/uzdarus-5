@@ -1471,7 +1471,11 @@
             return list.map(function (t) {
                 var lesson = (typeof b2ExerciseData === 'function') ? b2ExerciseData(t.id) : null;
                 var authored = !!lesson;
-                var locked = B2_DEMO_MODE && t.id !== 1;
+                /* Demo access rule: the first three topics are open, the rest
+                   are behind the paywall. Access does not depend on finishing
+                   the previous topic. Paid is unaffected: B2_DEMO_MODE is
+                   false there, so nothing is ever locked. */
+                var locked = B2_DEMO_MODE && t.id > 3;
                 return {
                     id: t.id,
                     title: t.title,
@@ -1483,7 +1487,7 @@
                     isLocked: locked,
                     isSubscriptionLocked: locked,
                     grammar: (lesson && lesson.grammar) ? lesson.grammar : '',
-                    content: authored ? '' : B2_SOON_HTML,
+                    content: authored ? '' : b2SoonHtml(),
                     /* Legacy shape preserved so every existing renderer, counter
                        and validator keeps working untouched. */
                     quiz: {
@@ -1494,13 +1498,16 @@
             });
         }
 
-        var B2_SOON_HTML = [
-            '<div style="text-align:center;padding:50px 20px;">',
-            '<i class="fas fa-book-open" style="font-size:4rem;color:var(--primary);margin-bottom:20px;"></i>',
-            '<h3 style="color:var(--primary-dark);margin-bottom:15px;">Bu mavzu tayyorlanmoqda</h3>',
-            '<p style="font-size:1.15rem;">Grammatika, mashqlar va lug‘at bosqichma-bosqich qo‘shiladi.</p>',
-            '</div>'
-        ].join('');
+        /* The shared "lesson not written yet" screen. Rendered from DATA:
+           a topic gets it when no lesson has been authored for it, so the
+           moment one is added the screen disappears by itself. */
+        function b2SoonHtml() {
+            if (!window.UzExerciseUI || !window.UzExerciseUI.renderComingSoon) return '';
+            return window.UzExerciseUI.renderComingSoon({
+                vocabHref: 'b2-demo-vocabulary.html',
+                homeHref: 'index.html'
+            });
+        }
 
 
         function generateLockedTopics(titles, startId) {

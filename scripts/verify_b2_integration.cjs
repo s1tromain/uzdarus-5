@@ -107,9 +107,11 @@ for (const p of PAGES) {
     const paid = fs.readFileSync(path.join(ROOT, 'paid-courses/b2-course.html'), 'utf8');
     ok(/var B2_DEMO_MODE = true;/.test(demo), 'demo declares itself as the demo build');
     ok(/var B2_DEMO_MODE = false;/.test(paid), 'paid build is not in demo mode');
-    ok(/var locked = B2_DEMO_MODE && t\.id !== 1;/.test(demo),
-        'demo locks every topic except Lesson 1');
-    ok(/var locked = B2_DEMO_MODE && t\.id !== 1;/.test(paid),
+    /* Demo opens topics 1-3, and only where a lesson is actually authored, so
+       it never shows an empty lesson. Paid is unaffected: its flag is false. */
+    ok(/var locked = B2_DEMO_MODE && t\.id > 3;/.test(demo),
+        'demo opens topics 1-3');
+    ok(/var locked = B2_DEMO_MODE && t\.id > 3;/.test(paid),
         'paid build applies the same rule, and its flag leaves everything open');
 }
 
@@ -220,7 +222,7 @@ for (const p of PAGES) {
 /* ------------------------------------------------ RUNTIME: the page's own builder */
 {
     /* Static checks prove the wiring is written; this proves it RUNS. The
-       page's real buildB2Topics / b2ExerciseData / B2_SOON_HTML are lifted out
+       page's real buildB2Topics / b2ExerciseData / b2SoonHtml are lifted out
        of the inline script and executed against the real modules. */
     const { JSDOM } = require('jsdom');
 
@@ -228,8 +230,11 @@ for (const p of PAGES) {
         const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
         const dom = new JSDOM('<!doctype html><body></body>', { runScripts: 'outside-only' });
         const w = dom.window;
-        w.eval(fs.readFileSync(path.join(ROOT, 'b2-topics.js'), 'utf8'));
-        w.eval(fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8'));
+        /* The coming-soon screen is rendered by the shared UzExerciseUI
+           component, so the sandbox needs it exactly as the page does. */
+        ['shared-normalizer.js', 'sentence-builder.js', 'course-exercise-ui.js',
+         'b2-topics.js', 'b2-lesson-data.js']
+            .forEach(f => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
 
         const grab = (name) => {
             const i = src.indexOf('function ' + name + '(');
@@ -241,7 +246,8 @@ for (const p of PAGES) {
             }
             throw new Error('unbalanced ' + name);
         };
-        const soon = src.match(/var B2_SOON_HTML = \[[\s\S]*?\]\.join\(''\);/)[0];
+        /* Now a function delegating to the shared UzExerciseUI component. */
+        const soon = grab('b2SoonHtml');
         const flag = src.match(/var B2_DEMO_MODE = (true|false);/)[0];
 
         w.eval([
@@ -270,19 +276,40 @@ for (const p of PAGES) {
             `${L} legacy quiz shape kept on every topic (no renderer breaks)`);
         ok(topics[0].grammar && topics[0].grammar.length > 4000,
             `${L} topic 1 gets the full grammar lesson (${topics[0].grammar.length} chars)`);
-        ok(topics.slice(1).every(t => !t.grammar), `${L} unauthored topics carry no grammar`);
-        ok(topics.slice(1).every(t => /tayyorlanmoqda/.test(t.content)),
-            `${L} unauthored topics show the "in preparation" panel`);
-        ok(topics[0].content === '', `${L} topic 1 shows its lesson, not the placeholder`);
+        /* Authored lessons are discovered from B2_LESSON_DATA, never hardcoded,
+           so this grows by itself as lessons are written. */
+        const authored = topics.filter(t => !!t.grammar).map(t => t.id);
+        ok(authored.length >= 2 && authored[0] === 1 && authored[1] === 2,
+            `${L} lessons 1 and 2 are authored (authored: ${authored.join(',')})`);
+        ok(topics[1].grammar && topics[1].grammar.length > 4000,
+            `${L} topic 2 gets the full grammar lesson (${topics[1].grammar.length} chars)`);
+        ok(topics.filter(t => authored.indexOf(t.id) === -1).every(t => !t.grammar),
+            `${L} unauthored topics carry no grammar`);
+        /* Unauthored topics now render the SHARED coming-soon screen (the same
+           one A2 uses), with its three navigation buttons — not a bare panel. */
+        ok(topics.filter(t => authored.indexOf(t.id) === -1)
+                 .every(t => /tez orada qo/.test(t.content)),
+            `${L} unauthored topics show the shared "coming soon" screen`);
+        ok(topics.filter(t => authored.indexOf(t.id) === -1)
+                 .every(t => (t.content.match(/uz-soon-btn/g) || []).length === 3),
+            `${L} the coming-soon screen offers all three navigation buttons`);
+        ok(topics.filter(t => authored.indexOf(t.id) !== -1).every(t => t.content === ''),
+            `${L} authored topics show their lesson, not the placeholder`);
         ok(/Grammatika:/.test(topics[0].description) && /Muloqot:/.test(topics[0].description),
             `${L} legacy one-line description still generated`);
 
         if (demo) {
             ok(topics[0].isLocked === false, 'demo topic 1 is UNLOCKED');
             ok(topics[0].isSubscriptionLocked === false, 'demo topic 1 is not subscription-locked');
-            ok(topics.slice(1).every(t => t.isLocked === true), 'demo topics 2-16 are ALL locked');
-            ok(topics.slice(1).every(t => t.isSubscriptionLocked === true),
-                'demo topics 2-16 are subscription-locked');
+            ok(topics[1].isLocked === false, 'demo topic 2 is UNLOCKED');
+            ok(topics[1].isSubscriptionLocked === false, 'demo topic 2 is not subscription-locked');
+            /* the paywall itself is untouched: everything past the demo window
+               stays locked, and so does any topic without an authored lesson */
+            ok(topics.filter(t => t.id > 3).every(t => t.isLocked === true),
+                'demo topics 4-16 are ALL locked');
+            ok(topics.filter(t => t.id > 3).every(t => t.isSubscriptionLocked === true),
+                'demo topics 4-16 are subscription-locked');
+            ok(topics.find(t => t.id === 3).isLocked === false, 'demo topic 3 is UNLOCKED');
         } else {
             ok(topics.every(t => t.isLocked === false), 'paid topics are all unlocked');
         }
