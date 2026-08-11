@@ -1740,15 +1740,43 @@
         });
     }
 
+    /* FALLBACK DETECTION — for pages that do not declare ownership.
+       ------------------------------------------------------------------
+       The primary mechanism is the data-uz-owned declaration read at the top of
+       ensureSingleTopicControls(). A2 declares it. B2 does not, and B2 is
+       frozen, so this inference stays for it — and for any page that adopts the
+       engine before it adopts the declaration.
+
+       Why inference is needed at all: a course that moved onto the engine still
+       renders its old markup as a WRITE-THROUGH SUBSTRATE so the original scorer
+       keeps working. That substrate is display:none and no learner ever sees it,
+       but querySelector does not care about display, so it matches
+       `.exercise-block` below and makes an engine topic look exactly like a
+       legacy one from here. That is precisely how a second
+       "Javoblarni tekshirish" button once appeared under the practice card.
+
+       Prefer the declaration. This list is a heuristic: it can only recognise
+       markers it already knows, so a new host that mounts under a new id would
+       slip through it. Declaring cannot slip. */
+    var ENGINE_TOPIC_SELECTOR =
+        '.uz-practice, #a2PracticeMount, #b2PracticeMount, [data-a2-legacy]';
+
+    function isEngineRenderedTopic(scope) {
+        return !!queryIn(scope, ENGINE_TOPIC_SELECTOR);
+    }
+
     function getActiveTopicRoot() {
         var quizSection = document.getElementById('quizSection');
         var root = quizSection ? (quizSection.parentElement || quizSection) : null;
+        var lessonContent = document.getElementById('lessonContent');
+
+        if (isEngineRenderedTopic(root) || isEngineRenderedTopic(lessonContent)) return null;
+
         var exerciseSelectors = '.quiz-container, .quiz-question, .fill-blank, .exercise-block, ' +
             '.matching-game-container, #extraExercises, #topic4FillExercise, #topic5PracticeSection, .blank-section';
 
         if (root && root.querySelector(exerciseSelectors)) return root;
 
-        var lessonContent = document.getElementById('lessonContent');
         if (lessonContent && lessonContent.querySelector(
             '.quiz-section, .blank-section, .matching-game-container, .quiz-question, ' +
             '.exercise-block, #extraExercises, #topic4FillExercise, #topic5PracticeSection'
@@ -1779,7 +1807,28 @@
         return host;
     }
 
+    /* Sweep-once memo, keyed by the topic that declared ownership. Re-arms by
+       itself when the learner moves to a different topic. */
+    var ownedSweptFor = null;
+
     function ensureSingleTopicControls() {
+        /* DECLARED OWNERSHIP — checked before anything else is touched.
+           A renderer that owns the whole interface for a topic stamps
+           #quizSection with data-uz-owned. That is a statement by the only code
+           that actually knows, not an inference from markup, so no hidden node
+           can ever flip this decision. One getElementById per tick, one sweep
+           per topic, then this layer does nothing at all for that topic. */
+        var owner = document.getElementById('quizSection');
+        var ownedBy = owner && owner.getAttribute('data-uz-owned');
+        if (ownedBy) {
+            if (ownedSweptFor === ownedBy) return;      // already stood down
+            ownedSweptFor = ownedBy;
+            queryAllIn(document, '.topic-check-section, .topic-check-host')
+                .forEach(function (n) { n.remove(); });
+            return;
+        }
+        ownedSweptFor = null;
+
         removeLegacyGlobalControls();
 
         var topic = getActiveTopic();

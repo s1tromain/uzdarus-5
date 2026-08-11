@@ -274,14 +274,28 @@
             });
         }
 
-        /** Score from the legacy markup the page's own checker also reads. */
-        function scoreFromLegacy() {
+        /**
+         * Score the attempt from the answers the engine already holds.
+         *
+         * This used to read the answers back out of the hidden legacy markup
+         * they had just been mirrored into. That round trip made the hidden DOM
+         * the real source of truth for scoring: if a single mirror silently
+         * failed, or the substrate was absent, every answer read back empty and
+         * a perfect attempt scored zero — with no error anywhere. The engine's
+         * own `answers` map is authoritative now; the mirror is downstream of
+         * scoring and can no longer influence it.
+         *
+         * Nothing else changed: same matchItem, same normalisation, same pass
+         * rule, same payload shape.
+         */
+        function scoreFromAnswers(answers) {
+            answers = answers || {};
             var total = 0, correct = 0, breakdown = [], wrong = [];
             groups.forEach(function (g) {
                 var gT = 0, gC = 0;
                 (g.items || []).forEach(function (item, i) {
                     total++; gT++;
-                    var given = api.readLegacy(g, i);
+                    var given = answers[g.id + '-' + i];
                     if (ui().matchItem(item, given)) { correct++; gC++; }
                     else {
                         wrong.push({
@@ -320,8 +334,7 @@
             opts.mountEl.innerHTML =
                 '<div class="b2h"><div class="a2-done">' +
                 '<div class="a2-done-badge">&#10004; Mavzu yakunlangan</div>' +
-                '<p>Siz barcha mashqlarni muvaffaqiyatli bajardingiz. ' +
-                'Natijalarni istalgan vaqtda ko\'rishingiz mumkin.</p>' +
+                '<p>Siz ushbu mavzuni muvaffaqiyatli tugatdingiz.</p>' +
                 (lastResult
                     ? '<button type="button" class="a2-done-btn" data-a2-review>' +
                       '&#128203; Natijalarni ko\'rish</button>'
@@ -400,8 +413,11 @@
                 clear: function () { /* draft lifetime belongs to the page */ }
             },
             finish: function (answers) {
+                /* SCORE FIRST, from the engine's own answers. The mirror below
+                   is a compatibility side effect and no longer feeds scoring,
+                   so nothing that happens to the hidden DOM can alter `r`. */
+                var r = scoreFromAnswers(answers);
                 mirrorAll(answers || {});
-                var r = scoreFromLegacy();
                 /* keep the attempt so a completed topic can be reviewed later */
                 if (typeof deps.saveResult === 'function') {
                     try { deps.saveResult(topic.id, r); } catch (e) {}
@@ -418,8 +434,10 @@
                 }
                 return r;
             },
-            renderSummary: function (payload) {
-                return ui().renderResults(payload || scoreFromLegacy(), {});
+            /* The engine hands us its answers alongside the payload, so a
+               summary rebuilt without one is still scored from engine state. */
+            renderSummary: function (payload, answers) {
+                return ui().renderResults(payload || scoreFromAnswers(answers), {});
             },
             bindSummary: function (root, payload, sess) {
                 root.addEventListener('click', function (e) {

@@ -568,9 +568,32 @@
         }
     }
 
+    /* An item is OPEN when it carries no answer key: flagged `free`, or its
+       answer is null / "" / [""]. Writing prompts are the usual case. */
+    function isOpenItem(item) {
+        if (item && item.free) return true;
+        var a = item ? item.answer : null;
+        if (a == null) return true;
+        if (Array.isArray(a)) {
+            return a.every(function (x) { return String(x == null ? '' : x).trim() === ''; });
+        }
+        return String(a).trim() === '';
+    }
+
+    /* Minimum words that count as a real attempt at an open prompt. This is the
+       platform's existing rule, lifted from the A2 scorer rather than invented. */
+    var OPEN_ANSWER_MIN_WORDS = 3;
+
     function matchItem(item, value) {
         var nv = norm(value);
         if (!nv) return false;
+        /* An open prompt cannot be graded by comparison — there is nothing to
+           compare against. Judging it against an empty key marked EVERY answer
+           wrong, which is how the score shown to the learner came to disagree
+           with the score the course recorded. One rule now serves both. */
+        if (isOpenItem(item)) {
+            return nv.split(/\s+/).filter(Boolean).length >= OPEN_ANSWER_MIN_WORDS;
+        }
         var expected = Array.isArray(item.answer) ? item.answer : [item.answer];
         return expected.some(function (e) { return norm(e) === nv; });
     }

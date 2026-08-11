@@ -5818,6 +5818,7 @@
                 loadQuiz(topicId);
             } else {
                 quizSection.innerHTML = '';
+                quizSection.removeAttribute('data-uz-owned');
             }
         }
 
@@ -5897,6 +5898,8 @@
             `;
 
             quizSection.innerHTML = quizHTML;
+            /* Legacy topic: the page's own controls own this screen. */
+            quizSection.removeAttribute('data-uz-owned');
 
             // Add event listeners to quiz options
             document.querySelectorAll('.quiz-option').forEach(option => {
@@ -6456,11 +6459,137 @@
         function a2SaveTopicResult(topicId, r) {
             try { localStorage.setItem(a2ResultKey(topicId), JSON.stringify(r)); } catch (e) {}
         }
+        /* A learner who finished the topic on another device, in another
+           browser, or simply before this screen existed has no local
+           snapshot — but the platform has always stored that attempt in
+           Firebase (userQuizResults, written by the exercise checker).
+           Rebuild the review screen from that record.
+
+           Each saved answer is judged with UzExerciseUI.matchItem, the very
+           predicate the live scorer uses, so a rebuilt screen can never
+           disagree with the score the learner was actually given. Nothing
+           is invented: a topic with no stored attempt returns null and the
+           completed card simply offers nothing to review. */
+        function a2ResultFromSavedAnswers(topicId, data) {
+            if (!data || !data.topic1 || !window.UzExerciseUI) return null;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            var exData = getT1ExData(topic);
+            if (!exData) return null;
+
+            var total = 0, correct = 0, breakdown = [], wrong = [];
+            (exData.exercises || []).forEach(function (g) {
+                var given = data.topic1[g.id] || [];
+                var gT = 0, gC = 0;
+                (g.items || []).forEach(function (item, i) {
+                    total++; gT++;
+                    var v = given[i];
+                    if (window.UzExerciseUI.matchItem(item, v)) { correct++; gC++; }
+                    else {
+                        wrong.push({
+                            group: g.id, index: i + 1, question: item.q,
+                            given: (v == null || String(v).trim() === '') ? null : String(v),
+                            expected: Array.isArray(item.answer) ? item.answer[0] : item.answer,
+                            explanation: item.explanation || item.hint || null
+                        });
+                    }
+                });
+                breakdown.push({
+                    id: g.id, title: g.title || g.id, correct: gC, total: gT,
+                    percent: gT ? Math.round(gC / gT * 100) : 0
+                });
+            });
+            if (!total) return null;
+
+            var needed = a2PassNeeded(total);
+            return {
+                topicId: topicId, score: correct, total: total, errors: total - correct,
+                percent: Math.round(correct / total * 100),
+                passed: correct >= needed,
+                passPercent: Math.round(needed / total * 100),
+                passNeeded: needed, breakdown: breakdown, wrong: wrong,
+                timestamp: data.timestamp || null
+            };
+        }
+
         function a2LoadTopicResult(topicId) {
             try {
                 var raw = localStorage.getItem(a2ResultKey(topicId));
-                return raw ? JSON.parse(raw) : null;
+                if (raw) return JSON.parse(raw);
+            } catch (e) { /* fall through to the stored attempt */ }
+            try {
+                return a2ResultFromSavedAnswers(topicId, userQuizResults['topic_' + topicId]);
             } catch (e) { return null; }
+        }
+
+        /* ------------------------------------------------------------------
+         * STEP 4 — PERSISTENCE ADAPTER.
+         *
+         * The one place that turns an attempt into the stored record. The
+         * legacy scorer calls it, so there is a single implementation of the
+         * record shape rather than one per caller. Nothing about the stored
+         * data changed: same object, same field names, same order, same
+         * Firebase function, same localStorage keys, same timestamp format.
+         * ---------------------------------------------------------------- */
+        function a2AnswersToRecord(topicId, answers) {
+            answers = answers || {};
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            var exData = getT1ExData(topic);
+            var saved = {};
+            (exData && exData.exercises || []).forEach(function (g) {
+                saved[g.id] = (g.items || []).map(function (_, i) {
+                    var v = answers[g.id + '-' + i];
+                    return String(v == null ? '' : v).trim();
+                });
+            });
+            return saved;
+        }
+
+        async function a2PersistAttempt(topicId, answers, result) {
+            var data = {
+                topic1: a2AnswersToRecord(topicId, answers),
+                score: result.score,
+                total: result.total,
+                timestamp: new Date().toISOString()
+            };
+            try { await saveQuizResultToFirebase(topicId, data); }
+            catch (e) { console.error("T1 save error", e); }
+            userQuizResults["topic_" + topicId] = data;
+            return data;
+        }
+
+        /* ------------------------------------------------------------------
+         * STEP 5 — COMPLETION.
+         *
+         * Exactly the statements that used to live inside the completion
+         * button's onclick closure, in exactly the same order, given a name
+         * so completion no longer requires a button to exist and be clicked.
+         * Nothing here is new logic.
+         * ---------------------------------------------------------------- */
+        async function a2CompleteTopic(topicId) {
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!completedTopics.includes(topicId)) {
+                completedTopics.push(topicId);
+                /* Host-agnostic: a2-demo.html has no draft store, so this must
+                   not assume one exists. */
+                if (typeof clearQuizDraft === 'function') clearQuizDraft(topicId);
+                try { await saveProgressToFirebase(); } catch (e) { console.error(e); }
+                updateProgress();
+                loadTopics();
+                if (currentUser && window.logActivity) {
+                    window.logActivity(currentUser.email,
+                        currentUser.name + " завершил тему " + topicId + ': "'
+                            + (topic ? topic.title : '') + '" в курсе A2',
+                        "course_visit").catch(function () {});
+                }
+                setTimeout(function () {
+                    alert("Tabriklaymiz! " + topicId + "-mavzuni muvaffaqiyatli tugatdingiz. Endi "
+                        + (topicId + 1) + "-mavzuni o'rganishingiz mumkin.");
+                }, 300);
+            }
+            if (resultsSection) resultsSection.classList.remove("show");
+            setResultsWrapVisible(false);
+            var topicsEl = document.getElementById("topics");
+            if (topicsEl) topicsEl.scrollIntoView({ behavior: "smooth", block: "start" });
         }
 
         function a2LegacyScope() {
@@ -6560,6 +6689,14 @@
                 + html
                 + '</div>';
 
+            /* DECLARE OWNERSHIP. The exercise engine now owns everything the
+               learner sees for this topic. course-global-fixes.js reads this
+               one attribute and stands down — it does not inspect the markup
+               and guess, so no element rendered here, hidden or visible, can
+               ever make it build a second "check answers" button again.
+               The legacy path clears the attribute; see loadQuiz(). */
+            quizSection.setAttribute('data-uz-owned', String(topicId));
+
             a2LegacyScope().querySelectorAll(".t1-opt").forEach(function (btn) {
                 btn.addEventListener("click", function () {
                     var row = this.closest(".t1-opts");
@@ -6650,6 +6787,7 @@
 
             var correct = 0, total = 0;
             var saved = {};
+            var t1Answers = {};   /* what the learner gave, for the persistence adapter */
             (exData.exercises || []).forEach(function (g) {
                 var gAns = [];
                 (g.items || []).forEach(function (item, i) {
@@ -6695,14 +6833,14 @@
                         if (okI) correct++;
                     }
                     gAns.push(uv);
+                    t1Answers[key] = uv;
                 });
                 saved[g.id] = gAns;
             });
 
             currentScore = correct;
-            var data = { topic1: saved, score: correct, total: total, timestamp: new Date().toISOString() };
-            try { await saveQuizResultToFirebase(topicId, data); } catch (e) { console.error("T1 save error", e); }
-            userQuizResults["topic_" + topicId] = data;
+            /* one implementation of the stored record — see a2PersistAttempt */
+            await a2PersistAttempt(topicId, t1Answers, { score: correct, total: total });
 
             var passNeeded = a2PassNeeded(total);
             var pct = total ? Math.round(correct / total * 100) : 0;
@@ -6727,30 +6865,8 @@
                 completeBtn.className = "complete-btn";
                 completeBtn.style.display = "block";
                 if (retryBtn) retryBtn.style.display = "none";
-                completeBtn.onclick = async function () {
-                    if (!completedTopics.includes(topicId)) {
-                        completedTopics.push(topicId);
-                        /* Host-agnostic: a2-demo.html hosts this same engine but has
-                           no draft store, so the engine must not assume one exists. */
-                        if (typeof clearQuizDraft === 'function') clearQuizDraft(topicId);
-                        try { await saveProgressToFirebase(); } catch (e) { console.error(e); }
-                        updateProgress();
-                        loadTopics();
-                        if (currentUser && window.logActivity) {
-                            window.logActivity(currentUser.email,
-                                currentUser.name + " завершил тему " + topicId + ': "' + topic.title + '" в курсе A2',
-                                "course_visit").catch(function () {});
-                        }
-                        setTimeout(function () {
-                            alert("Tabriklaymiz! " + topicId + "-mavzuni muvaffaqiyatli tugatdingiz. Endi "
-                                + (topicId + 1) + "-mavzuni o'rganishingiz mumkin.");
-                        }, 300);
-                    }
-                    if (resultsSection) resultsSection.classList.remove("show");
-                    setResultsWrapVisible(false);
-                    var topicsEl = document.getElementById("topics");
-                    if (topicsEl) topicsEl.scrollIntoView({ behavior: "smooth", block: "start" });
-                };
+                /* completion semantics live in a2CompleteTopic() now */
+                completeBtn.onclick = function () { return a2CompleteTopic(topicId); };
             } else {
                 completeBtn.textContent = "Mavzu tugatilmadi";
                 completeBtn.className = "complete-btn failed";
