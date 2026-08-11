@@ -218,8 +218,17 @@ for (const p of PAGES) {
     /* styled once, in the shared component — not copied into each page */
     ok(!/\.b2-vocab-card\s*\{/.test(s), `${T} carries no private copy of the card CSS`);
     ok(/\.b2-vocab-card\{/.test(UI), `${T} vocabulary card is styled by the shared component`);
-    ok(s.includes("So'zlar lug'ati"), `${T} keeps the original heading`);
-    ok(s.includes("Lug'atni ochish"), `${T} keeps the original call to action`);
+    /* The heading and the call to action live in the SHARED component now.
+       The page used to carry a second, orphaned copy of both (a duplicate card
+       rendered right under the real one) — so asserting them against the page
+       source is what let that duplicate survive. Assert them where they
+       actually are, and assert the page has NO copy of its own. */
+    /* the component escapes apostrophes in its JS string literals */
+    const UI_TEXT = UI.replace(/\\'/g, "'");
+    ok(UI_TEXT.includes("So'zlar lug'ati"), `${T} keeps the original heading (shared component)`);
+    ok(UI_TEXT.includes("Lug'atni ochish"), `${T} keeps the original call to action (shared component)`);
+    ok(!s.includes("So'zlar lug'ati"), `${T} page carries no duplicate heading`);
+    ok(!s.includes("Lug'atni ochish"), `${T} page carries no duplicate call to action`);
     ok(s.includes(`${p.vocab}?topic=\${topic.id}`),
         `${T} links to ${p.vocab} with the topic id`);
     /* rendered for every topic, from the shared template — no per-topic content */

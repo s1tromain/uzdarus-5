@@ -68,10 +68,20 @@ const PACKAGE_CONFIG = Object.freeze({
     }
 });
 
-// Phase 5 — Course visibility. These courses are "Tez orada" (coming soon)
-// for customers; staff/privileged accounts always see them open so the team
-// can keep developing them.
-const COMING_SOON_COURSES = Object.freeze(new Set(['A2', 'B2']));
+// Course visibility. A course listed here is shown as "Tez orada" and its card
+// is disabled BEFORE the subscription is consulted — createCourseCard() checks
+// `comingSoon` first and only falls through to `hasAccess` when it is false.
+//
+// So this set is an editorial release switch, not an access rule: it must list
+// only courses that genuinely have no lessons yet. A2 and B2 were listed here
+// from Phase 5, when neither had content. Both now ship authored lessons
+// (A2 topics 1-5, B2 topics 1-5), so leaving them here made paying customers
+// with an active A1A2 / B1B2 pack see "Tez orada" instead of "Kursni ochish" —
+// their subscription was computed correctly and then discarded.
+//
+// Empty means: nothing is force-hidden, every course card is decided by the
+// subscription alone. Add a course code here only while it has no lessons.
+const COMING_SOON_COURSES = Object.freeze(new Set());
 const COMING_SOON_LABEL = 'Tez orada';
 
 const COURSE_TO_PACK = Object.freeze({

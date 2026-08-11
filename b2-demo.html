@@ -424,6 +424,12 @@
         .topic-info {
             flex: 1;
             z-index: 1;
+            /* Column layout so the vocabulary button can be pushed to the
+               bottom with margin-top:auto. The grid already stretches cards
+               to a common height, so this puts every button on one line no
+               matter how long the title or the three meta rows run. */
+            display: flex;
+            flex-direction: column;
         }
 
         .topic-title {
@@ -1552,7 +1558,14 @@
 
             courseData.topics.forEach(topic => {
                 const isCompleted = userProgress[topic.id]?.completed || false;
-                const isLocked = topic.isSubscriptionLocked && !hasSubscription;
+                /* Sequential unlock — the SAME rule the paid B2 page already
+                   applies: a topic opens once the previous one is completed.
+                   Demo now matches B1 demo, which shows the same message. */
+                const prevCompleted = topic.id === 1
+                    || !!(userProgress[topic.id - 1] && userProgress[topic.id - 1].completed);
+                const isSequenceLocked = !isCompleted && !prevCompleted;
+                const isPaywallLocked = topic.isSubscriptionLocked && !hasSubscription;
+                const isLocked = isPaywallLocked || isSequenceLocked;
                 
                 const topicBtn = document.createElement('button');
                 topicBtn.className = `topic-btn ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`;
@@ -1567,12 +1580,12 @@
                         </div>
                         ${!isLocked ? `
                         <button onclick="event.stopPropagation(); window.location.href='b2-demo-vocabulary.html?topic=${topic.id}'" 
-                                style="margin-top: 10px; background: linear-gradient(135deg, var(--blue), #1976D2); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.3s ease;">
+                                style="margin-top: auto; align-self: flex-start; background: linear-gradient(135deg, var(--blue), #1976D2); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.3s ease;">
                             <i class="fas fa-book-open"></i> Lug'atni o'rganish
                         </button>
                         ` : ''}
                     </div>
-                    ${isLocked ? `<div class="locked-overlay"><i class="fas fa-lock"></i><p>Obuna kerak</p></div>` : ''}
+                    ${isLocked ? `<div class="locked-overlay"><i class="fas fa-lock"></i><p>${isPaywallLocked ? 'Obuna kerak' : `Avval ${topic.id - 1}-mavzuni tugating`}</p></div>` : ''}
                 `;
 
                 if (!isLocked) {
@@ -1754,12 +1767,6 @@
                 ${topic.content ? `<div class="topic-explanation">${topic.content}</div>` : ''}
 
                 ${b2VocabCard(topic.id)}
-                    <h3>So'zlar lug'ati</h3>
-                    <p>Ushbu mavzuning lug'atini o'rganing va so'z boyligingizni mustahkamlang.</p>
-                    <button type="button" onclick="window.location.href='b2-demo-vocabulary.html?topic=${topic.id}'">
-                        <i class="fas fa-book-open"></i> Lug'atni ochish
-                    </button>
-                </div>
                 
                 ${b2Ex ? `
                 <div id="b2PracticeMount"></div>

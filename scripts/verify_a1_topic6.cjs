@@ -177,18 +177,27 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
             const n = `t6.ex2[${i + 1}]`;
             ok(typeof item.template === 'string' && item.template.includes('___'),
                 `${n} the sentence has a blank`);
-            ok(script(item.template) === 'ru', `${n} the sentence is Russian`);
+            /* Exercise 2 is a BILINGUAL comprehension quiz: the question is asked
+               in Uzbek and may quote Russian, and the answer is whichever
+               language the question asks for (a Russian phrase, or its Uzbek
+               translation). So the old one-way language assertions no longer
+               apply. What still must hold is asserted below, plus two checks the
+               old shape never needed. */
             ok(typeof item.placeholder === 'string' && item.placeholder.trim() !== '',
-                `${n} the Uzbek cue is present`);
-            ok(script(item.placeholder) === 'uz',
-                `${n} the cue is Uzbek, not a Russian translation ("${item.placeholder}")`);
-            ok(script(item.answer) === 'ru', `${n} the answer is Russian`);
-            ok(item.options.every(o => script(o) === 'ru'),
-                `${n} every option is Russian — no Uzbek word is offered as an answer`);
+                `${n} the cue is present (an empty one renders "undefined")`);
+            ok(typeof item.answer === 'string' && item.answer.trim() !== '',
+                `${n} the answer is present`);
             ok(item.options.includes(item.answer), `${n} the correct answer is offered`);
             ok(new Set(item.options.map(clean)).size === item.options.length,
                 `${n} all options are unique`);
-            ok(item.options.length >= 3, `${n} at least three options`);
+            ok(item.options.length === 4, `${n} exactly four options (${item.options.length})`);
+            /* A word must not mix Latin and Cyrillic letters — such a token looks
+               right and can never be matched. This caught a real typo
+               ("napротив") the moment the exercise was authored. */
+            const mixed = [item.template, item.placeholder, item.answer, ...item.options]
+                .flatMap(t => String(t).split(/\s+/))
+                .filter(word => /[a-zA-Z]/.test(word) && /[\u0400-\u04FF]/.test(word));
+            ok(mixed.length === 0, `${n} no word mixes Latin and Cyrillic (${mixed.join(', ')})`);
         });
 
         /* the cue must genuinely differ from the answer — the reported symptom
