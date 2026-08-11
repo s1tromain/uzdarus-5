@@ -1290,6 +1290,15 @@
             display: flex;
         }
 
+        /* Topic 6 exercise 2 is a plain MCQ: its options are always on screen.
+           Two classes beat the shared single-class rule, so .topic5-options keeps
+           its dropdown behaviour for topics 5 and 7 untouched. */
+        .topic5-options.topic6-mcq-options { display: flex; }
+
+        .topic6-mcq { padding: 14px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+        .topic6-mcq:last-child { border-bottom: none; }
+        .topic6-mcq-question { font-weight: 600; line-height: 1.6; margin-bottom: 10px; }
+
         .topic5-option-chip {
             border: 2px solid #e3e3e3;
             background: white;
@@ -1475,18 +1484,6 @@
         /* The Uzbek word being translated. The blank itself is overwritten with
            the chosen Russian word, so without this the learner loses sight of
            what they were asked to translate the moment they answer. */
-        .topic6-uz-cue {
-            display: inline-block;
-            margin-left: 8px;
-            padding: 3px 10px;
-            border-radius: 999px;
-            background: #eef2ff;
-            border: 1px solid #c7d2fe;
-            color: #3730a3;
-            font-size: 0.85rem;
-            font-weight: 600;
-            white-space: nowrap;
-        }
 
         .topic6-correct-hint {
             display: none;
@@ -3353,64 +3350,54 @@
                         },
                         exercise2: {
                             title: "2 mashq. Yo'nalishlar va joylashuv",
-                            items: [
+                            questions: [
                                 {
-                                    template: "Rus tilida \"To'g'riga yuring\" iborasi qanday aytiladi? ___",
-                                    placeholder: "To'g'riga yuring",
+                                    question: "Rus tilida \"To'g'riga yuring\" iborasi qanday aytiladi?",
                                     answer: "Идите прямо",
                                     options: ["Идите направо", "Идите прямо", "Идите налево", "Идите далеко"]
                                 },
                                 {
-                                    template: "O'zbek tilidagi \"chapga buriling\" iborasi rus tilida qanday bo'ladi? ___",
-                                    placeholder: "chapga buriling",
+                                    question: "O'zbek tilidagi \"chapga buriling\" iborasi rus tilida qanday bo'ladi?",
                                     answer: "Поверните налево",
                                     options: ["Поверните направо", "Поверните назад", "Поверните налево", "Идите прямо"]
                                 },
                                 {
-                                    template: "\"Do'kon uzoqda joylashgan\" gapining ruscha tarjimasini toping. ___",
-                                    placeholder: "Do'kon uzoqda joylashgan",
+                                    question: "\"Do'kon uzoqda joylashgan\" gapining ruscha tarjimasini toping.",
                                     answer: "Магазин находится далеко",
                                     options: ["Магазин находится далеко", "Магазин находится близко", "Магазин находится прямо", "Магазин находится слева"]
                                 },
                                 {
-                                    template: "Rus tilida \"o'ngga buriling\" qanday aytiladi? ___",
-                                    placeholder: "o'ngga buriling",
+                                    question: "Rus tilida \"o'ngga buriling\" qanday aytiladi?",
                                     answer: "Поверните направо",
                                     options: ["Поверните налево", "Поверните направо", "Идите прямо", "Поверните назад"]
                                 },
                                 {
-                                    template: "\"Mening uyim yaqin oraliqda (yaqinda)\" demoqchi bo'lsangiz, qaysi so'zdan foydalanasiz? ___",
-                                    placeholder: "yaqin oraliqda",
+                                    question: "\"Mening uyim yaqin oraliqda (yaqinda)\" demoqchi bo'lsangiz, qaysi so'zdan foydalanasiz?",
                                     answer: "близко",
                                     options: ["далеко", "прямо", "близко", "назад"]
                                 },
                                 {
-                                    template: "\"Аптека находится напротив метро\" gapining o'zbekcha tarjimasi qaysi? ___",
-                                    placeholder: "напротив — qarshisida",
+                                    question: "\"Аптека находится напротив метро\" gapining o'zbekcha tarjimasi qaysi?",
                                     answer: "Dorixona metroning qarshisida joylashgan",
                                     options: ["Dorixona metro yonida joylashgan", "Dorixona metroning qarshisida joylashgan", "Dorixona metro ichida joylashgan", "Dorixona metrodan uzoqda joylashgan"]
                                 },
                                 {
-                                    template: "Yo'l ko'rsatayotganda \"orqaga qayting / orqaga yuring\" iborasi ruscha qanday bo'ladi? ___",
-                                    placeholder: "orqaga qayting",
+                                    question: "Yo'l ko'rsatayotganda \"orqaga qayting / orqaga yuring\" iborasi ruscha qanday bo'ladi?",
                                     answer: "Идите назад",
                                     options: ["Идите прямо", "Идите налево", "Идите назад", "Идите направо"]
                                 },
                                 {
-                                    template: "\"Кафе находится справа от парка\" gapi qanday tarjima qilinadi? ___",
-                                    placeholder: "справа — o'ng tomonda",
+                                    question: "\"Кафе находится справа от парка\" gapi qanday tarjima qilinadi?",
                                     answer: "Kafe parkning o'ng tomonida joylashgan",
                                     options: ["Kafe parkning chap tomonida joylashgan", "Kafe parkning to'g'risida joylashgan", "Kafe parkning o'ng tomonida joylashgan", "Kafe parkning orqasida joylashgan"]
                                 },
                                 {
-                                    template: "Rus tilida \"chap tomonda\" (joylashuv ma'nosida) so'zi qaysi? ___",
-                                    placeholder: "chap tomonda",
+                                    question: "Rus tilida \"chap tomonda\" (joylashuv ma'nosida) so'zi qaysi?",
                                     answer: "слева",
                                     options: ["слева", "справа", "прямо", "далеко"]
                                 },
                                 {
-                                    template: "\"Aeroport uzoq emas (yaqin)\" gapining ruscha to'g'ri varianti qaysi? ___",
-                                    placeholder: "uzoq emas",
+                                    question: "\"Aeroport uzoq emas (yaqin)\" gapining ruscha to'g'ri varianti qaysi?",
                                     answer: "Аэропорт недалеко",
                                     options: ["Аэропорт далеко", "Аэропорт недалеко", "Аэропорт прямо", "Аэропорт направо"]
                                 }
@@ -6628,12 +6615,6 @@
             return normalizeTopic6Text(expected) === normalizedUser;
         }
 
-        function closeTopic6OptionPanels() {
-            document.querySelectorAll('.topic5-options[data-topic6-options]').forEach((panel) => {
-                panel.classList.remove('active');
-            });
-        }
-
         function getTopic6BuilderSelection(index) {
             const holder = document.querySelector(`input[data-topic6-builder-selected="${index}"]`);
             if (!holder || !holder.value) {
@@ -6679,45 +6660,18 @@
             });
         }
 
-        let topic6OutsideClickBound = false;
 
         function bindTopic6ExerciseEvents() {
-            document.querySelectorAll('[data-topic6-select]').forEach((blank) => {
-                blank.addEventListener('click', function() {
-                    const index = this.dataset.topic6Select;
-                    const targetPanel = document.querySelector(`.topic5-options[data-topic6-options="${index}"]`);
-                    if (!targetPanel) {
-                        return;
-                    }
-
-                    const isOpen = targetPanel.classList.contains('active');
-                    closeTopic6OptionPanels();
-                    if (!isOpen) {
-                        targetPanel.classList.add('active');
-                    }
-                });
-            });
-
             document.querySelectorAll('[data-topic6-option]').forEach((option) => {
                 option.addEventListener('click', function() {
                     const index = this.dataset.topic6Option;
-                    const value = this.dataset.value;
-                    const blank = document.querySelector(`[data-topic6-select="${index}"]`);
-                    if (!blank) {
-                        return;
-                    }
-
-                    blank.dataset.value = value;
-                    blank.textContent = value;
-                    blank.classList.add('filled');
-                    blank.classList.remove('correct', 'incorrect');
-
+                    /* One choice per question: clear the row, then mark this chip.
+                       The answer is read back from the selected chip at scoring
+                       time, so nothing is written into any other element. */
                     document.querySelectorAll(`[data-topic6-option="${index}"]`).forEach((chip) => {
-                        chip.classList.remove('selected');
+                        chip.classList.remove('selected', 'correct', 'incorrect');
                     });
                     this.classList.add('selected');
-
-                    closeTopic6OptionPanels();
                 });
             });
 
@@ -6763,14 +6717,6 @@
                 topic6Section.dataset.removeBound = 'true';
             }
 
-            if (!topic6OutsideClickBound) {
-                document.addEventListener('click', function(event) {
-                    if (!event.target.closest('.topic6-select-question')) {
-                        closeTopic6OptionPanels();
-                    }
-                });
-                topic6OutsideClickBound = true;
-            }
         }
 
         function bindTopic6CheckButton(topicId) {
@@ -6844,8 +6790,7 @@
                         <h3 class="topic5-exercise-title">${topic.topic6Exercises.exercise2.title}</h3>
             `;
 
-            topic.topic6Exercises.exercise2.items.forEach((item, index) => {
-                const parts = item.template.split('___');
+            topic.topic6Exercises.exercise2.questions.forEach((item, index) => {
                 /* Only a value the learner could actually have chosen is restored.
                    A stored answer that is not among this item's options can only
                    come from stale or corrupted data; showing it would leave the
@@ -6853,24 +6798,10 @@
                    the learner has no way to correct. Treat it as unanswered. */
                 const storedValue = ex2Answers[index] || '';
                 const savedValue = item.options.includes(storedValue) ? storedValue : '';
-                const buttonClasses = ['topic5-select-blank'];
-                if (savedValue) {
-                    buttonClasses.push('filled');
-                    buttonClasses.push(topic6IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect');
-                }
-
                 html += `
-                    <div class="topic6-select-question topic5-select-question">
-                        <div class="topic5-select-line">
-                            <span>${index + 1}. ${parts[0] || ''}</span>
-                            <button type="button"
-                                    class="${buttonClasses.join(' ')}"
-                                    data-topic6-select="${index}"
-                                    data-value="${savedValue}">${savedValue || 'Variantni tanlang'}</button>
-                            <span>${parts[1] || ''}</span>
-                            <span class="topic6-uz-cue"><b>uz:</b> ${item.placeholder}</span>
-                        </div>
-                        <div class="topic5-options" data-topic6-options="${index}">
+                    <div class="topic6-mcq">
+                        <div class="topic6-mcq-question">${index + 1}. ${item.question}</div>
+                        <div class="topic5-options topic6-mcq-options" data-topic6-options="${index}">
                             ${item.options.map((option) => {
                                 const selectedClass = savedValue === option ? 'selected' : '';
                                 return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic6-option="${index}" data-value="${option}">${option}</button>`;
@@ -7042,10 +6973,11 @@
                 }
             });
 
-            exerciseData.exercise2.items.forEach((item, index) => {
-                const blank = document.querySelector(`[data-topic6-select="${index}"]`);
+            exerciseData.exercise2.questions.forEach((item, index) => {
+                const chips = Array.from(document.querySelectorAll(`[data-topic6-option="${index}"]`));
+                const selected = chips.find((chip) => chip.classList.contains('selected')) || null;
                 const hint = document.querySelector(`[data-topic6-e2-hint="${index}"]`);
-                const userValue = blank?.dataset.value || '';
+                const userValue = selected?.dataset.value || '';
                 ex2Answers.push(userValue);
                 totalQuestions++;
 
@@ -7054,11 +6986,7 @@
                     hint.textContent = '';
                 }
 
-                if (!blank) {
-                    return;
-                }
-
-                blank.classList.remove('correct', 'incorrect');
+                chips.forEach((chip) => chip.classList.remove('correct', 'incorrect'));
                 if (!userValue) {
                     if (hint) {
                         hint.textContent = `To'g'ri javob: ${item.answer}`;
@@ -7068,11 +6996,14 @@
                 }
 
                 if (topic6IsCorrect(userValue, item.answer)) {
-                    blank.classList.add('correct');
+                    if (selected) selected.classList.add('correct');
                     totalCorrect++;
                     ex2Correct++;
                 } else {
-                    blank.classList.add('incorrect');
+                    if (selected) selected.classList.add('incorrect');
+                    chips.forEach((chip) => {
+                        if (topic6IsCorrect(chip.dataset.value, item.answer)) chip.classList.add('correct');
+                    });
                     if (hint) {
                         hint.textContent = `To'g'ri javob: ${item.answer}`;
                         hint.classList.add('show');
@@ -7233,7 +7164,7 @@
 
                     <div class="topic6-feedback-list">
                         <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exerciseData.exercise1.sentences.length}</div>
-                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exerciseData.exercise2.items.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exerciseData.exercise2.questions.length}</div>
                         <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exerciseData.exercise3.prompts.length}</div>
                         <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exerciseData.exercise4.prompts.length}</div>
                         <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exerciseData.exercise5.items.length}</div>
@@ -7450,7 +7381,7 @@
                         <div class="topic7-choice-list">
             `;
 
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
 
                 html += `
@@ -7690,7 +7621,7 @@
                 }
             });
 
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic7-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 resultData.exercise2Answers.push(userValue);
@@ -7896,7 +7827,7 @@
 
                     <div class="topic6-feedback-list">
                         <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
-                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.questions.length}</div>
                         <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
                         <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
                         <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
@@ -8075,7 +8006,7 @@
                         <div class="topic7-choice-list">
             `;
 
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
 
                 html += `
@@ -8367,7 +8298,7 @@
                 }
             });
 
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic8-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 resultData.exercise2Answers.push(userValue);
@@ -8623,7 +8554,7 @@
 
                     <div class="topic6-feedback-list">
                         <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
-                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.questions.length}</div>
                         <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
                         <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
                         <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
@@ -8739,7 +8670,7 @@
                         <div class="topic7-input-list">
             `;
 
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 const inputClass = savedValue
                     ? (topic9IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect')
@@ -8899,7 +8830,7 @@
             });
 
             // Exercise 2 — word form input
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const input = document.querySelector(`input[data-topic9-e2="${index}"]`);
                 const userValue = input?.value.trim() || '';
                 resultData.exercise2Answers.push(userValue);
@@ -9009,7 +8940,7 @@
 
                     <div class="topic6-feedback-list">
                         <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
-                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.questions.length}</div>
                         <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
                         <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
                         <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
@@ -9220,7 +9151,7 @@
                         <h3 class="topic5-exercise-title">${exercises.exercise2.title}</h3>
                         <div class="topic7-choice-list">
             `;
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 html += `
                     <div class="topic7-choice-item" data-topic10-e2-row="${index}" data-value="${savedValue}">
@@ -9490,7 +9421,7 @@
             });
 
             // Exercise 2 — chip selection (есть / нет)
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic10-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 if (row) {
@@ -9640,7 +9571,7 @@
             const totalQuestions = results.length;
             const resultData = {
                 exercise1Answers: exercises.exercise1.items.map((_, i) => document.querySelector(`[data-topic10-e1-row="${i}"]`)?.dataset.value || ''),
-                exercise2Answers: exercises.exercise2.items.map((_, i) => document.querySelector(`[data-topic10-e2-row="${i}"]`)?.dataset.value || ''),
+                exercise2Answers: exercises.exercise2.questions.map((_, i) => document.querySelector(`[data-topic10-e2-row="${i}"]`)?.dataset.value || ''),
                 exercise3Answers: exercises.exercise3.items.map((_, i) => document.querySelector(`[data-topic10-e3-row="${i}"]`)?.dataset.value || ''),
                 exercise4Answers: exercises.exercise4.items.map((_, i) => document.querySelector(`input[data-topic10-e4="${i}"]`)?.value.trim() || ''),
                 exercise5Answers: exercises.exercise5.items.map((_, i) => document.querySelector(`input[data-topic10-e5="${i}"]`)?.value.trim() || ''),
@@ -9829,7 +9760,7 @@
                         <p class="topic5-exercise-instruction">${exercises.exercise2.instruction}</p>
                         <div class="topic7-input-list">
             `;
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 const inputClass = savedValue
                     ? (topic11IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect')
@@ -10053,7 +9984,7 @@
             });
 
             // Exercise 2 — verb conjugation input
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const input = document.querySelector(`input[data-topic11-e2="${index}"]`);
                 const userValue = input?.value.trim() || '';
                 if (input) {
@@ -10183,7 +10114,7 @@
             const totalQuestions = results.length;
             const resultData = {
                 exercise1Answers: exercises.exercise1.items.map((_, i) => document.querySelector(`[data-topic11-e1-row="${i}"]`)?.dataset.value || ''),
-                exercise2Answers: exercises.exercise2.items.map((_, i) => document.querySelector(`input[data-topic11-e2="${i}"]`)?.value.trim() || ''),
+                exercise2Answers: exercises.exercise2.questions.map((_, i) => document.querySelector(`input[data-topic11-e2="${i}"]`)?.value.trim() || ''),
                 exercise3Answers: exercises.exercise3.items.map((_, i) => document.querySelector(`input[data-topic11-e3="${i}"]`)?.value.trim() || ''),
                 exercise4Answers: exercises.exercise4.items.map((_, i) => document.querySelector(`input[data-topic11-e4="${i}"]`)?.value.trim() || ''),
                 exercise5Answers: exercises.exercise5.items.map((_, i) => document.querySelector(`[data-topic11-e5-row="${i}"]`)?.dataset.value || ''),
@@ -10426,7 +10357,7 @@
                         <p class="topic5-exercise-instruction">${exercises.exercise2.instruction}</p>
                         <div class="topic7-choice-list">
             `;
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 html += `
                     <div class="topic7-choice-item" data-topic12-e2-row="${index}" data-value="${savedValue}">
@@ -10610,7 +10541,7 @@
             });
 
             // Exercise 2 — chip selection (3 options)
-            exercises.exercise2.items.forEach((item, index) => {
+            exercises.exercise2.questions.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic12-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 if (row) {
@@ -10706,7 +10637,7 @@
             const totalQuestions = results.length;
             const resultData = {
                 exercise1Answers: exercises.exercise1.items.map((_, i) => document.querySelector(`[data-topic12-e1-row="${i}"]`)?.dataset.value || ''),
-                exercise2Answers: exercises.exercise2.items.map((_, i) => document.querySelector(`[data-topic12-e2-row="${i}"]`)?.dataset.value || ''),
+                exercise2Answers: exercises.exercise2.questions.map((_, i) => document.querySelector(`[data-topic12-e2-row="${i}"]`)?.dataset.value || ''),
                 exercise3Answers: exercises.exercise3.items.map((_, i) => document.querySelector(`input[data-topic12-e3="${i}"]`)?.value.trim() || ''),
                 exercise4Answers: exercises.exercise4.items.map((_, i) => document.querySelector(`input[data-topic12-e4="${i}"]`)?.value.trim() || ''),
                 exercise5Answers: exercises.exercise5.items.map((_, i) => document.querySelector(`input[data-topic12-e5="${i}"]`)?.value.trim() || ''),

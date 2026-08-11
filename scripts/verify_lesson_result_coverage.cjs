@@ -316,6 +316,12 @@ function synthesize(topic, code) {
                         expected++; families.add(key);
                     });
                     break;
+                case 'questions-choice':
+                    (ex.questions || []).forEach((item, i) => {
+                        html += `<div data-topic${N}-options="${i}"><button data-topic${N}-option="${i}" class="selected" data-value="${esc(first(item.answer) || '')}"></button></div>`;
+                        expected++; families.add(key);
+                    });
+                    break;
                 case 'items-chips':
                     items.forEach((item, i) => {
                         html += `<div data-topic${N}-e${M}-row="${i}"><button class="selected" data-value="${esc(first(item.answer) || '')}"></button></div>`;

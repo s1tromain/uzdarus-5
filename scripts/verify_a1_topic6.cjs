@@ -172,19 +172,24 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     ok(!!ex2, 'topic 6 exercise 2 exists');
 
     if (ex2) {
-        ok(ex2.items.length === 10, `exercise 2 has 10 items (${ex2.items.length})`);
-        ex2.items.forEach((item, i) => {
+        /* The exercise is a plain MCQ: a `questions` array, no fill-in scaffolding. */
+        ok(Array.isArray(ex2.questions), 'exercise 2 stores a questions array');
+        ok(!('items' in ex2), 'exercise 2 no longer uses the old items array');
+    }
+
+    if (ex2 && Array.isArray(ex2.questions)) {
+        ok(ex2.questions.length === 10, `exercise 2 has 10 questions (${ex2.questions.length})`);
+        ex2.questions.forEach((item, i) => {
             const n = `t6.ex2[${i + 1}]`;
-            ok(typeof item.template === 'string' && item.template.includes('___'),
-                `${n} the sentence has a blank`);
-            /* Exercise 2 is a BILINGUAL comprehension quiz: the question is asked
-               in Uzbek and may quote Russian, and the answer is whichever
-               language the question asks for (a Russian phrase, or its Uzbek
-               translation). So the old one-way language assertions no longer
-               apply. What still must hold is asserted below, plus two checks the
-               old shape never needed. */
-            ok(typeof item.placeholder === 'string' && item.placeholder.trim() !== '',
-                `${n} the cue is present (an empty one renders "undefined")`);
+            /* Exercise 2 is a BILINGUAL multiple-choice quiz: the prompt is asked
+               in Uzbek and may quote Russian, and the answer is whichever language
+               the question asks for. There is no blank and no cue any more — the
+               question stands on its own and all four options are on screen. */
+            ok(typeof item.question === 'string' && item.question.trim() !== '',
+                `${n} the question text is present`);
+            ok(!/___/.test(item.question), `${n} the question carries no leftover blank`);
+            ok(!('template' in item) && !('placeholder' in item),
+                `${n} no fill-in-the-blank fields remain`);
             ok(typeof item.answer === 'string' && item.answer.trim() !== '',
                 `${n} the answer is present`);
             ok(item.options.includes(item.answer), `${n} the correct answer is offered`);
@@ -202,24 +207,43 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
 
         /* the cue must genuinely differ from the answer — the reported symptom
            was the Russian translation showing where the Uzbek word belongs */
-        ex2.items.forEach((item, i) => {
+        ex2.questions.forEach((item, i) => {
             ok(clean(item.placeholder) !== clean(item.answer),
                 `t6.ex2[${i + 1}] the cue is not simply the answer repeated`);
         });
     }
 }
 
-/* --------------------------------------------- the cue survives answering */
+/* ------------------------------- the dropdown machinery is gone for good */
 {
-    /* The blank's text is overwritten with the chosen Russian word, so the
-       Uzbek prompt has to live somewhere that is never rewritten. */
-    ok(/class="topic6-uz-cue"/.test(html), 'the Uzbek cue is rendered outside the blank');
-    ok(/\$\{item\.placeholder\}<\/span>/.test(html), 'the cue renders the item placeholder');
-    ok(/\.topic6-uz-cue\s*\{/.test(html), 'the cue is styled');
-    const handler = html.slice(html.indexOf('data-topic6-option]'), html.indexOf('closeTopic6OptionPanels();', html.indexOf('data-topic6-option]')));
-    ok(/blank\.textContent = value;/.test(handler),
-        'the blank still shows the chosen answer (unchanged behaviour)');
-    ok(!/cue[^\n]*textContent\s*=/.test(handler), 'nothing ever overwrites the cue');
+    /* Exercise 2 used to be a dropdown: a blank you clicked to reveal the
+       options. It is a plain MCQ now, so none of that may survive — a leftover
+       handler or class would be dead code that can silently come back to life. */
+    ok(!/topic6-uz-cue/.test(html), 'no Uzbek cue markup or CSS remains');
+    ok(!/topic6-select-question/.test(html), 'no dropdown row wrapper remains');
+    ok(!/data-topic6-select/.test(html), 'no dropdown blank remains');
+    ok(!/closeTopic6OptionPanels/.test(html), 'the panel-closing helper is removed');
+    ok(!/topic6OutsideClickBound/.test(html), 'the outside-click guard is removed');
+    ok(!/item\.template/.test(html.slice(html.indexOf('loadTopic6Exercises'),
+                                         html.indexOf('function loadTopic7Exercises'))),
+        'the topic-6 renderer no longer reads item.template');
+
+    /* the options must render without waiting for an "active" class */
+    ok(/topic6-mcq-options/.test(html), 'options carry the always-visible MCQ class');
+    ok(/\.topic5-options\.topic6-mcq-options\s*\{\s*display:\s*flex/.test(html),
+        'a two-class rule makes them visible without touching the shared rule');
+    ok(/\.topic5-options\s*\{[^}]*display:\s*none/.test(html),
+        'the shared dropdown rule is untouched for topics 5 and 7');
+
+    /* choosing an option writes nowhere except the chip itself */
+    /* The listener body, taken up to the NEXT querySelectorAll registration —
+       slicing at the first '});' or the first addEventListener would cut inside
+       the handler, because it contains a nested forEach and its own listener. */
+    const hStart = html.indexOf("querySelectorAll('[data-topic6-option]')");
+    const hEnd = html.indexOf("document.querySelectorAll('[data-topic6-builder-word]')", hStart);
+    const body = html.slice(hStart, hEnd > hStart ? hEnd : hStart + 1200);
+    ok(!/blank/.test(body), 'the chip handler no longer writes into a blank');
+    ok(/classList\.add\('selected'\)/.test(body), 'the chip handler marks the chosen option');
 }
 
 /* --------------------------------------------- other topics are untouched */
@@ -263,12 +287,10 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
             var userQuizResults={};
             var completedTopics=[];
             var currentUserId=null;
-            var topic6OutsideClickBound=false;
             var topic6BuilderState={};
             function clearExtraExercises(){}
             ${fn('normalizeTopic6Text')}
             ${fn('topic6IsCorrect')}
-            ${fn('closeTopic6OptionPanels')}
             ${fn('getTopic6BuilderSelection')}
             ${fn('setTopic6BuilderSelection')}
             ${fn('renderTopic6BuilderSelection')}
@@ -284,86 +306,89 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     }
 
     const render = (w) => { w.loadTopic6Exercises(6); w.bindTopic6ExerciseEvents(); };
-    const blankOf = (w, i) => w.document.querySelector(`[data-topic6-select="${i}"]`);
-    const chipsOf = (w, i) => Array.from(w.document.querySelectorAll(`[data-topic6-option="${i}"]`))
-        .map(c => c.dataset.value);
-    const rowOf = (w, i) => blankOf(w, i).closest('.topic6-select-question');
-    const UZ = /^[a-z'‘’`]+$/i;
+    const chipsEl = (w, i) => Array.from(w.document.querySelectorAll(`[data-topic6-option="${i}"]`));
+    const chipsOf = (w, i) => chipsEl(w, i).map(c => c.dataset.value);
+    const selectedOf = (w, i) => chipsEl(w, i).filter(c => c.classList.contains('selected'));
+    const rowOf = (w, i) => chipsEl(w, i)[0].closest('.topic6-mcq');
 
     let w = boot();
     render(w);
     const ex2 = w.courseData.topics[0].topic6Exercises.exercise2;
 
-    /* ---- first paint ---- */
-    ok(Array.from({ length: 10 }, (_, i) => blankOf(w, i)).every(Boolean),
-        'runtime: all ten blanks render');
-    ex2.items.forEach((item, i) => {
+    /* ---- first paint: a plain MCQ, no dropdown ---- */
+    ok(w.document.querySelectorAll('.topic6-mcq').length === 10,
+        'runtime: ten multiple-choice questions render');
+    ok(w.document.querySelectorAll('[data-topic6-select]').length === 0,
+        'runtime: no dropdown blank is rendered anywhere');
+    ok(w.document.querySelectorAll('.topic6-uz-cue').length === 0,
+        'runtime: no Uzbek cue element remains');
+    ok(w.document.querySelectorAll('.topic6-select-question').length === 0,
+        'runtime: the dropdown row wrapper is gone');
+
+    ex2.questions.forEach((item, i) => {
         const n = `runtime t6.ex2[${i + 1}]`;
         const chips = chipsOf(w, i);
+        ok(chips.length === 4, `${n} renders exactly four options`);
         ok(chips.length === item.options.length, `${n} renders every option`);
         ok(new Set(chips).size === chips.length, `${n} renders no duplicate option`);
         ok(chips.includes(item.answer), `${n} renders the correct answer as a choice`);
-        ok(!chips.includes(item.placeholder), `${n} never offers the Uzbek cue as an answer`);
-        ok(blankOf(w, i).dataset.value === '', `${n} starts unanswered`);
+        ok(selectedOf(w, i).length === 0, `${n} starts unanswered`);
 
-        /* THE defect: the blank used to paint the Uzbek word, so an untouched
-           item looked answered with a word matching none of the options. */
-        const shown = blankOf(w, i).textContent.trim();
-        ok(shown !== item.placeholder,
-            `${n} the blank does not masquerade as an answered Uzbek word`);
-        ok(!UZ.test(shown), `${n} the blank shows a neutral prompt, not a content word ("${shown}")`);
+        /* THE point of this rewrite: the options are on screen from the start,
+           not hidden behind a control the learner has to open first. */
+        const panel = rowOf(w, i).querySelector('[data-topic6-options]');
+        ok(!!panel, `${n} the options container is present`);
+        ok(panel.className.includes('topic6-mcq-options'),
+            `${n} the options carry the always-visible MCQ class`);
+        ok(!panel.classList.contains('active'),
+            `${n} visibility does not depend on the dropdown "active" class`);
 
-        /* the cue must still be on screen, and exactly once */
-        const cues = rowOf(w, i).querySelectorAll('.topic6-uz-cue');
-        ok(cues.length === 1, `${n} exactly one Uzbek cue element (found ${cues.length})`);
-        ok(cues.length === 1 && cues[0].textContent.includes(item.placeholder),
-            `${n} the cue carries the Uzbek word`);
-        /* and nowhere else in the row may the bare Uzbek word appear */
-        const strays = Array.from(rowOf(w, i).querySelectorAll('*'))
-            .filter(e => !e.closest('.topic6-uz-cue') &&
-                         e.children.length === 0 &&
-                         e.textContent.trim() === item.placeholder);
-        ok(strays.length === 0,
-            `${n} the Uzbek word is not duplicated elsewhere in the row (found ${strays.length})`);
+        const q = rowOf(w, i).querySelector('.topic6-mcq-question');
+        ok(!!q && q.textContent.includes(item.question),
+            `${n} the question text is shown`);
+        ok(!/___/.test(rowOf(w, i).textContent), `${n} no blank placeholder is rendered`);
     });
 
-    /* ---- choosing an answer ---- */
-    ex2.items.forEach((item, i) => {
-        const chip = Array.from(w.document.querySelectorAll(`[data-topic6-option="${i}"]`))
-            .find(c => c.dataset.value === item.answer);
+    /* ---- choosing an answer, then changing it ---- */
+    ex2.questions.forEach((item, i) => {
+        const chip = chipsEl(w, i).find(c => c.dataset.value === item.answer);
         chip.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     });
-    ex2.items.forEach((item, i) => {
-        const b = blankOf(w, i);
-        ok(b.dataset.value === item.answer, `runtime t6.ex2[${i + 1}] stores the chosen answer`);
-        ok(b.textContent.trim() === item.answer, `runtime t6.ex2[${i + 1}] shows the chosen answer`);
-        const cue = rowOf(w, i).querySelector('.topic6-uz-cue');
-        ok(cue && cue.textContent.includes(item.placeholder),
-            `runtime t6.ex2[${i + 1}] the Uzbek cue survives answering`);
+    ex2.questions.forEach((item, i) => {
+        const sel = selectedOf(w, i);
+        ok(sel.length === 1, `runtime t6.ex2[${i + 1}] exactly one option is selected`);
+        ok(sel[0].dataset.value === item.answer,
+            `runtime t6.ex2[${i + 1}] the chosen option is the one clicked`);
+    });
+    /* picking a different option must move the selection, not add a second */
+    ex2.questions.forEach((item, i) => {
+        const other = chipsEl(w, i).find(c => c.dataset.value !== item.answer);
+        other.dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
+        const sel = selectedOf(w, i);
+        ok(sel.length === 1, `runtime t6.ex2[${i + 1}] still exactly one selection after changing`);
+        ok(sel[0].dataset.value === other.dataset.value,
+            `runtime t6.ex2[${i + 1}] the new choice replaced the previous one`);
     });
 
     /* ---- reopening the topic with a saved result ---- */
     w = boot();
-    w.userQuizResults['topic_6_practice'] = { exercise2Answers: ex2.items.map(it => it.answer) };
+    w.userQuizResults['topic_6_practice'] = { exercise2Answers: ex2.questions.map(it => it.answer) };
     render(w);
-    ex2.items.forEach((item, i) => {
-        ok(blankOf(w, i).textContent.trim() === item.answer,
-            `runtime t6.ex2[${i + 1}] a saved answer is restored`);
-        ok(blankOf(w, i).dataset.value === item.answer,
+    ex2.questions.forEach((item, i) => {
+        const sel = selectedOf(w, i);
+        ok(sel.length === 1, `runtime t6.ex2[${i + 1}] a saved answer is restored`);
+        ok(sel.length === 1 && sel[0].dataset.value === item.answer,
             `runtime t6.ex2[${i + 1}] the restored value is the stored one`);
     });
 
     /* ---- reopening with corrupted / stale stored answers ---- */
     w = boot();
-    w.userQuizResults['topic_6_practice'] = { exercise2Answers: ex2.items.map(it => it.placeholder) };
+    w.userQuizResults['topic_6_practice'] = { exercise2Answers: ex2.questions.map(() => 'не вариант') };
     render(w);
-    ex2.items.forEach((item, i) => {
-        const b = blankOf(w, i);
-        ok(b.dataset.value === '',
+    ex2.questions.forEach((item, i) => {
+        ok(selectedOf(w, i).length === 0,
             `runtime t6.ex2[${i + 1}] a stored value outside the options is discarded`);
-        ok(!UZ.test(b.textContent.trim()),
-            `runtime t6.ex2[${i + 1}] the item stays answerable after bad data`);
-        ok(!b.classList.contains('incorrect'),
+        ok(chipsEl(w, i).every(c => !c.classList.contains('incorrect')),
             `runtime t6.ex2[${i + 1}] bad data is not scored against the learner`);
     });
 }
@@ -395,12 +420,10 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
             var userQuizResults={};
             var completedTopics=[];
             var currentUserId=null;
-            var topic6OutsideClickBound=false;
             var topic6BuilderState={};
             function clearExtraExercises(){}
             ${fn('normalizeTopic6Text')}
             ${fn('topic6IsCorrect')}
-            ${fn('closeTopic6OptionPanels')}
             ${fn('getTopic6BuilderSelection')}
             ${fn('setTopic6BuilderSelection')}
             ${fn('renderTopic6BuilderSelection')}
@@ -415,8 +438,9 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     }
 
     const paint = (w) => { w.loadTopic6Exercises(6); w.bindTopic6ExerciseEvents(); };
-    const bl = (w, i) => w.document.querySelector(`[data-topic6-select="${i}"]`);
     const chips = (w, i) => Array.from(w.document.querySelectorAll(`[data-topic6-option="${i}"]`));
+    const picked = (w, i) => chips(w, i).filter(c => c.classList.contains('selected'));
+    const rowOf = (w, i) => chips(w, i)[0].closest('.topic6-mcq');
     const UZWORD = /^[a-z'‘’`]+$/i;
 
     /* ---- 1-2. a brand-new user opens topic 6 ---- */
@@ -426,14 +450,14 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     paint(w);
     const ex2 = w.courseData.topics[0].topic6Exercises.exercise2;
 
-    ex2.items.forEach((item, i) => {
+    ex2.questions.forEach((item, i) => {
         const n = `acceptance new-user [${i + 1}]`;
-        ok(bl(w, i).textContent.trim() === 'Variantni tanlang', `${n} neutral button before answering`);
-        ok(!UZWORD.test(bl(w, i).textContent.trim()), `${n} no Uzbek word inside the button`);
-        ok(bl(w, i).dataset.value === '', `${n} nothing is pre-selected`);
-        const cue = bl(w, i).closest('.topic6-select-question').querySelectorAll('.topic6-uz-cue');
-        ok(cue.length === 1 && cue[0].textContent.includes(item.placeholder),
-            `${n} the Uzbek cue is shown separately`);
+        ok(picked(w, i).length === 0, `${n} nothing is pre-selected`);
+        ok(chips(w, i).length === 4, `${n} all four options are on screen from the start`);
+        const q = rowOf(w, i).querySelector('.topic6-mcq-question');
+        ok(!!q && q.textContent.includes(item.question), `${n} the question text is shown`);
+        ok(rowOf(w, i).querySelectorAll('[data-topic6-select]').length === 0,
+            `${n} no dropdown control is rendered`);
         const vals = chips(w, i).map(c => c.dataset.value);
         ok(vals.includes(item.answer), `${n} the correct answer is offered`);
         ok(new Set(vals).size === vals.length, `${n} no duplicate options`);
@@ -441,11 +465,12 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     });
 
     /* ---- 3. answer all ten and submit ---- */
-    ex2.items.forEach((item, i) => {
+    ex2.questions.forEach((item, i) => {
         chips(w, i).find(c => c.dataset.value === item.answer)
             .dispatchEvent(new w.MouseEvent('click', { bubbles: true }));
     });
-    ok(ex2.items.every((it, i) => bl(w, i).dataset.value === it.answer),
+    ok(ex2.questions.every((it, i) => picked(w, i).length === 1 &&
+        picked(w, i)[0].dataset.value === it.answer),
         'acceptance: all ten answers are selected');
 
     return (async () => {
@@ -455,28 +480,24 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
         ok(!!stored, 'acceptance: submitting persists a practice result');
         ok(Array.isArray(stored.exercise2Answers) && stored.exercise2Answers.length === 10,
             'acceptance: all ten answers are stored');
-        ok(stored.exercise2Answers.every((v, i) => v === ex2.items[i].answer),
-            'acceptance: the stored answers are the chosen Russian words');
+        ok(stored.exercise2Answers.every((v, i) => v === ex2.questions[i].answer),
+            'acceptance: the stored answers are the chosen options');
         ok(stored.breakdown.exercise2 === 10,
             `acceptance: exercise 2 scores 10/10 (${stored.breakdown.exercise2})`);
-        ok(ex2.items.every((_, i) => bl(w, i).classList.contains('correct')),
-            'acceptance: every blank is marked correct');
+        ok(ex2.questions.every((_, i) => picked(w, i).length === 1 &&
+            picked(w, i)[0].classList.contains('correct')),
+            'acceptance: every chosen option is marked correct');
 
         /* ---- 4-5. reload the page, reopen the exercise ---- */
         const fresh = bootAt(1440);
         fresh.userQuizResults['topic_6_practice'] = stored;   // what Firebase would return
         paint(fresh);
-        ex2.items.forEach((item, i) => {
+        ex2.questions.forEach((item, i) => {
             const n = `acceptance after-reload [${i + 1}]`;
-            ok(bl(fresh, i).dataset.value === item.answer, `${n} the chosen answer is restored`);
-            ok(bl(fresh, i).textContent.trim() === item.answer, `${n} and is displayed`);
-            ok(bl(fresh, i).classList.contains('correct'), `${n} still marked correct`);
-            const sel = chips(fresh, i).filter(c => c.classList.contains('selected'));
+            const sel = picked(fresh, i);
+            ok(sel.length === 1, `${n} exactly one option is restored as selected`);
             ok(sel.length === 1 && sel[0].dataset.value === item.answer,
-                `${n} the matching option chip is highlighted`);
-            const cue = bl(fresh, i).closest('.topic6-select-question')
-                .querySelectorAll('.topic6-uz-cue');
-            ok(cue.length === 1, `${n} the Uzbek cue is still there, exactly once`);
+                `${n} the restored option is the chosen answer`);
         });
 
         /* ---- 6. mobile must be identical ---- */
@@ -502,12 +523,11 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
         /* interaction works the same on a touch viewport */
         const m2 = bootAt(390, mobileUA);
         paint(m2);
-        chips(m2, 0).find(c => c.dataset.value === ex2.items[0].answer)
+        chips(m2, 0).find(c => c.dataset.value === ex2.questions[0].answer)
             .dispatchEvent(new m2.MouseEvent('click', { bubbles: true }));
-        ok(bl(m2, 0).dataset.value === ex2.items[0].answer,
+        ok(picked(m2, 0).length === 1 &&
+           picked(m2, 0)[0].dataset.value === ex2.questions[0].answer,
             'acceptance: choosing an answer works on mobile');
-        ok(bl(m2, 0).textContent.trim() === ex2.items[0].answer,
-            'acceptance: the mobile button shows the chosen answer');
 
         /* nothing in the topic-6 path branches on width or user agent */
         const region = html.slice(html.indexOf('function loadTopic6Exercises'),

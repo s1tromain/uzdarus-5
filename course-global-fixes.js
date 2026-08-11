@@ -235,6 +235,12 @@
         }
         if (exercise.sentences && exercise.answers) return 'sentences-input';
         if (exercise.prompts && exercise.answers) return 'prompts-input';
+        /* A plain multiple-choice exercise: questions carry their own options and
+           answer, so there is no parallel `answers` array. Checked BEFORE the
+           questions/answers shape below, which is a different, older schema. */
+        if (Array.isArray(exercise.questions) && exercise.questions.length > 0 &&
+            exercise.questions[0] && exercise.questions[0].options &&
+            exercise.questions[0].answer !== undefined) return 'questions-choice';
         if (exercise.questions && exercise.answers) return 'questions-input';
         return 'unknown';
     }
@@ -595,6 +601,31 @@
         return results;
     }
 
+    /* Multiple choice: the learner's answer is the chip carrying `.selected`.
+       Nothing is written into a separate control, so the chips are the only
+       source of truth — the same thing the page's own scorer reads. */
+    function collectQuestionsChoice(exercise, scope, N, M, exTitle, topicTitle) {
+        var results = [];
+        var questions = exercise.questions || [];
+        questions.forEach(function (item, i) {
+            var sel = '[data-topic' + N + '-option="' + i + '"]';
+            var chips = queryAllIn(scope, sel);
+            if (!chips.length) return;
+            var chosen = chips.filter(function (c) {
+                return c.classList && c.classList.contains('selected');
+            })[0];
+            var uv = chosen ? (chosen.dataset.value || chosen.textContent || '').trim() : '';
+            var exp = item.answer;
+            var ok = isCorrect(uv, exp);
+            var ed = expectedDisplay(exp);
+            results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), item.question || '',
+                uv || '(tanlanmagan)', ed, ok,
+                generateExplanation(ok, uv, ed, topicTitle, exTitle)),
+                { k: 'chip', s: '[data-topic' + N + '-options="' + i + '"]', v: uv }));
+        });
+        return results;
+    }
+
     function collectItemsSelect(exercise, scope, N, M, exTitle, topicTitle) {
         var results = [];
         var items = exercise.items || [];
@@ -672,6 +703,7 @@
             case 'items-transform':
             case 'items-input':    return collectItemsInput(exercise, scope, N, M, exTitle, topicTitle);
             case 'items-chips':    return collectItemsChips(exercise, scope, N, M, exTitle, topicTitle);
+            case 'questions-choice': return collectQuestionsChoice(exercise, scope, N, M, exTitle, topicTitle);
             case 'items-select':   return collectItemsSelect(exercise, scope, N, M, exTitle, topicTitle);
             case 'items-builder':  return collectItemsBuilder(exercise, scope, N, M, exTitle, topicTitle);
             case 'prompts-input':
