@@ -1293,7 +1293,24 @@
         /* Topic 6 exercise 2 is a plain MCQ: its options are always on screen.
            Two classes beat the shared single-class rule, so .topic5-options keeps
            its dropdown behaviour for topics 5 and 7 untouched. */
-        .topic5-options.topic6-mcq-options { display: flex; }
+        .topic5-options.topic6-mcq-options {
+            display: flex;
+            /* ONE OPTION PER ROW. As a wrapping row of chips, long sentence
+               options ("Магазин находится слева") broke across lines and the
+               fragments read as duplicated answers. A column gives every option
+               its own line, so four options always look like four. */
+            flex-direction: column;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .topic6-mcq-options .topic5-option-chip {
+            width: 100%;
+            text-align: left;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
+        }
 
         .topic6-mcq { padding: 14px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
         .topic6-mcq:last-child { border-bottom: none; }
