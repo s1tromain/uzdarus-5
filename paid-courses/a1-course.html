@@ -1290,31 +1290,90 @@
             display: flex;
         }
 
-        /* Topic 6 exercise 2 is a plain MCQ: its options are always on screen.
-           Two classes beat the shared single-class rule, so .topic5-options keeps
-           its dropdown behaviour for topics 5 and 7 untouched. */
-        .topic5-options.topic6-mcq-options {
+
+        /* Still used by exercises 4 and 5 of topic 6. */
+        .topic6-correct-hint {
+            display: none;
+            margin-top: 8px;
+            color: #c62828;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .topic6-correct-hint.show { display: block; }
+
+        /* ---- Topic 6 · Exercise 2 (multiple choice) -------------------
+           Self-contained: nothing here is shared with the dropdown exercises,
+           and nothing here inherits from them. One option per row, full width,
+           so a long option can never wrap into something that reads as a
+           second option. */
+        .t6q { padding: 16px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.07); }
+        .t6q:last-child { border-bottom: none; }
+
+        .t6q-question {
+            font-weight: 600;
+            line-height: 1.6;
+            margin: 0 0 12px;
+        }
+
+        .t6q-options {
+            display: block;          /* never a wrapping row */
+        }
+
+        .t6q-option {
             display: flex;
-            /* ONE OPTION PER ROW. As a wrapping row of chips, long sentence
-               options ("Магазин находится слева") broke across lines and the
-               fragments read as duplicated answers. A column gives every option
-               its own line, so four options always look like four. */
-            flex-direction: column;
-            align-items: stretch;
-            gap: 8px;
-        }
-
-        .topic6-mcq-options .topic5-option-chip {
+            align-items: flex-start;
+            gap: 10px;
             width: 100%;
+            margin: 0 0 8px;
+            padding: 12px 14px;
+            border: 2px solid #d8dee9;
+            border-radius: 10px;
+            background: #fff;
+            font: inherit;
+            font-size: 0.98rem;
+            line-height: 1.5;
             text-align: left;
-            white-space: normal;
-            word-break: normal;
-            overflow-wrap: break-word;
+            color: #1f2430;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
         }
 
-        .topic6-mcq { padding: 14px 0; border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
-        .topic6-mcq:last-child { border-bottom: none; }
-        .topic6-mcq-question { font-weight: 600; line-height: 1.6; margin-bottom: 10px; }
+        .t6q-option:last-child { margin-bottom: 0; }
+        .t6q-option:hover { border-color: #90a4c4; }
+
+        .t6q-letter {
+            flex: 0 0 auto;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #eef2f8;
+            color: #445;
+            font-size: 0.82rem;
+            font-weight: 700;
+            line-height: 22px;
+            text-align: center;
+        }
+
+        .t6q-text { flex: 1 1 auto; white-space: normal; overflow-wrap: break-word; }
+
+        .t6q-option.is-selected { border-color: #1565c0; background: #e8f1fc; }
+        .t6q-option.is-selected .t6q-letter { background: #1565c0; color: #fff; }
+
+        .t6q-option.is-correct { border-color: #2e7d32; background: #e8f5e9; }
+        .t6q-option.is-correct .t6q-letter { background: #2e7d32; color: #fff; }
+
+        .t6q-option.is-wrong { border-color: #c62828; background: #ffebee; }
+        .t6q-option.is-wrong .t6q-letter { background: #c62828; color: #fff; }
+
+        .t6q-hint {
+            display: none;
+            margin: 8px 0 0;
+            color: #2e7d32;
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+        .t6q-hint.show { display: block; }
 
         .topic5-option-chip {
             border: 2px solid #e3e3e3;
@@ -1502,17 +1561,7 @@
            the chosen Russian word, so without this the learner loses sight of
            what they were asked to translate the moment they answer. */
 
-        .topic6-correct-hint {
-            display: none;
-            margin-top: 8px;
-            color: #c62828;
-            font-weight: 600;
-            font-size: 0.92rem;
-        }
 
-        .topic6-correct-hint.show {
-            display: block;
-        }
 
         .topic6-feedback-list {
             display: grid;
@@ -6679,16 +6728,18 @@
 
 
         function bindTopic6ExerciseEvents() {
-            document.querySelectorAll('[data-topic6-option]').forEach((option) => {
-                option.addEventListener('click', function() {
-                    const index = this.dataset.topic6Option;
-                    /* One choice per question: clear the row, then mark this chip.
-                       The answer is read back from the selected chip at scoring
-                       time, so nothing is written into any other element. */
-                    document.querySelectorAll(`[data-topic6-option="${index}"]`).forEach((chip) => {
-                        chip.classList.remove('selected', 'correct', 'incorrect');
+            document.querySelectorAll('[data-t6q-option]').forEach((option) => {
+                option.addEventListener('click', function () {
+                    const index = this.dataset.t6qOption;
+                    /* One answer per question: clear the whole group, mark this
+                       one. The chosen answer is read back from the button that
+                       carries .is-selected — nothing is written anywhere else. */
+                    document.querySelectorAll(`[data-t6q-option="${index}"]`).forEach((btn) => {
+                        btn.classList.remove('is-selected', 'is-correct', 'is-wrong');
                     });
-                    this.classList.add('selected');
+                    this.classList.add('is-selected');
+                    const hint = document.querySelector(`[data-t6q-hint="${index}"]`);
+                    if (hint) { hint.textContent = ''; hint.classList.remove('show'); }
                 });
             });
 
@@ -6807,24 +6858,32 @@
                         <h3 class="topic5-exercise-title">${topic.topic6Exercises.exercise2.title}</h3>
             `;
 
+            /* EXERCISE 2 — multiple choice, built from scratch.
+               It shares nothing with the other exercises: its own class prefix
+               (t6q-), its own data attributes (data-t6q-*) and its own CSS. That
+               isolation is deliberate — the previous version borrowed the
+               dropdown's .topic5-options, whose base rule is display:none, and
+               inherited its collapsing/wrapping behaviour along with it. */
             topic.topic6Exercises.exercise2.questions.forEach((item, index) => {
-                /* Only a value the learner could actually have chosen is restored.
-                   A stored answer that is not among this item's options can only
-                   come from stale or corrupted data; showing it would leave the
-                   blank holding a word that matches none of the choices, which
-                   the learner has no way to correct. Treat it as unanswered. */
-                const storedValue = ex2Answers[index] || '';
-                const savedValue = item.options.includes(storedValue) ? storedValue : '';
+                /* Restore only a value the learner could actually have picked;
+                   anything else is stale data and counts as unanswered. */
+                const stored = ex2Answers[index] || '';
+                const chosen = item.options.indexOf(stored) !== -1 ? stored : '';
                 html += `
-                    <div class="topic6-mcq">
-                        <div class="topic6-mcq-question">${index + 1}. ${item.question}</div>
-                        <div class="topic5-options topic6-mcq-options" data-topic6-options="${index}">
-                            ${item.options.map((option) => {
-                                const selectedClass = savedValue === option ? 'selected' : '';
-                                return `<button type="button" class="topic5-option-chip ${selectedClass}" data-topic6-option="${index}" data-value="${option}">${option}</button>`;
-                            }).join('')}
+                    <div class="t6q" data-t6q="${index}">
+                        <p class="t6q-question">${index + 1}. ${item.question}</p>
+                        <div class="t6q-options" data-t6q-options="${index}">
+                            ${item.options.map((option, oi) => `
+                                <button type="button"
+                                        class="t6q-option${option === chosen ? ' is-selected' : ''}"
+                                        data-t6q-option="${index}"
+                                        data-t6q-index="${oi}"
+                                        data-value="${option}">
+                                    <span class="t6q-letter">${'ABCD'[oi]}</span>
+                                    <span class="t6q-text">${option}</span>
+                                </button>`).join('')}
                         </div>
-                        <div class="topic6-correct-hint" data-topic6-e2-hint="${index}"></div>
+                        <p class="t6q-hint" data-t6q-hint="${index}"></p>
                     </div>
                 `;
             });
@@ -6991,19 +7050,21 @@
             });
 
             exerciseData.exercise2.questions.forEach((item, index) => {
-                const chips = Array.from(document.querySelectorAll(`[data-topic6-option="${index}"]`));
-                const selected = chips.find((chip) => chip.classList.contains('selected')) || null;
-                const hint = document.querySelector(`[data-topic6-e2-hint="${index}"]`);
-                const userValue = selected?.dataset.value || '';
+                const buttons = Array.from(document.querySelectorAll(`[data-t6q-option="${index}"]`));
+                const chosen = buttons.find((b) => b.classList.contains('is-selected')) || null;
+                const hint = document.querySelector(`[data-t6q-hint="${index}"]`);
+                const userValue = chosen ? (chosen.dataset.value || '') : '';
                 ex2Answers.push(userValue);
                 totalQuestions++;
 
-                if (hint) {
-                    hint.classList.remove('show');
-                    hint.textContent = '';
-                }
+                buttons.forEach((b) => b.classList.remove('is-correct', 'is-wrong'));
+                if (hint) { hint.textContent = ''; hint.classList.remove('show'); }
 
-                chips.forEach((chip) => chip.classList.remove('correct', 'incorrect'));
+                /* The right answer is always shown in green, whether the learner
+                   found it, missed it, or answered nothing at all. */
+                const right = buttons.find((b) => topic6IsCorrect(b.dataset.value, item.answer));
+                if (right) right.classList.add('is-correct');
+
                 if (!userValue) {
                     if (hint) {
                         hint.textContent = `To'g'ri javob: ${item.answer}`;
@@ -7013,14 +7074,10 @@
                 }
 
                 if (topic6IsCorrect(userValue, item.answer)) {
-                    if (selected) selected.classList.add('correct');
                     totalCorrect++;
                     ex2Correct++;
                 } else {
-                    if (selected) selected.classList.add('incorrect');
-                    chips.forEach((chip) => {
-                        if (topic6IsCorrect(chip.dataset.value, item.answer)) chip.classList.add('correct');
-                    });
+                    if (chosen) chosen.classList.add('is-wrong');
                     if (hint) {
                         hint.textContent = `To'g'ri javob: ${item.answer}`;
                         hint.classList.add('show');

@@ -318,7 +318,7 @@ function synthesize(topic, code) {
                     break;
                 case 'questions-choice':
                     (ex.questions || []).forEach((item, i) => {
-                        html += `<div data-topic${N}-options="${i}"><button data-topic${N}-option="${i}" class="selected" data-value="${esc(first(item.answer) || '')}"></button></div>`;
+                        html += `<div data-t6q-options="${i}"><button data-t6q-option="${i}" class="is-selected" data-value="${esc(first(item.answer) || '')}"></button></div>`;
                         expected++; families.add(key);
                     });
                     break;

@@ -601,18 +601,18 @@
         return results;
     }
 
-    /* Multiple choice: the learner's answer is the chip carrying `.selected`.
+    /* Multiple choice: the learner's answer is the button carrying `.is-selected`.
        Nothing is written into a separate control, so the chips are the only
        source of truth — the same thing the page's own scorer reads. */
     function collectQuestionsChoice(exercise, scope, N, M, exTitle, topicTitle) {
         var results = [];
         var questions = exercise.questions || [];
         questions.forEach(function (item, i) {
-            var sel = '[data-topic' + N + '-option="' + i + '"]';
+            var sel = '[data-t6q-option="' + i + '"]';
             var chips = queryAllIn(scope, sel);
             if (!chips.length) return;
             var chosen = chips.filter(function (c) {
-                return c.classList && c.classList.contains('selected');
+                return c.classList && c.classList.contains('is-selected');
             })[0];
             var uv = chosen ? (chosen.dataset.value || chosen.textContent || '').trim() : '';
             var exp = item.answer;
@@ -621,7 +621,7 @@
             results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), item.question || '',
                 uv || '(tanlanmagan)', ed, ok,
                 generateExplanation(ok, uv, ed, topicTitle, exTitle)),
-                { k: 'chip', s: '[data-topic' + N + '-options="' + i + '"]', v: uv }));
+                { k: 'mcq', s: '[data-t6q-options="' + i + '"]', v: uv }));
         });
         return results;
     }
@@ -1179,6 +1179,18 @@
                         if (ref.v && normalize(value) === normalize(ref.v)) {
                             btn.classList.add('selected', ok ? 't1-ok' : 't1-bad');
                         }
+                    });
+                    return;
+                }
+                /* Multiple choice restores its own class. It is deliberately NOT
+                   folded into 'chip': that one belongs to the dropdown exercises
+                   and marks with .selected, a class the MCQ never uses. */
+                case 'mcq': {
+                    var group = queryIn(scope, ref.s);
+                    if (!group || !ref.v) return;
+                    queryAllIn(group, '[data-value]').forEach(function (btn) {
+                        var v = (btn.dataset && btn.dataset.value) || '';
+                        if (normalize(v) === normalize(ref.v)) btn.classList.add('is-selected');
                     });
                     return;
                 }

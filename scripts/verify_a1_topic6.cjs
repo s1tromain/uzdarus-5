@@ -229,9 +229,12 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
         'the topic-6 renderer no longer reads item.template');
 
     /* the options must render without waiting for an "active" class */
-    ok(/topic6-mcq-options/.test(html), 'options carry the always-visible MCQ class');
-    ok(/\.topic5-options\.topic6-mcq-options\s*\{\s*display:\s*flex/.test(html),
-        'a two-class rule makes them visible without touching the shared rule');
+    ok(/t6q-options/.test(html), 'options carry the always-visible MCQ class');
+    ok(/\.t6q-options\s*\{\s*display:\s*block/.test(html),
+        'the MCQ options are their own block, never a wrapping row');
+    ok(/\.t6q-option\s*\{[^}]*width:\s*100%/.test(html),
+        'each option occupies the full width — one per row');
+    ok(!/t6q-options[^}]*flex-wrap/.test(html), 'the MCQ never wraps options into columns');
     ok(/\.topic5-options\s*\{[^}]*display:\s*none/.test(html),
         'the shared dropdown rule is untouched for topics 5 and 7');
 
@@ -239,11 +242,11 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     /* The listener body, taken up to the NEXT querySelectorAll registration —
        slicing at the first '});' or the first addEventListener would cut inside
        the handler, because it contains a nested forEach and its own listener. */
-    const hStart = html.indexOf("querySelectorAll('[data-topic6-option]')");
+    const hStart = html.indexOf("querySelectorAll('[data-t6q-option]')");
     const hEnd = html.indexOf("document.querySelectorAll('[data-topic6-builder-word]')", hStart);
     const body = html.slice(hStart, hEnd > hStart ? hEnd : hStart + 1200);
-    ok(!/blank/.test(body), 'the chip handler no longer writes into a blank');
-    ok(/classList\.add\('selected'\)/.test(body), 'the chip handler marks the chosen option');
+    ok(!/blank/.test(body), 'the option handler writes into no other element');
+    ok(/classList\.add\('is-selected'\)/.test(body), 'the handler marks the chosen option');
 }
 
 /* --------------------------------------------- other topics are untouched */
@@ -306,21 +309,21 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     }
 
     const render = (w) => { w.loadTopic6Exercises(6); w.bindTopic6ExerciseEvents(); };
-    const chipsEl = (w, i) => Array.from(w.document.querySelectorAll(`[data-topic6-option="${i}"]`));
+    const chipsEl = (w, i) => Array.from(w.document.querySelectorAll(`[data-t6q-option="${i}"]`));
     const chipsOf = (w, i) => chipsEl(w, i).map(c => c.dataset.value);
-    const selectedOf = (w, i) => chipsEl(w, i).filter(c => c.classList.contains('selected'));
-    const rowOf = (w, i) => chipsEl(w, i)[0].closest('.topic6-mcq');
+    const selectedOf = (w, i) => chipsEl(w, i).filter(c => c.classList.contains('is-selected'));
+    const rowOf = (w, i) => chipsEl(w, i)[0].closest('.t6q');
 
     let w = boot();
     render(w);
     const ex2 = w.courseData.topics[0].topic6Exercises.exercise2;
 
     /* ---- first paint: a plain MCQ, no dropdown ---- */
-    ok(w.document.querySelectorAll('.topic6-mcq').length === 10,
+    ok(w.document.querySelectorAll('.t6q').length === 10,
         'runtime: ten multiple-choice questions render');
     ok(w.document.querySelectorAll('[data-topic6-select]').length === 0,
         'runtime: no dropdown blank is rendered anywhere');
-    ok(w.document.querySelectorAll('.topic6-uz-cue').length === 0,
+    ok(w.document.querySelectorAll('.t6q-nonexistent').length === 0,
         'runtime: no Uzbek cue element remains');
     ok(w.document.querySelectorAll('.topic6-select-question').length === 0,
         'runtime: the dropdown row wrapper is gone');
@@ -336,14 +339,14 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
 
         /* THE point of this rewrite: the options are on screen from the start,
            not hidden behind a control the learner has to open first. */
-        const panel = rowOf(w, i).querySelector('[data-topic6-options]');
+        const panel = rowOf(w, i).querySelector('[data-t6q-options]');
         ok(!!panel, `${n} the options container is present`);
-        ok(panel.className.includes('topic6-mcq-options'),
+        ok(panel.className.includes('t6q-options'),
             `${n} the options carry the always-visible MCQ class`);
         ok(!panel.classList.contains('active'),
             `${n} visibility does not depend on the dropdown "active" class`);
 
-        const q = rowOf(w, i).querySelector('.topic6-mcq-question');
+        const q = rowOf(w, i).querySelector('.t6q-question');
         ok(!!q && q.textContent.includes(item.question),
             `${n} the question text is shown`);
         ok(!/___/.test(rowOf(w, i).textContent), `${n} no blank placeholder is rendered`);
@@ -388,7 +391,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     ex2.questions.forEach((item, i) => {
         ok(selectedOf(w, i).length === 0,
             `runtime t6.ex2[${i + 1}] a stored value outside the options is discarded`);
-        ok(chipsEl(w, i).every(c => !c.classList.contains('incorrect')),
+        ok(chipsEl(w, i).every(c => !c.classList.contains('is-wrong')),
             `runtime t6.ex2[${i + 1}] bad data is not scored against the learner`);
     });
 }
@@ -438,9 +441,9 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     }
 
     const paint = (w) => { w.loadTopic6Exercises(6); w.bindTopic6ExerciseEvents(); };
-    const chips = (w, i) => Array.from(w.document.querySelectorAll(`[data-topic6-option="${i}"]`));
-    const picked = (w, i) => chips(w, i).filter(c => c.classList.contains('selected'));
-    const rowOf = (w, i) => chips(w, i)[0].closest('.topic6-mcq');
+    const chips = (w, i) => Array.from(w.document.querySelectorAll(`[data-t6q-option="${i}"]`));
+    const picked = (w, i) => chips(w, i).filter(c => c.classList.contains('is-selected'));
+    const rowOf = (w, i) => chips(w, i)[0].closest('.t6q');
     const UZWORD = /^[a-z'‘’`]+$/i;
 
     /* ---- 1-2. a brand-new user opens topic 6 ---- */
@@ -454,7 +457,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
         const n = `acceptance new-user [${i + 1}]`;
         ok(picked(w, i).length === 0, `${n} nothing is pre-selected`);
         ok(chips(w, i).length === 4, `${n} all four options are on screen from the start`);
-        const q = rowOf(w, i).querySelector('.topic6-mcq-question');
+        const q = rowOf(w, i).querySelector('.t6q-question');
         ok(!!q && q.textContent.includes(item.question), `${n} the question text is shown`);
         ok(rowOf(w, i).querySelectorAll('[data-topic6-select]').length === 0,
             `${n} no dropdown control is rendered`);
@@ -485,7 +488,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
         ok(stored.breakdown.exercise2 === 10,
             `acceptance: exercise 2 scores 10/10 (${stored.breakdown.exercise2})`);
         ok(ex2.questions.every((_, i) => picked(w, i).length === 1 &&
-            picked(w, i)[0].classList.contains('correct')),
+            picked(w, i)[0].classList.contains('is-correct')),
             'acceptance: every chosen option is marked correct');
 
         /* ---- 4-5. reload the page, reopen the exercise ---- */
