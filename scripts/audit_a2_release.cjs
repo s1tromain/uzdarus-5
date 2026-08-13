@@ -337,7 +337,10 @@ function vocab(rel){
   return {v:w.__v,S};
 }
 const VP=vocab('paid-courses/a2-vocabulary.html'), VD=vocab('a2-demo-vocabulary.html');
-const EXPECT={1:45,2:79,3:73,4:106,5:50};
+/* Topic 2 was 79: «создать семью» and «воспитывать детей» each appeared twice
+   inside this one list, so the learner met them twice in a single pass. Both
+   later copies were removed and A2_VOCAB_COUNTS follows. */
+const EXPECT={1:45,2:77,3:73,4:106,5:50};
 Object.entries(EXPECT).forEach(([t,n])=>{
   const w=VP.v.topics.find(x=>x.id===+t);
   ok(`paid vocab T${t}: ${n} words`, w.words.length===n, String(w.words.length));

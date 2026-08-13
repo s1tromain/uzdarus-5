@@ -72,7 +72,7 @@ const t2 = v.topics.find(t => t.id === 2);
 ok('topic 2 present', !!t2);
 eq('topic 2 name matches the lesson', t2.name, 'Oila va munosabatlar');
 eq('topic 2 unlocked', t2.isLocked, false);
-eq('79 words imported from the resource', t2.words.length, 79);
+eq('77 words imported (79 minus two exact duplicates)', t2.words.length, 77);
 const R2 = [
  ['любовь','sevgi'],['дружба',"do'stlik"],['уважение','hurmat'],['доверие','ishonch'],
  ['поддержка',"qo'llab-quvvatlash"],['забота',"g'amxo'rlik"],['понимание','tushunish'],
@@ -93,10 +93,10 @@ const R2 = [
  ['вежливый','xushmuomala'],['внимательный',"e'tiborli"],['надёжный','ishonchli'],
  ['общительный','kirishimli'],['дружелюбный',"do'stona"],['любимый','sevimli'],
  ['близкий','yaqin'],['семейный','oilaviy'],
- ['создать семью','oila qurmoq'],['жить вместе','birga yashamoq'],
+ ['жить вместе','birga yashamoq'],
  ['проводить время вместе',"birga vaqt o'tkazmoq"],['заботиться друг о друге',"bir-biriga g'amxo'rlik qilmoq"],
  ['поддерживать друг друга',"bir-birini qo'llab-quvvatlamoq"],['уважать родителей','ota-onani hurmat qilmoq'],
- ['воспитывать детей','farzand tarbiyalamoq'],['отмечать праздники вместе','bayramlarni birga nishonlamoq'],
+ ['отмечать праздники вместе','bayramlarni birga nishonlamoq'],
  ['собираться всей семьёй',"butun oila bo'lib yig'ilmoq"],['жить в мире и согласии','tinch va ahil yashamoq'],
  ['доверять друг другу','bir-biriga ishonmoq'],['решать проблемы вместе','muammolarni birgalikda hal qilmoq'],
  ['хранить семейные традиции',"oilaviy an'analarni saqlamoq"],['быть опорой для семьи',"oila uchun tayanch bo'lmoq"],
@@ -105,7 +105,13 @@ const R2 = [
  ['проводить выходные с семьёй',"dam olish kunlarini oila bilan o'tkazmoq"],
  ['помогать родителям','ota-onaga yordam bermoq'],['жить счастливо','baxtli yashamoq'],
 ];
-eq('topic 2 checklist length', R2.length, 79);
+/* Was 79. Two cards — «создать семью» and «воспитывать детей» — appeared
+   TWICE inside this one topic's list, so the learner met each of them twice
+   in a single pass. The later copy of each was removed; the checklist and
+   the pinned length follow, and the verbatim order check below still holds
+   every remaining card in place. */
+eq('topic 2 checklist length', R2.length, 77);
+eq('topic 2 has no exact duplicate card', new Set(R2.map(([ru, uz]) => ru + '||' + uz)).size, 77);
 let mm2 = 0;
 R2.forEach(([ru, uz], i) => {
   if (t2.words[i].ru !== ru || t2.words[i].uz !== uz) {
@@ -128,9 +134,9 @@ const COURSE = fs.readFileSync(path.join(ROOT, 'paid-courses/a2-course.html'), '
    home: the figures are asserted against the real word lists further down. */
 const DEMO = fs.readFileSync(path.join(ROOT, 'a2-demo.html'), 'utf8');
 ok('topic 1 card advertises 45 words', /\b1\s*:\s*45\b/.test(COURSE));
-ok('topic 2 card advertises 79 words', /\b2\s*:\s*79\b/.test(COURSE));
+ok('topic 2 card advertises 77 words', /\b2\s*:\s*77\b/.test(COURSE));
 ok('demo topic 1 card also says 45', /\b1\s*:\s*45\b/.test(DEMO));
-ok('demo topic 2 card also says 79', /\b2\s*:\s*79\b/.test(DEMO));
+ok('demo topic 2 card also says 77', /\b2\s*:\s*77\b/.test(DEMO));
 ok('no stale 40-word label remains anywhere', !/40 ta so'z/.test(COURSE) && !/40 ta so'z/.test(DEMO));
 ok('course card deep-links by topic id',
    /a2-vocabulary\.html\?topic=' \+ topicId/.test(COURSE));

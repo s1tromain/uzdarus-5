@@ -416,6 +416,17 @@ async function enforceAccess() {
                     return;
                 }
 
+                /* FROZEN IS NOT EXPIRED. The learner still owns every paid
+                   day; they are simply paused. Telling them their subscription
+                   ended would be false and would send them to buy time they
+                   already have — so the frozen case is answered before the
+                   subscription case and with its own message. */
+                if (access.reason === 'frozen') {
+                    showOverlayMessage('Akkaunt vaqtincha muzlatilgan. Obuna muddati saqlanib qolmoqda.');
+                    redirectToDashboard('frozen');
+                    return;
+                }
+
                 if (access.reason === 'subscription') {
                     showOverlayMessage('Obuna muddati tugagan yoki faol emas. Moderatsiyaga murojaat qiling.');
                     redirectToDashboard('expired');

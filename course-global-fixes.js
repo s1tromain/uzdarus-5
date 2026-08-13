@@ -608,7 +608,11 @@
         var results = [];
         var questions = exercise.questions || [];
         questions.forEach(function (item, i) {
-            var sel = '[data-t6q-option="' + i + '"]';
+            /* Every multiple-choice exercise keys its DOM by exercise number
+               and item index ("e2-0", "e5-0", "e8-0"), so several MCQ exercises
+               can share one page without their selectors colliding. */
+            var key = 'e' + M + '-' + i;
+            var sel = '[data-t6q-option="' + key + '"]';
             var chips = queryAllIn(scope, sel);
             if (!chips.length) return;
             var chosen = chips.filter(function (c) {
@@ -621,7 +625,7 @@
             results.push(withRef(makeResult(exTitle + ' \u2014 ' + (i + 1), item.question || '',
                 uv || '(tanlanmagan)', ed, ok,
                 generateExplanation(ok, uv, ed, topicTitle, exTitle)),
-                { k: 'mcq', s: '[data-t6q-options="' + i + '"]', v: uv }));
+                { k: 'mcq', s: '[data-t6q-options="' + key + '"]', v: uv }));
         });
         return results;
     }

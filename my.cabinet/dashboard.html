@@ -11,6 +11,41 @@
 </head>
 
 <body data-page="dashboard">
+    <!-- ------------------------------------------------------------------
+         FROZEN ACCOUNT SCREEN
+
+         Hidden by default and revealed by cabinet.js when the profile says the
+         account is frozen; the normal dashboard shell is removed in the same
+         step, so a frozen learner never sees course cards at all rather than
+         seeing disabled ones.
+
+         It deliberately does NOT say the subscription ended — it has not. The
+         two controls left available are the two a paused learner still needs:
+         a way to reach support and a way to sign out.
+    ------------------------------------------------------------------ -->
+    <main class="cabinet-shell frozen-shell" id="frozenScreen" hidden>
+        <div class="frozen-card">
+            <div class="frozen-icon" aria-hidden="true">❄️</div>
+            <h1 class="frozen-title">Akkaunt vaqtincha muzlatilgan</h1>
+            <p class="frozen-lead">Platformadan foydalanish vaqtincha to‘xtatib turilgan.</p>
+            <p class="frozen-safe">
+                Obunangizning qolgan muddati saqlanib qolmoqda va muzlatish
+                davrida sarflanmaydi.
+            </p>
+            <dl class="frozen-facts" id="frozenFacts"></dl>
+            <p class="frozen-help">
+                Akkauntni qayta faollashtirish uchun administrator yoki qo‘llab-quvvatlash
+                xizmatiga murojaat qiling.
+            </p>
+            <div class="frozen-actions">
+                <a class="btn-primary" href="https://t.me/Ruschasiga" target="_blank" rel="noopener">
+                    Qo‘llab-quvvatlash bilan bog‘lanish
+                </a>
+                <button class="btn-secondary" id="frozenLogoutBtn" type="button">Akkauntdan chiqish</button>
+            </div>
+        </div>
+    </main>
+
     <main class="cabinet-shell">
         <header class="cabinet-header">
             <h1>UZDARUS PRO Dashboard</h1>

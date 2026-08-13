@@ -131,8 +131,16 @@ topics.forEach(topic => {
         const group = topic[key] || {};
         Object.keys(group).forEach(exKey => {
             const ex = group[exKey];
-            if (!ex || !Array.isArray(ex.items)) return;
-            ex.items.forEach((item, i) => {
+            if (!ex) return;
+            /* Two shapes carry choice items: `items` (dropdowns and chip rows)
+               and `questions` (the t6q multiple-choice exercises). Only `items`
+               used to be walked, so the MCQs — the very exercises whose
+               duplicate options were the original complaint — were audited by
+               nobody. Both shapes are read here. */
+            const list = Array.isArray(ex.items) ? ex.items
+                : Array.isArray(ex.questions) ? ex.questions : null;
+            if (!list) return;
+            list.forEach((item, i) => {
                 if (!Array.isArray(item.options)) return;   // not a choice item
                 items++; found++;
                 const q = item.template || item.question || item.word || '';
@@ -243,7 +251,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
        slicing at the first '});' or the first addEventListener would cut inside
        the handler, because it contains a nested forEach and its own listener. */
     const hStart = html.indexOf("querySelectorAll('[data-t6q-option]')");
-    const hEnd = html.indexOf("document.querySelectorAll('[data-topic6-builder-word]')", hStart);
+    const hEnd = html.indexOf('function bindTopic6ExerciseEvents', hStart);
     const body = html.slice(hStart, hEnd > hStart ? hEnd : hStart + 1200);
     ok(!/blank/.test(body), 'the option handler writes into no other element');
     ok(/classList\.add\('is-selected'\)/.test(body), 'the handler marks the chosen option');
@@ -260,7 +268,13 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
         'exercise 3 is untouched');
     ok(Array.isArray(ex.exercise4 && ex.exercise4.prompts) && ex.exercise4.prompts.length === 10,
         'exercise 4 is untouched');
-    ok(!!ex.exercise5, 'exercise 5 is untouched');
+    /* Exercise 5 stopped being a sentence builder: Russian word order is free,
+       so a builder marks correct sentences wrong unless every permutation is
+       listed. It is a multiple-choice test now, on the same t6q- machinery as
+       exercise 2 — one implementation, two exercises. */
+    ok(Array.isArray(ex.exercise5 && ex.exercise5.questions) && ex.exercise5.questions.length === 10,
+        'exercise 5 is a 10-question multiple choice');
+    ok(!ex.exercise5.items, 'exercise 5 carries no leftover builder items');
     ok(topics.length >= 12, `every A1 topic is still present (${topics.length})`);
 }
 
@@ -290,14 +304,12 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
             var userQuizResults={};
             var completedTopics=[];
             var currentUserId=null;
-            var topic6BuilderState={};
             function clearExtraExercises(){}
-            ${fn('topic6BuilderBankOrder')}
             ${fn('normalizeTopic6Text')}
             ${fn('topic6IsCorrect')}
-            ${fn('getTopic6BuilderSelection')}
-            ${fn('setTopic6BuilderSelection')}
-            ${fn('renderTopic6BuilderSelection')}
+            ${fn('renderChoiceQuestion')}
+            ${fn('gradeChoiceQuestion')}
+            ${fn('bindChoiceQuestions')}
             ${fn('bindTopic6CheckButton')}
             ${fn('bindTopic6ExerciseEvents')}
             ${fn('loadTopic6Exercises')}
@@ -310,7 +322,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     }
 
     const render = (w) => { w.loadTopic6Exercises(6); w.bindTopic6ExerciseEvents(); };
-    const chipsEl = (w, i) => Array.from(w.document.querySelectorAll(`[data-t6q-option="${i}"]`));
+    const chipsEl = (w, i) => Array.from(w.document.querySelectorAll(`[data-t6q-option="e2-${i}"]`));
     const chipsOf = (w, i) => chipsEl(w, i).map(c => c.dataset.value);
     const selectedOf = (w, i) => chipsEl(w, i).filter(c => c.classList.contains('is-selected'));
     const rowOf = (w, i) => chipsEl(w, i)[0].closest('.t6q');
@@ -320,8 +332,16 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     const ex2 = w.courseData.topics[0].topic6Exercises.exercise2;
 
     /* ---- first paint: a plain MCQ, no dropdown ---- */
-    ok(w.document.querySelectorAll('.t6q').length === 10,
-        'runtime: ten multiple-choice questions render');
+    /* Topic 6 now paints TWO multiple-choice exercises — 2 and 5 — so count
+       each namespace rather than every .t6q on the page. Their keys are what
+       keeps them apart; a collision here would make one exercise's clicks land
+       in the other. */
+    ok(w.document.querySelectorAll('[data-t6q^="e2-"]').length === 10,
+        'runtime: ten multiple-choice questions render for exercise 2');
+    ok(w.document.querySelectorAll('[data-t6q^="e5-"]').length === 10,
+        'runtime: ten multiple-choice questions render for exercise 5');
+    ok(w.document.querySelectorAll('.t6q').length === 20,
+        'runtime: the two MCQ exercises do not overwrite one another');
     ok(w.document.querySelectorAll('[data-topic6-select]').length === 0,
         'runtime: no dropdown blank is rendered anywhere');
     ok(w.document.querySelectorAll('.t6q-nonexistent').length === 0,
@@ -424,14 +444,12 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
             var userQuizResults={};
             var completedTopics=[];
             var currentUserId=null;
-            var topic6BuilderState={};
             function clearExtraExercises(){}
-            ${fn('topic6BuilderBankOrder')}
             ${fn('normalizeTopic6Text')}
             ${fn('topic6IsCorrect')}
-            ${fn('getTopic6BuilderSelection')}
-            ${fn('setTopic6BuilderSelection')}
-            ${fn('renderTopic6BuilderSelection')}
+            ${fn('renderChoiceQuestion')}
+            ${fn('gradeChoiceQuestion')}
+            ${fn('bindChoiceQuestions')}
             ${fn('bindTopic6CheckButton')}
             ${fn('bindTopic6ExerciseEvents')}
             ${fn('loadTopic6Exercises')}
@@ -443,7 +461,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
     }
 
     const paint = (w) => { w.loadTopic6Exercises(6); w.bindTopic6ExerciseEvents(); };
-    const chips = (w, i) => Array.from(w.document.querySelectorAll(`[data-t6q-option="${i}"]`));
+    const chips = (w, i) => Array.from(w.document.querySelectorAll(`[data-t6q-option="e2-${i}"]`));
     const picked = (w, i) => chips(w, i).filter(c => c.classList.contains('is-selected'));
     const rowOf = (w, i) => chips(w, i)[0].closest('.t6q');
     const UZWORD = /^[a-z'‘’`]+$/i;

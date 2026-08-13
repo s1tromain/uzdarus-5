@@ -211,6 +211,12 @@ console.log('\n[R8] Endpoint guards — read from the real source files');
         'global-analytics.js':       'STUDENTS_READ',
         'create-user.js':            'USERS_CREATE',
         'delete-user.js':            'USERS_DELETE',
+        /* Freezing pauses the paid period and unfreezing MOVES the subscription
+           end date, so both are governed by the capability that already owns
+           subscription duration — not by USERS_BLOCK, which would hand
+           moderators the ability to shift dates. */
+        'freeze-account.js':         'SUBSCRIPTION_WRITE',
+        'unfreeze-account.js':       'SUBSCRIPTION_WRITE',
         'reset-password.js':         'USERS_PASSWORD',
         'unblock-user.js':           'USERS_BLOCK',
         'clear-devices.js':          'USERS_DEVICES',

@@ -22,6 +22,7 @@ import {
     onSnapshot,
     Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { isAccountFrozen, getFreezeState, FREEZE_FIELD } from './account-freeze.js';
 
 const firebaseConfig = {
     apiKey: 'AIzaSyB_0gyDPwaZpMIzhP7ukpi-KTWPPAlhfTs',
@@ -293,6 +294,23 @@ export function canAccessPaid(profile, requiredPack) {
         return { allowed: false, reason: 'blocked' };
     }
 
+    /* A frozen account loses access here, in the ONE place every paid page
+       already consults, rather than through a `if (frozen)` added to each
+       course file. paid-platform.js runs canAccessPaid() before rendering any
+       lesson, so typing a course URL directly hits exactly this check.
+
+       It sits after `blocked` and before `subscription` on purpose:
+         - after privileged/blocked, so the existing precedence for staff and
+           for banned accounts is untouched;
+         - BEFORE the subscription test, so a learner whose paid period elapsed
+           while they were frozen is told they are frozen, not that their
+           subscription expired. The days are still theirs; unfreezing gives
+           them back. Reporting "expired" here would be a lie the learner would
+           reasonably act on. */
+    if (isAccountFrozen(profile)) {
+        return { allowed: false, reason: 'frozen' };
+    }
+
     if (!hasActiveSubscription(profile, { allowPrivileged: false })) {
         return { allowed: false, reason: 'subscription' };
     }
@@ -423,6 +441,9 @@ export async function findUserByUsername(username) {
 }
 
 export {
+    isAccountFrozen,
+    getFreezeState,
+    FREEZE_FIELD,
     app,
     auth,
     db,

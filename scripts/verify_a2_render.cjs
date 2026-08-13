@@ -61,7 +61,7 @@ ok('T2 быть forms shown', ['был','была','было','были'].every(
 ok('T2 all possessive families shown', ['мой','твой','наш','ваш','его','её','их'].every(x=>lc2.textContent.includes(x)));
 ok('T2 grammar tables render', lc2.querySelectorAll('.b2g-t').length >= 8);
 ok('T2 no template placeholder leaked', !lc2.textContent.includes('${'));
-ok('T2 vocabulary card advertises 79 words', lc2.textContent.includes("79 ta so'z"));
+ok('T2 vocabulary card advertises 77 words', lc2.textContent.includes("77 ta so'z"));
 ok('T2 10 exercise cards', qs2.querySelectorAll('.t1-card').length===10);
 ok('T2 audio present once', qs2.querySelectorAll('audio').length===1);
 ok('T2 builder widgets render', qs2.querySelectorAll('.t1-builder').length===10);

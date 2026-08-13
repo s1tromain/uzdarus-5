@@ -1204,3 +1204,12 @@ html[data-boot="restoring"] #adminGate {
     .ga-course-meta { grid-column: 2; }
     .ga-tile .ga-value { font-size: 1.32rem; }
 }
+
+/* A frozen account is paused, not punished — cold blue, distinct from the red
+   of `badge-blocked` and the amber of `badge-expiring`, so an operator can tell
+   the three states apart at a glance in the users table. */
+.badge-frozen {
+    background: #e3f0fb;
+    color: #14507f;
+    border: 1px solid #a8cdec;
+}

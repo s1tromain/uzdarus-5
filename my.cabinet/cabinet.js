@@ -20,7 +20,9 @@ import {
     callApi,
     invalidateUserProfileCache,
     collection,
-    getDocs
+    getDocs,
+    isAccountFrozen,
+    getFreezeState
 } from '../firebase-client.js';
 
 const COURSE_TOTAL_TOPICS = Object.freeze({
@@ -192,6 +194,24 @@ function normalizeRole(rawRole) {
     return role === 'user' ? 'customer' : role;
 }
 
+/** Date + time, for the moment a freeze started. Uses the same locale as
+    formatDate() so the cabinet reads consistently. */
+function formatDateTime(dateValue) {
+    if (!dateValue) {
+        return '-';
+    }
+
+    const date = typeof dateValue?.toDate === 'function' ? dateValue.toDate() : new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return '-';
+    }
+
+    return `${date.toLocaleDateString('uz-UZ')} ${date.toLocaleTimeString('uz-UZ', {
+        hour: '2-digit',
+        minute: '2-digit'
+    })}`;
+}
+
 function getDaysLeft(dateValue) {
     const date = typeof dateValue?.toDate === 'function' ? dateValue.toDate() : new Date(dateValue);
     if (!dateValue || Number.isNaN(date.getTime())) {
@@ -329,6 +349,13 @@ function attachLogoutHandler(button) {
 function mapAccessReasonToDashboardStatus(reason) {
     if (reason === 'blocked') {
         return 'blocked';
+    }
+
+    /* Kept distinct from 'expired' all the way to the URL: the dashboard
+       decides what to show from the live profile, and a frozen learner must
+       never be told their subscription ran out. */
+    if (reason === 'frozen') {
+        return 'frozen';
     }
 
     if (reason === 'subscription') {
@@ -882,6 +909,62 @@ async function renderMyCertificates(uid) {
     certs.forEach((cert) => grid.appendChild(createCertificateCard(cert)));
 }
 
+/**
+ * Replace the dashboard with the frozen-account screen.
+ *
+ * Everything the learner owns is still in Firestore and untouched; this only
+ * changes what is on screen. The two controls that stay live are the ones a
+ * paused learner still needs — support and logout — so nobody can end up
+ * frozen AND unable to sign out.
+ */
+function renderFrozenScreen(profile) {
+    const screen = document.getElementById('frozenScreen');
+    if (!screen) {
+        return;
+    }
+
+    /* Remove the dashboard shell outright rather than hiding it: nothing to
+       re-enable from the console, and no half-rendered course cards behind an
+       overlay. */
+    document.querySelectorAll('.cabinet-shell').forEach((shell) => {
+        if (shell !== screen) {
+            shell.remove();
+        }
+    });
+
+    const state = getFreezeState(profile);
+    const facts = document.getElementById('frozenFacts');
+
+    if (facts) {
+        const rows = [];
+        if (state?.frozenAt) {
+            rows.push(['Muzlatilgan sana', formatDateTime(state.frozenAt)]);
+        }
+        if (state?.reason) {
+            rows.push(['Sabab', state.reason]);
+        }
+        /* The end date is shown as REMAINING, not as a calendar date: the
+           calendar date is the one thing that legitimately moves when the
+           account is unfrozen, so printing it here would look like a broken
+           promise once it changes. */
+        const endAt = profile?.subscription?.endAt;
+        if (endAt) {
+            const days = getDaysLeft(endAt);
+            if (days != null && days > 0) {
+                rows.push(['Saqlanib qolgan muddat', `${days} kun`]);
+            }
+        }
+
+        facts.innerHTML = rows
+            .map(([label, value]) =>
+                `<dt>${escapeText(label)}</dt><dd>${escapeText(String(value))}</dd>`)
+            .join('');
+    }
+
+    attachLogoutHandler(document.getElementById('frozenLogoutBtn'));
+    screen.hidden = false;
+}
+
 async function initDashboardPage() {
     const profileName = document.getElementById('profileName');
     const profileMeta = document.getElementById('profileMeta');
@@ -899,6 +982,25 @@ async function initDashboardPage() {
     // Show the one-time foydalanish qoidalari agreement on first login.
     // Source of truth is Firestore (profile.agreementAccepted).
     showFirstLoginAgreement(user, profile);
+
+    /* ------------------------------------------------------------------ *
+     * FROZEN ACCOUNTS NEVER REACH THE DASHBOARD
+     * ------------------------------------------------------------------
+     * The check runs before ANY dashboard rendering, so a frozen learner is
+     * not shown course cards that are then disabled — the dashboard shell is
+     * removed from the document and the frozen screen takes its place.
+     *
+     * `isPrivilegedRole` is honoured exactly as the block banner honours it,
+     * so staff are not locked out of their own cabinet by a stale flag. No
+     * new RBAC rule is introduced here.
+     *
+     * The state comes from the profile that ensureAuthenticated() already
+     * fetched — no extra request, no listener, no polling.
+     * ------------------------------------------------------------------ */
+    if (isAccountFrozen(profile) && !isPrivilegedRole(profile)) {
+        renderFrozenScreen(profile);
+        return;
+    }
 
     const role = normalizeRole(profile.role);
     const canOpenAdminPanel = ['developer', 'admin', 'moderator'].includes(role);

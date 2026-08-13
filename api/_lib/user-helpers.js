@@ -1,5 +1,6 @@
 import { initAdmin } from '../_firebaseAdmin.js';
 import { normalizeRole, isSupportedRoleInput } from './roles.js';
+import { FREEZE_FIELD, isAccountFrozen, getFreezeState } from '../../account-freeze.js';
 
 const VALID_PACKS = new Set(['A1A2', 'B1B2']);
 
@@ -118,6 +119,9 @@ export function normalizeUserDocument(userId, data = {}) {
         role,
         blocked: Boolean(data.blocked),
         blockedReason: data.blockedReason || null,
+        /* Carried verbatim so downstream readers can call isAccountFrozen() on
+           a normalized document exactly as they would on the raw one. */
+        [FREEZE_FIELD]: data[FREEZE_FIELD] || null,
         forcePasswordChange: Boolean(data.forcePasswordChange),
         accessPacks: normalizePacks(data.accessPacks),
         deviceHashes: Array.isArray(data.deviceHashes) ? data.deviceHashes.filter(Boolean) : [],
@@ -173,6 +177,9 @@ export function toPublicUser(userId, data = {}) {
     }
 
     const subscription = normalized.subscription || {};
+    /* The freeze state travels with the user record the admin panel already
+       fetches — no extra request and no listener just to know a row is frozen. */
+    const freeze = getFreezeState(normalized);
 
     return {
         uid: normalized.uid,
@@ -181,6 +188,15 @@ export function toPublicUser(userId, data = {}) {
         email: normalized.email,
         role: normalized.role,
         blocked: normalized.blocked,
+        frozen: isAccountFrozen(normalized),
+        freeze: freeze
+            ? {
+                frozenAt: freeze.frozenAt ? freeze.frozenAt.toISOString() : null,
+                frozenBy: freeze.frozenBy,
+                reason: freeze.reason,
+                freezeCount: freeze.freezeCount
+            }
+            : null,
         forcePasswordChange: normalized.forcePasswordChange,
         accessPacks: normalized.accessPacks,
         deviceCount: normalized.deviceHashes.length,

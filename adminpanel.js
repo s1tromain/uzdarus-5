@@ -9,6 +9,7 @@ import {
     clearLocalUser,
     callApi
 } from './firebase-client.js';
+import { isAccountFrozen, getFreezeState } from './account-freeze.js';
 import {
     CAPABILITIES,
     normalizeRole as normalizeRoleShared,
@@ -153,6 +154,10 @@ function sanitizeRecord(user) {
         displayName: String(user.displayName || '').trim() || username,
         accessPacks: Array.isArray(user.accessPacks) ? user.accessPacks : [],
         blocked: Boolean(user.blocked),
+        /* list-users already returns `frozen` and `freeze`; keep the raw
+           accountFreeze too so isAccountFrozen() works on a sanitized row. */
+        frozen: Boolean(user.frozen) || isAccountFrozen(user),
+        freeze: user.freeze || null,
         deviceCount: Number(user.deviceCount || 0),
         subscription: user.subscription && typeof user.subscription === 'object' ? user.subscription : {}
     };
@@ -445,6 +450,23 @@ function formatDate(rawDate) {
     return date.toLocaleDateString('uz-UZ');
 }
 
+/** Date + time — the freeze start is a moment, not a day. */
+function formatDateTime(rawDate) {
+    if (!rawDate) {
+        return '-';
+    }
+
+    const date = toJsDate(rawDate);
+    if (!date || Number.isNaN(date.getTime())) {
+        return '-';
+    }
+
+    return `${date.toLocaleDateString('uz-UZ')} ${date.toLocaleTimeString('uz-UZ', {
+        hour: '2-digit',
+        minute: '2-digit'
+    })}`;
+}
+
 function formatDateIso(rawDate) {
     if (!rawDate) {
         return '-';
@@ -484,10 +506,59 @@ function canEditSubscription() {
     return can(CAPABILITIES.SUBSCRIPTION_WRITE);
 }
 
+/**
+ * The freeze control for one customer row.
+ *
+ * Exactly ONE of the two buttons is ever rendered, driven by the account's
+ * actual state: a frozen account offers Unfreeze and a live one offers Freeze.
+ * That is the UI half of the idempotency guarantee — there is no second Freeze
+ * to press. The server enforces the same rule regardless of what the UI shows.
+ *
+ * Gated on SUBSCRIPTION_WRITE because unfreezing moves the subscription end
+ * date; the endpoints require the same capability, so the button is never
+ * offered to a role that would be refused.
+ */
+function freezeButtonHtml(user) {
+    if (!canEditSubscription()) {
+        return '';
+    }
+
+    if (user.frozen) {
+        return `<button class="btn btn-ghost" data-action="unfreeze" data-uid="${escapeHtml(user.uid)}" type="button">🔥 Muzlatishdan chiqarish</button>`;
+    }
+
+    return `<button class="btn btn-ghost" data-action="freeze" data-uid="${escapeHtml(user.uid)}" type="button">❄️ Muzlatish</button>`;
+}
+
+/** "Frozen since / reason" lines, shown only for a frozen account. */
+function freezeDetailsHtml(user) {
+    if (!user.frozen) {
+        return '';
+    }
+
+    const since = user.freeze?.frozenAt ? formatDateTime(user.freeze.frozenAt) : null;
+    const lines = [];
+    if (since) {
+        lines.push(`<small>Muzlatilgan: ${escapeHtml(since)}</small>`);
+    }
+    if (user.freeze?.reason) {
+        lines.push(`<small>Sabab: ${escapeHtml(user.freeze.reason)}</small>`);
+    }
+    return lines.join('');
+}
+
 /* ---- Status badge classification (PART 5) ---- */
 function getCustomerStatus(user) {
     if (user.blocked) {
         return { cls: 'status-badge badge-blocked', label: 'Bloklangan', category: 'blocked' };
+    }
+
+    /* Checked BEFORE the expiry maths on purpose. A frozen account whose end
+       date drifted past during the freeze is not expired — the days come back
+       on unfreeze — so showing "Obuna tugagan" here would tell the operator
+       something untrue about an account they are about to act on. */
+    if (user.frozen) {
+        return { cls: 'status-badge badge-frozen', label: '❄️ Muzlatilgan', category: 'frozen' };
     }
 
     const days = getRemainingDays(user.subscription?.endAt);
@@ -771,6 +842,7 @@ function renderCustomers() {
                             ${subPill}
                             <small>Tugash sanasi: ${escapeHtml(formatDateIso(user.subscription?.endAt))}</small>
                             <small>${escapeHtml(remainText)}</small>
+                            ${freezeDetailsHtml(user)}
                         </div>
                     </td>
                     <td data-label="Qurilmalar">${Number.isFinite(user.deviceCount) ? `${user.deviceCount || 0}/3` : '—'}</td>
@@ -782,6 +854,7 @@ function renderCustomers() {
                             ${canEditSubscription() ? `<button class="btn btn-ghost" data-action="subscription" data-uid="${user.uid}" type="button">Obuna</button>` : ''}
                             ${can(CAPABILITIES.CERTIFICATES_READ) ? `<button class="btn btn-ghost" data-action="certificates" data-uid="${user.uid}" type="button">Sertifikatlar</button>` : ''}
                             ${can(CAPABILITIES.USERS_BLOCK) ? `<button class="btn btn-ghost" data-action="unblock" data-uid="${user.uid}" type="button">Unblock</button>` : ''}
+                            ${freezeButtonHtml(user)}
                             ${deleteButtonHtml(user)}
                             ${dayAdjustControls}
                         </div>
@@ -1556,6 +1629,83 @@ async function unblockFlow(userId, button) {
     }
 }
 
+/**
+ * Freeze an account.
+ *
+ * The confirmation spells out BOTH halves of what freezing does — access stops,
+ * paid time is preserved — because an operator who thinks days keep burning
+ * will avoid the feature, and one who thinks access continues will misuse it.
+ *
+ * The reason is optional and free text. It is stored on the account and copied
+ * into the audit log, and it is what the learner sees on their frozen screen,
+ * so it is worth filling in.
+ */
+async function freezeFlow(userId, button) {
+    const values = await openModal({
+        title: 'Akkauntni muzlatish',
+        action: 'Foydalanuvchi platformadan foydalana olmaydi, obuna muddati esa saqlanib qoladi',
+        fields: [
+            {
+                name: 'reason',
+                label: 'Muzlatish sababi (ixtiyoriy)',
+                placeholder: 'Masalan: to‘lov kutilmoqda'
+            }
+        ],
+        confirmLabel: 'Muzlatish'
+    });
+
+    if (!values) {
+        return false;
+    }
+
+    setButtonLoading(button, true);
+    try {
+        const result = await callApi('/api/admin?action=freeze-account', 'POST', {
+            userId,
+            reason: String(values.reason || '')
+        });
+        /* `applied: false` means the account was already frozen — say so rather
+           than claiming an action that did not happen. */
+        showSuccess(result?.applied === false
+            ? 'Akkaunt allaqachon muzlatilgan edi. O‘zgarish kiritilmadi.'
+            : 'Akkaunt muzlatildi. Obunaning qolgan muddati saqlanib qoldi.');
+        return true;
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
+/** Lift a freeze. The server returns the new end date it actually wrote. */
+async function unfreezeFlow(userId, button) {
+    const confirmed = await openModal({
+        title: 'Akkauntni muzlatishdan chiqarish',
+        action: 'Obunaning qolgan muddati tiklanadi va foydalanuvchi kirish huquqini qaytarib oladi',
+        confirmLabel: 'Muzlatishdan chiqarish'
+    });
+
+    if (!confirmed) {
+        return false;
+    }
+
+    setButtonLoading(button, true);
+    try {
+        const result = await callApi('/api/admin?action=unfreeze-account', 'POST', { userId });
+
+        if (result?.applied === false) {
+            showSuccess('Akkaunt muzlatilmagan edi. O‘zgarish kiritilmadi.');
+            return true;
+        }
+
+        const until = result?.newEndAt ? String(result.newEndAt).slice(0, 10) : null;
+        showSuccess(until
+            ? `Akkaunt muzlatishdan chiqarildi. Obunaning qolgan muddati tiklandi (yangi tugash sanasi: ${until}).`
+            : 'Akkaunt muzlatishdan chiqarildi. Obunaning qolgan muddati tiklandi.');
+        return true;
+    } finally {
+        setButtonLoading(button, false);
+    }
+}
+
 async function setRoleFlow(userId, button) {
     const select = document.querySelector(`select[data-role-select="${userId}"]`);
     if (!select) {
@@ -1847,6 +1997,10 @@ function initRowActions() {
                 performed = false;
             } else if (action === 'unblock') {
                 performed = await unblockFlow(userId, button);
+            } else if (action === 'freeze') {
+                performed = await freezeFlow(userId, button);
+            } else if (action === 'unfreeze') {
+                performed = await unfreezeFlow(userId, button);
             } else if (action === 'set-role') {
                 performed = await setRoleFlow(userId, button);
             } else if (action === 'delete') {

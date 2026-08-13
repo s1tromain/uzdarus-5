@@ -882,3 +882,118 @@ select:focus {
     .cert-doc-meta { flex-direction: column; gap: 8px; }
     .cert-doc-seal { font-size: 2rem; bottom: 14px; right: 16px; }
 }
+
+/* ------------------------------------------------------------------ *
+ * FROZEN ACCOUNT SCREEN
+ * ------------------------------------------------------------------
+ * Shown INSTEAD of the dashboard while an account is frozen. It reuses
+ * .cabinet-shell so it inherits the card width, radius and shadow of every
+ * other cabinet page, and only adds what is specific to this state.
+ *
+ * The palette is deliberately cold and calm rather than the error red used
+ * for a block or an expiry: a freeze is not a failure and nothing has been
+ * lost, so it must not read like a warning.
+ * ------------------------------------------------------------------ */
+.frozen-shell {
+    background: linear-gradient(160deg, #eef4fb 0%, var(--card) 55%);
+}
+
+.frozen-card {
+    padding: 34px 28px 30px;
+    text-align: center;
+}
+
+.frozen-icon {
+    font-size: 3rem;
+    line-height: 1;
+    margin-bottom: 14px;
+}
+
+.frozen-title {
+    font-size: 1.45rem;
+    color: #1d3557;
+    margin-bottom: 10px;
+}
+
+.frozen-lead {
+    color: #40566d;
+    margin-bottom: 16px;
+}
+
+.frozen-safe {
+    background: #e7f1fb;
+    border: 1px solid #bcd6ef;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #1d3557;
+    font-weight: 600;
+    margin-bottom: 18px;
+}
+
+.frozen-facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 14px;
+    text-align: left;
+    margin: 0 0 18px;
+    font-size: 0.94rem;
+}
+
+.frozen-facts dt {
+    color: #6b7c90;
+}
+
+.frozen-facts dd {
+    margin: 0;
+    color: #1d3557;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.frozen-help {
+    color: #40566d;
+    font-size: 0.94rem;
+    margin-bottom: 20px;
+}
+
+/* Buttons stretch on narrow screens so neither control becomes a tap-sized
+   sliver, and the anchor is styled to match the button beside it. */
+.frozen-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.frozen-actions .btn-primary,
+.frozen-actions .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 0.97rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+    color: #fff;
+}
+
+.frozen-actions .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+}
+
+.frozen-actions .btn-secondary {
+    background: #4b5563;
+}
+
+@media (max-width: 480px) {
+    .frozen-card { padding: 26px 18px 24px; }
+    .frozen-title { font-size: 1.22rem; }
+    .frozen-facts { grid-template-columns: 1fr; gap: 2px; }
+    .frozen-facts dd { margin-bottom: 8px; }
+    .frozen-actions { flex-direction: column; }
+    .frozen-actions .btn-primary,
+    .frozen-actions .btn-secondary { width: 100%; }
+}

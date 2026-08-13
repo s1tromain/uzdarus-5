@@ -175,8 +175,12 @@ SPOT.forEach(([i,ru,uz]) => {
 });
 ok('no empty side', v4.words.every(x => x.ru && x.ru.trim() && x.uz && x.uz.trim()));
 ok('every word is speakable through speech.js (.ru is Cyrillic)', v4.words.every(x => /[Ѐ-ӿ]/.test(x.ru)));
+/* Topic 2 was 79. Two cards were byte-identical duplicates inside its own
+   list, so the learner met each of them twice in one pass; both later copies
+   were removed and A2_VOCAB_COUNTS follows. The pin moves with the content
+   and still guards every other count here. */
 ok('lessons 1-3 vocabulary untouched',
-   [45,79,73].every((n,i) => vdom.window.__v.topics.find(t=>t.id===i+1).words.length === n));
+   [45,77,73].every((n,i) => vdom.window.__v.topics.find(t=>t.id===i+1).words.length === n));
 ok('vocabulary topics 6-16 still empty',
    vdom.window.__v.topics.filter(t=>t.id>=6).every(t=>t.words.length===0));
 

@@ -1969,7 +1969,7 @@
                                 "Это … брат", "Это … телефон", "Это … машина", "… друзья дома", "… сумка тяжёлая",
                                 "Это … тетрадь", "Это … стул", "Где … комната?", "Это … цветы", "… дедушка дома",
                                 "Это … подруга", "Где … ключи?", "Это … письмо", "Это … учитель", "… очки на столе",
-                                "Это … город", "Это … работа", "Это … родители", "Это … квартира", "Где … ребёнок?"
+                                "Это … город", "Это … работа", "Это … документы", "Это … квартира", "Где … ребёнок?"
                             ],
                             answers: [
                                 "моя", "мой", "моё", "мои", "моя",
@@ -1985,7 +1985,7 @@
                                 "Где … мама?", "Это … телефон?", "Где … документы?", "Это … комната?", "Какие … друзья!",
                                 "Это … ребёнок?", "Где … книги?", "Это … квартира?", "… родители дома?", "Где … деньги?",
                                 "Это … машина?", "Где … брат?", "Это … сестра?", "Где … вещи?", "Это … школа?",
-                                "Где … ключи?", "Это … идея?", "… планы интересные", "Где … документы?", "Это … учитель?",
+                                "Где … ключи?", "Это … идея?", "… планы интересные", "Где … очки?", "Это … учитель?",
                                 "Это … работа?", "Где … ноутбук?", "Это … родители?", "Где … дети?", "Это … письмо?"
                             ],
                             answers: [
@@ -2833,21 +2833,58 @@
             
             // Если есть сохраненные результаты, показываем их
             if (topicResults) {
-                setTimeout(() => {
-                    displaySavedResults(topic, topicResults, topicId);
-                }, 300);
+                scheduleTopicExtra('results', topicId, 300,
+                    () => displaySavedResults(topic, topicResults, topicId));
             }
 
             // Load extra exercises for topic 3
             if (topicId === 3) {
-                setTimeout(() => {
-                    loadExtraExercises(topicId);
-                }, 100);
+                scheduleTopicExtra('extra', topicId, 100, () => loadExtraExercises(topicId));
             }
         }
         
+        /**
+         * Deferred work that ADDS to an already-rendered quiz. Each callback
+         * refuses to draw for a topic that is no longer current, but it refuses
+         * by returning — so a learner who switched topics inside the window
+         * silently lost the extra exercises, with no error and no retry. A newer
+         * job now cancels the older one, and a throw is reported instead of
+         * being swallowed by the timer. Mirrors the paid course.
+         */
+        const pendingTopicExtras = new Map();
+
+        function scheduleTopicExtra(name, topicId, delay, run) {
+            const previous = pendingTopicExtras.get(name);
+            if (previous) {
+                clearTimeout(previous);
+            }
+
+            pendingTopicExtras.set(name, setTimeout(() => {
+                pendingTopicExtras.delete(name);
+                if (topicId !== currentTopicId) {
+                    return;
+                }
+                try {
+                    run();
+                } catch (error) {
+                    console.error('Qo\'shimcha mashqlarni yuklashda xatolik (' + name +
+                        ', mavzu ' + topicId + '):', error);
+                }
+            }, delay));
+        }
+
         // Показ сохраненных результатов
         function displaySavedResults(topic, topicResults, topicId) {
+            /* A 300 ms timer schedules this call, and the learner may have
+               opened a different topic in the meantime. Without this guard the
+               PREVIOUS topic's score was written into the panel of the topic
+               now on screen — "Sizning natijangiz: 8/10" for a topic that had
+               never been attempted. The stale call is simply dropped; the
+               current topic renders its own results when its own timer fires. */
+            if (topicId !== currentTopicId) {
+                return;
+            }
+
             const totalQuestions = topic.quiz.mcQuestions.length + topic.quiz.blankQuestions.length;
             const percentage = Math.round((topicResults.score / totalQuestions) * 100);
             

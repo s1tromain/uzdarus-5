@@ -190,7 +190,11 @@ eq('every word matches the resource verbatim, in order', mm, 0);
 ok('no empty side', v3.words.every(x => x.ru && x.ru.trim() && x.uz && x.uz.trim()));
 ok('every word is speakable through speech.js (.ru is Cyrillic)', v3.words.every(x => /[Ѐ-ӿ]/.test(x.ru)));
 ok('lesson 1 vocabulary untouched (45)', vdom.window.__v.topics.find(t=>t.id===1).words.length === 45);
-ok('lesson 2 vocabulary untouched (79)', vdom.window.__v.topics.find(t=>t.id===2).words.length === 79);
+/* Topic 2 was 79. Two cards were byte-identical duplicates inside its own
+   list, so the learner met each of them twice in one pass; both later copies
+   were removed and A2_VOCAB_COUNTS follows. The pin moves with the content
+   and still guards every other count here. */
+ok('lesson 2 vocabulary untouched (77 after de-duplication)', vdom.window.__v.topics.find(t=>t.id===2).words.length === 77);
 
 /* AUTO: the card label must equal the ACTUAL imported word count. */
 console.log('\n─── word-count auto-sync ───');

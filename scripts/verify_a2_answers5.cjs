@@ -46,8 +46,13 @@ const P = {
       "Вы ______ стать инженерами.","Они ______ стать врачами.","Она ______ работать в школе.",
       "Я ______ работать в офисе.","Ты ______ стать дизайнером.","Мы ______ работать вместе.",
       "Он ______ стать программистом."],
+ /* Items 8-10 arrived from the resource as verbatim copies of 1-3. A learner
+    cannot tell a repeat from a new task, so they were replaced with three
+    prompts built from THIS lesson's own vocabulary — сестра, университет and
+    друзья all appear in exercise 9 — keeping «стать + творительный» intact. */
  ex6:["Он хочет стать…","Она хочет стать…","Мы хотим стать…","Ты хочешь стать…","Они хотят стать…",
-      "Я хочу стать…","Вы хотите стать…","Он хочет стать…","Она хочет стать…","Мы хотим стать…"],
+      "Я хочу стать…","Вы хотите стать…","Моя сестра хочет стать…",
+      "После университета я хочу стать…","Мои друзья хотят стать…"],
  ex7:["Она работает учительницей.","Я работаю программистом.","Мы работаем инженерами.",
       "Ты работаешь поваром.","Они работают продавцами.","Он работает полицейским.",
       "Вы работаете водителем.","Она работает медсестрой.","Я работаю бухгалтером.",
@@ -115,15 +120,27 @@ eq('audio: both options everywhere', g.audio.items.map(i => i.options.join('|'))
 
 console.log('─── 6-mashq (open by design, bounded by this lesson\'s professions) ───');
 /* AUDIT FIX: ex6 now agrees in NUMBER with its subject. */
-const EX6_SUBJ = ['Он','Она','Мы','Ты','Они','Я','Вы','Он','Она','Мы'];
+/* Each item's accepted forms must match the grammatical NUMBER of its subject:
+   a plural subject may not accept «врачом», a singular one may not accept
+   «врачами». Stated as an explicit table so a reworded prompt cannot quietly
+   drift away from its answer key. */
+const EX6_NUMBER = [
+  ['Он', 'sg'], ['Она', 'sg'], ['Мы', 'pl'], ['Ты', 'sg'], ['Они', 'pl'],
+  ['Я', 'sg'], ['Вы', 'both'],
+  ['Моя сестра', 'sg'], ['После университета я', 'sg'], ['Мои друзья', 'pl']
+];
+eq('ex6: number table covers every item', EX6_NUMBER.length, g.ex6.items.length);
 g.ex6.items.forEach((it, i) => {
   const hasS = it.answer.includes('врачом'), hasP = it.answer.includes('врачами');
-  const subj = EX6_SUBJ[i];
-  if (subj === 'Вы') ok(`ex6 #${i+1} (Вы) accepts singular AND plural`, hasS && hasP);
-  else if (subj === 'Мы' || subj === 'Они')
-    ok(`ex6 #${i+1} (${subj}) accepts ONLY the plural`, hasP && !hasS);
+  const [subj, num] = EX6_NUMBER[i];
+  if (num === 'both') ok(`ex6 #${i+1} (${subj}) accepts singular AND plural`, hasS && hasP);
+  else if (num === 'pl') ok(`ex6 #${i+1} (${subj}) accepts ONLY the plural`, hasP && !hasS);
   else ok(`ex6 #${i+1} (${subj}) accepts ONLY the singular`, hasS && !hasP);
 });
+
+/* THE defect this exercise shipped with: ten items, seven distinct tasks. */
+eq('ex6: ten items', g.ex6.items.length, 10);
+eq('ex6: ten DISTINCT prompts, no repeats', new Set(g.ex6.items.map(i => i.q)).size, 10);
 ok('ex6: every item still offers the full profession list for its number',
    g.ex6.items.every(i => Array.isArray(i.answer) && i.answer.length >= 39));
 ok('ex6: every item carries a hint', g.ex6.items.every(i => /творительный/.test(i.hint || '')));
@@ -195,8 +212,12 @@ RES.forEach(([i,ru,uz]) => { eq(`word #${i+1} ru`, v5.words[i].ru, ru); eq(`word
 eq('35 professions then 15 phrases', v5.words.slice(0,35).every(x => !/[.?…]/.test(x.ru)), true);
 ok('no empty side', v5.words.every(x => x.ru && x.ru.trim() && x.uz && x.uz.trim()));
 ok('every word is speakable through speech.js', v5.words.every(x => /[Ѐ-ӿ]/.test(x.ru)));
+/* Topic 2 was 79. Two cards were byte-identical duplicates inside its own
+   list, so the learner met each of them twice in one pass; both later copies
+   were removed and A2_VOCAB_COUNTS follows. The pin moves with the content
+   and still guards every other count here. */
 ok('lessons 1-4 vocabulary untouched',
-   [45,79,73,106].every((n,i) => vdom.window.__v.topics.find(t=>t.id===i+1).words.length === n));
+   [45,77,73,106].every((n,i) => vdom.window.__v.topics.find(t=>t.id===i+1).words.length === n));
 ok('vocabulary topics 6-16 still empty',
    vdom.window.__v.topics.filter(t=>t.id>=6).every(t=>t.words.length===0));
 /* The count now lives in A2_VOCAB_COUNTS and is rendered by the shared
