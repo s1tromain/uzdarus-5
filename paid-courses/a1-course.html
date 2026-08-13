@@ -1540,10 +1540,17 @@
             color: var(--primary-dark);
         }
 
+        /* A word that has been placed into the sentence LEAVES the bank.
+           It used to stay behind, merely recoloured, so the same word was on
+           screen twice — once as a token in the answer and once as a chip in
+           the bank. Learners read that as duplicated words in the exercise.
+           Removing it also matches how every sentence builder behaves: the word
+           moves, it is not copied. Used chips are unclickable anyway — the
+           handler ignores a word already in the selection, and a word is taken
+           back through its token, not through the bank. Shared by the builders
+           of topics 6, 7, 10 and 12, which all render .topic6-word-chip. */
         .topic6-word-chip.used {
-            border-color: var(--primary);
-            background: var(--secondary);
-            color: #5f4600;
+            display: none;
         }
 
         .topic6-clear-btn {
@@ -7455,7 +7462,7 @@
                         <div class="topic7-choice-list">
             `;
 
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
 
                 html += `
@@ -7695,7 +7702,7 @@
                 }
             });
 
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic7-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 resultData.exercise2Answers.push(userValue);
@@ -7901,7 +7908,7 @@
 
                     <div class="topic6-feedback-list">
                         <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
-                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.questions.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
                         <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
                         <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
                         <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
@@ -8080,7 +8087,7 @@
                         <div class="topic7-choice-list">
             `;
 
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
 
                 html += `
@@ -8372,7 +8379,7 @@
                 }
             });
 
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic8-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 resultData.exercise2Answers.push(userValue);
@@ -8628,7 +8635,7 @@
 
                     <div class="topic6-feedback-list">
                         <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
-                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.questions.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
                         <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
                         <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
                         <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
@@ -8744,7 +8751,7 @@
                         <div class="topic7-input-list">
             `;
 
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 const inputClass = savedValue
                     ? (topic9IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect')
@@ -8904,7 +8911,7 @@
             });
 
             // Exercise 2 — word form input
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const input = document.querySelector(`input[data-topic9-e2="${index}"]`);
                 const userValue = input?.value.trim() || '';
                 resultData.exercise2Answers.push(userValue);
@@ -9014,7 +9021,7 @@
 
                     <div class="topic6-feedback-list">
                         <div class="topic6-feedback-row">1-mashq: ${ex1Correct}/${exercises.exercise1.items.length}</div>
-                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.questions.length}</div>
+                        <div class="topic6-feedback-row">2-mashq: ${ex2Correct}/${exercises.exercise2.items.length}</div>
                         <div class="topic6-feedback-row">3-mashq: ${ex3Correct}/${exercises.exercise3.items.length}</div>
                         <div class="topic6-feedback-row">4-mashq: ${ex4Correct}/${exercises.exercise4.items.length}</div>
                         <div class="topic6-feedback-row">5-mashq: ${ex5Correct}/${exercises.exercise5.items.length}</div>
@@ -9225,7 +9232,7 @@
                         <h3 class="topic5-exercise-title">${exercises.exercise2.title}</h3>
                         <div class="topic7-choice-list">
             `;
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 html += `
                     <div class="topic7-choice-item" data-topic10-e2-row="${index}" data-value="${savedValue}">
@@ -9495,7 +9502,7 @@
             });
 
             // Exercise 2 — chip selection (есть / нет)
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic10-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 if (row) {
@@ -9645,7 +9652,7 @@
             const totalQuestions = results.length;
             const resultData = {
                 exercise1Answers: exercises.exercise1.items.map((_, i) => document.querySelector(`[data-topic10-e1-row="${i}"]`)?.dataset.value || ''),
-                exercise2Answers: exercises.exercise2.questions.map((_, i) => document.querySelector(`[data-topic10-e2-row="${i}"]`)?.dataset.value || ''),
+                exercise2Answers: exercises.exercise2.items.map((_, i) => document.querySelector(`[data-topic10-e2-row="${i}"]`)?.dataset.value || ''),
                 exercise3Answers: exercises.exercise3.items.map((_, i) => document.querySelector(`[data-topic10-e3-row="${i}"]`)?.dataset.value || ''),
                 exercise4Answers: exercises.exercise4.items.map((_, i) => document.querySelector(`input[data-topic10-e4="${i}"]`)?.value.trim() || ''),
                 exercise5Answers: exercises.exercise5.items.map((_, i) => document.querySelector(`input[data-topic10-e5="${i}"]`)?.value.trim() || ''),
@@ -9834,7 +9841,7 @@
                         <p class="topic5-exercise-instruction">${exercises.exercise2.instruction}</p>
                         <div class="topic7-input-list">
             `;
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 const inputClass = savedValue
                     ? (topic11IsCorrect(savedValue, item.answer) ? 'correct' : 'incorrect')
@@ -10058,7 +10065,7 @@
             });
 
             // Exercise 2 — verb conjugation input
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const input = document.querySelector(`input[data-topic11-e2="${index}"]`);
                 const userValue = input?.value.trim() || '';
                 if (input) {
@@ -10188,7 +10195,7 @@
             const totalQuestions = results.length;
             const resultData = {
                 exercise1Answers: exercises.exercise1.items.map((_, i) => document.querySelector(`[data-topic11-e1-row="${i}"]`)?.dataset.value || ''),
-                exercise2Answers: exercises.exercise2.questions.map((_, i) => document.querySelector(`input[data-topic11-e2="${i}"]`)?.value.trim() || ''),
+                exercise2Answers: exercises.exercise2.items.map((_, i) => document.querySelector(`input[data-topic11-e2="${i}"]`)?.value.trim() || ''),
                 exercise3Answers: exercises.exercise3.items.map((_, i) => document.querySelector(`input[data-topic11-e3="${i}"]`)?.value.trim() || ''),
                 exercise4Answers: exercises.exercise4.items.map((_, i) => document.querySelector(`input[data-topic11-e4="${i}"]`)?.value.trim() || ''),
                 exercise5Answers: exercises.exercise5.items.map((_, i) => document.querySelector(`[data-topic11-e5-row="${i}"]`)?.dataset.value || ''),
@@ -10431,7 +10438,7 @@
                         <p class="topic5-exercise-instruction">${exercises.exercise2.instruction}</p>
                         <div class="topic7-choice-list">
             `;
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const savedValue = ex2Answers[index] || '';
                 html += `
                     <div class="topic7-choice-item" data-topic12-e2-row="${index}" data-value="${savedValue}">
@@ -10615,7 +10622,7 @@
             });
 
             // Exercise 2 — chip selection (3 options)
-            exercises.exercise2.questions.forEach((item, index) => {
+            exercises.exercise2.items.forEach((item, index) => {
                 const row = document.querySelector(`[data-topic12-e2-row="${index}"]`);
                 const userValue = row?.dataset.value || '';
                 if (row) {
@@ -10711,7 +10718,7 @@
             const totalQuestions = results.length;
             const resultData = {
                 exercise1Answers: exercises.exercise1.items.map((_, i) => document.querySelector(`[data-topic12-e1-row="${i}"]`)?.dataset.value || ''),
-                exercise2Answers: exercises.exercise2.questions.map((_, i) => document.querySelector(`[data-topic12-e2-row="${i}"]`)?.dataset.value || ''),
+                exercise2Answers: exercises.exercise2.items.map((_, i) => document.querySelector(`[data-topic12-e2-row="${i}"]`)?.dataset.value || ''),
                 exercise3Answers: exercises.exercise3.items.map((_, i) => document.querySelector(`input[data-topic12-e3="${i}"]`)?.value.trim() || ''),
                 exercise4Answers: exercises.exercise4.items.map((_, i) => document.querySelector(`input[data-topic12-e4="${i}"]`)?.value.trim() || ''),
                 exercise5Answers: exercises.exercise5.items.map((_, i) => document.querySelector(`input[data-topic12-e5="${i}"]`)?.value.trim() || ''),
