@@ -1454,6 +1454,29 @@
             font-weight: 600;
         }
 
+        /* Shown only when a deferred exercise render produced nothing — see
+           scheduleExerciseRender(). It exists so a failed load is visible and
+           recoverable instead of an empty section. */
+        .exercise-load-error {
+            background: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+            color: #8a5300;
+        }
+
+        .exercise-load-retry {
+            margin-top: 10px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            border-radius: 999px;
+            padding: 9px 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
         .topic6-builder-item {
             background: var(--light);
             border: 1px solid #f1d9a0;
@@ -1518,10 +1541,16 @@
             background: #ffe6a2;
         }
 
+        /* Chips LEAVE the bank as they are used (see .used below), so without a
+           floor the bank shrinks on every click and collapses to nothing on the
+           last word — the card jumped under the learner's finger and read as a
+           broken exercise. Reserve one chip row and keep the rows top-aligned. */
         .topic6-builder-bank {
             display: flex;
             flex-wrap: wrap;
+            align-content: flex-start;
             gap: 8px;
+            min-height: 42px;
         }
 
         .topic6-word-chip {
@@ -5234,6 +5263,75 @@
             } catch (e) {}
         }
 
+        /* Topics 6–12 carry hand-written exercise blocks instead of the generic
+           quiz, and they render into #quizSection on a short timer so the lesson
+           markup above them is committed first. The bare setTimeout this
+           replaces had two silent failure modes, and together they are the
+           "sometimes the exercises do not load" report:
+
+           1. #quizSection is emptied SYNCHRONOUSLY but refilled 100 ms later.
+              Switching topics inside that window left an in-flight timer from
+              the previous topic. Every loader correctly refuses to draw when its
+              topicId is no longer current — but it refuses by returning, so the
+              outcome was an empty section.
+           2. Anything thrown inside a timer callback is swallowed. One bad
+              exercise left the learner on a blank section with no error, no
+              retry and nothing in the UI to act on.
+
+           So: at most one render may be pending, and a render that produces
+           nothing says so instead of leaving a void. */
+        const EXERCISE_TOPIC_LOADERS = {
+            6: () => loadTopic6Exercises(6),
+            7: () => loadTopic7Exercises(7),
+            8: () => loadTopic8Exercises(8),
+            9: () => loadTopic9Exercises(9),
+            10: () => loadTopic10Exercises(10),
+            11: () => loadTopic11Exercises(11),
+            12: () => loadTopic12Exercises(12)
+        };
+        let pendingExerciseRender = null;
+
+        function scheduleExerciseRender(topicId) {
+            if (pendingExerciseRender !== null) {
+                clearTimeout(pendingExerciseRender);
+                pendingExerciseRender = null;
+            }
+
+            pendingExerciseRender = setTimeout(() => {
+                pendingExerciseRender = null;
+                /* the learner may have moved on while this was pending */
+                if (topicId !== currentTopicId) {
+                    return;
+                }
+
+                try {
+                    EXERCISE_TOPIC_LOADERS[topicId]();
+                } catch (error) {
+                    console.error('Mashqlarni yuklashda xatolik (mavzu ' + topicId + '):', error);
+                }
+
+                if (topicId === currentTopicId && quizSection &&
+                    !quizSection.innerHTML.trim()) {
+                    quizSection.innerHTML = `
+                        <div class="exercise-load-error">
+                            <p>Mashqlarni yuklab bo'lmadi.</p>
+                            <button type="button" class="exercise-load-retry"
+                                    data-retry-topic="${topicId}">
+                                <i class="fas fa-rotate-right"></i> Qayta urinish
+                            </button>
+                        </div>
+                    `;
+                    const retry = quizSection.querySelector('.exercise-load-retry');
+                    if (retry) {
+                        retry.addEventListener('click', () => {
+                            quizSection.innerHTML = '';
+                            scheduleExerciseRender(topicId);
+                        });
+                    }
+                }
+            }, 100);
+        }
+
         function loadLesson(topicId) {
             clearExtraExercises();
 
@@ -5282,28 +5380,12 @@
             lessonContent.innerHTML = lessonHTML;
 
             if (!topic.isSubscriptionLocked) {
-                if (topicId === 6 || topicId === 7 || topicId === 8 || topicId === 9 || topicId === 10 || topicId === 11 || topicId === 12) {
+                if (EXERCISE_TOPIC_LOADERS[topicId]) {
                     quizSection.innerHTML = '';
                     resultsSection.classList.remove('show');
                     completeBtn.style.display = 'none';
                     retryBtn.style.display = 'none';
-                    setTimeout(() => {
-                        if (topicId === 6) {
-                            loadTopic6Exercises(topicId);
-                        } else if (topicId === 7) {
-                            loadTopic7Exercises(topicId);
-                        } else if (topicId === 8) {
-                            loadTopic8Exercises(topicId);
-                        } else if (topicId === 9) {
-                            loadTopic9Exercises(topicId);
-                        } else if (topicId === 10) {
-                            loadTopic10Exercises(topicId);
-                        } else if (topicId === 11) {
-                            loadTopic11Exercises(topicId);
-                        } else if (topicId === 12) {
-                            loadTopic12Exercises(topicId);
-                        }
-                    }, 100);
+                    scheduleExerciseRender(topicId);
                 } else {
                     loadQuiz(topicId);
                 }
@@ -6688,6 +6770,60 @@
             return normalizeTopic6Text(expected) === normalizedUser;
         }
 
+        /**
+         * Order the word bank of a sentence builder.
+         *
+         * The three builders (topic 6 exercise 5, topic 10 exercise 8, topic 12
+         * exercise 6) used to render `item.words` in source order. In 11 of
+         * those 30 items the source order WAS the answer, so the sentence
+         * assembled itself by clicking left to right and the exercise taught
+         * nothing. Shuffling at the single render helper fixes all three.
+         *
+         * The order is derived from the item instead of Math.random() on
+         * purpose: a re-render — restoring a draft, re-checking, coming back to
+         * the topic — must lay the chips out exactly as the learner last saw
+         * them, not rearrange them mid-answer. Selection and checking both work
+         * by value, never by bank position, so reordering here cannot affect a
+         * saved answer or a score.
+         */
+        function topic6BuilderBankOrder(item, index) {
+            const words = (item && Array.isArray(item.words)) ? item.words.slice() : [];
+            /* A two-word bank cannot be made hard, but it must still not be
+               handed over pre-solved — the rotation guard below reverses it. */
+            if (words.length < 2) {
+                return words;
+            }
+
+            const answer = (item.answers && item.answers[0]) || item.answer || '';
+            const seedText = answer + '#' + index + '#' + words.join('|');
+            let seed = 0;
+            for (let i = 0; i < seedText.length; i++) {
+                seed = (seed * 31 + seedText.charCodeAt(i)) >>> 0;
+            }
+            const next = () => {
+                seed = (seed * 1103515245 + 12345) >>> 0;
+                return seed / 4294967296;
+            };
+
+            for (let i = words.length - 1; i > 0; i--) {
+                const j = Math.floor(next() * (i + 1));
+                const swap = words[i];
+                words[i] = words[j];
+                words[j] = swap;
+            }
+
+            /* A fair shuffle is allowed to land on the answer, which for a word
+               bank silently restores the very bug this exists to remove — and
+               it did, for 3 of the 30 items. Rotate off it. The loop is bounded
+               by the bank size so a bank of identical words cannot spin. */
+            const solution = String(answer).replace(/[.,!?]/g, '').trim().toLowerCase();
+            for (let guard = 0; guard < words.length; guard++) {
+                if (words.join(' ').toLowerCase() !== solution) break;
+                words.push(words.shift());
+            }
+            return words;
+        }
+
         function getTopic6BuilderSelection(index) {
             const holder = document.querySelector(`input[data-topic6-builder-selected="${index}"]`);
             if (!holder || !holder.value) {
@@ -6971,7 +7107,7 @@
                             </button>
                         </div>
                         <div class="topic6-builder-bank" data-topic6-builder-bank="${index}">
-                            ${item.words.map((word) => `
+                            ${topic6BuilderBankOrder(item, index).map((word) => `
                                 <button type="button"
                                         class="topic6-word-chip"
                                         data-topic6-builder-word="${index}"
@@ -9402,7 +9538,7 @@
                             </button>
                         </div>
                         <div class="topic6-builder-bank" data-topic10-builder-bank="${index}">
-                            ${item.words.map((word) => `
+                            ${topic6BuilderBankOrder(item, index).map((word) => `
                                 <button type="button"
                                         class="topic6-word-chip"
                                         data-topic10-builder-word="${index}"
@@ -10558,7 +10694,7 @@
                             </button>
                         </div>
                         <div class="topic6-builder-bank" data-topic12-builder-bank="${index}">
-                            ${item.words.map((word) => `
+                            ${topic6BuilderBankOrder(item, index).map((word) => `
                                 <button type="button"
                                         class="topic6-word-chip"
                                         data-topic12-builder-word="${index}"

@@ -110,6 +110,14 @@ console.log(`  builder exercises: ${exercises} | items: ${items}`);
     ok(!!rule && !/border-color|background:\s*var/.test(rule[0]),
         'the used word is not merely recoloured — that is what duplicated it on screen');
 
+    /* Because used chips leave the bank, the bank must not be free to collapse:
+       without a floor it shrank on every click and hit zero height on the last
+       word, so the card jumped under the learner's finger. */
+    const bankRule = html.match(/\.topic6-builder-bank\s*\{[^}]*\}/);
+    ok(!!bankRule, 'the word-bank rule exists');
+    ok(!!bankRule && /min-height:\s*\d/.test(bankRule[0]),
+        'the word bank keeps a min-height so it cannot collapse as chips are used');
+
     function fn(name) {
         const i = html.indexOf('function ' + name + '(');
         let p = 0, b = -1;
@@ -137,6 +145,7 @@ console.log(`  builder exercises: ${exercises} | items: ${items}`);
         var quizSection=document.getElementById('quizSection');var userQuizResults={};
         var completedTopics=[];var currentUserId=null;var topic6BuilderState={};
         function clearExtraExercises(){}
+        ${fn('topic6BuilderBankOrder')}
         ${fn('normalizeTopic6Text')} ${fn('topic6IsCorrect')} ${fn('getTopic6BuilderSelection')}
         ${fn('setTopic6BuilderSelection')} ${fn('renderTopic6BuilderSelection')}
         ${fn('bindTopic6CheckButton')} ${fn('bindTopic6ExerciseEvents')} ${fn('loadTopic6Exercises')}
@@ -175,6 +184,75 @@ console.log(`  builder exercises: ${exercises} | items: ${items}`);
         ok(after.length === item.words.length,
             `render #${i + 1}: every word is on screen exactly once when complete`);
     });
+}
+
+/* ------------------------------- 3. the bank order is a task, not the answer */
+/* The banks used to render item.words in source order, and for 11 of the 30
+   builder items across topics 6, 10 and 12 that order WAS the answer — the
+   sentence assembled itself by clicking left to right. topic6BuilderBankOrder()
+   is the single place that orders all three banks, so assert on it directly:
+   every item must be reordered away from its answer, must stay solvable, and
+   must be stable across re-renders (a bank that reshuffles mid-answer is a
+   worse bug than the one it replaced). */
+{
+    const html = fs.readFileSync(path.join(ROOT, 'paid-courses/a1-course.html'), 'utf8');
+
+    const i = html.indexOf('function topic6BuilderBankOrder(');
+    ok(i >= 0, 'topic6BuilderBankOrder() exists');
+    let src = '';
+    if (i >= 0) {
+        const b = html.indexOf('{', html.indexOf(')', i));
+        let d = 0;
+        for (let k = b; k < html.length; k++) {
+            if (html[k] === '{') d++;
+            else if (html[k] === '}') { d--; if (d === 0) { src = html.slice(i, k + 1); break; } }
+        }
+    }
+
+    /* all three banks must go through it — none may render item.words directly */
+    const direct = (html.match(/\$\{item\.words\.map\(/g) || []).length;
+    ok(direct === 0, `no builder renders item.words unordered (${direct} left)`);
+    const routed = (html.match(/\$\{topic6BuilderBankOrder\(item, index\)\.map\(/g) || []).length;
+    ok(routed === 3, `all 3 builder banks (topics 6, 10, 12) use the shared order (${routed})`);
+
+    const order = vm.runInNewContext(src + '; topic6BuilderBankOrder', {});
+    const cd = html.indexOf('const courseData');
+    let d = 0, st = html.indexOf('{', cd), e = -1;
+    for (let k = st; k < html.length; k++) {
+        if (html[k] === '{') d++;
+        else if (html[k] === '}') { d--; if (d === 0) { e = k; break; } }
+    }
+    const topics = vm.runInNewContext('(' + html.slice(st, e + 1) + ')', {}).topics;
+
+    let checked = 0;
+    topics.forEach((topic) => {
+        Object.keys(topic).forEach((blockKey) => {
+            if (!/Exercises?$/.test(blockKey)) return;
+            const block = topic[blockKey];
+            if (!block || typeof block !== 'object') return;
+            Object.keys(block).forEach((exKey) => {
+                const ex = block[exKey];
+                if (!ex || !Array.isArray(ex.items) || !ex.items.length) return;
+                if (!Array.isArray(ex.items[0].words)) return;
+                ex.items.forEach((item, n) => {
+                    checked++;
+                    const where = `A1 ${topic.id}/${exKey}#${n + 1}`;
+                    const bank = order(item, n);
+                    const answer = (item.answers && item.answers[0]) || item.answer || '';
+                    const solution = String(answer).replace(/[.,!?]/g, '').trim().split(/\s+/);
+
+                    ok(bank.join(' ') !== solution.join(' '),
+                        `${where}: the bank is not already the answer`);
+                    ok(bank.slice().sort().join('|') === item.words.slice().sort().join('|'),
+                        `${where}: reordering keeps exactly the same words`);
+                    ok(order(item, n).join('|') === bank.join('|'),
+                        `${where}: the order is stable across re-renders`);
+                });
+            });
+        });
+    });
+    console.log(`  bank order checked on ${checked} items`);
+    ok(checked === 30, `every builder item is covered (${checked}/30)`);
 }
 
 console.log('='.repeat(60));

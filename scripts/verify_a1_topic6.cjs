@@ -292,6 +292,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
             var currentUserId=null;
             var topic6BuilderState={};
             function clearExtraExercises(){}
+            ${fn('topic6BuilderBankOrder')}
             ${fn('normalizeTopic6Text')}
             ${fn('topic6IsCorrect')}
             ${fn('getTopic6BuilderSelection')}
@@ -425,6 +426,7 @@ console.log(`  audited ${items} choice items across ${topicsWithOptions} topics\
             var currentUserId=null;
             var topic6BuilderState={};
             function clearExtraExercises(){}
+            ${fn('topic6BuilderBankOrder')}
             ${fn('normalizeTopic6Text')}
             ${fn('topic6IsCorrect')}
             ${fn('getTopic6BuilderSelection')}
