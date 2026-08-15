@@ -332,9 +332,28 @@
         }
 
         /* Flashcard Screen */
+        /* THE MOBILE BLOCKER THIS FIXES
+           -----------------------------
+           `body` is `overflow: hidden; height: 100vh`, and this screen is
+           `position: fixed; inset: 0`. On a phone the column below it —
+           card, hint, voice switch, injected microphone selector, two audio
+           buttons and two navigation buttons — is roughly 950px tall against
+           a ~590px visible area. Nothing scrolled anywhere, so «Oldingi» and
+           «Keyingi» were not merely below the fold, they were UNREACHABLE.
+
+           The fix keeps the screen fixed but makes the MIDDLE scroll and pins
+           the navigation to the bottom, so the two controls the learner needs
+           to move through the deck are always on screen whatever the height.
+
+           `100dvh` matters on Android Chrome specifically: `100vh` there is the
+           LARGE viewport (address bar hidden), so while the bars are showing
+           the layout is already taller than the space it has. The `100vh` line
+           stays first as the fallback for browsers without dvh. */
         .flashcard-screen {
             position: fixed;
             inset: 0;
+            height: 100vh;
+            height: 100dvh;
             display: none;
             flex-direction: column;
             background: linear-gradient(135deg, #2c3e50, #4a6491);
@@ -377,8 +396,13 @@
             color: white;
         }
 
+        .flashcard-header { flex: 0 0 auto; }
+
         .flashcard-container {
-            flex: 1;
+            flex: 1 1 auto;
+            min-height: 0;              /* a flex child scrolls only once it may shrink */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -493,6 +517,9 @@
             max-width: 600px;
             width: 100%;
         }
+
+        /* Desktop is unchanged: the column fits, so the navigation simply sits
+           at the end of it. Everything below only applies to small screens. */
 
         .control-btn {
             flex: 1;
@@ -656,9 +683,13 @@
                 padding: 10px 20px;
             }
 
+            /* The card scaled to the SPACE, not to a fixed number. 300px plus
+               everything under it did not fit a 640px phone; clamp keeps it
+               comfortably tappable on a small screen and lets it grow on a
+               large one, and long phrases still wrap inside it. */
             .flashcard {
                 max-width: 100%;
-                height: 300px;
+                height: clamp(170px, 34vh, 300px);
             }
 
             .word-russian {
@@ -669,35 +700,68 @@
                 font-size: 1.8rem;
             }
 
+            /* Two buttons stacked into a column cost twice the height for no
+               gain — «Tinglash» and «Talaffuz» sit side by side instead. */
             .audio-controls {
-                flex-direction: column;
+                flex-direction: row;
                 gap: 10px;
+                width: 100%;
                 max-width: 100%;
-                padding: 0 20px;
+                padding: 0 4px;
             }
 
             .audio-button {
-                width: 100%;
-                padding: 12px 25px;
-                font-size: 1rem;
+                flex: 1;
+                min-height: 44px;
+                padding: 10px 12px;
+                font-size: 0.95rem;
                 justify-content: center;
             }
 
+            /* Tighten the column so the whole card fits a phone before any
+               scrolling is needed at all. */
+            .flashcard-container {
+                padding: 16px 14px 0;
+                gap: 14px;
+                justify-content: flex-start;
+            }
+
+            .hint-text { font-size: 0.9rem; margin: 0; }
+
+            /* THE NAVIGATION IS PINNED. Whatever the viewport height and
+               whatever the browser bars are doing, «Oldingi» and «Keyingi» stay
+               on screen — that is the whole bug. It sticks to the bottom of the
+               scrolling middle rather than to the window, so it can never cover
+               the microphone selector or the speech result: those scroll behind
+               it and the padding below reserves their room. */
             .flashcard-controls {
-                flex-direction: column;
+                position: sticky;
+                bottom: 0;
+                z-index: 5;
+                flex-direction: row;
                 width: 100%;
                 max-width: 100%;
                 gap: 10px;
-                padding: 0 20px;
-                align-items: center;
+                margin-top: auto;
+                padding: 10px 4px calc(10px + env(safe-area-inset-bottom, 0px));
+                background: linear-gradient(180deg,
+                    rgba(44, 62, 80, 0) 0%,
+                    rgba(44, 62, 80, 0.92) 22%,
+                    rgba(44, 62, 80, 0.98) 100%);
             }
 
             .control-btn {
-                width: 100%;
-                max-width: 400px;
+                flex: 1;
+                min-width: 0;
+                min-height: 44px;      /* comfortable touch target */
+                max-width: none;
                 justify-content: center;
-                padding: 12px 30px;
+                padding: 12px 10px;
             }
+
+            /* The microphone selector is injected by speech.js; on a phone it
+               must not claim a fixed 240px column of its own. */
+            .mic-selector-wrap { width: 100% !important; margin-top: 4px !important; }
 
             .hint-text {
                 padding: 0 20px;

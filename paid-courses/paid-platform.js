@@ -107,46 +107,111 @@ function trackEvent(type, data) {
 }
 const _lastTopicPass = {}; // course -> highest completed topic already announced
 
+/* ------------------------------------------------------------------ *
+ * WHO MAY WRITE WHAT
+ * ------------------------------------------------------------------
+ * Everything in the platform that records course progress funnels through
+ * window.saveUserProgress, so the trust split is enforced here, once.
+ *
+ * AUTHORITATIVE — the fields that decide what a learner has achieved. They are
+ * written ONLY by /api/progress, from a verified session, and Firestore rules
+ * refuse them from the owner. Before this split a customer could open DevTools
+ * and set courses.B1.finalExamPassed = true, then collect a real certificate.
+ *
+ * SAFE — vocabulary position and a display timestamp. Nothing gates on them, so
+ * they keep going straight to Firestore: routing a card flip through an API
+ * call would add a request per swipe for no security gain.
+ * ------------------------------------------------------------------ */
+const AUTHORITATIVE_PROGRESS_FIELDS = Object.freeze([
+    'completedTopics',
+    'finalExamPassed',
+    'finalExamScore',
+    'finalExamCompletedAt',
+    'courseCompleted',
+    'certificateUnlocked',
+    'certificateNumber'
+]);
+
+function isAuthoritativeProgressKey(key) {
+    const head = String(key || '').split('.')[0];
+    return AUTHORITATIVE_PROGRESS_FIELDS.indexOf(head) !== -1;
+}
+
+/**
+ * Record that the learner finished a topic. Returns the SERVER's progress
+ * array, or null when the server refused — the caller must not treat a null
+ * as success.
+ */
+async function completeCourseTopic(course, topicId) {
+    const result = await callApi('/api/progress?action=complete-topic', 'POST',
+        { course: course, topicId: topicId });
+    if (!result || !Array.isArray(result.completedTopics)) {
+        return null;
+    }
+
+    /* Timeline: announce a newly reached highest topic ONCE, driven by the
+       SERVER's array rather than by what the client believed. The event is
+       analytics only — it proves nothing and nothing gates on it. */
+    const highest = result.completedTopics.filter(function (n) { return Number.isFinite(n); });
+    const max = highest.length ? Math.max.apply(null, highest) : 0;
+    if (max > (_lastTopicPass[course] || 0)) {
+        _lastTopicPass[course] = max;
+        trackEvent('topic_pass', { course: course, topic: max });
+    }
+
+    return result.completedTopics;
+}
+window.completeCourseTopic = completeCourseTopic;
+
+/**
+ * Submit a final exam for SERVER grading. The answers go up; the score and the
+ * verdict come back. Nothing about the outcome is sent from here — see
+ * api/_progress/final-exam.js.
+ */
+async function submitFinalExam(course, answers) {
+    return callApi('/api/progress?action=final-exam', 'POST',
+        { course: course, answers: answers });
+}
+window.submitFinalExam = submitFinalExam;
+
 async function firestoreSaveUserProgress(userId, course, progressData) {
     if (!userId) {
         return false;
     }
+
+    /* The legacy array signature wrote the ROOT completedTopics field. That
+       field is authoritative and the rules now refuse it, so rather than let
+       the write fail somewhere out of sight, it is refused here with a reason. */
+    if (Array.isArray(course)) {
+        console.error('saveUserProgress: completedTopics must go through ' +
+            'completeCourseTopic() — the legacy array form is no longer accepted.');
+        return false;
+    }
+
+    if (!progressData || typeof progressData !== 'object') {
+        return false;
+    }
+
+    /* A caller that still hands us an authoritative field gets a loud refusal
+       rather than a silent Firestore permission-denied further down. */
+    const offending = Object.keys(progressData).filter(isAuthoritativeProgressKey);
+    if (offending.length) {
+        console.error('saveUserProgress: refusing to write authoritative field(s) [' +
+            offending.join(', ') + '] — use completeCourseTopic() / submitFinalExam().');
+        return false;
+    }
+
     try {
         await authReady();
         const userRef = doc(db, 'users', userId);
-        if (Array.isArray(course)) {
-            // Legacy signature: (userId, completedTopicsArray)
-            await updateDoc(userRef, {
-                completedTopics: course,
-                lastActivity: serverTimestamp()
-            });
-        } else if (progressData && typeof progressData === 'object') {
-            // Merge each field of the course progress INDEPENDENTLY using dotted
-            // field paths. This is critical: the lesson page writes
-            // { completedTopics } while the vocabulary page writes { vocabulary }.
-            // Writing the whole `courses.<course>` map would let one writer wipe
-            // the other's data — dotted paths merge them field-by-field instead.
-            const updates = { lastActivity: serverTimestamp() };
-            Object.keys(progressData).forEach((key) => {
-                updates[`courses.${course}.${key}`] = progressData[key];
-            });
-            await updateDoc(userRef, updates);
-        } else {
-            await updateDoc(userRef, {
-                [`courses.${course}`]: progressData,
-                lastActivity: serverTimestamp()
-            });
-        }
-        // Timeline: announce topic completion ONCE, when a new highest topic
-        // is reached (dedup avoids re-emitting on every progress re-save).
-        if (!Array.isArray(course) && progressData && Array.isArray(progressData.completedTopics)) {
-            const nums = progressData.completedTopics.filter((n) => Number.isFinite(n));
-            const max = nums.length ? Math.max(...nums) : 0;
-            if (max > (_lastTopicPass[course] || 0)) {
-                _lastTopicPass[course] = max;
-                trackEvent('topic_pass', { course, topic: max });
-            }
-        }
+        /* Merge each field INDEPENDENTLY using dotted field paths: the lesson
+           page and the vocabulary page write different keys of the same course
+           map, and writing the whole map would let one wipe the other. */
+        const updates = { lastActivity: serverTimestamp() };
+        Object.keys(progressData).forEach((key) => {
+            updates[`courses.${course}.${key}`] = progressData[key];
+        });
+        await updateDoc(userRef, updates);
         return true;
     } catch (error) {
         console.warn('progress-sync: saveUserProgress fallback', error?.message || error);

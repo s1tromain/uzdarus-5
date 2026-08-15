@@ -33,11 +33,27 @@ service cloud.firestore {
       return userRole() in ["teacher", "moderator", "admin", "developer"];
     }
 
+    // ------------------------------------------------------------------
+    // WHAT A LEARNER MAY WRITE TO THEIR OWN DOCUMENT
+    // ------------------------------------------------------------------
+    // `courses` used to be here as a single opaque key. Because an update with
+    // dotted paths (courses.B1.finalExamPassed) only ever reports `courses` as
+    // the affected top-level key, that one entry let the owner write ANY field
+    // of ANY course — including the flag the certificate backend trusts. A
+    // customer could set courses.B1.finalExamPassed = true from the console and
+    // collect a real, numbered certificate.
+    //
+    // `courses` is still writable, but the courseUpdateAllowed() check below
+    // restricts WHICH sub-fields may move. Progress and exam verdicts are
+    // written exclusively by /api/progress through the Admin SDK, which is not
+    // subject to these rules.
+    //
+    // Root `completedTopics` is legacy: it is still READ by old profiles, and
+    // reads are unaffected by any of this — it is simply no longer writable.
     function ownerMutableKeys() {
       return [
         "courses",
         "lastActivity",
-        "completedTopics",
         "forcePasswordChange",
         "lastPasswordChangeAt",
         "updatedAt",
@@ -46,8 +62,48 @@ service cloud.firestore {
       ];
     }
 
+    // The only sub-fields of a course a learner may author. Everything absent
+    // from this list — completedTopics, finalExamPassed, finalExamScore,
+    // finalExamCompletedAt, courseCompleted, certificateUnlocked,
+    // certificateNumber — is server-only.
+    function courseSafeKeys() {
+      return ["vocabulary", "lastUpdated"];
+    }
+
+    function courseCodes() {
+      return ["A1", "A2", "B1", "B2"];
+    }
+
+    // True when this course's map either did not change, or changed only in
+    // safe sub-fields. Written to survive absence at every level: a new account
+    // has no `courses`, a new course has no map, and diff() on a missing map is
+    // not something to rely on — so each level is guarded with an explicit
+    // existence check before it is compared.
+    function courseChangeAllowed(code) {
+      return !( ('courses' in request.resource.data) && (request.resource.data.courses is map)
+                && (code in request.resource.data.courses)
+                && (request.resource.data.courses[code] is map) )
+        ? true
+        : ( !( ('courses' in resource.data) && (resource.data.courses is map)
+               && (code in resource.data.courses) && (resource.data.courses[code] is map) )
+            // The course map is being CREATED. Only safe keys may appear in it.
+            ? request.resource.data.courses[code].keys().hasOnly(courseSafeKeys())
+            // It already existed: only safe keys may have moved.
+            : request.resource.data.courses[code]
+                .diff(resource.data.courses[code])
+                .affectedKeys().hasOnly(courseSafeKeys()) );
+    }
+
+    function coursesUpdateAllowed() {
+      return courseChangeAllowed("A1")
+        && courseChangeAllowed("A2")
+        && courseChangeAllowed("B1")
+        && courseChangeAllowed("B2");
+    }
+
     function ownerUpdateAllowed() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(ownerMutableKeys());
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(ownerMutableKeys())
+        && coursesUpdateAllowed();
     }
 
     match /users/{userId} {

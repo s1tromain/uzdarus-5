@@ -7400,41 +7400,32 @@
             return true;
         }
 
-        async function saveProgressToFirebase() {
-            const localKey = window.currentUserId ? `b1_progress_${window.currentUserId}` : 'b1_progress_guest';
-
-            try {
-                localStorage.setItem(localKey, JSON.stringify(completedTopics));
-            } catch (error) {
-                console.error('❌ SAVE: localStorage error:', error);
+                /* AUTHORITATIVE WRITE — server only.
+           completedTopics decides what the learner may open next, so the browser
+           is no longer allowed to author it: Firestore rules refuse it from the
+           owner and /api/progress?action=complete-topic is the single way it
+           grows. The server validates the sequence against ITS OWN record, adds
+           exactly the one topic and returns the resulting array — which is what
+           we adopt. A refusal returns false so the caller shows its retry
+           instead of a false success. */
+        async function saveProgressToFirebase(topicId) {
+            if (!window.currentUserId || !window.completeCourseTopic) {
+                return false;
+            }
+            if (!Number.isInteger(topicId) || topicId < 1) {
+                return false;
             }
 
-            if (!window.currentUserId || !window.saveUserProgress) {
-                return true;
-            }
-
             try {
-                // ISSUE #3 / #5 — RACE GUARD: completion is monotonic, so union with
-                // the authoritative remote copy before writing. A stale/timed-out
-                // in-memory array can never regress already-unlocked topics.
-                let remote = [];
-                if (window.getUserProgress) {
-                    const rp = await window.getUserProgress(window.currentUserId, 'B1');
-                    if (rp && Array.isArray(rp.completedTopics)) remote = rp.completedTopics;
+                const authoritative = await window.completeCourseTopic('B1', topicId);
+                if (!Array.isArray(authoritative)) {
+                    return false;
                 }
-                const merged = Array.from(new Set([...remote, ...completedTopics]))
-                    .filter(n => Number.isFinite(n))
-                    .sort((a, b) => a - b);
-                completedTopics = merged;
-                try { localStorage.setItem(localKey, JSON.stringify(merged)); } catch (e) {}
-
-                await window.saveUserProgress(window.currentUserId, 'B1', {
-                    completedTopics: merged,
-                    lastUpdated: new Date().toISOString()
-                });
+                completedTopics = authoritative;
+                try { localStorage.setItem(`b1_progress_${window.currentUserId}`, JSON.stringify(authoritative)); } catch (e) {}
                 return true;
             } catch (error) {
-                console.error('❌ SAVE: Firebase save error:', error);
+                console.error('SAVE: server progress error:', error);
                 return false;
             }
         }
@@ -9292,7 +9283,7 @@
                     if (!completedTopics.includes(topicId)) {
                         completedTopics.push(topicId);
                         clearQuizDraft(topicId); // ISSUE #4 — topic done, drop the draft
-                        try { await saveProgressToFirebase(); } catch (e) { console.error(e); }
+                        try { await saveProgressToFirebase(topicId); } catch (e) { console.error(e); }
                         updateProgress();
                         loadTopics();
                         if (currentUser && window.logActivity) {
@@ -9512,7 +9503,7 @@
 
                         // Сохраняем прогресс в Firebase
                         console.log('💾 SAVING: Calling saveProgressToFirebase...');
-                        const saved = await saveProgressToFirebase();
+                        const saved = await saveProgressToFirebase(topicId);
                         console.log('💾 SAVE RESULT:', saved ? 'SUCCESS' : 'FAILED');
                         
                         updateProgress();

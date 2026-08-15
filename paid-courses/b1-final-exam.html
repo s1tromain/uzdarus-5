@@ -1124,6 +1124,7 @@
             var timeUsed = formatTime(Math.min(Math.max(elapsedSeconds, 0), TOTAL_SECONDS));
 
             var results = [];
+            var examAnswers = [];   /* per-group answers, sent to the server for grading */
             var totalCorrect = 0;
 
             FINAL_EXAM_DATA.forEach(function (section, sIdx) {
@@ -1160,6 +1161,11 @@
                         row.classList.remove('correct', 'incorrect');
                         if (userValue) row.classList.add(correct ? 'correct' : 'incorrect');
                     }
+                    /* Positional copy of what the learner typed/picked, aligned
+                       with FINAL_EXAM_DATA. This is ALL that goes to the server:
+                       it grades the exam itself and decides `passed`. */
+                    if (!examAnswers[sIdx]) examAnswers[sIdx] = [];
+                    examAnswers[sIdx][qIdx] = userValue;
                     results.push({
                         sIdx: sIdx, qIdx: qIdx, sectionTitle: section.title,
                         question: item.q, userAnswer: userValue,
@@ -1224,17 +1230,26 @@
             } catch (e) {}
             // On pass AND verified completion: store completion fields under courses.B1.
             if (grantCompletion) {
+            /* THE VERDICT IS THE SERVER'S. The page used to write
+               finalExamPassed / courseCompleted / certificateUnlocked straight
+               into its own Firestore document, which meant the person being
+               certified was the person asserting they had passed. Now the
+               answers go up and the outcome comes back; Firestore rules refuse
+               these fields from the owner entirely. */
+            if (window.submitFinalExam) {
                 try {
-                    if (window.saveUserProgress) {
-                        await window.saveUserProgress(USER_ID, COURSE, {
-                            finalExamPassed: true,
-                            courseCompleted: true,
-                            certificateUnlocked: true,
-                            finalExamScore: pct,
-                            finalExamCompletedAt: resultData.timestamp
-                        });
+                    var serverResult = await window.submitFinalExam('B1', examAnswers);
+                    if (serverResult && typeof serverResult.score === 'number') {
+                        /* Show what was RECORDED, never a local number that
+                           disagrees with it. */
+                        pct = serverResult.score;
+                        passed = serverResult.passed === true;
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.error('Yakuniy imtihon natijasini saqlab bo\'lmadi:', e);
+                }
+            }
+
                 try {
                     if (window.currentUser && window.logActivity) {
                         window.logActivity(window.currentUser.email,

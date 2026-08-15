@@ -393,7 +393,7 @@ function _setDemoPronunciationLockState(locked) {
         if (!micBtn) return;
         micBtn.classList.add('mic-btn');
         micBtn.classList.toggle('locked', !!locked);
-        micBtn.title = locked ? 'Доступно только в Premium' : '';
+        micBtn.title = locked ? _t('premiumOnly') : '';
     });
 }
 
@@ -495,23 +495,73 @@ function _getSavedMicId() {
     return localStorage.getItem('mic_device') || '';
 }
 
+/* Returns { mics, denied }. The denial is REPORTED rather than swallowed:
+   an empty device list means something different when the browser refused
+   permission than when the machine genuinely has no microphone, and the
+   learner needs to be told which. */
 async function _enumerateMics() {
+    var denied = false;
     try {
         /* permission prompt so labels are visible */
         var tmp = await navigator.mediaDevices.getUserMedia({ audio: true });
         tmp.getTracks().forEach(function (t) { t.stop(); });
-    } catch { /* ignore — labels may be empty */ }
+    } catch (error) {
+        var name = String((error && error.name) || '');
+        denied = name === 'NotAllowedError' || name === 'SecurityError' ||
+                 name === 'PermissionDeniedError';
+    }
 
-    var all = await navigator.mediaDevices.enumerateDevices();
-    return all.filter(function (d) { return d.kind === 'audioinput'; });
+    var all = [];
+    try {
+        all = await navigator.mediaDevices.enumerateDevices();
+    } catch (error) {
+        all = [];
+    }
+    return {
+        mics: all.filter(function (d) { return d.kind === 'audioinput'; }),
+        denied: denied
+    };
 }
 
+/**
+ * Populate the microphone chooser — and show it only when there is a choice.
+ *
+ * It used to render unconditionally. With no microphone that produced an empty
+ * dropdown under a label inviting the learner to pick one; with permission
+ * denied, the same empty box and no explanation; and with exactly ONE device, a
+ * ~70px control for choosing between one option. On a phone that block was part
+ * of what pushed the deck navigation off the screen entirely.
+ *
+ * The feature is untouched — the element stays in the DOM and repopulates when
+ * devices change. Only its VISIBILITY now follows whether there is anything to
+ * decide.
+ */
 async function _initMicSelector() {
     var sel = document.getElementById('micSelect');
     if (!sel) return;
 
-    var mics = await _enumerateMics();
+    var wrap = sel.closest ? sel.closest('.mic-selector-wrap') : null;
+    var label = wrap ? wrap.querySelector('.mic-label') : null;
+    var enumerated = await _enumerateMics();
+    var mics = enumerated.mics;
     var saved = _getSavedMicId();
+
+    if (wrap) {
+        if (enumerated.denied) {
+            /* Say what happened, in the interface language, instead of an
+               empty control or a raw NotAllowedError. */
+            wrap.style.display = '';
+            sel.style.display = 'none';
+            if (label) label.textContent = _t('micDenied');
+        } else if (mics.length < 2) {
+            /* Nothing to choose between. */
+            wrap.style.display = 'none';
+        } else {
+            wrap.style.display = '';
+            sel.style.display = '';
+            if (label) label.textContent = _t('micLabel');
+        }
+    }
 
     sel.innerHTML = '';
     mics.forEach(function (mic, i) {
@@ -547,7 +597,7 @@ function _injectMicSelector() {
     var container = document.createElement('div');
     container.className = 'mic-selector-wrap';
     container.innerHTML =
-        '<label class="mic-label" for="micSelect">\uD83C\uDFA4 \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u043C\u0438\u043A\u0440\u043E\u0444\u043E\u043D</label>' +
+        '<label class="mic-label" for="micSelect">' + _t('micLabel') + '</label>' +
         '<select id="micSelect" class="mic-select"></select>';
     wrap.parentNode.insertBefore(container, wrap.nextSibling);
 }
@@ -1473,6 +1523,12 @@ function _handlePronFail(msg) {
 var LANG = (typeof window !== 'undefined' && window.SPEECH_LANG) ? window.SPEECH_LANG : 'uz';
 var TEXT = {
     uz: {
+        /* These two were the last user-facing strings hardcoded in Russian on
+           pages whose entire interface is Uzbek. Routed through _t() like
+           everything else so a locale switch reaches them too. */
+        micLabel:         "🎤 Mikrofonni tanlang",
+        micDenied:        "🎤 Mikrofonga ruxsat berilmagan. Brauzer sozlamalaridan ruxsat bering.",
+        premiumOnly:      "Faqat Premium obunada mavjud",
         excellent:        "A'lo!",
         good:             "Yaxshi",
         almost:           "Deyarli",
@@ -1496,6 +1552,9 @@ var TEXT = {
         verdictFakeMatch: "❌ Qayta urinib ko'ring"
     },
     en: {
+        micLabel:         "🎤 Choose a microphone",
+        micDenied:        "🎤 Microphone access was denied. Allow it in your browser settings.",
+        premiumOnly:      "Available in Premium only",
         excellent:        "Excellent!",
         good:             "Good",
         almost:           "Almost",

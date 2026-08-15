@@ -3262,10 +3262,9 @@
                             // Синхронизируем в Firebase
                             if (completedTopics.length > 0 && window.saveUserProgress) {
                                 console.log('🔄 DATA: Syncing localStorage progress to Firebase...');
-                                await window.saveUserProgress(currentUserId, 'B1', {
-                                    completedTopics: completedTopics,
-                                    lastUpdated: new Date().toISOString()
-                                });
+                                await (window.completeCourseTopic
+                                        ? window.completeCourseTopic('B1', topicId)
+                                        : Promise.resolve(null));
                                 console.log('✅ DATA: Progress synced to Firebase');
                             }
                         } else {
@@ -3315,84 +3314,35 @@
             }
         }
 
-        async function saveProgressToFirebase() {
-            console.log('💾 SAVE: Attempting to save progress...', {
-                userId: window.currentUserId,
-                completed: completedTopics,
-                completedCount: completedTopics.length,
-                firebaseReady: window.firebaseReady,
-                saveUserProgressAvailable: !!window.saveUserProgress
-            });
-            
-            // Сначала всегда сохраняем в localStorage как backup с привязкой к userId
+                /* AUTHORITATIVE WRITE — server only. Demo completion is the SAME
+           milestone as the paid course's, so it goes through the same
+           server-validated claim: one topic, session-derived user, sequence
+           checked against the server's own record. A signed-out visitor keeps
+           local demo progress and writes nothing. */
+        async function saveProgressToFirebase(topicId) {
             if (window.currentUserId) {
                 try {
                     localStorage.setItem(`b1_progress_${window.currentUserId}`, JSON.stringify(completedTopics));
-                    console.log('✅ SAVE: Progress saved to localStorage for user', window.currentUserId);
-                } catch (e) {
-                    console.error('❌ SAVE: Could not save to localStorage:', e);
-                }
+                } catch (e) { /* a full store must not break the demo */ }
             }
-            
-            if (!window.currentUserId) {
-                console.error('❌ SAVE: No user ID available, localStorage only');
+            if (!window.currentUserId || !window.completeCourseTopic) {
                 return false;
             }
-            
-            // Ждем Firebase если еще не готов
-            if (!window.saveUserProgress) {
-                console.log('⏳ SAVE: Firebase not ready, waiting...');
-                await waitForFirebase();
+            if (!Number.isInteger(topicId) || topicId < 1) {
+                return false;
             }
-            
-            if (window.saveUserProgress) {
-                try {
-                    console.log('💾 SAVE: Calling Firebase saveUserProgress for course B1...');
-                    console.log('💾 SAVE: Data to save:', {
-                        userId: window.currentUserId,
-                        course: 'B1',
-                        completedTopics: completedTopics,
-                        timestamp: new Date().toISOString()
-                    });
-                    
-                    // Сохраняем прогресс для курса B1
-                    const result = await window.saveUserProgress(window.currentUserId, 'B1', {
-                        completedTopics: completedTopics,
-                        lastUpdated: new Date().toISOString()
-                    });
-                    
-                    console.log('✅ SAVE: Progress saved to Firebase successfully!', {
-                        result,
-                        userId: window.currentUserId,
-                        course: 'B1',
-                        completedTopics: completedTopics,
-                        completedCount: completedTopics.length
-                    });
-                    
-                    // Verify save
-                    if (window.getUserProgress) {
-                        const verified = await window.getUserProgress(window.currentUserId, 'B1');
-                        console.log('🔍 SAVE: Verification check:', verified);
-                        if (verified && verified.completedTopics) {
-                            console.log('✅ SAVE: Verified - data is in Firebase:', verified.completedTopics);
-                        } else {
-                            console.warn('⚠️ SAVE: Verification failed - data may not be saved');
-                        }
-                    }
-                    
-                    return true;
-                } catch (error) {
-                    console.error('❌ SAVE ERROR:', error);
-                    console.error('❌ SAVE ERROR Details:', {
-                        message: error.message,
-                        stack: error.stack,
-                        userId: window.currentUserId,
-                        completedTopics
-                    });
+            try {
+                const authoritative = await window.completeCourseTopic('B1', topicId);
+                if (!Array.isArray(authoritative)) {
                     return false;
                 }
-            } else {
-                console.error('❌ SAVE: Firebase not ready after waiting, localStorage only');
+                completedTopics = authoritative;
+                try {
+                    localStorage.setItem(`b1_progress_${window.currentUserId}`, JSON.stringify(authoritative));
+                } catch (e) { /* ignore */ }
+                return true;
+            } catch (error) {
+                console.error('SAVE: server progress error:', error);
                 return false;
             }
         }
@@ -4989,7 +4939,7 @@
                 completeBtn.onclick = async function () {
                     if (!completedTopics.includes(topicId)) {
                         completedTopics.push(topicId);
-                        try { await saveProgressToFirebase(); } catch (e) { console.error(e); }
+                        try { await saveProgressToFirebase(topicId); } catch (e) { console.error(e); }
                         updateProgress();
                         loadTopics();
                         if (currentUser && window.logActivity) {
@@ -5181,7 +5131,7 @@
                         
                         // Сохраняем прогресс в Firebase
                         console.log('💾 SAVING: Calling saveProgressToFirebase...');
-                        const saved = await saveProgressToFirebase();
+                        const saved = await saveProgressToFirebase(topicId);
                         console.log('💾 SAVE RESULT:', saved ? 'SUCCESS' : 'FAILED');
                         
                         updateProgress();

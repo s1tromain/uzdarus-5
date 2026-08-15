@@ -4716,12 +4716,7 @@
             try {
                 if (window.getUserProgress && window.getUserQuizResults) {
                     const savedProgress = await window.getUserProgress(currentUserId, 'A1');
-                    if (savedProgress && Array.isArray(savedProgress.completedTopics)) {
-                        completedTopics = savedProgress.completedTopics;
-                        localStorage.setItem(`a1_progress_${currentUserId}`, JSON.stringify(completedTopics));
-                    } else {
-                        completedTopics = JSON.parse(localStorage.getItem(`a1_progress_${currentUserId}`) || '[]');
-                    }
+                    completedTopics = reconcileCompletedTopics(currentUserId, savedProgress);
 
                     // Certificate completion flags (Firebase-confirmed) — tamper-proof.
                     mergeA1Completion(savedProgress, true);
@@ -4756,44 +4751,132 @@
             return true;
         }
 
+        /* ------------------------------------------------------------------ *
+         *  WHO IS ALLOWED TO SAY A TOPIC IS FINISHED
+         * ------------------------------------------------------------------
+         *  authoritative : the `courses.A1.completedTopics` record on the server
+         *  cache         : localStorage — DISPLAY ONLY, never a source of truth
+         *  session       : topics THIS TAB graded and saved during this visit
+         *
+         *  An earlier version of this function unioned the cache into the
+         *  authoritative array and pushed the result back to Firestore. It fixed
+         *  a genuine data-loss bug, and it opened a hole: localStorage belongs to
+         *  the user, so
+         *
+         *      localStorage.setItem('a1_progress_<uid>', '[1,2,3,4,5,6,7,8,9,10,11,12]')
+         *
+         *  followed by a reload unlocked the whole course AND had the app itself
+         *  write the forgery to the server. One edit, no tooling.
+         *
+         *  So reading is now READ-ONLY and the server wins whenever it has
+         *  anything to say. The cache is consulted only when there is no server
+         *  record at all — a first visit or a failed read — and even then it is
+         *  never promoted: saveProgressToFirebase() writes the server's own array
+         *  plus the topics this session actually graded, and nothing else.
+         *
+         *  The data-loss case it was written for is handled where it belongs, at
+         *  the moment of failure: __uzCompleteTopic() now waits for the save and
+         *  tells the learner if it did not land, instead of silently relying on
+         *  the cache to smuggle it in later. See NOT-SAVED handling below.
+         * ------------------------------------------------------------------ */
+
+        /* Topics graded AND passed in this tab, this visit. The only thing this
+           client may add to the server's record. */
+        const sessionCompletedTopics = new Set();
+
+        /** A topic id is a positive integer; anything else is not a topic. */
+        function cleanTopicIds(list) {
+            return (Array.isArray(list) ? list : [])
+                .map((v) => (typeof v === 'string' && v.trim() !== '' ? Number(v) : v))
+                .filter((n) => Number.isInteger(n) && n > 0);
+        }
+
+        function readCachedTopics(userId) {
+            try {
+                return cleanTopicIds(JSON.parse(localStorage.getItem(`a1_progress_${userId}`) || '[]'));
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function writeCachedTopics(userId, topics) {
+            try {
+                localStorage.setItem(`a1_progress_${userId}`, JSON.stringify(topics));
+            } catch (error) {
+                /* a full or disabled store must not break the lesson */
+            }
+        }
+
+        /**
+         * Decide the progress this session starts from. Reads only — this
+         * function must never write to the server.
+         */
+        function reconcileCompletedTopics(userId, savedProgress) {
+            const hasServerRecord = Boolean(savedProgress)
+                && Array.isArray(savedProgress.completedTopics);
+
+            if (hasServerRecord) {
+                /* The server has spoken. Its record IS the progress; the cache is
+                   refreshed from it, never the other way round. */
+                const authoritative = cleanTopicIds(savedProgress.completedTopics);
+                writeCachedTopics(userId, authoritative);
+                return authoritative;
+            }
+
+            /* No record to read — a brand-new account, or the read failed. Show
+               the cache so an offline learner still sees where they were. It is
+               display state: nothing here is ever pushed to the server, because
+               only sessionCompletedTopics may be added to it. */
+            return readCachedTopics(userId);
+        }
+
+                /* AUTHORITATIVE WRITE — server only.
+           The session set holds the topics THIS tab graded and passed; each is
+           claimed individually through /api/progress?action=complete-topic,
+           which validates the sequence against the server's own record and
+           returns the authoritative array. The browser no longer authors
+           completedTopics at all — Firestore rules refuse it from the owner. */
         async function saveProgressToFirebase() {
             const localKey = window.currentUserId ? `a1_progress_${window.currentUserId}` : 'a1_progress_guest';
 
-            try {
-                localStorage.setItem(localKey, JSON.stringify(completedTopics));
-            } catch (error) {
-                console.error('❌ SAVE: localStorage error:', error);
-            }
-
-            if (!window.currentUserId || !window.saveUserProgress) {
-                return true;
-            }
-
-            try {
-                // ISSUE #3 / #5 — RACE GUARD. Topic completion is monotonic (we only
-                // ever ADD topics). If a previous Firestore read timed out, the
-                // in-memory `completedTopics` may be stale/empty; writing it blindly
-                // would REMOVE already-unlocked topics. So we union with the
-                // authoritative remote copy before persisting — a stale local array
-                // can never regress server progress.
-                let remote = [];
-                if (window.getUserProgress) {
-                    const rp = await window.getUserProgress(window.currentUserId, 'A1');
-                    if (rp && Array.isArray(rp.completedTopics)) remote = rp.completedTopics;
+            /* A guest has no server record; the cache IS their only progress. */
+            if (!window.currentUserId || !window.completeCourseTopic) {
+                try {
+                    localStorage.setItem(localKey, JSON.stringify(completedTopics));
+                } catch (error) {
+                    console.error('❌ SAVE: localStorage error:', error);
                 }
-                const merged = Array.from(new Set([...remote, ...completedTopics]))
-                    .filter(n => Number.isFinite(n))
-                    .sort((a, b) => a - b);
-                completedTopics = merged;
-                try { localStorage.setItem(localKey, JSON.stringify(merged)); } catch (e) {}
+                return true;
+            }
 
-                await window.saveUserProgress(window.currentUserId, 'A1', {
-                    completedTopics: merged,
-                    lastUpdated: new Date().toISOString()
-                });
+            const claims = cleanTopicIds([...sessionCompletedTopics])
+                .filter((id) => !completedTopics.includes(id))
+                .sort((a, b) => a - b);
+            if (!claims.length) {
+                return true;
+            }
+
+            try {
+                let authoritative = null;
+                /* Ascending, one at a time: the server enforces "previous topic
+                   first", so claiming 9 then 10 in order is the only sequence
+                   that can succeed — and that is exactly the intent. */
+                for (const id of claims) {
+                    const next = await window.completeCourseTopic('A1', id);
+                    if (!Array.isArray(next)) {
+                        return false;
+                    }
+                    authoritative = next;
+                }
+                if (!Array.isArray(authoritative)) {
+                    return false;
+                }
+
+                completedTopics = authoritative;
+                try { localStorage.setItem(localKey, JSON.stringify(authoritative)); } catch (e) {}
                 return true;
             } catch (error) {
-                console.error('❌ SAVE: Firebase save error:', error);
+                console.error('❌ SAVE: server progress error:', error);
                 return false;
             }
         }
@@ -4804,25 +4887,91 @@
            "Mavzu tugatilmadi". course-global-fixes.js scores the real exercises
            and calls this hook to actually finish the topic, reusing the same
            progress machinery as the quiz path. */
+        /**
+         * Finish a topic — but only claim it is finished once the server says so.
+         *
+         * The save is awaited and its result is believed. If it did not land, the
+         * topic is NOT added to the progress array and the next topic does NOT
+         * open: nothing on the server records the pass, so nothing may act as if
+         * it did. The learner keeps their score on screen and gets an explicit
+         * retry, which re-sends THIS session's result — it never asks the browser
+         * to remember a completion across a reload, because a remembered
+         * completion is exactly what a user can forge.
+         *
+         * The trade-off is deliberate. Losing an unsaved pass to a reload costs
+         * one repeat of a lesson; trusting the browser to assert passes costs the
+         * integrity of every learner's record.
+         */
         window.__uzCompleteTopic = async function (topicId) {
-            if (!completedTopics.includes(topicId)) {
-                completedTopics.push(topicId);
-                try { clearQuizDraft(topicId); } catch (e) { /* ignore */ }
-                try { await saveProgressToFirebase(); } catch (e) { console.error('❌ complete-hook save error:', e); }
-                try { updateProgress(); } catch (e) { /* ignore */ }
-                try { loadTopics(); } catch (e) { /* ignore */ }
-                if (currentUser && window.logActivity) {
-                    const t = courseData.topics.find((x) => x.id === topicId);
-                    window.logActivity(currentUser.email,
-                        `${currentUser.name} завершил тему ${topicId}: "${t ? t.title : ''}" в курсе A1`,
-                        'course_visit').catch(() => {});
-                }
+            if (completedTopics.includes(topicId)) {
+                __uzCloseResults();
+                return true;
             }
+
+            /* Vouch for the topic FIRST: this tab graded it and it passed, so it
+               is the one thing this client is entitled to add to the server's
+               record. saveProgressToFirebase() reads this set. */
+            sessionCompletedTopics.add(topicId);
+
+            let saved = false;
+            try {
+                saved = await saveProgressToFirebase();
+            } catch (error) {
+                console.error('❌ complete-hook save error:', error);
+                saved = false;
+            }
+
+            if (!saved) {
+                /* Not saved anywhere authoritative — say so plainly and let them
+                   try again without redoing the lesson. */
+                sessionCompletedTopics.delete(topicId);
+                __uzShowSaveFailure(topicId);
+                return false;
+            }
+
+            if (!completedTopics.includes(topicId)) completedTopics.push(topicId);
+            try { clearQuizDraft(topicId); } catch (e) { /* ignore */ }
+            try { updateProgress(); } catch (e) { /* ignore */ }
+            try { loadTopics(); } catch (e) { /* ignore */ }
+            if (currentUser && window.logActivity) {
+                const t = courseData.topics.find((x) => x.id === topicId);
+                window.logActivity(currentUser.email,
+                    `${currentUser.name} завершил тему ${topicId}: "${t ? t.title : ''}" в курсе A1`,
+                    'course_visit').catch(() => {});
+            }
+            __uzCloseResults();
+            return true;
+        };
+
+        function __uzCloseResults() {
             const rs = document.getElementById('resultsSection');
             if (rs) rs.classList.remove('show');
             const tc = document.getElementById('topics') || document.getElementById('topicsContainer');
             if (tc) tc.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        };
+        }
+
+        /**
+         * Tell the learner the result did not reach the server, in the interface
+         * language, and offer one button that retries the same save. No polling
+         * and no timer: the retry happens when they ask for it.
+         */
+        function __uzShowSaveFailure(topicId) {
+            const msgEl = document.getElementById('resultsMessage');
+            if (msgEl) {
+                msgEl.innerHTML =
+                    "<span class=\"save-failed-note\">Natijani saqlab bo‘lmadi. " +
+                    "Internet aloqasini tekshirib, qayta urinib ko‘ring.</span>";
+            }
+            const btn = document.getElementById('completeBtn');
+            if (btn) {
+                btn.textContent = 'Qayta saqlash';
+                btn.className = 'complete-btn';
+                btn.style.display = 'block';
+                btn.onclick = () => { window.__uzCompleteTopic(topicId); };
+            }
+            const rs = document.getElementById('resultsSection');
+            if (rs) rs.classList.add('show');
+        }
 
         /* Drives the shared results block (#scoreDisplay / #completeBtn) for the
            exercise-only topics 6–12 from their REAL exercise score, replacing the

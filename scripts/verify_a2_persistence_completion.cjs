@@ -39,8 +39,17 @@ function boot(rel) {
            'window.currentUserId="' + UID + '";' +
            'window.saveQuizResult=async function(uid,topicId,data,course){' +
            ' window.__fb.quiz.push({uid:uid,topicId:topicId,data:data,course:course}); return 1;};' +
+           /* completedTopics is authoritative and is now claimed one topic at a
+              time through /api/progress; the stub answers as the server would,
+              returning the resulting array. saveUserProgress survives for the
+              SAFE fields only and must never see a completion. */
+           'window.completeCourseTopic=async function(course,topicId){' +
+           ' window.__fb.progress.push({course:course,topicId:topicId});' +
+           ' window.__server=Array.from(new Set([...(window.__server||[]),topicId])).sort((a,b)=>a-b);' +
+           ' return window.__server.slice();};' +
            'window.saveUserProgress=async function(uid,course,payload){' +
-           ' window.__fb.progress.push({uid:uid,course:course,payload:payload}); return 1;};' +
+           ' window.__fb.safe=(window.__fb.safe||[]); window.__fb.safe.push({uid:uid,course:course,payload:payload});' +
+           ' return 1;};' +
            'window.getUserProgress=async()=>({completedTopics:[]});' +
            'window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};');
     /* jsdom returns a fresh Storage object on every `localStorage` access, so
@@ -139,13 +148,21 @@ function answersFor(w, topicId) {
 
         ok(w.__api.getCompleted().indexOf(TOPIC) !== -1, `${rel}: completedTopics contains the topic after`);
         ok(w.__fb.progress.length === progressBefore + 1, `${rel}: exactly one progress write`);
+        ok(w.__fb.progress[w.__fb.progress.length - 1].topicId === TOPIC,
+            `${rel}: the completion claims exactly the topic that was finished`);
+        ok((w.__fb.safe || []).every(c => !('completedTopics' in (c.payload || {}))),
+            `${rel}: no completion field went through the generic saver`);
         const pg = w.__fb.progress[w.__fb.progress.length - 1];
         if (pg) {
-            ok(pg.uid === UID && pg.course === 'A2', `${rel}: progress written for the real user, course A2`);
-            ok(Array.isArray(pg.payload.completedTopics)
-               && pg.payload.completedTopics.indexOf(TOPIC) !== -1,
-                `${rel}: progress payload carries the completed topic`);
-            ok(typeof pg.payload.lastUpdated === 'string', `${rel}: progress payload keeps lastUpdated`);
+            /* The client no longer sends a uid or an array: the server derives
+               the user from the session and owns the array. What it sends is a
+               claim about ONE topic of ONE course. */
+            ok(pg.course === 'A2', `${rel}: the claim names course A2`);
+            ok(pg.topicId === TOPIC, `${rel}: the claim names the finished topic`);
+            ok(!('uid' in pg) && !('completedTopics' in pg),
+                `${rel}: the client sends neither a uid nor a progress array`);
+            ok(w.__api.getCompleted().indexOf(TOPIC) !== -1,
+                `${rel}: the server's answer is what the page adopted`);
         }
 
         /* repeat completion must not duplicate */

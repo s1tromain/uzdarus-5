@@ -747,7 +747,13 @@ console.log('\n[L21] COMPLETION — idempotent, never duplicated, never implicit
        merge lifted from a1-course.html. */
     const a1 = fs.readFileSync(path.join(ROOT, 'paid-courses/a1-course.html'), 'utf8');
     const completeSrc = a1.match(/window\.__uzCompleteTopic = async function[\s\S]*?\n        \};/)[0];
-    const mergeSrc = a1.match(/const merged = Array\.from\(new Set\(\[\.\.\.remote, \.\.\.completedTopics\]\)\)[\s\S]*?\.sort\(\(a, b\) => a - b\);/)[0];
+    /* The union moved OFF the client entirely. Firestore rules refuse
+       completedTopics from the owner, so the array is now assembled inside
+       api/_progress/complete-topic.js, from the server's own record plus the one
+       topic being claimed. The merge is still tested — against the code that
+       actually performs it. */
+    const endpoint = fs.readFileSync(path.join(ROOT, 'api/_progress/complete-topic.js'), 'utf8');
+    const mergeSrc = endpoint.match(/const next = Array\.from\(new Set\(\[\.\.\.current, topicId\]\)\)\.sort\(\(a, b\) => a - b\);/)[0];
 
     const dom = makeDom('<div id="topics"></div><div id="resultsSection"></div>',
                         'https://uzdarus.uz/paid-courses/a1-course.html');
@@ -757,14 +763,19 @@ console.log('\n[L21] COMPLETION — idempotent, never duplicated, never implicit
         'var completedTopics = [];' +
         'var currentUser = null;' +
         'var courseData = { topics: [{ id: 5, title: "T5" }] };' +
-        'async function saveProgressToFirebase(){ window.__saves++; return true; }' +
+        'const sessionCompletedTopics = new Set();' +
+        'async function saveProgressToFirebase(){ window.__saves++; return window.__saveOk !== false; }' +
         'function updateProgress(){}' +
         'function loadTopics(){}' +
         'function clearQuizDraft(){}' +
+        'function __uzCloseResults(){}' +
+        'function __uzShowSaveFailure(){ window.__failureShown = true; }' +
         completeSrc +
-        'window.__completed = function(){ return completedTopics; };'
+        'window.__completed = function(){ return completedTopics; };' +
+        'window.__session = function(){ return [...sessionCompletedTopics]; };'
     );
 
+    w.__saveOk = true;
     await w.__uzCompleteTopic(5);
     eq('topic recorded once', JSON.stringify(w.__completed()), '[5]');
     eq('one progress write', w.__saves, 1);
@@ -773,14 +784,37 @@ console.log('\n[L21] COMPLETION — idempotent, never duplicated, never implicit
     await w.__uzCompleteTopic(5);
     eq('re-completing does NOT duplicate the id', JSON.stringify(w.__completed()), '[5]');
     eq('re-completing performs no extra progress write', w.__saves, 1);
+
+    /* A save that does not land may not claim the topic: nothing on the server
+       records the pass, so nothing may behave as if it did. */
+    w.__saveOk = false;
+    w.__failureShown = false;
+    const failed = await w.__uzCompleteTopic(7);
+    eq('a failed save reports failure', failed, false);
+    eq('a failed save does not record the topic', JSON.stringify(w.__completed()), '[5]');
+    eq('a failed save withdraws the session claim', JSON.stringify(w.__session()), '[5]');
+    eq('a failed save tells the learner', w.__failureShown, true);
+
+    /* And the retry, once the network is back, completes it properly. */
+    w.__saveOk = true;
+    const retried = await w.__uzCompleteTopic(7);
+    eq('the retry succeeds', retried, true);
+    eq('the retry records the topic', JSON.stringify(w.__completed()), '[5,7]');
     dom.window.close();
 
-    // The union merge must dedupe and never regress remote progress.
-    const merge = new Function('remote', 'completedTopics', mergeSrc + ' return merged;');
-    eq('duplicates collapsed', JSON.stringify(merge([1, 2, 2, 3], [3, 3, 4])), '[1,2,3,4]');
-    eq('stale local cannot erase remote', JSON.stringify(merge([1, 2, 3], [])), '[1,2,3]');
-    eq('non-numeric ids filtered out', JSON.stringify(merge([1, null, 'x'], [2, undefined])), '[1,2]');
-    eq('order normalised', JSON.stringify(merge([9, 3], [5])), '[3,5,9]');
+    // The server's union must dedupe, stay ordered, and never regress the
+    // record it was read from.
+    const merge = new Function('current', 'topicId', mergeSrc + ' return next;');
+    eq('duplicates collapsed', JSON.stringify(merge([1, 2, 2, 3], 3)), '[1,2,3]');
+    eq('the claimed topic is added', JSON.stringify(merge([1, 2, 3], 4)), '[1,2,3,4]');
+    eq('the server record is never shortened', JSON.stringify(merge([1, 2, 3, 4, 5], 6)), '[1,2,3,4,5,6]');
+    eq('order normalised', JSON.stringify(merge([9, 3], 5)), '[3,5,9]');
+
+    /* And the client no longer performs any union of its own. */
+    ok('the page does not assemble completedTopics itself',
+        !/const merged = Array\.from\(new Set/.test(a1));
+    ok('the page claims topics through the server endpoint',
+        /window\.completeCourseTopic\('A1', id\)/.test(a1));
 }
 
 console.log('\n[L22] INVARIANT 11 — restoring the UI creates no progress or completion writes');

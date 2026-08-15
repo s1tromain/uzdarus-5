@@ -1434,32 +1434,28 @@
 
         // ISSUE #3 / #5 — persist completion to Firestore (monotonic union) so the
         // next topic unlocks and stays unlocked across devices / Telegram restarts.
+                /* AUTHORITATIVE WRITE — server only. See api/_progress/complete-topic.js:
+           the browser may claim ONE topic, the server validates the sequence
+           against its own record and returns the resulting array. */
         async function saveProgress(topicId) {
-            userProgress[topicId] = { completed: true, completedAt: new Date().toISOString() };
-            updateProgressBar();
-
-            // local mirror first (offline-safe)
             try { localStorage.setItem(b2LocalKey(), JSON.stringify(b2CompletedArray())); } catch (e) {}
-
-            if (!currentUserId || !window.saveUserProgress) return;
-
+            if (!currentUserId || !window.completeCourseTopic) {
+                return false;
+            }
+            if (!Number.isInteger(topicId) || topicId < 1) {
+                return false;
+            }
             try {
-                let remote = [];
-                if (window.getUserProgress) {
-                    const rp = await window.getUserProgress(currentUserId, B2_COURSE);
-                    if (rp && Array.isArray(rp.completedTopics)) remote = rp.completedTopics;
+                const authoritative = await window.completeCourseTopic(B2_COURSE, topicId);
+                if (!Array.isArray(authoritative)) {
+                    return false;
                 }
-                const merged = Array.from(new Set([...remote, ...b2CompletedArray()]))
-                    .filter(n => Number.isFinite(n))
-                    .sort((a, b) => a - b);
-                b2ApplyCompletedArray(merged);
-                try { localStorage.setItem(b2LocalKey(), JSON.stringify(merged)); } catch (e) {}
-                await window.saveUserProgress(currentUserId, B2_COURSE, {
-                    completedTopics: merged,
-                    lastUpdated: new Date().toISOString()
-                });
+                b2ApplyCompletedArray(authoritative);
+                try { localStorage.setItem(b2LocalKey(), JSON.stringify(authoritative)); } catch (e) {}
+                return true;
             } catch (error) {
-                console.error('B2: Firestore save error:', error);
+                console.error('B2: server progress error:', error);
+                return false;
             }
         }
 
