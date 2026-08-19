@@ -16,6 +16,7 @@
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
 let pass = 0, fail = 0;
@@ -306,8 +307,9 @@ eq('every card still offers the same hidden checkout link',
         'the admin subscription pill is labelled through the helper');
 
     /* ---- storage must stay exactly as it is ---- */
-    ok(/tariff: String\(values\.tariff \|\| 'START'\)\.toUpperCase\(\)/.test(admin),
-        'the admin form still SAVES the stored value, not the label');
+    ok(/const tariff = String\(values\.tariff \|\| originalTariff \|\| ''\)\.toUpperCase\(\)/.test(admin),
+        'the dialog SAVES the stored value, and falls back to the account\'s own'
+        + ' tariff rather than a fixed plan');
     ok(!/getTariffDisplayName\([^)]*\)\s*\}\s*\)?\s*;?\s*$/m.test(
         (admin.match(/tariff:[^\n]*/g) || []).join('\n')),
         'no save path writes a display label into the database');
@@ -335,13 +337,530 @@ eq('every card still offers the same hidden checkout link',
     }
 }
 
-console.log(`  4 plans · ${plans.map((p) => p.name + '=' + p.plan).join(' · ')}`);
-console.log('\n' + '='.repeat(60));
-if (fail) {
-    console.log(`  ❌ PRICING PLANS: ${fail} failed / ${pass + fail}\n`);
-    failures.slice(0, 20).forEach((f, i) => console.log(`   ${i + 1}. ${f}`));
-    console.log('='.repeat(60) + '\n');
-    process.exit(1);
+
+/* ------------------------------- the admin can assign all four plans */
+{
+    /* An admin creating a user picks a LABEL and the database must receive the
+       matching STORED value. Getting this backwards would write «STANDART» into
+       Firestore as a brand-new tariff nobody else recognises, or file the new
+       cheap plan under `START` — the value that already means the 980 000 one. */
+    const adminJs = fs.readFileSync(path.join(ROOT, 'adminpanel.js'), 'utf8');
+    const adminHtml = fs.readFileSync(path.join(ROOT, 'adminpanel.html'), 'utf8');
+
+    const CONTRACT = [
+        ['STARTER', 'START'],
+        ['START', 'STANDART'],
+        ['TURBO', 'TURBO'],
+        ['PREMIUM', 'PREMIUM']
+    ];
+
+    /* ---- 1. the static create-user form ---- */
+    const selectBlock = adminHtml.slice(
+        adminHtml.indexOf('<select name="tariff">'),
+        adminHtml.indexOf('</select>', adminHtml.indexOf('<select name="tariff">')));
+    const htmlPairs = [...selectBlock.matchAll(/<option value="([^"]+)">([^<]+)<\/option>/g)]
+        .map((m) => [m[1], m[2]]);
+    eq('the create-user form offers four tariffs', htmlPairs.length, 4);
+    eq('create-user options are value→label, in sale order',
+        htmlPairs.map((p) => p.join('→')).join(' | '),
+        CONTRACT.map((p) => p.join('→')).join(' | '));
+
+    /* ---- 2. the scripted subscription dialog ---- */
+    const optsSrc = (adminJs.match(/TARIFF_OPTIONS\s*=\s*\[([\s\S]*?)\];/) || [])[1];
+    ok(!!optsSrc, 'the dialog builds its options from one shared list');
+    const jsPairs = [...String(optsSrc).matchAll(/value:\s*'([^']+)',\s*label:\s*'([^']+)'/g)]
+        .map((m) => [m[1], m[2]]);
+    eq('the dialog offers the same four, in the same order',
+        jsPairs.map((p) => p.join('→')).join(' | '),
+        CONTRACT.map((p) => p.join('→')).join(' | '));
+    eq('the option list is declared once, not copied per dialog',
+        (adminJs.match(/\{ value: 'STARTER', label: 'START' \}/g) || []).length, 1);
+
+    /* ---- 3. what actually leaves the browser ---- */
+    /* Both submit paths must forward the SELECT VALUE untouched. A display name
+       must never be what gets posted. */
+    ok(/tariff: String\(data\.get\('tariff'\) \|\| 'START'\)/.test(adminJs),
+        'create-user posts the raw selected value');
+    ok(/const tariff = String\(values\.tariff \|\| originalTariff \|\| ''\)\.toUpperCase\(\)/.test(adminJs),
+        'the subscription dialog posts the raw selected value');
+    ok(!/tariff:[^\n]*getTariffDisplayName/.test(adminJs),
+        'no submit path posts a display label');
+    ok(!/['"]STANDART['"]/.test(adminJs.replace(/label: 'STANDART'/g, '')),
+        'the string STANDART exists only as a label, never as a value');
+
+    /* ---- 4. opening a user must not silently reprice them ---- */
+    ok(/const target = state\.users\.find\(\(user\) => user\.uid === userId\)/.test(adminJs),
+        'the dialog looks up the user it is editing');
+    ok(/originalTariff = String\(subscription\.tariff \|\| ''\)/.test(adminJs),
+        'and snapshots their stored tariff before opening');
+    ok(/value: initialTariff/.test(adminJs),
+        'the dialog preselects that stored tariff rather than a fixed default');
+    ok(!/name: 'tariff',[\s\S]{0,120}value: 'START'/.test(adminJs),
+        'the old hardcoded START preselect is gone');
+    ok(/TARIFF_OPTIONS\.some\(\(opt\) => opt\.value === originalTariff\)/.test(adminJs),
+        'an unrecognised stored value is not force-fitted onto the first option');
+
+    /* ---- 5. REAL DOM: render the product's own option markup ---- */
+    {
+        const { JSDOM } = require('jsdom');
+        /* The template is lifted from adminpanel.js rather than retyped, so the
+           test breaks if the product's rendering changes. */
+        const tpl = (adminJs.match(/const options = \(field\.options \|\| \[\]\)[\s\S]*?\.join\(''\);/) || [])[0];
+        ok(!!tpl, 'the select template was lifted from the product');
+        const options = CONTRACT.map(([value, label]) => ({ value, label }));
+        const escapeHtml = (v) => String(v).replace(/[&<>"']/g,
+            (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        const renderFor = (storedValue) => {
+            const field = { options, value: storedValue };
+            const box = { field, escapeHtml, options: null };
+            vm.runInNewContext(tpl + ';this.__out = options;', box);
+            const dom = new JSDOM(`<select>${box.__out}</select>`);
+            const sel = dom.window.document.querySelector('select');
+            const chosen = sel.querySelector('option[selected]');
+            return {
+                labels: [...sel.options].map((o) => o.textContent),
+                values: [...sel.options].map((o) => o.value),
+                selected: chosen ? chosen.value : null,
+                selectedLabel: chosen ? chosen.textContent : null
+            };
+        };
+
+        const shown = renderFor('START');
+        eq('the rendered dropdown shows the four plan names',
+            shown.labels.join(' | '), 'START | STANDART | TURBO | PREMIUM');
+        eq('and carries the four stored values',
+            shown.values.join(' | '), 'STARTER | START | TURBO | PREMIUM');
+
+        /* An existing user opens with THEIR plan selected. */
+        CONTRACT.forEach(([stored, label]) => {
+            const r = renderFor(stored);
+            eq(`a stored ${stored} opens with ${label} selected`, r.selected, stored);
+            eq(`  …and is labelled ${label}`, r.selectedLabel, label);
+        });
+        /* A value the dialog cannot represent must not silently become one. */
+        const legacy = renderFor('GOLD');
+        eq('an unrepresentable stored value selects nothing rather than the wrong plan',
+            legacy.selected, null);
+    }
+
+    /* ---- 6. the write path stores what it was given ---- */
+    const helpers = fs.readFileSync(path.join(ROOT, 'api/_lib/user-helpers.js'), 'utf8');
+    ok(/tariff: input\.tariff \|\| null/.test(helpers),
+        'buildSubscription stores the tariff exactly as received');
+    ok(!/getTariffDisplayName/.test(helpers),
+        'the server never turns a stored value into a label on write');
+    const migration = (helpers.match(/TARIFF_MIGRATION\s*=\s*\{([^}]*)\}/) || [])[1] || '';
+    ok(!/\bSTART\s*:/.test(migration) && !/\bSTARTER\s*:/.test(migration),
+        'neither START nor STARTER is rewritten on read');
+
+    /* No admin endpoint may reject or rewrite the new value. */
+    ['create-user.js', 'set-subscription.js', 'adjust-subscription-days.js'].forEach((f) => {
+        const api = fs.readFileSync(path.join(ROOT, 'api/_admin', f), 'utf8');
+        ok(!/STARTER/.test(api) || /body\.tariff/.test(api),
+            `${f} does not special-case STARTER`);
+        ok(!/tariff\s*===\s*['"]/.test(api), `${f} makes no decision on the tariff string`);
+    });
+
+    /* ---- 7. nothing in this change touches existing users ---- */
+    /* A rename must never arrive as a sweep over the user collection. */
+    const sweeps = [adminJs, helpers]
+        .concat(['create-user.js', 'set-subscription.js', 'adjust-subscription-days.js']
+            .map((f) => fs.readFileSync(path.join(ROOT, 'api/_admin', f), 'utf8')))
+        .join('\n');
+    ok(!/collection\('users'\)\s*\.get\(\)/.test(sweeps),
+        'no code reads the whole users collection to rewrite it');
+    ok(!/batch\(\)[\s\S]{0,400}tariff/.test(sweeps),
+        'no batch write touches the tariff field');
+    ok(!/tariff[^\n]*=[^\n]*['"]STANDART['"]/.test(sweeps),
+        'nothing assigns STANDART as a stored value');
 }
-console.log(`  ✅ PRICING PLANS: ${pass}/${pass} passed`);
-console.log('='.repeat(60) + '\n');
+
+
+/* ------------------------- editing an existing subscription is lossless */
+{
+    /* The dialog is not read as text here — it is EXECUTED. `subscriptionFlow`
+       is lifted out of adminpanel.js with stubs standing in for the modal and
+       the API, so every assertion below is about what the shipped function
+       actually does with a given user record. A regression in the real code
+       cannot pass by leaving a reassuring comment behind. */
+    const adminSrc = fs.readFileSync(path.join(ROOT, 'adminpanel.js'), 'utf8');
+
+    const lift = (name, kind) => {
+        const header = kind === 'const'
+            ? new RegExp('const ' + name + '\\s*=\\s*\\[')
+            : new RegExp('(?:async )?function ' + name + '\\s*\\(');
+        const at = adminSrc.search(header);
+        if (at < 0) return null;
+        const open = kind === 'const' ? '[' : '{';
+        const close = kind === 'const' ? ']' : '}';
+        let depth = 0;
+        for (let x = adminSrc.indexOf(open, at); x < adminSrc.length; x++) {
+            if (adminSrc[x] === open) depth++;
+            else if (adminSrc[x] === close) {
+                depth--;
+                if (!depth) return adminSrc.slice(at, x + 1) + (kind === 'const' ? ';' : '');
+            }
+        }
+        return null;
+    };
+    const parts = [lift('TARIFF_OPTIONS', 'const'), lift('toJsDate'),
+                   lift('remainingDays'), lift('subscriptionFlow')];
+    parts.forEach((code, i) => ok(!!code,
+        `the dialog's part #${i + 1} was lifted from adminpanel.js`));
+
+    if (!parts.every(Boolean)) {
+        finish();
+    } else {
+        const makeFlow = () => {
+            const calls = [], messages = [];
+            const box = {
+                console, Date, Number, String, Boolean, Array, Math, Object,
+                Promise, JSON, isNaN,
+                state: { users: [] },
+                canEditSubscription: () => true,
+                setButtonLoading: () => {},
+                showSuccess: (m) => messages.push({ ok: m }),
+                showError: (m) => messages.push({ err: m }),
+                getTariffDisplayName: (v, f) => {
+                    const map = { STARTER: 'START', START: 'STANDART' };
+                    if (v == null) return f || '';
+                    const raw = String(v).trim();
+                    if (!raw) return f || '';
+                    return map[raw.toUpperCase()] || raw;
+                },
+                callApi: async (url, method, payload) => { calls.push({ url, payload }); return { ok: true }; },
+                openModal: null
+            };
+            box.globalThis = box;
+            vm.createContext(box);
+            vm.runInContext(parts.join('\n\n') + ';this.__flow = subscriptionFlow;', box);
+            return { box, calls, messages, flow: box.__flow };
+        };
+
+        const FIXED = '2030-05-20T13:37:42.000Z';
+        const stamp = (iso) => {
+            const t = new Date(iso).getTime();
+            return { _seconds: Math.floor(t / 1000), _nanoseconds: (t % 1000) * 1e6 };
+        };
+        const userOf = (over) => Object.assign({
+            uid: 'u1', username: 'ali',
+            accessPacks: ['A1A2', 'B1B2'],
+            subscription: { active: true, tariff: 'TURBO', endAt: stamp(FIXED) }
+        }, over || {});
+
+        /* Drive the dialog: `edit` receives the values the form would submit
+           untouched, and returns what the admin actually leaves behind. */
+        const drive = async (user, edit) => {
+            const h = makeFlow();
+            h.box.state.users = [user];
+            let cfg = null;
+            h.box.openModal = async (config) => {
+                cfg = config;
+                const v = {};
+                config.fields.forEach((f) => {
+                    v[f.name] = f.type === 'checkbox-group'
+                        ? f.options.filter((o) => o.checked).map((o) => o.value)
+                        : f.value;
+                });
+                return edit ? edit(v) : v;
+            };
+            const result = await h.flow('u1', {});
+            const field = (n) => cfg.fields.find((f) => f.name === n);
+            return { cfg, field, calls: h.calls, messages: h.messages, result };
+        };
+
+        void (async () => {
+            /* ---- the form opens on the account's real state ---- */
+            {
+                const r = await drive(userOf());
+                eq('active opens on the stored state', r.field('active').value, 'true');
+                eq('tariff opens on the stored plan', r.field('tariff').value, 'TURBO');
+                eq('A1A2 reflects the account', r.field('packs').options[0].checked, true);
+                eq('B1B2 reflects the account', r.field('packs').options[1].checked, true);
+                ok(Number(r.field('durationDays').value) > 0,
+                    'the duration field shows the remaining days, not a fixed 30');
+                ok(!/value: '30'/.test(adminSrc.slice(
+                    adminSrc.indexOf('async function subscriptionFlow'),
+                    adminSrc.indexOf('async function adjustSubscriptionDays'))),
+                    'no hardcoded 30-day default survives in the dialog');
+            }
+
+            /* ---- the pack boxes mirror the account, every combination ----
+               A box that is checked because the dialog opened, rather than
+               because the learner owns the pack, hands out course access on a
+               save the admin thought was about something else. */
+            for (const owned of [[], ['A1A2'], ['B1B2'], ['A1A2', 'B1B2']]) {
+                const r = await drive(userOf({ accessPacks: owned.slice() }));
+                const boxes = r.field('packs').options;
+                eq(`packs ${JSON.stringify(owned)} → A1A2 checkbox`,
+                    Boolean(boxes[0].checked), owned.includes('A1A2'));
+                eq(`packs ${JSON.stringify(owned)} → B1B2 checkbox`,
+                    Boolean(boxes[1].checked), owned.includes('B1B2'));
+                eq(`packs ${JSON.stringify(owned)} → opening writes nothing`, r.calls.length, 0);
+            }
+
+            /* ---- every stored tariff selects its own option ---- */
+            for (const [stored, label] of [['STARTER', 'START'], ['START', 'STANDART'],
+                                           ['TURBO', 'TURBO'], ['PREMIUM', 'PREMIUM']]) {
+                const r = await drive(userOf({
+                    subscription: { active: true, tariff: stored, endAt: stamp(FIXED) } }));
+                const f = r.field('tariff');
+                eq(`stored ${stored} preselects itself`, f.value, stored);
+                eq(`stored ${stored} is labelled ${label}`,
+                    (f.options.find((o) => o.value === stored) || {}).label, label);
+            }
+
+            /* ---- an unknown plan is offered, not overwritten ---- */
+            {
+                const r = await drive(userOf({
+                    subscription: { active: true, tariff: 'DEVELOPER', endAt: stamp(FIXED) } }));
+                const f = r.field('tariff');
+                eq('an unknown stored tariff preselects itself', f.value, 'DEVELOPER');
+                ok(f.options.some((o) => o.value === 'DEVELOPER'),
+                    'and is added to the list for this render');
+                ok(f.value !== 'START' && f.value !== 'STARTER',
+                    'it never falls back to START or STARTER');
+                eq('the permanent option list is not mutated',
+                    (adminSrc.match(/\{ value: '[A-Z]+', label: '[A-Z]+' \}/g) || []).length, 4);
+                /* and it survives a save the admin makes for another reason */
+                const saved = await drive(userOf({
+                    subscription: { active: true, tariff: 'DEVELOPER', endAt: stamp(FIXED) } }),
+                    (v) => Object.assign({}, v, { packs: ['A1A2'] }));
+                eq('an unknown tariff round-trips unchanged',
+                    saved.calls[0].payload.tariff, 'DEVELOPER');
+            }
+
+            /* ---- a no-op cannot touch the account ---- */
+            {
+                const r = await drive(userOf());
+                eq('saving without a change writes nothing', r.calls.length, 0);
+                eq('and says so', (r.messages[0] || {}).ok, 'O‘zgarish kiritilmadi.');
+                eq('and reports no action taken', r.result, false);
+            }
+
+            /* ---- changing one field leaves the rest exactly alone ---- */
+            {
+                const r = await drive(userOf(), (v) => Object.assign({}, v, { tariff: 'PREMIUM' }));
+                const p = r.calls[0].payload;
+                eq('the new tariff is sent', p.tariff, 'PREMIUM');
+                eq('the expiry is sent back to the millisecond', p.endAt, FIXED);
+                ok(!('durationDays' in p), 'and no duration is sent alongside it');
+                eq('the packs are unchanged', p.accessPacks.join(','), 'A1A2,B1B2');
+                eq('the active flag is unchanged', p.active, true);
+            }
+            {
+                const r = await drive(userOf({ accessPacks: ['A1A2'] }),
+                    (v) => Object.assign({}, v, { packs: ['A1A2', 'B1B2'] }));
+                const p = r.calls[0].payload;
+                eq('a packs-only edit keeps the tariff', p.tariff, 'TURBO');
+                eq('a packs-only edit keeps the exact expiry', p.endAt, FIXED);
+                eq('and sends the new packs', p.accessPacks.join(','), 'A1A2,B1B2');
+            }
+
+            /* ---- a duration the admin DID edit is recomputed by the server ---- */
+            {
+                const r = await drive(userOf(), (v) => Object.assign({}, v, { durationDays: '90' }));
+                const p = r.calls[0].payload;
+                eq('the new term is sent as durationDays', p.durationDays, 90);
+                ok(!('endAt' in p), 'and no endAt competes with it');
+            }
+
+            /* ---- the two date inputs are never sent together ---- */
+            {
+                const both = [
+                    await drive(userOf(), (v) => Object.assign({}, v, { tariff: 'PREMIUM' })),
+                    await drive(userOf(), (v) => Object.assign({}, v, { durationDays: '5' }))
+                ];
+                both.forEach((r, i) => {
+                    const p = r.calls[0].payload;
+                    ok(!('endAt' in p && 'durationDays' in p),
+                        `payload #${i + 1} sends one date input, never both`);
+                });
+            }
+
+            /* ---- an inactive account is not revived by being looked at ---- */
+            {
+                const r = await drive(userOf({
+                    subscription: { active: false, tariff: 'START', endAt: null } }));
+                eq('an inactive subscription opens as inactive', r.field('active').value, 'false');
+                eq('and proposes no term out of thin air', r.field('durationDays').value, '');
+                eq('and opening it writes nothing', r.calls.length, 0);
+            }
+            /* deactivation keeps its own endpoint semantics */
+            {
+                const r = await drive(userOf(), (v) => Object.assign({}, v, { active: 'false' }));
+                eq('turning a subscription off still uses the dedicated call',
+                    JSON.stringify(r.calls[0].payload), JSON.stringify({ userId: 'u1', active: false }));
+            }
+
+            /* ---- no record, no dialog ---- */
+            {
+                const h = makeFlow();
+                h.box.state.users = [];
+                h.box.openModal = async () => ({});
+                let threw = false;
+                try { await h.flow('ghost', {}); } catch (e) { threw = true; }
+                ok(threw, 'a missing user is refused rather than opened on invented defaults');
+                eq('and nothing is written', h.calls.length, 0);
+            }
+
+
+            /* ---- an untyped term is never invented ----
+               The dialog used to fall back to `|| 30`. Reactivating a lapsed
+               account with the field left blank then granted a month nobody had
+               asked for — the system writing a subscription of its own
+               invention. Silence must be refused, not guessed. */
+            {
+                const lapsed = () => userOf({
+                    accessPacks: ['A1A2'],
+                    subscription: { active: false, tariff: 'START', endAt: null }
+                });
+
+                const bare = await drive(lapsed(), (v) => Object.assign({}, v, { active: 'true' }));
+                eq('reactivating with no term writes nothing', bare.calls.length, 0);
+                ok(/muddat/i.test((bare.messages[0] || {}).err || ''),
+                    'and the admin is told a term is required');
+                eq('and the flow reports no action', bare.result, false);
+
+                const stated = await drive(lapsed(),
+                    (v) => Object.assign({}, v, { active: 'true', durationDays: '90' }));
+                const p = stated.calls[0].payload;
+                eq('a stated term reactivates the account', p.active, true);
+                eq('with the term the admin typed', p.durationDays, 90);
+                ok(!('endAt' in p), 'and no endAt competes with it');
+                eq('the existing tariff is carried over untouched', p.tariff, 'START');
+                eq('and so are the existing packs', p.accessPacks.join(','), 'A1A2');
+
+                /* Clearing the term of a LIVE subscription is an edit, not a no-op. */
+                const cleared = await drive(userOf(), (v) => Object.assign({}, v, { durationDays: '' }));
+                eq('clearing a live term writes nothing', cleared.calls.length, 0);
+                ok(/muddat/i.test((cleared.messages[0] || {}).err || ''),
+                    'and is reported as a validation error, not silently reset to 30');
+
+                /* Whatever the admin types must be a whole number of days. */
+                for (const bad of ['', '0', '-1', '1.5', 'abc', '   ']) {
+                    const r = await drive(lapsed(),
+                        (v) => Object.assign({}, v, { active: 'true', durationDays: bad }));
+                    eq(`a term of ${JSON.stringify(bad)} is refused`, r.calls.length, 0);
+                }
+                for (const good of ['1', '30', '90', '365']) {
+                    const r = await drive(lapsed(),
+                        (v) => Object.assign({}, v, { active: 'true', durationDays: good }));
+                    eq(`a term of ${good} is accepted`, r.calls[0].payload.durationDays, Number(good));
+                }
+            }
+
+            /* ---- the source carries no hidden fallback any more ---- */
+            {
+                const body = adminSrc.slice(
+                    adminSrc.indexOf('async function subscriptionFlow'),
+                    adminSrc.indexOf('async function adjustSubscriptionDays'));
+                /* Comments may DISCUSS the old `|| 30`; only code may not use it. */
+                const code = body
+                    .replace(/\/\*[\s\S]*?\*\//g, '')
+                    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+                ok(!/\|\|\s*30\b/.test(code),
+                    'the subscription editor has no implicit 30-day fallback left');
+                ok(/Number\.isInteger\(days\)/.test(code) && /days <= 0/.test(code),
+                    'it validates the term as a positive whole number instead');
+            }
+
+            /* ---- fields the deactivation endpoint ignores are locked ---- */
+            {
+                const at = adminSrc.indexOf('onRender: (form) => {');
+                ok(at > 0, 'the dialog wires a lock for its dependent fields');
+                let depth = 0, end = -1;
+                for (let x = adminSrc.indexOf('{', at); x < adminSrc.length; x++) {
+                    if (adminSrc[x] === '{') depth++;
+                    else if (adminSrc[x] === '}') { depth--; if (!depth) { end = x; break; } }
+                }
+                const onRenderBody = adminSrc.slice(adminSrc.indexOf('{', at), end + 1);
+                const onRender = vm.runInNewContext('(form) => ' + onRenderBody, {});
+
+                const { JSDOM } = require('jsdom');
+                const dom = new JSDOM(`<form id="f">
+                    <select name="active">
+                        <option value="true">Faol</option>
+                        <option value="false">O‘chirilgan</option>
+                    </select>
+                    <input name="durationDays" type="number" value="1371">
+                    <select name="tariff">
+                        <option value="TURBO" selected>TURBO</option>
+                        <option value="PREMIUM">PREMIUM</option>
+                    </select>
+                    <input type="checkbox" name="packs" value="A1A2" checked>
+                    <input type="checkbox" name="packs" value="B1B2" checked>
+                </form>`);
+                const win = dom.window;
+                const form = win.document.getElementById('f');
+                const activeSel = form.querySelector('[name="active"]');
+                const locked = () => [
+                    form.querySelector('[name="durationDays"]').disabled,
+                    form.querySelector('[name="tariff"]').disabled,
+                    form.querySelector('input[value="A1A2"]').disabled,
+                    form.querySelector('input[value="B1B2"]').disabled
+                ];
+                const shown = () => ({
+                    tariff: form.querySelector('[name="tariff"]').value,
+                    packs: [...form.querySelectorAll('input[name="packs"]:checked')]
+                        .map((n) => n.value).join(',')
+                });
+
+                activeSel.value = 'true';
+                onRender(form);
+                eq('an active subscription opens with every field editable',
+                    locked().join(','), 'false,false,false,false');
+
+                activeSel.value = 'false';
+                onRender(form);
+                eq('an inactive one opens with term, tariff and packs locked',
+                    locked().join(','), 'true,true,true,true');
+                eq('locked does not mean blanked — the values still show',
+                    JSON.stringify(shown()), JSON.stringify({ tariff: 'TURBO', packs: 'A1A2,B1B2' }));
+
+                activeSel.value = 'true';
+                activeSel.dispatchEvent(new win.Event('change'));
+                eq('switching it back on unlocks them live',
+                    locked().join(','), 'false,false,false,false');
+
+                activeSel.value = 'false';
+                activeSel.dispatchEvent(new win.Event('change'));
+                eq('and switching off locks them again',
+                    locked().join(','), 'true,true,true,true');
+
+                activeSel.value = 'true';
+                activeSel.dispatchEvent(new win.Event('change'));
+                eq('no value is lost across the toggling',
+                    JSON.stringify(shown()), JSON.stringify({ tariff: 'TURBO', packs: 'A1A2,B1B2' }));
+            }
+
+            /* ---- deactivation still sends only what the endpoint reads ---- */
+            {
+                const r = await drive(userOf(), (v) => Object.assign({}, v, {
+                    active: 'false', tariff: 'PREMIUM', durationDays: '5', packs: []
+                }));
+                eq('turning a subscription off ignores the other fields entirely',
+                    JSON.stringify(r.calls[0].payload),
+                    JSON.stringify({ userId: 'u1', active: false }));
+            }
+
+            finish();
+        })();
+    }
+}
+
+/* The admin-dialog block above runs asynchronously and calls finish() when it
+   settles, so the report is printed once, after every assertion has run. */
+function finish() {
+    console.log(`  4 plans · ${plans.map((p) => p.name + '=' + p.plan).join(' · ')}`);
+    console.log('\n' + '='.repeat(60));
+    if (fail) {
+        console.log(`  ❌ PRICING PLANS: ${fail} failed / ${pass + fail}\n`);
+        failures.slice(0, 25).forEach((f, i) => console.log(`   ${i + 1}. ${f}`));
+        console.log('='.repeat(60) + '\n');
+        process.exit(1);
+    }
+    console.log(`  ✅ PRICING PLANS: ${pass}/${pass} passed`);
+    console.log('='.repeat(60) + '\n');
+}

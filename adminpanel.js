@@ -11,6 +11,19 @@ import {
 } from './firebase-client.js';
 import { isAccountFrozen, getFreezeState } from './account-freeze.js';
 import { getTariffDisplayName } from './tariff-display.js';
+
+/* The tariff dropdown, in the order the site sells the plans.
+   `value` is what a subscription document STORES; `label` is what the site
+   calls it. The two differ on purpose: the 980 000 plan has been stored as
+   START since launch and is now sold as STANDART, so the new 560 000 plan
+   took a fresh value, STARTER. Writing the label into the database instead
+   would repoint every historical subscription. */
+const TARIFF_OPTIONS = [
+    { value: 'STARTER', label: 'START' },
+    { value: 'START', label: 'STANDART' },
+    { value: 'TURBO', label: 'TURBO' },
+    { value: 'PREMIUM', label: 'PREMIUM' }
+];
 import {
     CAPABILITIES,
     normalizeRole as normalizeRoleShared,
@@ -287,7 +300,8 @@ function renderModalField(field) {
     return `<label for="${id}">${label}<input id="${id}" name="${escapeHtml(field.name)}" type="${inputType}" value="${escapeHtml(field.value != null ? field.value : '')}" ${attrs}></label>`;
 }
 
-function openModal({ title, action, fields = [], confirmLabel = 'Tasdiqlash', danger = false } = {}) {
+function openModal({ title, action, fields = [], confirmLabel = 'Tasdiqlash', danger = false,
+    onRender = null } = {}) {
     return new Promise((resolve) => {
         // Defensively close any stale modal so we never leak a pending promise.
         if (modalResolve) {
@@ -319,6 +333,13 @@ function openModal({ title, action, fields = [], confirmLabel = 'Tasdiqlash', da
         adminModal.hidden = false;
         adminModal.classList.add('show');
         document.body.classList.add('modal-open');
+
+        /* One optional hook for callers that need to wire behaviour between
+           their own fields — the subscription editor greys out the fields the
+           deactivation endpoint would ignore. Everything else opens unchanged. */
+        if (typeof onRender === 'function') {
+            onRender(modalForm);
+        }
 
         const firstInput = modalForm.querySelector('input:not([type="checkbox"]), select');
         window.setTimeout(() => (firstInput || modalConfirm).focus(), 30);
@@ -1507,53 +1528,137 @@ async function resetPasswordFlow(userId, button) {
     }
 }
 
+/**
+ * Remaining whole days on a subscription, for the duration field's initial
+ * value. Presentation only — the number shown here is never what preserves the
+ * expiry, because rounding to whole days would move it. See below.
+ */
+function remainingDays(endAt) {
+    const end = toJsDate(endAt);
+    if (!end || Number.isNaN(end.getTime())) {
+        return null;
+    }
+    const days = Math.ceil((end.getTime() - Date.now()) / 86400000);
+    return days > 0 ? days : 0;
+}
+
+/**
+ * Edit an EXISTING subscription.
+ *
+ * The dialog used to open on fixed defaults — active, 30 days, tariff START,
+ * pack A1A2 — regardless of the account in front of the admin. Opening a
+ * PREMIUM subscriber's settings to glance at the dates and pressing Saqlash
+ * moved them to the 980 000 plan, reset their expiry to a month from now and
+ * silently granted A1A2. Every field now opens on the account's real state, and
+ * a field the admin did not touch is sent back unchanged or not at all.
+ *
+ * The expiry deserves its own note. The duration field can only show whole
+ * days, so submitting it back would round the expiry to the nearest day — a
+ * "no change" save could move the deadline by hours. `resolveEndDate` on the
+ * server takes `endAt` in preference to `durationDays`, so an untouched
+ * duration sends the ORIGINAL endAt and the timestamp survives exactly; a
+ * duration the admin actually edited sends `durationDays` and lets the server
+ * recompute. The two are never sent together.
+ */
 async function subscriptionFlow(userId, button) {
     if (!canEditSubscription()) {
         throw new Error('Bu amal faqat admin/developer uchun mavjud.');
     }
 
+    /* Without the record there is no current state to preserve, and opening the
+       dialog on invented defaults is exactly the bug being fixed. */
+    const target = state.users.find((user) => user.uid === userId) || null;
+    if (!target) {
+        throw new Error('Foydalanuvchi topilmadi. Ro‘yxatni yangilab, qayta urinib ko‘ring.');
+    }
+
+    const subscription = target.subscription || {};
+    const originalActive = Boolean(subscription.active);
+    const originalTariff = String(subscription.tariff || '').trim().toUpperCase();
+    const originalEndAt = toJsDate(subscription.endAt);
+    const originalPacks = Array.isArray(target.accessPacks) ? target.accessPacks.slice() : [];
+    const packKey = (list) => list.map(String).sort().join(',');
+    const originalPackKey = packKey(originalPacks);
+
+    /* A tariff this dialog cannot represent — a DEVELOPER account, a one-off
+       plan — must still round-trip. It is offered as its own option, selected,
+       rather than being quietly rewritten to whatever sits first in the list. */
+    const known = TARIFF_OPTIONS.some((opt) => opt.value === originalTariff);
+    const tariffOptions = (originalTariff && !known)
+        ? TARIFF_OPTIONS.concat([{
+            value: originalTariff,
+            label: `${getTariffDisplayName(originalTariff, originalTariff)} (joriy)`
+        }])
+        : TARIFF_OPTIONS;
+    const initialTariff = originalTariff || '';
+
+    /* Whole days left, shown for orientation. `null` when there is no usable
+       expiry — an inactive or never-issued subscription — and the field then
+       starts empty rather than proposing a month nobody asked for. */
+    const daysLeft = remainingDays(subscription.endAt);
+    const initialDuration = daysLeft == null ? '' : String(daysLeft);
+
     const values = await openModal({
         title: 'Obunani sozlash',
-        action: 'Foydalanuvchi obunasini o‘zgartirish',
+        action: `Foydalanuvchi obunasini o‘zgartirish: ${target.username || userId}`,
         fields: [
             {
                 name: 'active',
                 label: 'Holat',
                 type: 'select',
-                value: 'true',
+                value: String(originalActive),
                 options: [
                     { value: 'true', label: 'Faol' },
                     { value: 'false', label: 'O‘chirilgan' }
                 ]
             },
-            { name: 'durationDays', label: 'Necha kunga', type: 'number', value: '30', min: 1 },
+            {
+                name: 'durationDays',
+                label: 'Necha kunga (o‘zgartirilmasa muddat saqlanadi)',
+                type: 'number',
+                value: initialDuration,
+                min: 1
+            },
             {
                 name: 'tariff',
                 label: 'Tarif',
                 type: 'select',
-                value: 'START',
-                /* value = the STORED subscription tariff; label = the name the
-                   site shows. The 980 000 plan is stored as START and is now
-                   labelled STANDART; the new 560 000 plan is STARTER. Nothing
-                   already written to a user document changes meaning. */
-                options: [
-                    { value: 'STARTER', label: 'START' },
-                    { value: 'START', label: 'STANDART' },
-                    { value: 'TURBO', label: 'TURBO' },
-                    { value: 'PREMIUM', label: 'PREMIUM' }
-                ]
+                value: initialTariff,
+                options: tariffOptions
             },
             {
                 name: 'packs',
                 label: 'Packlar',
                 type: 'checkbox-group',
                 options: [
-                    { value: 'A1A2', label: 'A1-A2', checked: true },
-                    { value: 'B1B2', label: 'B1-B2' }
+                    { value: 'A1A2', label: 'A1-A2', checked: originalPacks.includes('A1A2') },
+                    { value: 'B1B2', label: 'B1-B2', checked: originalPacks.includes('B1B2') }
                 ]
             }
         ],
-        confirmLabel: 'Saqlash'
+        confirmLabel: 'Saqlash',
+        /* When Holat is O‘chirilgan the endpoint takes only { userId, active:false }
+           — the tariff, term and packs in the dialog are discarded. Leaving them
+           editable invites an admin to set a plan that is then thrown away, so
+           they are locked while the subscription is off and unlock the moment it
+           is switched back on. Disabled controls still report their values, so
+           nothing is lost across a toggle. */
+        onRender: (form) => {
+            const activeSelect = form.querySelector('[name="active"]');
+            const dependents = [
+                form.querySelector('[name="durationDays"]'),
+                form.querySelector('[name="tariff"]'),
+                ...form.querySelectorAll('input[name="packs"]')
+            ].filter(Boolean);
+            const sync = () => {
+                const on = activeSelect ? activeSelect.value === 'true' : true;
+                dependents.forEach((node) => { node.disabled = !on; });
+            };
+            if (activeSelect) {
+                activeSelect.addEventListener('change', sync);
+            }
+            sync();
+        }
     });
 
     if (!values) {
@@ -1561,22 +1666,67 @@ async function subscriptionFlow(userId, button) {
     }
 
     const active = values.active === 'true';
+    const tariff = String(values.tariff || originalTariff || '').toUpperCase();
+    const packs = Array.isArray(values.packs) ? values.packs : [];
+    const rawDuration = String(values.durationDays || '').trim();
+    const durationTouched = rawDuration !== initialDuration;
+
+    /* Nothing was changed. Writing anyway would refresh startAt/updatedAt and
+       hand a fresh chance to every rounding bug above, so the safest write is
+       the one that does not happen. */
+    if (active === originalActive
+        && tariff === originalTariff
+        && packKey(packs) === originalPackKey
+        && !durationTouched) {
+        showSuccess('O‘zgarish kiritilmadi.');
+        return false;
+    }
+
+    /* Decide the expiry BEFORE anything is sent, because the only safe answer to
+       "how long?" with no answer given is to refuse.
+
+       There used to be a `|| 30` here. It meant that reactivating a lapsed
+       account with the term field left blank quietly granted a month nobody had
+       typed — the system inventing a subscription. An admin who does not state a
+       term gets an error, not a guess. */
+    let termPayload = null;
+    if (active) {
+        const keepsExistingTerm = !durationTouched
+            && originalEndAt && !Number.isNaN(originalEndAt.getTime());
+        if (keepsExistingTerm) {
+            /* Untouched term — hand back the exact timestamp, to the millisecond. */
+            termPayload = { endAt: originalEndAt.toISOString() };
+        } else {
+            /* Either the admin edited the field, or there is no expiry to keep.
+               Both need a term stated outright: a whole number of days above
+               zero. '', '0', '-1', '1.5' and 'abc' are all refused. */
+            const days = Number(rawDuration);
+            if (!rawDuration || !Number.isInteger(days) || days <= 0) {
+                showError('Faol obuna uchun muddatni kunlarda kiriting — 0 dan katta butun son.');
+                return false;
+            }
+            termPayload = { durationDays: days };
+        }
+    }
 
     setButtonLoading(button, true);
     try {
         if (!active) {
+            /* Deactivation semantics are the endpoint's own and are left alone. */
             await callApi('/api/admin?action=set-subscription', 'POST', { userId, active: false });
             showSuccess('Obuna o‘chirildi.');
             return true;
         }
 
-        await callApi('/api/admin?action=set-subscription', 'POST', {
+        /* Exactly one of endAt / durationDays travels — never both. */
+        const payload = Object.assign({
             userId,
             active: true,
-            durationDays: Number(values.durationDays || 30),
-            tariff: String(values.tariff || 'START').toUpperCase(),
-            accessPacks: values.packs || []
-        });
+            tariff,
+            accessPacks: packs
+        }, termPayload);
+
+        await callApi('/api/admin?action=set-subscription', 'POST', payload);
 
         showSuccess('Obuna yangilandi.');
         return true;
