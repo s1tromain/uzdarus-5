@@ -105,21 +105,82 @@ ok(plans[2].features.includes("Individual o'quv reja")
     'the paid extras of TURBO and PREMIUM survive');
 
 /* ---------------------------------------------------- colour families */
+/* Four plans, four families. START and STANDART were briefly BOTH blue, which
+   made the entry plan look like a second tier of the same product; START is
+   neutral grey again. These assertions describe the FAMILY and the measured
+   contrast rather than pinning exact hex, so a designer may retune a shade
+   without a test edit — but cannot make the two cards the same colour again,
+   turn START blue, or drop below the readability floor. */
 ok(/--plan-start\b/.test(HTML) && /--plan-standart\b/.test(HTML),
-    'the blue plans use design tokens, not one-off hex values');
-ok(!/#(9E9E9E|E5E4E2|C0C0C0|757575)/.test(cards[0] + cards[1]),
-    'neither blue card kept the old grey palette');
+    'the two plans are painted from design tokens, not one-off hex values');
 ok(/var\(--plan-start\)/.test(cards[0]) && /var\(--plan-start-deep\)/.test(cards[0]),
     'START is painted from the START tokens');
 ok(/var\(--plan-standart\)/.test(cards[1]) && /var\(--plan-standart-deep\)/.test(cards[1]),
     'STANDART is painted from the STANDART tokens');
+eq('START introduces no literal colour of its own',
+    (cards[0].match(/#[0-9A-Fa-f]{3,8}\b/g) || []).length, 0);
+eq('STANDART introduces no literal colour of its own',
+    (cards[1].match(/#[0-9A-Fa-f]{3,8}\b/g) || []).length, 0);
 ok(/#4CAF50/.test(cards[2]), 'TURBO is still green');
 ok(/#FFD700/.test(cards[3]), 'PREMIUM is still yellow-orange');
-/* The tokens must be dark enough to carry white text. */
-[['--plan-start-deep', '#2563EB'], ['--plan-standart-deep', '#1D4ED8']].forEach(([tok, hex]) => {
-    const m = HTML.match(new RegExp(tok + ':\\s*(#[0-9A-Fa-f]{6})'));
-    eq(`${tok} is the audited value`, m && m[1], hex);
-});
+
+{
+    const token = (name) => {
+        const m = HTML.match(new RegExp('--' + name + ':\\s*(#[0-9A-Fa-f]{6})'));
+        return m && m[1];
+    };
+    const rgb = (hex) => hex.replace('#', '').match(/../g).map((x) => parseInt(x, 16));
+    /* WCAG relative luminance and contrast ratio — the real formula, so the
+       thresholds below mean what they say. */
+    const lum = (hex) => {
+        const c = rgb(hex).map((v) => v / 255)
+            .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    };
+    const ratio = (a, b) => {
+        const l1 = lum(a), l2 = lum(b);
+        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    };
+    const CREAM = '#FFF8E1', WHITE = '#FFFFFF';
+    /* Grey = the three channels sit close together. Blue = the blue channel
+       clearly leads. Both are judged from the token, not from a name. */
+    const isGrey = (hex) => { const [r, g, b] = rgb(hex); return Math.max(r, g, b) - Math.min(r, g, b) <= 32; };
+    const isBlue = (hex) => { const [r, g, b] = rgb(hex); return b - Math.max(r, g) >= 40; };
+
+    const START = ['plan-start', 'plan-start-deep'].map(token);
+    const STANDART = ['plan-standart', 'plan-standart-deep'].map(token);
+    START.concat(STANDART).forEach((v, i) => ok(!!v, `tariff token #${i + 1} is defined`));
+
+    START.forEach((hex) => {
+        ok(isGrey(hex), `START token ${hex} is neutral grey`);
+        ok(!isBlue(hex), `START token ${hex} is NOT blue`);
+    });
+    STANDART.forEach((hex) => ok(isBlue(hex), `STANDART token ${hex} is blue`));
+    /* The entry plan must not be so pale it reads as disabled, nor black. */
+    START.forEach((hex) => {
+        const [r, g, b] = rgb(hex);
+        const avg = (r + g + b) / 3;
+        ok(avg > 60 && avg < 190, `START token ${hex} is a real grey, not near-black or washed out`);
+    });
+    /* The two cards must never share a tone — that is what made them look alike. */
+    eq('START and STANDART share no token value',
+        START.filter((h) => STANDART.includes(h)).length, 0);
+    ok(ratio(START[0], STANDART[0]) > 1.15 || !isGrey(STANDART[0]),
+        'the two families are visually distinct, not two shades of one hue');
+
+    /* Readability, measured. The ribbon is 0.9rem bold — small text, 4.5:1.
+       The h3 is 1.8rem bold — large text, 3:1. The price sits on cream. */
+    [['START', START], ['STANDART', STANDART]].forEach(([name, [base, deep]]) => {
+        ok(ratio(base, WHITE) >= 3,
+            `${name} header carries white text (${ratio(base, WHITE).toFixed(2)}:1, large text needs 3)`);
+        ok(ratio(deep, WHITE) >= 4.5,
+            `${name} ribbon carries white text (${ratio(deep, WHITE).toFixed(2)}:1, small text needs 4.5)`);
+        ok(ratio(deep, CREAM) >= 4.5,
+            `${name} price is readable on cream (${ratio(deep, CREAM).toFixed(2)}:1)`);
+        ok(ratio(base, CREAM) >= 3,
+            `${name} check icons are visible on cream (${ratio(base, CREAM).toFixed(2)}:1, graphics need 3)`);
+    });
+}
 
 /* ---------------------------------------------------- layout */
 ok(/grid-template-columns:\s*repeat\(4, 1fr\)/.test(HTML),

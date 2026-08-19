@@ -27,15 +27,25 @@
             --text-color: #88a0c5;
             --button-color: #374f73;
 
-            /* Tariff palette. TURBO stays green and PREMIUM yellow-orange;
-               START and STANDART are one blue family, START lighter and
-               STANDART deeper, so the two read as a pair without competing.
-               Every value below clears 4.5:1 against the surface it carries
-               text on (white on the header, cream #FFF8E1 under the price). */
-            --plan-start: #3B82F6;
-            --plan-start-deep: #2563EB;
-            --plan-standart: #2563EB;
-            --plan-standart-deep: #1D4ED8;
+            /* Tariff palette — one family per plan, so a glance separates them:
+               START neutral grey, STANDART a calm blue, TURBO green, PREMIUM
+               gold. Two blues side by side read as one product tier, which is
+               why the entry plan went back to grey.
+
+               Contrast is measured, not assumed. The `*-deep` tone carries the
+               ribbon (0.9rem bold — small text, needs 4.5:1) and the price; the
+               lighter tone carries the header's light end (1.8rem bold — large
+               text, needs 3:1) plus the border and check icons.
+
+                                      white on it   on cream #FFF8E1
+               --plan-start           3.77          3.55
+               --plan-start-deep      5.80          5.46
+               --plan-standart        3.83          3.61
+               --plan-standart-deep   5.21          4.90                    */
+            --plan-start: #7C8492;
+            --plan-start-deep: #5F6670;
+            --plan-standart: #5B7FD9;
+            --plan-standart-deep: #4568C4;
         }
 
         /* Inline contact-form notification (replaces browser alerts) */
