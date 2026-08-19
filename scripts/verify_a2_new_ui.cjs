@@ -318,8 +318,12 @@ for (const p of PAGES) {
         ok(!/Javoblarni Tekshirish/.test(s), `${T} the extra-exercises check button is deleted`);
         ok(!/ExtraExercises/.test(s), `${T} no extra-exercises code remains`);
         /* the legacy quiz check button survives ONLY for unmigrated topics */
-        const submits = (s.match(/Javoblarni tekshirish/g) || []).length;
-        ok(submits === 1, `${T} exactly one legacy check button, for topics 6-16 (${submits})`);
+        /* Counted as MARKUP, not as a phrase: the stepping session is now
+           configured with the same Uzbek wording for its own check button,
+           and a bare text match would read that label as a second legacy
+           button. What must stay unique is the legacy <button>. */
+        const submits = (s.match(/<button[^>]*>Javoblarni tekshirish<\/button>/g) || []).length;
+        ok(submits === 1, `${T} exactly one legacy check button, for unmigrated topics (${submits})`);
         const quiz = s.slice(s.indexOf('function loadQuiz'), s.indexOf('function loadQuiz') + 2000);
         ok(/if \(getT1ExData\(topic\)\) \{ renderTopic1Exercises\(topicId\); return; \}/.test(quiz),
             `${T} migrated topics return before that button is ever built`);

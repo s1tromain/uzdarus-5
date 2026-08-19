@@ -305,11 +305,25 @@
         this._applyAnswers(host, g);
         this._wireAutosave(host, g);
 
+        /* The group is handed to stepLabel so a course can name a step rather
+           than number it — a reading passage is not "exercise 9 of 10". Callers
+           that take only (n, total) are unaffected: the extra argument is
+           simply ignored by them. */
         this.dom.step.textContent = this.cfg.stepLabel
-            ? this.cfg.stepLabel(this.cursor + 1, this.total())
+            ? this.cfg.stepLabel(this.cursor + 1, this.total(), g)
             : ('Упражнение ' + (this.cursor + 1) + ' из ' + this.total());
         this.dom.fill.style.width = Math.round((this.cursor / this.total()) * 100) + '%';
         body.scrollTop = 0;
+
+        /* CONTENT-ONLY STEP. A group with no items has nothing to grade — it is
+           a passage to read, and isGradable()/itemCount() already exclude it
+           from every score. All it lacked was a footer that does not offer to
+           check answers that do not exist. Opt-in by construction: a group with
+           items takes the branch below, exactly as before. */
+        if (!isGradable(g)) {
+            this._setFooter('content');
+            return;
+        }
 
         var already = this.checked[g.id];
         if (already) this._showVerdict(already, g, host);
@@ -414,6 +428,20 @@
             /* The answers are on screen. Seeing them is not passing, so the
                only remaining action is a genuine fresh attempt. */
             mk('restart', 'uz-btn-primary', function () { self._retryStep(); });
+
+        } else if (mode === 'content') {
+            /* Nothing to check, nothing to retry, no score: one way onward.
+               The group may name that button itself — «Savollarga o'tish» reads
+               better after a passage than «Следующее упражнение». */
+            var lastC = this.cursor >= this.total() - 1;
+            var g = this._group();
+            var btn = el('button', 'uz-btn uz-btn-primary',
+                (g && g.continueLabel) || labelOf(this.cfg, lastC ? 'finish' : 'next'));
+            btn.type = 'button';
+            btn.addEventListener('click', function () {
+                lastC ? self._finish() : self._next();
+            });
+            this.dom.foot.appendChild(btn);
 
         } else {
             var last = this.cursor >= this.total() - 1;

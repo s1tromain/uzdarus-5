@@ -5613,11 +5613,24 @@
         async function a2CompleteTopic(topicId) {
             var topic = courseData.topics.find(function (t) { return t.id === topicId; });
             if (!completedTopics.includes(topicId)) {
-                completedTopics.push(topicId);
+                /* THE SERVER OWNS COMPLETION. The local list used to be pushed
+                   first and the save error swallowed, so a refused save still
+                   opened the next topic for the rest of the session — a fake
+                   unlock that only disappeared on reload. Now the topic is
+                   marked locally only when the server accepted it. Builds with
+                   no server wired at all (the demo) keep working, because there
+                   is no authority there to disagree with. */
+                var serverBacked = !!(window.currentUserId && window.completeCourseTopic);
+                var saved = false;
+                try { saved = await saveProgressToFirebase(topicId); } catch (e) { console.error(e); }
+                if (serverBacked && !saved && !completedTopics.includes(topicId)) {
+                    alert("Progressni saqlab bo'lmadi. Internet aloqasini tekshirib, qayta urinib ko'ring.");
+                    return;
+                }
+                if (!completedTopics.includes(topicId)) completedTopics.push(topicId);
                 /* Host-agnostic: a2-demo.html has no draft store, so this must
                    not assume one exists. */
                 if (typeof clearQuizDraft === 'function') clearQuizDraft(topicId);
-                try { await saveProgressToFirebase(topicId); } catch (e) { console.error(e); }
                 updateProgress();
                 loadTopics();
                 if (currentUser && window.logActivity) {

@@ -218,8 +218,8 @@ ok('every word is speakable through speech.js', v5.words.every(x => /[Ѐ-ӿ]/.te
    and still guards every other count here. */
 ok('lessons 1-4 vocabulary untouched',
    [45,77,73,106].every((n,i) => vdom.window.__v.topics.find(t=>t.id===i+1).words.length === n));
-ok('vocabulary topics 6-16 still empty',
-   vdom.window.__v.topics.filter(t=>t.id>=6).every(t=>t.words.length===0));
+ok('vocabulary topics 11-16 still empty',
+   vdom.window.__v.topics.filter(t=>t.id>=11).every(t=>t.words.length===0));
 /* The count now lives in A2_VOCAB_COUNTS and is rendered by the shared
    vocabulary component; the guarantee is unchanged. */
 [1,2,3,4,5].forEach((tid) => {

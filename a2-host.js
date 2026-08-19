@@ -384,6 +384,12 @@
             subtitle: opts.subtitle ||
                 (groups.length + ' ta mashq. Javoblar avtomatik saqlanadi.'),
             summaryLabel: 'Natijalar',
+            /* Optional presentation overrides, forwarded when the host page
+               supplies them. The session's built-in wording is Russian; A2 is
+               an Uzbek-medium course and passes its own. Absent, everything
+               falls back to the engine defaults, so nothing else changes. */
+            labels: opts.labels,
+            stepLabel: opts.stepLabel,
             renderGroup: ui().renderGroup,
             bindGroup: function (root, g) {
                 ui().bindGroup(root, g);

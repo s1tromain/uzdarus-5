@@ -318,7 +318,7 @@ ENGINE_PAID.forEach(t=>{
   const tp=PAID.w.__api.cd.topics.find(x=>x.id===t);
   ok(`paid: topic ${t} open`, tp.isLocked===false && tp.isSubscriptionLocked===false);
 });
-for(let t=6;t<=16;t++) ok(`paid: topic ${t} still a placeholder`,
+for(let t=11;t<=16;t++) ok(`paid: topic ${t} still a placeholder`,
   PAID.w.__api.cd.topics.find(x=>x.id===t).grammar==='' );
 
 /* ===================== 5. VOCABULARY ===================== */
@@ -361,7 +361,7 @@ Object.entries(EXPECT).forEach(([t,n])=>{
      dd.words.length===p.words.length && dd.words.every((x,i)=>x.ru===p.words[i].ru&&x.uz===p.words[i].uz));
 });
 ok('demo vocab topics 4-16 stay empty', VD.v.topics.filter(t=>t.id>=4).every(t=>t.words.length===0));
-ok('paid vocab topics 6-16 stay empty', VP.v.topics.filter(t=>t.id>=6).every(t=>t.words.length===0));
+ok('paid vocab topics 11-16 stay empty', VP.v.topics.filter(t=>t.id>=11).every(t=>t.words.length===0));
 ok('paid vocabulary page uses speech.js', /speech\.js/.test(VP.S) && /VOCAB_COURSE\s*=\s*'a2'/.test(VP.S));
 ok('demo vocabulary page uses speech.js', /speech\.js/.test(VD.S));
 

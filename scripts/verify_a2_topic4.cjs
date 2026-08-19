@@ -50,9 +50,13 @@ ok('legacy quiz block removed from topic 4', !t4.quiz);
 ok('the subscription-upsell placeholder is gone',
    !/Bu mavzu ochiq emas/.test(t4.content) && t4.grammar.length > 5000);
 eq('access flags unchanged (paid)', `${t4.isLocked}/${t4.isSubscriptionLocked}`, 'false/false');
-eq('topic 6 still a locked placeholder', courseData.topics.find(t => t.id === 6).grammar, '');
-ok('topics 6-16 untouched (still upsell placeholders)',
-   courseData.topics.filter(t => t.id >= 6).every(t => t.grammar === '' && !getT1ExData(t)));
+/* Lessons 6 to 10 have since been authored, so the frontier of untouched
+   placeholders moved to 11. The guard's job is unchanged: authoring a lesson
+   must not disturb the ones after it. */
+ok('topics 6 to 10 are now authored',
+   [6, 7, 8, 9, 10].every(id => courseData.topics.find(t => t.id === id).grammar.length > 3000));
+ok('topics 11-16 untouched (still upsell placeholders)',
+   courseData.topics.filter(t => t.id >= 11).every(t => t.grammar === '' && !getT1ExData(t)));
 
 const groups = t4.topic4Exercises.exercises;
 eq('11 exercise groups (10 mashq + audio)', groups.length, 11);

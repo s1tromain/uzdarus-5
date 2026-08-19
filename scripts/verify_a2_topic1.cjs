@@ -69,7 +69,24 @@ eq('engine claims topic 3 (Lesson 3 is on the engine)', !!w.__api.getT1ExData(cd
    still an untouched placeholder in the demo. */
 eq(`engine claims topic 4 = ${!IS_DEMO}`, !!w.__api.getT1ExData(cd.topics.find(t => t.id === 4)), !IS_DEMO);
 eq(`engine claims topic 5 = ${!IS_DEMO}`, !!w.__api.getT1ExData(cd.topics.find(t => t.id === 5)), !IS_DEMO);
-eq('engine does NOT claim topic 6 in either build', !!w.__api.getT1ExData(cd.topics.find(t => t.id === 6)), false);
+/* Topic 6 was an empty placeholder and therefore unclaimed; it is now a fully
+   authored engine topic, so the engine MUST claim it. The next unauthored
+   topic takes over the job of proving the lookup still refuses empties. */
+/* Lesson 6 is PAID content: the paid build carries it and the engine claims
+   it; the demo, which ships topics 1-3, still has it as a placeholder that
+   the shape-discriminated lookup must keep refusing. */
+eq('engine claims topic 6 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 6)), !IS_DEMO);
+eq('engine claims topic 7 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 7)), !IS_DEMO);
+eq('engine claims topic 8 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 8)), !IS_DEMO);
+eq('engine claims topic 9 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 9)), !IS_DEMO);
+eq('engine claims topic 10 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 10)), !IS_DEMO);
+eq('engine does NOT claim the still-unauthored topic 11',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 11)), false);
 ok('topic-2 scorer resolves (engine alias)', typeof w.checkTopic2Exercises === 'function');
 ok('topic-3 scorer resolves (engine alias)', typeof w.checkTopic3Exercises === 'function');
 

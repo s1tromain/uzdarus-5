@@ -258,7 +258,7 @@ async function walk(rel, topicIds, legacyTopicId) {
         const legacy = lessonButtons(w);
         console.log(`\n  Topic ${legacyTopicId} (legacy quiz — control group)`);
         console.log(`    Visible buttons: ${legacy.join(' | ') || '(none)'}`);
-        /* A2 topics 6-16 have no authored lesson, so they now render the shared
+        /* A2 topics 11-16 have no authored lesson, so they now render the shared
            "coming soon" screen instead of an empty quiz. There is nothing to
            submit and nothing to check — so BOTH the page's own submit button and
            the global check button must be absent. Before the placeholder existed
@@ -280,7 +280,9 @@ async function walk(rel, topicIds, legacyTopicId) {
 
 (async () => {
     console.log('\n=== STRAY CHECK BUTTON ===');
-    await walk('paid-courses/a2-course.html', [1, 2, 3, 4, 5], 6);
+    /* Lessons 6 to 10 have been authored, so topic 11 is now
+       the first unauthored one — the control group for the coming-soon path. */
+    await walk('paid-courses/a2-course.html', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 11);
     await walk('a2-demo.html', [1, 2, 3], null);   // demo has no unlocked legacy topic
 
     console.log('\n' + '='.repeat(58));

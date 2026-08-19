@@ -50,9 +50,10 @@ ok('legacy quiz block removed from topic 5', !t5.quiz);
 ok('the subscription-upsell placeholder is gone',
    !/Bu mavzu ochiq emas/.test(t5.content) && t5.grammar.length > 5000);
 eq('access flags unchanged (paid)', `${t5.isLocked}/${t5.isSubscriptionLocked}`, 'false/false');
-eq('topic 6 still a locked placeholder', courseData.topics.find(t => t.id === 6).grammar, '');
-ok('topics 6-16 untouched (still upsell placeholders)',
-   courseData.topics.filter(t => t.id >= 6).every(t => t.grammar === '' && !getT1ExData(t)));
+ok('topics 6 to 10 are now authored',
+   [6, 7, 8, 9, 10].every(id => courseData.topics.find(t => t.id === id).grammar.length > 3000));
+ok('topics 11-16 untouched (still upsell placeholders)',
+   courseData.topics.filter(t => t.id >= 11).every(t => t.grammar === '' && !getT1ExData(t)));
 
 const groups = t5.topic5Exercises.exercises;
 eq('11 exercise groups (10 mashq + audio)', groups.length, 11);

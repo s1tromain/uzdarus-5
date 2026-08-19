@@ -157,6 +157,9 @@
             'overflow-wrap:break-word;hyphens:none}',
             /* Namuna — the worked example, set apart from the task line. */
             '.b2h-howto-eg{color:#1F2430;font-size:.97rem;line-height:1.65;',
+            '.b2h-passage{background:var(--g-surface,#fff);border:1px solid var(--g-line,#E6EAF2);',
+            'border-radius:14px;padding:16px 18px;margin:0 0 16px;line-height:1.75}',
+            '.b2h-passage p{margin:0 0 10px}.b2h-passage p:last-child{margin-bottom:0}',
             'background:#F4F7FD;border-left:3px solid #5B6EF5;border-radius:0 8px 8px 0;',
             'padding:10px 14px;word-break:normal;overflow-wrap:break-word;hyphens:none}',
             '.b2h-howto-eg b{color:#3F51B5;margin-right:6px}',
@@ -483,6 +486,19 @@
                           lines.map(function (t) { return '<p>' + escHtml(t) + '</p>'; }).join('')
                         : '') +
                     '</div>';
+        }
+
+        /* READING PASSAGE — a comprehension step carries the text it asks about.
+           Reading and answering belong to ONE step: making the text a separate
+           step would leave the learner answering from memory, and a step with no
+           questions has no check button for the engine to drive.
+
+           Opt-in like showTask: a group without `passage` renders exactly as it
+           did, so no existing exercise in any course changes. The value is
+           trusted HTML because it is authored content from the lesson data, the
+           same trust the grammar and content fields already carry. */
+        if (g.passage) {
+            html += '<div class="b2h-passage">' + g.passage + '</div>';
         }
 
         if (g.audioSrc) {
