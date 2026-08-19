@@ -155,7 +155,12 @@
                     <label>
                         Tarif
                         <select name="tariff">
-                            <option value="START">START</option>
+                            <!-- value = STORED subscription tariff, label = what the site calls it.
+                                 The 980 000 plan has always been stored as START; it is now shown as
+                                 STANDART, and the new 560 000 plan gets its own value STARTER, so no
+                                 existing subscription changes meaning. -->
+                            <option value="STARTER">START</option>
+                            <option value="START">STANDART</option>
                             <option value="TURBO">TURBO</option>
                             <option value="PREMIUM">PREMIUM</option>
                         </select>

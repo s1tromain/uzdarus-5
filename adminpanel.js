@@ -10,6 +10,7 @@ import {
     callApi
 } from './firebase-client.js';
 import { isAccountFrozen, getFreezeState } from './account-freeze.js';
+import { getTariffDisplayName } from './tariff-display.js';
 import {
     CAPABILITIES,
     normalizeRole as normalizeRoleShared,
@@ -807,7 +808,7 @@ function renderCustomers() {
             const status = getCustomerStatus(user);
 
             const subPill = user.subscription?.active
-                ? `<span class="pill ok">${escapeHtml(user.subscription.tariff || 'ACTIVE')} (${escapeHtml(formatDate(user.subscription.endAt))})</span>`
+                ? `<span class="pill ok">${escapeHtml(getTariffDisplayName(user.subscription.tariff, 'ACTIVE'))} (${escapeHtml(formatDate(user.subscription.endAt))})</span>`
                 : '<span class="pill warn">Obuna yo‘q</span>';
 
             const remainingDays = getRemainingDays(user.subscription?.endAt);
@@ -1531,8 +1532,13 @@ async function subscriptionFlow(userId, button) {
                 label: 'Tarif',
                 type: 'select',
                 value: 'START',
+                /* value = the STORED subscription tariff; label = the name the
+                   site shows. The 980 000 plan is stored as START and is now
+                   labelled STANDART; the new 560 000 plan is STARTER. Nothing
+                   already written to a user document changes meaning. */
                 options: [
-                    { value: 'START', label: 'START' },
+                    { value: 'STARTER', label: 'START' },
+                    { value: 'START', label: 'STANDART' },
                     { value: 'TURBO', label: 'TURBO' },
                     { value: 'PREMIUM', label: 'PREMIUM' }
                 ]
@@ -2227,7 +2233,7 @@ function renderSAOverview(d) {
     const sub = d.subscription || {};
     const subCls = sub.active ? 'ok' : 'warn';
     const subText = sub.active
-        ? `${escapeHtml(sub.tariff || 'FAOL')} · ${sub.daysLeft != null ? sub.daysLeft + ' kun qoldi' : ''}`
+        ? `${escapeHtml(getTariffDisplayName(sub.tariff, 'FAOL'))} · ${sub.daysLeft != null ? sub.daysLeft + ' kun qoldi' : ''}`
         : 'Obuna yo‘q / tugagan';
     const cur = d.current || {};
     const st = d.stats || {};

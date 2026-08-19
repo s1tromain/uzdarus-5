@@ -26,6 +26,16 @@
             --light-gray: #f5f5f5;
             --text-color: #88a0c5;
             --button-color: #374f73;
+
+            /* Tariff palette. TURBO stays green and PREMIUM yellow-orange;
+               START and STANDART are one blue family, START lighter and
+               STANDART deeper, so the two read as a pair without competing.
+               Every value below clears 4.5:1 against the surface it carries
+               text on (white on the header, cream #FFF8E1 under the price). */
+            --plan-start: #3B82F6;
+            --plan-start-deep: #2563EB;
+            --plan-standart: #2563EB;
+            --plan-standart-deep: #1D4ED8;
         }
 
         /* Inline contact-form notification (replaces browser alerts) */
@@ -650,8 +660,38 @@
 
         .pricing-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+            /* Four plans. auto-fit at minmax(300px) put three on one row and
+               left the fourth stranded, so the columns are explicit. */
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+            align-items: stretch;
+        }
+
+        /* Only the pricing section is widened, so four cards fit without
+           squeezing the price. The site-wide .container is untouched. */
+        .pricing .container {
+            max-width: 1320px;
+        }
+
+        /* Four-up is the tightest row, so the cards give the price a little of
+           their padding back. Below 1200px there are only two per row and the
+           normal 30px padding returns. */
+        @media (min-width: 1200px) {
+            .price-card {
+                padding: 30px 22px;
+            }
+        }
+
+        @media (max-width: 1199px) {
+            .pricing-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .price-card {
@@ -666,6 +706,9 @@
             min-height: 500px;
             display: flex;
             flex-direction: column;
+            /* A row of cards stretches to the tallest; START simply has one
+               feature fewer, and no filler row is inserted to fake parity. */
+            height: 100%;
         }
 
         .price-card:hover {
@@ -682,7 +725,10 @@
         }
 
         .price {
-            font-size: 2.2rem;
+            /* Measured, not guessed: at 1280-1440 a four-up card leaves ~200-235px
+               of inner width, and «1 940 000 so'm» at the old 2.2rem needed ~250px,
+               so it broke onto a second line. The ramp below keeps it on one. */
+            font-size: clamp(1.35rem, 0.55rem + 1.55vw, 2.2rem);
             font-weight: 700;
             margin-bottom: 25px;
             display: flex;
@@ -694,12 +740,19 @@
         .old-price {
             text-decoration: line-through;
             color: #999;
-            font-size: 1.5rem;
+            font-size: clamp(1.05rem, .85rem + .6vw, 1.5rem);
             font-weight: 500;
         }
 
         .new-price {
             font-weight: 800;
+        }
+
+        /* A price is one token to a reader: «1 940 000» must never part company
+           with «so'm». The font ramp above guarantees the room for it. */
+        .new-price,
+        .old-price {
+            white-space: nowrap;
         }
 
         .price-features {
@@ -1778,30 +1831,51 @@
         <div class="container">
             <h2 class="section-title">Tariflar</h2>
             <div class="pricing-grid">
-                <!-- TURBO Tarif (бывший START) -->
-                <div class="price-card" style="border: 3px solid #E5E4E2;">
-                    <div class="price-badge" style="background: #9E9E9E;">3 OYLIK</div>
-                    <h3 style="background: linear-gradient(135deg, #E5E4E2, #C0C0C0); color: #333;">START</h3>
+                                <!-- START — data-plan is the STORED subscription value, not the label -->
+                <div class="price-card" data-plan="STARTER" style="border: 3px solid var(--plan-start);">
+                    <div class="price-badge" style="background: var(--plan-start-deep);">3 OYLIK</div>
+                    <h3 style="background: linear-gradient(135deg, var(--plan-start), var(--plan-start-deep)); color: white;">START</h3>
                     <div class="price">
-                        <span class="old-price">1 225 000 so'm</span>
-                        <span class="new-price" style="color: #757575;">980 000 so'm</span>
+                        <span class="old-price">720 000 so'm</span>
+                        <span class="new-price" style="color: var(--plan-start-deep);">560 000 so'm</span>
                     </div>
                     <div class="price-features">
-                        <p><i class="fas fa-check" style="color: #757575;"></i> A1-A2 kurslari (boshlang'ich)</p>
-                        <p><i class="fas fa-check" style="color: #757575;"></i> B1-B2 kurslari (o'rta)</p>
-                        <p><i class="fas fa-check" style="color: #757575;"></i> Haftada 1 jonli dars</p>
-                        <p><i class="fas fa-check" style="color: #757575;"></i> Shaxsiy progress monitoring</p>
-                        <p><i class="fas fa-check" style="color: #757575;"></i> Interaktiv mashqlar</p>
-                        <p><i class="fas fa-check" style="color: #757575;"></i> Kursni tugatish sertifikati</p>
-                        <p><i class="fas fa-check" style="color: #757575;"></i> Testlar</p>
-                        <p><i class="fas fa-check" style="color: #757575;"></i> Audio materiallar</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-start);"></i> A1-A2 kurslari (boshlang'ich)</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-start);"></i> B1-B2 kurslari (o'rta)</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-start);"></i> Shaxsiy progress monitoring</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-start);"></i> Interaktiv mashqlar</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-start);"></i> Kursni tugatish sertifikati</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-start);"></i> Testlar</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-start);"></i> Audio materiallar</p>
                     </div>
                     <a href="./tolov.html" class="btn"
-                        style="background: linear-gradient(135deg, #E5E4E2, #C0C0C0); color: #333; margin-top: auto; display: none;">Tanlash</a>
+                        style="background: linear-gradient(135deg, var(--plan-start), var(--plan-start-deep)); color: white; margin-top: auto; display: none;">Tanlash</a>
+                </div>
+
+                <!-- STANDART — data-plan is the STORED subscription value, not the label -->
+                <div class="price-card" data-plan="START" style="border: 3px solid var(--plan-standart);">
+                    <div class="price-badge" style="background: var(--plan-standart-deep);">3 OYLIK</div>
+                    <h3 style="background: linear-gradient(135deg, var(--plan-standart), var(--plan-standart-deep)); color: white;">STANDART</h3>
+                    <div class="price">
+                        <span class="old-price">1 225 000 so'm</span>
+                        <span class="new-price" style="color: var(--plan-standart-deep);">980 000 so'm</span>
+                    </div>
+                    <div class="price-features">
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> A1-A2 kurslari (boshlang'ich)</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> B1-B2 kurslari (o'rta)</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> Haftada 1 jonli dars</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> Shaxsiy progress monitoring</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> Interaktiv mashqlar</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> Kursni tugatish sertifikati</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> Testlar</p>
+                        <p><i class="fas fa-check" style="color: var(--plan-standart);"></i> Audio materiallar</p>
+                    </div>
+                    <a href="./tolov.html" class="btn"
+                        style="background: linear-gradient(135deg, var(--plan-standart), var(--plan-standart-deep)); color: white; margin-top: auto; display: none;">Tanlash</a>
                 </div>
 
                 <!-- START Tarif (бывший GOLD) -->
-                <div class="price-card" style="border: 3px solid #4CAF50;">
+                <div class="price-card" data-plan="TURBO" style="border: 3px solid #4CAF50;">
                     <div class="price-badge" style="background: #388E3C;">3 OYLIK</div>
                     <h3 style="background: linear-gradient(135deg, #4CAF50, #388E3C); color: white;">TURBO</h3>
                     <div class="price">
@@ -1823,7 +1897,7 @@
                 </div>
 
                 <!-- GOLD Tarif (бывший PLATINUM) -->
-                <div class="price-card" style="border: 3px solid #FFD700;">
+                <div class="price-card" data-plan="PREMIUM" style="border: 3px solid #FFD700;">
                     <div class="price-badge" style="background: #FF9800;">3 OYLIK</div>
                     <h3 style="background: linear-gradient(135deg, #FFD700, #FFA500); color: #333;">PREMIUM</h3>
                     <div class="price">

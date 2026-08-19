@@ -24,6 +24,7 @@ import {
     isAccountFrozen,
     getFreezeState
 } from '../firebase-client.js';
+import { getTariffDisplayName } from '../tariff-display.js';
 
 const COURSE_TOTAL_TOPICS = Object.freeze({
     A1: 12,
@@ -283,7 +284,10 @@ function buildProfileMeta(profile, role, privilegedRole) {
         return `@${profile.username || ''} • moderator • Admin panel ruxsati`;
     }
 
-    return `@${profile.username || ''} • ${profile.role || 'customer'} • ${profile.subscription?.tariff || 'Tarif yo‘q'} (${formatDate(profile.subscription?.endAt)} gacha)`;
+    /* The stored value is never shown raw: `START` means the plan the site
+       now calls STANDART, and `STARTER` is the one it calls START. */
+    const tariffLabel = getTariffDisplayName(profile.subscription?.tariff, 'Tarif yo‘q');
+    return `@${profile.username || ''} • ${profile.role || 'customer'} • ${tariffLabel} (${formatDate(profile.subscription?.endAt)} gacha)`;
 }
 
 function buildCountdownText(profile, role, privilegedRole) {
@@ -688,7 +692,7 @@ function renderSubscriptionCard(container, profile, role, privilegedRole, active
     } else {
         statusLabel = activeSubscription ? 'Obuna faol' : 'Obuna faol emas';
         statusClass = activeSubscription ? 'status-active' : 'status-inactive';
-        tariff = profile.subscription?.tariff || 'Tarif yo‘q';
+        tariff = getTariffDisplayName(profile.subscription?.tariff, 'Tarif yo‘q');
         expiry = formatDate(profile.subscription?.endAt);
         const daysLeft = getDaysLeft(profile.subscription?.endAt);
         remaining = daysLeft && daysLeft > 0 ? `${daysLeft} kun` : 'Tugagan';
