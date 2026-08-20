@@ -13,7 +13,7 @@ html = html.replace(/<script defer src="pro-toast.js"><\/script>/, '');
 
 const data = JSON.parse(html.match(/var FINAL_EXAM_DATA = (\[.*?\]);/s)[1]);
 
-const calls = { saveQuizResult: [], saveUserProgress: [] };
+const calls = { saveQuizResult: [], saveUserProgress: [], submitFinalExam: [], uzTrack: [] };
 const memStore = {};
 
 function makeLocalStorage() {
@@ -46,6 +46,21 @@ function build(beforeParseExtra) {
             // completion gate source — default: all 20 topics completed (course finished)
             window.__completed = window.__completed || [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
             window.getUserProgress = () => Promise.resolve({ completedTopics: window.__completed });
+            window.getAuthoritativeCourseProgress = () => window.__authFails
+                ? Promise.reject(new Error('read failed'))
+                : Promise.resolve({ completedTopics: window.__completed, userExists: true });
+            window.uzTrack = (type, data) => { calls.uzTrack.push({ type, data }); };
+            window.submitFinalExam = (course, answers) => {
+                calls.submitFinalExam.push({ course, answers });
+                if (window.__submitRejects) {
+                    const e = new Error('submit failed');
+                    e.status = window.__submitRejects.status || null;
+                    return Promise.reject(e);
+                }
+                const r = window.__serverResult || { correct: 100, total: 100, score: 100,
+                    passMark: 80, passed: true, certificateUnlocked: true };
+                return Promise.resolve(Object.assign({ ok: true, course }, r));
+            };
             if (beforeParseExtra) beforeParseExtra(window);
         }
     });
@@ -142,8 +157,11 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     check('score shows 100 / 100', box && /100 \/ 100/.test(box.textContent));
     check('shows "muvaffaqiyatli tugatildi"', box && /muvaffaqiyatli tugatildi/.test(box.textContent));
     const sup = calls.saveUserProgress.find(c => c.payload && c.payload.finalExamPassed);
-    check('saveUserProgress wrote completion fields', !!sup && sup.course === 'B1' &&
-        sup.payload.courseCompleted === true && sup.payload.certificateUnlocked === true && sup.payload.finalExamScore === 100);
+    /* The completion fields are the SERVER's now: this page posts the answers
+       and api/_progress/final-exam.js writes finalExamPassed / courseCompleted /
+       certificateUnlocked. The old assertion here expected the page to write
+       them itself and had been failing ever since that hardening. */
+    check('NO completion fields went through the generic saver', !sup);
     const sqr = calls.saveQuizResult.find(c => c.payload && c.payload.examResult);
     check('saveQuizResult wrote exam result', !!sqr && sqr.payload.examResult.passed === true);
     check('local completion flag set', !!memStore['b1_completion_testUser123']);
@@ -154,7 +172,9 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     console.log('TEST 4 — empty submission: fail, no completion write');
     delete memStore[stateKey]; delete memStore['b1_completion_testUser123'];
     calls.saveUserProgress.length = 0;
-    dom = build();
+    /* The SERVER is what decides an empty paper failed — stub it accordingly. */
+    dom = build((w) => { w.__serverResult = { correct: 0, total: 100, score: 0,
+        passMark: 80, passed: false, certificateUnlocked: false }; });
     const d4 = dom.window.document, w4 = dom.window;
     await wait(400);
     d4.getElementById('examSubmitBtn').dispatchEvent(new w4.Event('click', { bubbles: true }));
@@ -190,6 +210,69 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     check('renders 100 question rows for developer', d6.querySelectorAll('[data-exam-row]').length === 100);
     check('footer (submit) visible for developer', !d6.getElementById('examFooterBar').classList.contains('hidden'));
     check('not showing locked message', !/yakuniy imtihon ochiladi/.test(d6.getElementById('examExercises').textContent));
+    dom.window.close();
+
+    // ---------- B1 SECURITY: forged local, server authority, rejection ----------
+    console.log('TEST 7 — forged localStorage cannot upgrade B1 eligibility');
+    dom = build((w) => {
+        w.__completed = Array.from({ length: 19 }, (_, i) => i + 1);       // server 19/20
+        w.localStorage.setItem('b1_progress_testUser123',
+            JSON.stringify(Array.from({ length: 20 }, (_, i) => i + 1)));  // forged 20/20
+    });
+    const d7 = dom.window.document;
+    await wait(400);
+    check('server 19/20 + forged local 20/20: LOCKED',
+        d7.querySelectorAll('[data-exam-row]').length === 0);
+    dom.window.close();
+
+    console.log('TEST 8 — client PASS vs server FAIL: server wins');
+    delete memStore[stateKey]; delete memStore['b1_completion_testUser123'];
+    calls.uzTrack.length = 0; calls.saveQuizResult.length = 0;
+    dom = build((w) => { w.__serverResult = { correct: 70, total: 100, score: 70,
+        passMark: 80, passed: false, certificateUnlocked: false }; });
+    const d8 = dom.window.document, w8 = dom.window;
+    await wait(400);
+    data.forEach((sec, sIdx) => sec.items.forEach((it, qIdx) => {
+        const key = sIdx + '-' + qIdx;
+        const want = Array.isArray(it.answer) ? it.answer[0] : it.answer;
+        if ((it.mode || sec.type) === 'chip') {
+            const chip = d8.querySelector('.exam-q-chip[data-exam-chip="' + key + '"][data-value="' + want + '"]');
+            if (chip) chip.dispatchEvent(new w8.Event('click', { bubbles: true }));
+        } else {
+            const inp = d8.querySelector('[data-exam-input="' + key + '"]');
+            if (inp) { inp.value = want; inp.dispatchEvent(new w8.Event('input', { bubbles: true })); }
+        }
+    }));
+    d8.getElementById('examSubmitBtn').dispatchEvent(new w8.Event('click', { bubbles: true }));
+    await wait(800);
+    const box8 = d8.querySelector('.exam-result-box');
+    check('UI shows the server score 70, not the client 100',
+        box8 && /70 \/ 100/.test(box8.textContent));
+    check('UI shows FAIL', box8 && box8.classList.contains('failed'));
+    check('no completion cache on a server fail', !memStore['b1_completion_testUser123']);
+    check('exam_fail analytics carries the server score',
+        calls.uzTrack.length === 1 && calls.uzTrack[0].type === 'exam_fail'
+        && calls.uzTrack[0].data.score === 70);
+    dom.window.close();
+
+    console.log('TEST 9 — server rejection never looks like a pass; draft kept');
+    delete memStore[stateKey]; delete memStore['b1_completion_testUser123'];
+    calls.uzTrack.length = 0; calls.saveQuizResult.length = 0;
+    dom = build((w) => { w.__submitRejects = { status: 409 }; });
+    const d9 = dom.window.document, w9 = dom.window;
+    await wait(400);
+    const firstChip9 = d9.querySelector('.exam-q-chip[data-exam-chip="0-0"][data-value="' + data[0].items[0].answer + '"]');
+    if (firstChip9) firstChip9.dispatchEvent(new w9.Event('click', { bubbles: true }));
+    await wait(900);
+    d9.getElementById('examSubmitBtn').dispatchEvent(new w9.Event('click', { bubbles: true }));
+    await wait(800);
+    check('no passed result box after a rejection', !d9.querySelector('.exam-result-box.passed'));
+    check('NO completion cache after a rejection', !memStore['b1_completion_testUser123']);
+    check('NO exam_pass analytics after a rejection',
+        !calls.uzTrack.some(c => c.type === 'exam_pass'));
+    check('NO final quiz result stored after a rejection',
+        !calls.saveQuizResult.some(c => c.payload && c.payload.examResult));
+    check('the draft survives a rejection', !!memStore[stateKey]);
     dom.window.close();
 
     console.log('\n' + (failures === 0 ? 'ALL DOM TESTS PASSED ✓' : failures + ' DOM CHECK(S) FAILED ✗'));

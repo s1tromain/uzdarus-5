@@ -1,11 +1,17 @@
 #!/usr/bin/env node
 /**
- * verify_a2_topics_1_10_release.cjs — the A2 release gate.
+ * verify_a2_release.cjs — the A2 release gate.
+ *
+ * The name carries no lesson number on purpose. This gate used to be called
+ * after the lessons it covered, which meant a rename every time one shipped —
+ * and, until it happened, a suite that checked one frontier while announcing
+ * another. AUTHORED below is the single place the frontier lives, and every
+ * label is derived from it.
  *
  * Every A2 lesson already has its own suite. This one asks the questions that
  * no per-topic suite can: the ones ABOUT THE SET.
  *
- *   - the authorship frontier is exactly 1-10 authored / 11-16 placeholder;
+ *   - the authorship frontier is exactly 1-11 authored / 12-16 placeholder;
  *   - A2_VOCAB_COUNTS agrees with the decks actually shipped;
  *   - every authored lesson plays its own recording, and the file exists;
  *   - every scored question is gradable UNDER THE ENGINE'S OWN CONTRACT —
@@ -87,10 +93,15 @@ const isOpen = (it) => {
 const accepted = (it) => (Array.isArray(it.answer) ? it.answer : [it.answer])
     .filter((a) => String(a == null ? '' : a).trim() !== '');
 
-const AUTHORED = 10;
+/* The last lesson that has been authored. A2 IS NOW COMPLETE: AUTHORED and
+   LAST are equal, so there is no placeholder tail left to assert. The frontier
+   still lives in one place, and the "everything above is a placeholder" loop
+   below simply has no iterations to run — it is kept, not deleted, so the
+   invariant returns automatically if a topic 17 is ever added. */
+const AUTHORED = 16;
 const LAST = 16;
 
-console.log('\n=== A2 RELEASE · TOPICS 1-10 ===');
+console.log(`\n=== A2 RELEASE · TOPICS 1-${AUTHORED} ===`);
 
 /* ------------------------------------------------- 1. ids and frontier */
 {
@@ -111,8 +122,18 @@ console.log('\n=== A2 RELEASE · TOPICS 1-10 ===');
             eq(`placeholder ${id} has no grammar`, (t.grammar || '').trim(), '');
         }
     }
-    eq('the first unauthored topic is 11',
-        courseData.topics.filter((t) => exData(t)).map((t) => t.id).sort((a, b) => a - b).pop() + 1, 11);
+    /* A2 is finished, so there is no "first unauthored topic" to name. What
+       must hold instead is that the authored run reaches the very last topic
+       and that nothing beyond it exists. Asserting a phantom AUTHORED + 1 here
+       would have meant inventing a topic 17. */
+    eq('the authored run ends on the last topic',
+        courseData.topics.filter((t) => exData(t)).map((t) => t.id).sort((a, b) => a - b).pop(),
+        AUTHORED);
+    eq('every topic in the course is authored', 
+        courseData.topics.filter((t) => exData(t)).length, LAST);
+    eq('no placeholder topic remains', 
+        courseData.topics.filter((t) => !exData(t)).length, 0);
+    ok(!courseData.topics.some((t) => t.id > LAST), `no topic beyond ${LAST} exists`);
 }
 
 /* ------------------------------------------------- 2. vocabulary */
@@ -124,7 +145,9 @@ console.log('\n=== A2 RELEASE · TOPICS 1-10 ===');
         const m = p.match(/(\d+)\s*:\s*(\d+)/);
         if (m) declared[+m[1]] = +m[2];
     });
-    const EXPECTED = { 1: 45, 2: 77, 3: 73, 4: 106, 5: 50, 6: 69, 7: 85, 8: 85, 9: 50, 10: 69 };
+    const EXPECTED = { 1: 45, 2: 77, 3: 73, 4: 106, 5: 50, 6: 69, 7: 85, 8: 85, 9: 50,
+                       10: 69, 11: 70, 12: 55, 13: 80, 14: 60, 15: 91,
+                       16: 69 };
     Object.keys(EXPECTED).forEach((id) => {
         eq(`A2_VOCAB_COUNTS[${id}]`, declared[id], EXPECTED[id]);
         const v = vocabData.topics.find((t) => t.id === +id);
@@ -307,10 +330,10 @@ console.log('\n=== A2 RELEASE · TOPICS 1-10 ===');
 
 console.log('\n' + '='.repeat(60));
 if (fail) {
-    console.log(`  ❌ A2 RELEASE 1-10: ${fail} failed / ${pass + fail}\n`);
+    console.log(`  ❌ A2 RELEASE 1-${AUTHORED}: ${fail} failed / ${pass + fail}\n`);
     failures.slice(0, 25).forEach((f, i) => console.log(`   ${i + 1}. ${f}`));
     console.log('='.repeat(60) + '\n');
     process.exit(1);
 }
-console.log(`  ✅ A2 RELEASE 1-10: ${pass}/${pass} passed`);
+console.log(`  ✅ A2 RELEASE 1-${AUTHORED}: ${pass}/${pass} passed`);
 console.log('='.repeat(60) + '\n');

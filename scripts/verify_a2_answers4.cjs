@@ -181,8 +181,8 @@ ok('every word is speakable through speech.js (.ru is Cyrillic)', v4.words.every
    and still guards every other count here. */
 ok('lessons 1-3 vocabulary untouched',
    [45,77,73].every((n,i) => vdom.window.__v.topics.find(t=>t.id===i+1).words.length === n));
-ok('vocabulary topics 11-16 still empty',
-   vdom.window.__v.topics.filter(t=>t.id>=11).every(t=>t.words.length===0));
+ok('every A2 vocabulary topic now ships cards',
+   vdom.window.__v.topics.every(t=>t.words.length>0));
 
 /* The count now lives in A2_VOCAB_COUNTS and is rendered by the shared
    vocabulary component. The guarantee is unchanged: what the learner sees

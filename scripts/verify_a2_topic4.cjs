@@ -53,10 +53,10 @@ eq('access flags unchanged (paid)', `${t4.isLocked}/${t4.isSubscriptionLocked}`,
 /* Lessons 6 to 10 have since been authored, so the frontier of untouched
    placeholders moved to 11. The guard's job is unchanged: authoring a lesson
    must not disturb the ones after it. */
-ok('topics 6 to 10 are now authored',
-   [6, 7, 8, 9, 10].every(id => courseData.topics.find(t => t.id === id).grammar.length > 3000));
-ok('topics 11-16 untouched (still upsell placeholders)',
-   courseData.topics.filter(t => t.id >= 11).every(t => t.grammar === '' && !getT1ExData(t)));
+ok('topics 6 to 16 are now authored',
+   [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].every(id => courseData.topics.find(t => t.id === id).grammar.length > 3000));
+ok('every A2 topic is authored — no upsell placeholder remains',
+   courseData.topics.every(t => t.grammar.length > 500 && !!getT1ExData(t)));
 
 const groups = t4.topic4Exercises.exercises;
 eq('11 exercise groups (10 mashq + audio)', groups.length, 11);

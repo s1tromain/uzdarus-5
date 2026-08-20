@@ -761,24 +761,51 @@
                 }, 100);
             });
         }
-        async function getCompletedTopicCount() {
+        /**
+         * EXAM ELIGIBILITY IS AUTHORITATIVE OR IT IS NOTHING.
+         * This used to fall back to localStorage when the remote read came back
+         * empty, so a learner could open the exam by typing their own progress
+         * into DevTools — and a network blip was indistinguishable from a
+         * finished course. localStorage remains a cache for drafts and
+         * rendering; it never decides whether the exam opens.
+         *   { ok: true, count } | { ok: false, reason: 'sync' }
+         */
+        async function readAuthoritativeCompletion() {
             var uid = gateUid();
-            var ids = [];
-            if (uid !== 'guest') {
-                await waitForProgressFn(3500);
-                if (window.getUserProgress) {
-                    try {
-                        var p = await window.getUserProgress(uid, GATE_COURSE);
-                        if (p && Array.isArray(p.completedTopics)) ids = p.completedTopics;
-                    } catch (e) {}
-                }
+            if (!uid || uid === 'guest') return { ok: false, reason: 'sync' };
+            if (typeof waitForSync === 'function') { try { await waitForSync(3500); } catch (e) {} }
+            if (!window.getAuthoritativeCourseProgress) return { ok: false, reason: 'sync' };
+            try {
+                var p = await window.getAuthoritativeCourseProgress(uid, 'A1');
+                var ids = (p && Array.isArray(p.completedTopics)) ? p.completedTopics : [];
+                return { ok: true, count: new Set(ids.filter(function (n) {
+                    return typeof n === 'number' && isFinite(n);
+                })).size };
+            } catch (e) {
+                return { ok: false, reason: 'sync' };
             }
-            // localStorage is only a fallback when Firebase progress is unavailable.
-            if (!ids.length) {
-                try { ids = JSON.parse(localStorage.getItem('a1_progress_' + uid) || '[]'); } catch (e) { ids = []; }
-            }
-            return new Set((ids || []).filter(function (n) { return typeof n === 'number' && isFinite(n); })).size;
         }
+
+        /* Distinct from showExamLocked(): the learner may well have finished
+           the course — we simply could not confirm it. */
+        function showExamSyncError() {
+            examFinished = true;
+            if (typeof stopAutosave === 'function') { try { stopAutosave(); } catch (e) {} }
+            if (typeof timerInterval !== 'undefined' && timerInterval) clearInterval(timerInterval);
+            var footer = document.getElementById('examFooterBar'); if (footer) footer.classList.add('hidden');
+            var timer = document.getElementById('examTimer'); if (timer) timer.style.visibility = 'hidden';
+            var body = document.getElementById('examExercises');
+            if (body) {
+                body.innerHTML = '<div class="exam-intro" style="border-color:#FF9800;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);">'
+                    + '<div style="font-size:2.4rem;margin-bottom:8px;">\u26A0\uFE0F</div>'
+                    + '<div style="font-size:1.12rem;font-weight:800;margin-bottom:6px;">Kurs holatini tekshirib bo\'lmadi.</div>'
+                    + '<div style="font-size:0.95rem;font-weight:600;">Internet aloqasini tekshirib, qayta urinib ko\'ring.</div>'
+                    + '<div style="margin-top:16px;"><button type="button" onclick="window.location.reload()" style="background:linear-gradient(135deg,#FF9800,#E65100);color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Qayta urinish</button></div>'
+                    + '</div>';
+            }
+            var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
+        }
+
         function showExamLocked() {
             examFinished = true;     // stop timer + suppress beforeunload prompt
             if (timerInterval) clearInterval(timerInterval);
@@ -1155,7 +1182,7 @@
         }
 
         // ========== FINISH EXAM ==========
-        function finishExam(isAutoFinish) {
+        async function finishExam(isAutoFinish) {
             if (examFinished) return;
             examFinished = true;
             clearInterval(timerInterval);
@@ -1227,10 +1254,24 @@
             });
 
             var totalQ = 120;
-            var pct = Math.round((totalCorrect / totalQ) * 100);
-            var finalScore = Math.round((totalCorrect / totalQ) * 100);
-            // Certificate pass gate — identical 80% threshold to B1 (Part 2).
-            var passed = finalScore >= 80;
+            /* THE NUMBERS BELOW ARE A PREVIEW. They drive per-row highlighting.
+               What the learner is told they scored comes from the server. */
+            var previewCorrect = totalCorrect;
+            var previewPct = Math.round((totalCorrect / totalQ) * 100);
+            /* The page's declared pass mark. It no longer decides anything —
+               the server does — but it stays the single place the threshold is
+               written down, and both build_server_canon.cjs and
+               verify_progress_security.cjs read it from here to keep the
+               server's canon and this page from drifting apart. */
+            var previewPassed = previewPct >= 80;
+
+            var outcome = await persistA1Completion(previewCorrect, previewPct, isAutoFinish, timeUsed, examAnswers);
+            if (!outcome.ok) { renderSubmitError(outcome); return; }
+
+            totalCorrect = outcome.correct;
+            var pct = outcome.score;
+            var finalScore = outcome.score;
+            var passed = outcome.passed;
             var statusLabel, statusClass;
             if (finalScore >= 90) { statusLabel = "A'lo"; statusClass = 'alo'; }
             else if (finalScore >= 75) { statusLabel = 'Yaxshi'; statusClass = 'yaxshi'; }
@@ -1333,86 +1374,94 @@
             var footerBar = document.getElementById('examFooterBar');
             if (footerBar) footerBar.classList.add('hidden');
 
-            // Save result
-            var examResultData = {
-                score: totalCorrect,
-                total: totalQ,
-                finalScore: finalScore,
-                percentage: pct,
-                status: statusLabel,
-                timeUsed: timeUsed,
-                autoFinished: !!isAutoFinish,
-                timestamp: new Date().toISOString()
-            };
-            saveQuizResultToFirebase('final_exam_a1', examResultData);
-
-            // Completion integrity (Part 2 — mirrors b1-final-exam.html):
-            // certificate / course completion is granted ONLY when the learner
-            // BOTH passed (>=80%) AND finished all 12 A1 topics. The flag is then
-            // written to Firestore (courses.A1) so it is tamper-proof and the
-            // certificate can be issued server-side from it.
-            persistA1Completion(passed, pct, examResultData);
         }
 
-        async function persistA1Completion(passed, pct, resultData) {
-            var completedOk = false;
-            /* Learning-analytics: a final exam is a milestone the admin panel
-               must reflect immediately (Stage 6). Emitted from the SAME place
-               that persists the result, so it can never disagree with what was
-               stored, and only for real signed-in learners (uzTrack self-
-               disables for demo/guest). Never throws into the exam. */
-            try {
-                if (typeof window.uzTrack === 'function') {
-                    window.uzTrack(passed ? 'exam_pass' : 'exam_fail', {
-                        course: 'A1', level: 'A1', score: pct
-                    });
-                }
-            } catch (e) {}
-
-            try { completedOk = (await getCompletedTopicCount()) >= GATE_REQUIRED; } catch (e) { completedOk = false; }
-            var grantCompletion = passed && completedOk;
+        /**
+         * THE SERVER'S VERDICT IS THE ONLY VERDICT.
+         *
+         * Everything here used to run from the CLIENT's own tally, before the
+         * server had been asked: the analytics event, the completion cache and
+         * the stored quiz result. Worse, `examAnswers` was read as if it were
+         * in scope — it never was — so every submission threw inside the try
+         * below and the server graded nothing at all.
+         *
+         * One order now, starting with the server:
+         *   submit -> verdict -> mirror -> cache -> announce -> render.
+         * Without a verdict, none of it happens.
+         */
+        async function persistA1Completion(previewCorrect, previewPct, isAutoFinish, timeUsed, examAnswers) {
             var uid = gateUid();
+            var totalQ = 120;
+            if (!uid || uid === 'guest') {
+                return { ok: true, authoritative: false, correct: previewCorrect,
+                         total: totalQ, score: previewPct, passed: previewPct >= 80 };
+            }
 
-            // Local completion cache (read by a1-course.html only as a fallback).
+            var server = null, submitError = null;
             try {
-                if (grantCompletion) {
-                    localStorage.setItem('a1_completion_' + uid, JSON.stringify({
-                        finalExamPassed: true, courseCompleted: true, certificateUnlocked: true,
-                        finalExamScore: pct, finalExamCompletedAt: resultData.timestamp
-                    }));
-                }
-            } catch (e) {}
+                if (!window.submitFinalExam) throw new Error('submitFinalExam unavailable');
+                server = await window.submitFinalExam('A1', examAnswers);
+            } catch (e) { submitError = e; }
+            if (!server || typeof server.score !== 'number') {
+                console.error('Yakuniy imtihon natijasini tasdiqlab bo\'lmadi:', submitError);
+                return { ok: false, reason: 'submit',
+                         status: (submitError && (submitError.status || submitError.statusCode)) || null };
+            }
 
-            if (uid === 'guest') return;
+            var correct = typeof server.correct === 'number' ? server.correct : previewCorrect;
+            var total = typeof server.total === 'number' ? server.total : totalQ;
+            var score = server.score;
+            var passed = server.passed === true;
 
-            // Cross-device exam result sync (best-effort).
+            var resultData = {
+                score: correct, total: total, finalScore: score, percentage: score,
+                passed: passed, timeUsed: timeUsed, autoFinished: !!isAutoFinish,
+                timestamp: new Date().toISOString()
+            };
+            try { saveQuizResultToFirebase('final_exam_a1', resultData); } catch (e) {}
             try {
                 if (window.saveQuizResult) {
                     await window.saveQuizResult(uid, 'final_exam', { examResult: resultData }, 'A1');
                 }
             } catch (e) {}
 
-            // On a verified pass: persist completion flags under courses.A1.
-            /* THE VERDICT IS THE SERVER'S. The page used to write
-               finalExamPassed / courseCompleted / certificateUnlocked straight
-               into its own Firestore document, which meant the person being
-               certified was the person asserting they had passed. Now the
-               answers go up and the outcome comes back; Firestore rules refuse
-               these fields from the owner entirely. */
-            if (window.submitFinalExam) {
-                try {
-                    var serverResult = await window.submitFinalExam('A1', examAnswers);
-                    if (serverResult && typeof serverResult.score === 'number') {
-                        /* Show what was RECORDED, never a local number that
-                           disagrees with it. */
-                        pct = serverResult.score;
-                        passed = serverResult.passed === true;
-                    }
-                } catch (e) {
-                    console.error('Yakuniy imtihon natijasini saqlab bo\'lmadi:', e);
+            /* Non-authoritative cache, only on a SERVER pass. */
+            try {
+                if (passed) {
+                    localStorage.setItem('a1_completion_' + uid, JSON.stringify({
+                        finalExamPassed: true, courseCompleted: true,
+                        certificateUnlocked: server.certificateUnlocked !== false,
+                        finalExamScore: score, finalExamCompletedAt: resultData.timestamp
+                    }));
                 }
-            }
+            } catch (e) {}
 
+            try {
+                if (typeof window.uzTrack === 'function') {
+                    window.uzTrack(passed ? 'exam_pass' : 'exam_fail', {
+                        course: 'A1', level: 'A1', score: score
+                    });
+                }
+            } catch (e) {}
+
+            return { ok: true, authoritative: true, correct: correct, total: total,
+                     score: score, passed: passed,
+                     certificateUnlocked: server.certificateUnlocked === true };
+        }
+
+        /* No verdict was obtained — never "passed", never "failed". */
+        function renderSubmitError(outcome) {
+            var fb = document.getElementById('examFeedback');
+            if (!fb) return;
+            var incomplete = outcome && outcome.status === 409;
+            fb.innerHTML = '<div class="exam-result-box" style="border-color:#FF9800;">'
+                + '<div style="font-size:1.1rem;font-weight:800;color:#e65100;">'
+                + (incomplete
+                    ? 'Kurs to\'liq tugatilmagan. Yakuniy imtihon natijasi qabul qilinmadi.'
+                    : 'Natijani serverda tasdiqlab bo\'lmadi. Javoblaringiz saqlandi. Qayta urinib ko\'ring.')
+                + '</div></div>';
+            var footerBar = document.getElementById('examFooterBar');
+            if (footerBar) footerBar.classList.remove('hidden');
         }
 
         // ========== BEFOREUNLOAD WARNING ==========
@@ -1479,7 +1528,9 @@
             // Gate: refuse to render / start the exam unless ALL 12 topics are completed.
             // Developer/Admin bypass the gate entirely; customers are unaffected.
             if (!isPrivilegedUser()) {
-                var doneCount = await getCompletedTopicCount();
+                var progress = await readAuthoritativeCompletion();
+                if (!progress.ok) { showExamSyncError(); return; }
+                var doneCount = progress.count;
                 if (doneCount < GATE_REQUIRED) { showExamLocked(); return; }
             }
             renderExam();

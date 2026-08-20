@@ -36,9 +36,9 @@ const eq = (n, a, b) => ok(n, Object.is(a, b), `expected ${JSON.stringify(b)}, g
      data at all, so the shape-discriminated lookup must leave them alone rather
      than claiming them and rendering an empty exercise list. */
   /* Topic 4 exists ONLY in the paid build (Lesson 4+ is not part of the demo),
-     so the expected boundary differs per file. Lessons 6 to 10 have since been authored
-     in the paid build; everything from 11 up is still a placeholder in both. */
-  const engineTopics = rel.indexOf('demo') !== -1 ? [1,2,3] : [1,2,3,4,5,6,7,8,9,10];
+     so the expected boundary differs per file. Lessons 6 to 15 have since been authored
+     in the paid build, and A2 is complete: every paid topic 1-16 runs on it. */
+  const engineTopics = rel.indexOf('demo') !== -1 ? [1,2,3] : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
   courseData.topics.forEach((t) => {
     const expected = engineTopics.includes(t.id);
     eq(`topic ${t.id}: engine-claimed = ${expected}`, !!getT1ExData(t), expected);

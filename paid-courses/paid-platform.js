@@ -360,6 +360,43 @@ async function firestoreGetUserQuizResults(userId, course) {
 
 // Expose at module load (deferred) so it overrides the inline page stubs.
 window.getUserProgress = firestoreGetUserProgress;
+
+/**
+ * AUTHORITATIVE course progress, for AUTHORIZATION decisions only.
+ *
+ * firestoreGetUserProgress() answers "what should I render?" and deliberately
+ * fails soft: a timeout, an offline device or a permission error all return the
+ * same null a learner with no progress gets. That is right for rendering and
+ * wrong for deciding whether to open a final exam, because those two cases must
+ * not be treated alike — one means "you have not finished the course", the
+ * other means "we do not know yet".
+ *
+ * This reads the SAME user document — it is not a second progress store — and
+ * refuses to guess: it THROWS when the read did not succeed, so the caller can
+ * fail closed and tell the learner which situation they are in.
+ */
+async function getAuthoritativeCourseProgress(userId, course) {
+    if (!userId || !course) {
+        throw new Error('authoritative progress: missing user or course');
+    }
+    await authReady();
+    const MISSED = Symbol('timeout');
+    const snap = await withTimeout(
+        getDoc(doc(db, 'users', userId)), PROGRESS_READ_TIMEOUT_MS, MISSED);
+    if (snap === MISSED) {
+        throw new Error('authoritative progress: read timed out');
+    }
+    const data = (snap && snap.exists() ? snap.data() : null) || {};
+    const state = (data.courses && data.courses[course]) || {};
+    const ids = Array.isArray(state.completedTopics) ? state.completedTopics : [];
+    return {
+        /* A successful read of a learner with nothing done is `[]` — a real
+           answer, not an error. The caller can trust this shape. */
+        completedTopics: ids.filter((n) => Number.isInteger(n) && n > 0),
+        userExists: !!(snap && snap.exists())
+    };
+}
+window.getAuthoritativeCourseProgress = getAuthoritativeCourseProgress;
 window.saveUserProgress = firestoreSaveUserProgress;
 window.saveQuizResult = firestoreSaveQuizResult;
 window.getUserQuizResults = firestoreGetUserQuizResults;

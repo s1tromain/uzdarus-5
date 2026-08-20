@@ -36,8 +36,12 @@ function literal(src, name) {
     throw new Error('unbalanced ' + name);
 }
 
-/* ------------------------------------------------ exams (A1 and B1 only) */
-const EXAM_PAGES = { A1: 'paid-courses/a1-final-exam.html', B1: 'paid-courses/b1-final-exam.html' };
+/* ------------------------------------------------ exams (A1, A2 and B1) */
+const EXAM_PAGES = {
+    A1: 'paid-courses/a1-final-exam.html',
+    A2: 'paid-courses/a2-final-exam.html',
+    B1: 'paid-courses/b1-final-exam.html'
+};
 const exams = {};
 Object.entries(EXAM_PAGES).forEach(([course, rel]) => {
     const src = fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -47,7 +51,7 @@ Object.entries(EXAM_PAGES).forEach(([course, rel]) => {
        it is captured from the page rather than assumed. */
     const norm = src.match(/function normalizeExamText[\s\S]*?\n        \}/)[0];
     const punct = norm.match(/\.replace\(\/\[([^\]]*)\]\/g, ' '\)/)[1];
-    const passed = src.match(/var passed = (?:finalScore|pct) >= (\d+);/)[1];
+    const passed = src.match(/var (?:passed|previewPassed) = (?:finalScore|pct|previewPct) >= (\d+);/)[1];
 
     /* Only what grading needs — prompts and options are kept for the parity
        fingerprint, nothing else. */

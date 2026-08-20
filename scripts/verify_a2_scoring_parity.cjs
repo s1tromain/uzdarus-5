@@ -153,14 +153,26 @@ async function scoreParity(w, topicId, targets) {
         s._finish();
         /* The legacy check is async (it awaits the Firebase write before
            publishing the record). Wait for the write rather than guessing. */
+        /* The legacy path publishes its record after an awaited Firebase
+           write, so this polls rather than guesses. The old budget was 100 x
+           20ms = 2s, which is ample on an idle machine and NOT ample during a
+           full `npm test`, where the Chrome viewport suites are running beside
+           it — the poll would give up and the run reported `undefined` as a
+           score mismatch, which looked like a scoring regression and was really
+           an impatient test. Waiting longer does not weaken the comparison: the
+           record either appears and is compared, or it genuinely never came and
+           is reported as exactly that. */
+        let timedOut = false;
         const rec = await (async () => {
-            for (let i = 0; i < 100; i++) {
+            for (let i = 0; i < 600; i++) {          // up to 12s
                 const v = w.__api.uqr()['topic_' + topicId];
                 if (v) return v;
                 await new Promise(r => setTimeout(r, 20));
             }
+            timedOut = true;
             return {};
         })();
+        ok(!timedOut, `topic ${topicId}@${want}: the legacy record was published`);
 
         const eng = spy.engine || {};
         const needed = w.__api.passNeeded(total);

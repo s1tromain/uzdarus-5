@@ -21,6 +21,10 @@ import { gradeExam, assertSubmissionShape, isExamCourse } from '../_lib/exam-sco
  *
  * `score` and `passed` in the request body are not read. There is no code path
  * that reads them; sending them changes nothing.
+ *
+ * The submission is also refused unless the learner has completed every topic
+ * in the course. That condition used to live only in the exam page, so a client
+ * that simply did not run it could still bank a pass.
  */
 export default async function handler(req, res) {
     if (handleCors(req, res, ['POST'])) return;
@@ -65,6 +69,30 @@ export default async function handler(req, res) {
             }
 
             const courseState = (data.courses && data.courses[course]) || {};
+
+            /* THE COURSE MUST ACTUALLY BE FINISHED.
+               Passing the exam is only half the certificate's eligibility; the
+               other half is having completed every topic. Until now that half
+               was checked ONLY by the exam page, which means a client that
+               skipped the check could post answers, pass, and have
+               finalExamPassed written — and api/_lib/certificates.js issues on
+               exactly that flag. The requirement is now enforced where it
+               cannot be skipped, and it is generic: the expected topic count
+               comes from COURSE_CANON, so every course gets it at its own size
+               (A1 12, A2 16, B1 20) with no number written here.
+               Privileged accounts keep their existing testing bypass. */
+            const canon = COURSE_CANON[course];
+            const done = (Array.isArray(courseState.completedTopics) ? courseState.completedTopics : [])
+                .map(Number)
+                .filter((n) => Number.isInteger(n) && n > 0 && n <= canon.totalTopics);
+            const finishedCourse = new Set(done).size >= canon.totalTopics;
+            if (!privileged && !finishedCourse) {
+                throw Object.assign(
+                    new Error('Avval kursning barcha mavzularini tugating'),
+                    { statusCode: 409 }
+                );
+            }
+
             const previousBest = Number(courseState.finalExamScore) || 0;
             const alreadyPassed = courseState.finalExamPassed === true;
 

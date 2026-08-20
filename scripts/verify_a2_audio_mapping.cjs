@@ -69,7 +69,7 @@ function exData(topic) {
 console.log('\n=== A2 AUDIO MAPPING ===');
 
 const BUILDS = [
-    { rel: 'paid-courses/a2-course.html', mustCover: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    { rel: 'paid-courses/a2-course.html', mustCover: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16] },
     { rel: 'a2-demo.html', mustCover: [1, 2, 3] }
 ];
 

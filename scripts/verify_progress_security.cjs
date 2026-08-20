@@ -289,7 +289,7 @@ ok(!/CAPABILITIES/.test(ROUTER) && !/CAPABILITIES/.test(COMPLETE) && !/CAPABILIT
         eq(`${course}: canonical answer key matches the page exactly`, mismatch, 0);
 
         /* The page's own threshold and punctuation class, not an assumption. */
-        const passMark = Number(src.match(/var passed = (?:finalScore|pct) >= (\d+);/)[1]);
+        const passMark = Number(src.match(/var (?:passed|previewPassed) = (?:finalScore|pct|previewPct) >= (\d+);/)[1]);
         eq(`${course}: pass mark taken from the page`, canon.passMark, passMark);
         const punct = src.match(/function normalizeExamText[\s\S]*?\.replace\(\/\[([^\]]*)\]\/g, ' '\)/)[1];
         eq(`${course}: punctuation class taken from the page`, canon.punctuation, punct);

@@ -5639,9 +5639,21 @@
                             + (topic ? topic.title : '') + '" в курсе A2',
                         "course_visit").catch(function () {});
                 }
+                /* THE LAST TOPIC HAS NO NEXT ONE. This used to say topicId + 1
+                   unconditionally, so finishing the final lesson sent the
+                   learner off to a topic that does not exist. The next topic is
+                   read out of the course data now, and when there is none the
+                   learner is told they finished the course. Generic: it works
+                   for any course length, with no number hardcoded here. */
+                var nextTopic = courseData.topics.find(function (t) {
+                    return t.id === topicId + 1;
+                });
                 setTimeout(function () {
-                    alert("Tabriklaymiz! " + topicId + "-mavzuni muvaffaqiyatli tugatdingiz. Endi "
-                        + (topicId + 1) + "-mavzuni o'rganishingiz mumkin.");
+                    alert(nextTopic
+                        ? "Tabriklaymiz! " + topicId + "-mavzuni muvaffaqiyatli tugatdingiz. Endi "
+                            + nextTopic.id + "-mavzuni o'rganishingiz mumkin."
+                        : "Tabriklaymiz! " + topicId + "-mavzuni muvaffaqiyatli tugatdingiz. "
+                            + "Siz kursning barcha mavzularini tugatdingiz!");
                 }, 300);
             }
             if (resultsSection) resultsSection.classList.remove("show");

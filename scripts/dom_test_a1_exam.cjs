@@ -9,13 +9,20 @@ const mem = {};
 function ls() { return { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, clear: () => { Object.keys(mem).forEach(k => delete mem[k]); } }; }
 function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 
-function build(completed, role) {
+function build(completed, role, opts) {
+    opts = opts || {};
     return new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true, beforeParse(window) {
         Object.defineProperty(window, 'localStorage', { value: ls(), configurable: true });
         window.confirm = () => true; window.alert = () => {}; window.scrollTo = () => {};
         window.HTMLElement.prototype.scrollIntoView = () => {};
         window.localStorage.setItem('currentUser', JSON.stringify({ id: 'A1User', name: 'A1 Test', role: role || 'customer' }));
         window.getUserProgress = () => Promise.resolve({ completedTopics: completed });
+        /* Exam eligibility now comes from the AUTHORITATIVE read, which reports
+           a failed lookup instead of silently looking like "nothing completed".
+           `authFails` exercises that path. */
+        window.getAuthoritativeCourseProgress = () => opts.authFails
+            ? Promise.reject(new Error('read failed'))
+            : Promise.resolve({ completedTopics: completed, userExists: true });
         window.getUserQuizResults = () => Promise.resolve({});
         window.saveQuizResult = () => Promise.resolve(true);
         window.saveUserProgress = () => Promise.resolve(true);
@@ -53,6 +60,32 @@ function build(completed, role) {
     ck('dev: footer visible', !d.getElementById('examFooterBar').classList.contains('hidden'));
     ck('dev: not locked', !/yakuniy imtihon ochiladi/.test(d.getElementById('examExercises').textContent));
     dom.window.close();
+
+    // ---- forged localStorage must not unlock the exam ----
+    console.log('A1 FORGED LOCAL — server 11/12 + local 12/12 stays locked');
+    {
+        const dom = build([1,2,3,4,5,6,7,8,9,10,11], 'customer');
+        const w = dom.window, d = w.document;
+        w.localStorage.setItem('a1_progress_A1User', JSON.stringify([1,2,3,4,5,6,7,8,9,10,11,12]));
+        await wait(600);
+        ck('forged local 12/12 does not open the exam',
+            d.querySelectorAll('[data-exam-row]').length === 0
+            || d.querySelectorAll('.exam-q-chip').length === 0);
+        dom.window.close();
+    }
+    console.log('A1 SYNC FAILURE — unreadable state fails closed');
+    {
+        const dom = build([1,2,3,4,5,6,7,8,9,10,11,12], 'customer', { authFails: true });
+        const w = dom.window, d = w.document;
+        w.localStorage.setItem('a1_progress_A1User', JSON.stringify([1,2,3,4,5,6,7,8,9,10,11,12]));
+        await wait(600);
+        const txt = d.getElementById('examExercises').textContent;
+        ck('read failure does not open the exam',
+            d.querySelectorAll('.exam-q-chip').length === 0);
+        ck('and shows the sync error rather than accusing the learner',
+            /tekshirib bo'lmadi/.test(txt));
+        dom.window.close();
+    }
 
     console.log('\n' + (fail===0?'A1 GATE TESTS PASSED ✓':fail+' FAILED ✗'));
     process.exit(fail?1:0);

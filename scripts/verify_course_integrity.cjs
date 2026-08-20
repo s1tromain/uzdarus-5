@@ -390,7 +390,26 @@ GROUPS.filter((g) => g.type === 'builder').forEach((g) => {
         if (!Array.isArray(it.words) || !it.words.length) return;
         bankItems++;
         const accepted = it.answers.map(norm);
-        if (it.words.length > 7) return;         // 8! is not worth the seconds
+        if (it.words.length > 7) {
+            /* 8! orderings is not worth the seconds — but SKIPPING the item
+               entirely left long builders with no check at all, which is how a
+               nine-card item could ship with a card the answer never uses. The
+               multiset is linear and catches exactly that: every accepted
+               answer must consume the bank, no card left over and none
+               invented. It is weaker than the permutation proof below (it does
+               not prove an ORDER exists) and strictly better than nothing. */
+            const bag = (list) => list.map(norm).filter(Boolean).sort().join('|');
+            const bank = bag(it.words);
+            it.answers.forEach((a, ai) => {
+                const words = String(a).replace(/[.,!?;:]/g, ' ').trim().split(/\s+/);
+                ok(bag(words) === bank,
+                    `${g.course} ${g.form} T${g.topicId} ${g.id} #${it.i + 1}`
+                    + ` вариант ${ai + 1}: использует ровно карточки банка`
+                    + ` — банк ${JSON.stringify(it.words)}, ответ ${JSON.stringify(a)}`);
+            });
+            COUNT.longBank = (COUNT.longBank || 0) + 1;
+            return;
+        }
         const solvable = permutations(it.words).some((p) => accepted.includes(norm(p.join(' '))));
         if (!solvable) unsolvable++;
         ok(solvable,

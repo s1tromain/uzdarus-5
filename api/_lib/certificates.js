@@ -1,4 +1,5 @@
 import { initAdmin } from '../_firebaseAdmin.js';
+import { COURSE_CANON } from './course-canon.js';
 
 /**
  * Certificate ecosystem — shared server-side logic (Admin SDK only).
@@ -14,12 +15,19 @@ import { initAdmin } from '../_firebaseAdmin.js';
  */
 
 // Only courses with a complete topic + final-exam + completion flow can issue
-// certificates. A2/B2 are "coming soon" and intentionally excluded for now.
+// certificates. A2 joined that list once its 16 topics and its final exam
+// existed; B2 is still "coming soon" and intentionally excluded. Every course
+// here must also exist in COURSE_CANON — issuance counts its topics.
 export const CERT_COURSES = Object.freeze({
     A1: {
         level: 'A1',
         courseTitle: "A1 Daraja — Rus tili",
         levelLabel: "A1 «Boshlang'ich daraja»"
+    },
+    A2: {
+        level: 'A2',
+        courseTitle: "A2 Daraja — Rus tili",
+        levelLabel: "A2 «Elementar daraja»"
     },
     B1: {
         level: 'B1',
@@ -60,10 +68,21 @@ function privilegedRole(role) {
  * is the single source of truth for "already issued", read and written inside the
  * same transaction that allocates the sequential number.
  *
- * Eligibility (non-privileged): the user's `courses.<COURSE>.finalExamPassed`
- * must be true. That flag is only ever written by the final-exam page AFTER it
- * verified a >=80% pass AND all topics complete, so it is the authoritative,
- * tamper-proof completion signal (localStorage alone can never set it server-side).
+ * Eligibility (non-privileged) requires BOTH, independently:
+ *
+ *   1. `courses.<COURSE>.finalExamPassed === true` — written ONLY by the
+ *      authoritative final-exam SERVER endpoint (api/_progress/final-exam.js),
+ *      which grades the submission itself. It is not written by the exam page;
+ *      an earlier version of this comment said it was, which was wrong.
+ *   2. every topic in the course completed, counted here from
+ *      `courses.<COURSE>.completedTopics` against COURSE_CANON.
+ *
+ * The second condition is defence in depth. The exam endpoint already refuses a
+ * submission from an unfinished course, but a `finalExamPassed` flag could
+ * predate that gate, survive a corrupted course state, or outlive a future
+ * regression in that endpoint — and this function is what turns the flag into a
+ * real, numbered certificate. It is checked generically, so each course gets
+ * its own size (A1 12, A2 16, B1 20) with no per-course number written here.
  *
  * @returns {Promise<{ certificate: object, number: string, alreadyIssued: boolean }>}
  */
@@ -95,7 +114,15 @@ export async function issueCertificate({ uid, course, profile, isPrivileged }) {
         const courseData = (userData.courses && userData.courses[COURSE]) || {};
 
         // Eligibility — privileged accounts (developer/admin) bypass for testing.
-        const eligible = privileged || courseData.finalExamPassed === true;
+        const canon = COURSE_CANON[COURSE];
+        const totalTopics = (canon && canon.totalTopics) || 0;
+        const done = (Array.isArray(courseData.completedTopics) ? courseData.completedTopics : [])
+            .map(Number)
+            .filter((n) => Number.isInteger(n) && n > 0 && n <= totalTopics);
+        const finishedCourse = totalTopics > 0 && new Set(done).size >= totalTopics;
+
+        const eligible = privileged
+            || (courseData.finalExamPassed === true && finishedCourse);
         if (!eligible) {
             throw Object.assign(new Error('Sertifikat sharti bajarilmagan'), { statusCode: 403 });
         }

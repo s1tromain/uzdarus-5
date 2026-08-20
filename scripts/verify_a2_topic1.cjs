@@ -85,8 +85,20 @@ eq('engine claims topic 9 in the paid build only',
    !!w.__api.getT1ExData(cd.topics.find(t => t.id === 9)), !IS_DEMO);
 eq('engine claims topic 10 in the paid build only',
    !!w.__api.getT1ExData(cd.topics.find(t => t.id === 10)), !IS_DEMO);
-eq('engine does NOT claim the still-unauthored topic 11',
-   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 11)), false);
+eq('engine claims topic 11 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 11)), !IS_DEMO);
+eq('engine claims topic 12 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 12)), !IS_DEMO);
+eq('engine claims topic 13 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 13)), !IS_DEMO);
+eq('engine claims topic 14 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 14)), !IS_DEMO);
+eq('engine claims topic 15 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 15)), !IS_DEMO);
+eq('engine claims topic 16 in the paid build only',
+   !!w.__api.getT1ExData(cd.topics.find(t => t.id === 16)), !IS_DEMO);
+/* A2 is complete: there is no topic 17 to refuse, and none was invented. */
+ok('no topic beyond 16 exists', !cd.topics.some(t => t.id > 16));
 ok('topic-2 scorer resolves (engine alias)', typeof w.checkTopic2Exercises === 'function');
 ok('topic-3 scorer resolves (engine alias)', typeof w.checkTopic3Exercises === 'function');
 
