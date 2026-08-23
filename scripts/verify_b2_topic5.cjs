@@ -150,7 +150,9 @@ ok(ag[0].items.map(i => i.answer).join(',') ===
     const s = fs.readFileSync(path.join(ROOT, 'paid-courses/b2-vocabulary.html'), 'utf8');
     const i5 = s.indexOf('                    id: 5,');
     ok(i5 > -1, 'paid vocabulary has topic 5');
-    const seg = s.slice(s.lastIndexOf('{', i5), s.indexOf('generateLockedTopics(6)'));
+    const i6 = s.indexOf('                    id: 6,', i5);
+    const seg = s.slice(s.lastIndexOf('{', i5),
+        i6 > -1 ? s.lastIndexOf('{', i6) : s.indexOf('generateLockedTopics('));
     ok((seg.match(/\{ ru: "/g) || []).length === 70,
         `paid vocabulary topic 5 has all 70 entries (${(seg.match(/\{ ru: "/g) || []).length})`);
     ok(/name: "Условные предложения"/.test(seg), 'paid vocabulary topic 5 is this lesson');
@@ -158,7 +160,11 @@ ok(ag[0].items.map(i => i.answer).join(',') ===
      ['советовать', 'advice'], ['смелый', 'adjectives'], ['Я бы не пожалел.', 'last phrase']
     ].forEach(([wd, label]) => ok(seg.indexOf('"' + wd + '"') !== -1,
         `paid vocabulary keeps ${label} ("${wd}")`));
-    ok(/generateLockedTopics\(6\)/.test(s), 'locked vocabulary topics now start at 6');
+    const authored = [...s.matchAll(/\n                    id: (\d+),/g)].map((m) => Number(m[1]));
+    const frontier = Math.max.apply(null, authored);
+    ok(frontier >= 5, 'topic 5 is still an authored (unlocked) vocabulary topic');
+    ok(new RegExp('generateLockedTopics\\(' + (frontier + 1) + '\\)').test(s),
+        `locked vocabulary topics start right after the last authored topic (${frontier + 1})`);
     ok(/Прямая и косвенная речь/.test(s) && /Деепричастие \(ravishdosh\)/.test(s)
        && /Причастие \(sifatdosh\)/.test(s), 'paid vocabulary topics 2-4 intact');
 

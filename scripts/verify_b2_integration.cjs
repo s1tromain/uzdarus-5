@@ -316,6 +316,105 @@ for (const p of PAGES) {
     });
 }
 
+
+/* ------------------------------------------------------- GENDER FAIRNESS
+ * When a learner writes a sentence about THEMSELVES from a gender-neutral cue,
+ * a woman's fully consistent sentence is exactly as correct as a man's, so the
+ * scorer must accept both. Checked across EVERY authored B2 topic as a semantic
+ * rule, so a newly authored lesson inherits the protection automatically.
+ *
+ * Deliberately NOT demanded:
+ *   - a form the PROMPT already supplies — the learner is copying given source
+ *     material, not describing themselves (Topic 2's error-correction rows and
+ *     Topic 1's builder source sentences are of this kind);
+ *   - a form belonging to a different subject — «Пока я читал, сестра смотрела
+ *     телевизор» is correct and must never be "corrected";
+ *   - multiple-choice groups, where the offered options fix what can be chosen.
+ *
+ * JS \b is ASCII-only and never fires between a Cyrillic letter and a space,
+ * so every boundary below is written with explicit delimiters.
+ */
+{
+    const { JSDOM } = require('jsdom');
+    const gw = new JSDOM('<body></body>', { runScripts: 'outside-only' }).window;
+    ['shared-normalizer.js', 'sentence-builder.js', 'course-exercise-ui.js', 'b2-lesson-data.js']
+        .forEach(f => gw.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
+    const UI = gw.UzExerciseUI;
+
+    const IRREG = { 'шёл': 'шла', 'пошёл': 'пошла', 'пришёл': 'пришла', 'ушёл': 'ушла',
+        'вышел': 'вышла', 'зашёл': 'зашла', 'подошёл': 'подошла', 'отошёл': 'отошла',
+        'нашёл': 'нашла', 'перешёл': 'перешла', 'смог': 'смогла', 'мог': 'могла',
+        'был': 'была', 'вынужден': 'вынуждена', 'должен': 'должна', 'рад': 'рада',
+        'болен': 'больна', 'готов': 'готова',
+        /* emphatic pronouns and short adjectives agree too — feminising the
+           verb but leaving «сам» yields «Я смогла … сам», which is not
+           Russian, and the rule would then demand an invalid sentence. */
+        'сам': 'сама', 'один': 'одна', 'занят': 'занята', 'свободен': 'свободна' };
+    const OTHER = ['ты', 'он', 'она', 'оно', 'мы', 'вы', 'они', 'кто'];
+    const wordsOf = (x) => String(x).toLowerCase().replace(/[«»"„”()]/g, ' ')
+        .split(/[\s,.!?;:—–-]+/).filter(Boolean);
+    const isMasc = (t) => IRREG[t] !== undefined
+        || (!/^[а-яё]{2,}(ла|лась)$/.test(t) && /^[а-яё]{2,}(л|лся)$/.test(t));
+    const femOf = (t) => IRREG[t] || (/лся$/.test(t) ? t.replace(/лся$/, 'лась') : t + 'а');
+    const feminise = (sentence) => {
+        let changed = 0;
+        const text = String(sentence).split(/([,;])/).map(chunk => {
+            if (/^[,;]$/.test(chunk)) return chunk;
+            const ws = wordsOf(chunk);
+            if (!ws.includes('я') || ws.some(t => OTHER.includes(t))) return chunk;
+            return chunk.replace(/[А-Яа-яЁё]+/g, word => {
+                const low = word.toLowerCase();
+                if (!isMasc(low)) return word;
+                changed++;
+                const f = femOf(low);
+                return word[0] === word[0].toUpperCase() ? f[0].toUpperCase() + f.slice(1) : f;
+            });
+        }).join('');
+        return { text, changed };
+    };
+    /* the same subject must not carry both genders */
+    const mixed = (sentence) => {
+        let m = false, f = false;
+        String(sentence).split(/[,;]/).forEach(clause => {
+            const ws = wordsOf(clause);
+            if (!ws.includes('я') || ws.some(t => OTHER.includes(t))) return;
+            ws.forEach(t => {
+                if (isMasc(t)) m = true;
+                else if (IRREG[Object.keys(IRREG).find(k => IRREG[k] === t)] !== undefined
+                         || /^[а-яё]{2,}(ла|лась)$/.test(t)) f = true;
+            });
+        });
+        return m && f;
+    };
+
+    let examined = 0, refused = 0, mixedAccepted = 0;
+    gw.B2_LESSON_DATA.topics.forEach(L => (L.exercises || []).forEach(g => {
+        if (g.type === 'choice') return;
+        (g.items || []).forEach((it, i) => {
+            if (it.free === true || it.answer == null) return;
+            const acc = (Array.isArray(it.answer) ? it.answer : [it.answer]).map(String);
+            const prompt = String(it.q).toLowerCase();
+            acc.forEach(canon => {
+                const { text: fem, changed } = feminise(canon);
+                if (!changed || fem === canon) return;
+                if (wordsOf(canon).some(t => isMasc(t) && prompt.indexOf(t) !== -1)) return;
+                examined++;
+                if (!UI.matchItem(it, fem)) {
+                    refused++;
+                    if (refused <= 6) failures.push(`T${L.id} ${g.id}#${i + 1}: a woman's sentence «${fem.slice(0, 44)}» is refused`);
+                }
+            });
+            /* and no accepted answer may itself mix genders for one «я» */
+            acc.forEach(a => { if (mixed(a)) { mixedAccepted++; failures.push(`T${L.id} ${g.id}#${i + 1}: MIXED-gender accepted «${a.slice(0, 44)}»`); } });
+        });
+    }));
+    if (refused) fail += Math.min(refused, 6);
+    if (mixedAccepted) fail += mixedAccepted;
+    ok(examined > 50, `gender-fairness rule examined the course (${examined} gendered answers)`);
+    ok(refused === 0, `every gender-neutral «я» answer also accepts the feminine form (${refused} refused)`);
+    ok(mixedAccepted === 0, `no accepted answer mixes genders for one «я» (${mixedAccepted})`);
+}
+
 console.log('='.repeat(52));
 if (fail) {
     console.log(`FAILED  ${pass} passed, ${fail} failed\n`);
