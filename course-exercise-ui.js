@@ -89,7 +89,7 @@
             '--b2-accent:#6C63FF;--b2-ok:#1F8A5B;--b2-bad:#C63B4E}',
 
             /* ---- exercise card ---- */
-            '.b2h-item{border-radius:0;padding:0;',
+            '.b2h-item{background:#fff;border:1px solid var(--b2-line);border-radius:16px;padding:22px 24px;',
             'margin-bottom:16px;box-shadow:0 1px 2px rgba(26,28,46,.04);',
             'transition:box-shadow .25s,border-color .25s,transform .25s}',
             '.b2h-item:hover{box-shadow:0 8px 26px rgba(59,63,143,.10);border-color:#cfd5ec;transform:translateY(-1px)}',

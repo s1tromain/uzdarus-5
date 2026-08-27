@@ -39,7 +39,7 @@ const ok = (c, l) => { if (c) { pass++; } else { fail++; failures.push(l); } };
 const eq = (l, a, b) => ok(Object.is(a, b), `${l} — expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-console.log('\n=== A1 / B1 EXERCISE UI + TOPIC COMPLETION ===');
+console.log('\n=== A1 / B1 EXERCISE UI + TOPIC COMPLETION ===' + (process.env.UI_SUITE_FAST === '1' ? '  [FAST subset]' : ''));
 
 const COURSES = {
     A1: { url: '/paid-courses/a1-course.html', mount: 'mountA1Practice', host: 'A1Host', last: 12 },
@@ -50,12 +50,20 @@ const COURSES = {
    that has broken before, and a B1 topic that carries a sentence builder. The
    exhaustive 32-topic sweep is a separate audit; what must never regress is
    pinned here so `npm test` catches it. */
-const CASES = [
+const ALL_CASES = [
     { course: 'A1', topic: 1 },
     { course: 'A1', topic: 9 },
     { course: 'B1', topic: 1 },
     { course: 'B1', topic: 4 }
 ];
+
+/* UI_SUITE_FAST runs a strict SUBSET of the very same assertions — one topic
+   per course instead of two. It exists for the negative-control harness, which
+   only needs the suite to fail, and which otherwise re-runs every walk 17 times
+   on a memory-constrained machine. `npm test` always runs the full set, so the
+   release is never judged by the subset. */
+const FAST = process.env.UI_SUITE_FAST === '1';
+const CASES = FAST ? [{ course: 'A1', topic: 1 }, { course: 'B1', topic: 1 }] : ALL_CASES;
 
 const CURRENT_GROUP = `
     var it=document.querySelector('.uz-body .b2h-item[data-b2h-item]');
@@ -254,7 +262,8 @@ try {
      * ---------------------------------------------------------------- */
     for (const { course, topic } of CASES) {
         const cfg = COURSES[course];
-        for (const [w, h, mob] of [[1440, 900, false], [360, 800, true]]) {
+        const WIDTHS_UI = FAST ? [[1440, 900, false], [360, 800, true]] : [[1440, 900, false], [360, 800, true]];
+        for (const [w, h, mob] of WIDTHS_UI) {
             seed = { [course]: { completedTopics: Array.from({ length: topic - 1 }, (_, i) => i + 1),
                                  topicComponents: { [topic]: { vocabularyCompleted: true } } } };
             await p.setDevice(w, h, mob);
@@ -396,7 +405,7 @@ try {
     /* ---------------------------------------------------------------- *
      * 3. ONE HALF IS NOT A TOPIC — fail closed without the vocabulary
      * ---------------------------------------------------------------- */
-    for (const course of ['A1', 'B1']) {
+    for (const course of (FAST ? ['A1'] : ['A1', 'B1'])) {
         const cfg = COURSES[course];
         const T = `${course} T1 without vocabulary`;
         seed = { [course]: { completedTopics: [], topicComponents: {} } };
