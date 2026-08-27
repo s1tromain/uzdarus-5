@@ -75,6 +75,15 @@
      * CSS only: no libraries, no canvas, no runtime layout maths.
      */
     function injectStyles() {
+        /* STYLING IS A BROWSER CONCERN; RENDERING IS NOT.
+           renderGroup() now guarantees its own stylesheet, and renderGroup() is
+           also called with no real DOM — several viewport suites render the
+           markup to a string in plain Node, where `document` is a stub without
+           getElementById. Producing markup must never depend on a document, so
+           when there is nothing to inject into, skip it silently. */
+        if (typeof document === 'undefined' || !document ||
+            typeof document.getElementById !== 'function' ||
+            typeof document.createElement !== 'function') return;
         if (document.getElementById('b2h-styles')) return;
         var st = document.createElement('style');
         st.id = 'b2h-styles';
