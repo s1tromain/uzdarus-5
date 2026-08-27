@@ -89,7 +89,7 @@
             '--b2-accent:#6C63FF;--b2-ok:#1F8A5B;--b2-bad:#C63B4E}',
 
             /* ---- exercise card ---- */
-            '.b2h-item{background:#fff;border:1px solid var(--b2-line);border-radius:16px;padding:22px 24px;',
+            '.b2h-item{border-radius:0;padding:0;',
             'margin-bottom:16px;box-shadow:0 1px 2px rgba(26,28,46,.04);',
             'transition:box-shadow .25s,border-color .25s,transform .25s}',
             '.b2h-item:hover{box-shadow:0 8px 26px rgba(59,63,143,.10);border-color:#cfd5ec;transform:translateY(-1px)}',
@@ -124,7 +124,7 @@
             /* ---- options ---- */
             '.b2h-opts{display:flex;gap:10px;flex-wrap:wrap}',
             '.b2h-opts-test,.b2h-opts-tf{flex-direction:column;gap:9px}',
-            '.b2h-opt-DISABLED{position:relative;font-family:inherit;cursor:pointer;border-radius:12px;',
+            '.b2h-opt{position:relative;font-family:inherit;cursor:pointer;border-radius:12px;',
             'border:2px solid var(--b2-line);background:#fff;color:#3c4260;font-size:1rem;font-weight:600;',
             'padding:12px 20px;display:flex;align-items:center;gap:11px;',
             'transition:transform .18s,border-color .18s,background .18s,box-shadow .18s}',

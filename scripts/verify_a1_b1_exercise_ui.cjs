@@ -271,6 +271,62 @@ try {
     }
 
     /* ---------------------------------------------------------------- *
+     * 1b. THE SHARED RENDERER IS SELF-SUFFICIENT
+     * ---------------------------------------------------------------- *
+     * FOUND BY NEGATIVE CONTROL. Removing injectStyles() from renderGroup
+     * changed nothing, because A1Host and B1Host also call it — the very
+     * redundancy added when this defect was fixed. That redundancy is worth
+     * keeping, but it must not be the ONLY thing holding the styles up: a
+     * future host written without the call would ship unstyled exercises
+     * again. So prove the renderer alone restores its stylesheet.
+     * ---------------------------------------------------------------- */
+    {
+        const r = await p.evaluate(`
+            var tag = document.getElementById('b2h-styles');
+            if (tag) tag.remove();
+            var before = !!document.getElementById('b2h-styles');
+            window.UzExerciseUI.renderGroup({ id: '__probe__', title: 'probe', type: 'choice',
+                items: [{ q: 'q', options: ['a', 'b'], answer: 'a' }] });
+            var after = !!document.getElementById('b2h-styles');
+            if (!after) window.UzExerciseUI.injectStyles();
+            return { before: before, after: after };`);
+        eq('the stylesheet really was removed for the probe', r.before, false);
+        eq('renderGroup() re-injects the stylesheet on its own', r.after, true);
+    }
+
+    /* ---------------------------------------------------------------- *
+     * 1c. AN AUTHORED TASK LINE IS THE ONE THE LEARNER READS
+     * ---------------------------------------------------------------- *
+     * FOUND BY NEGATIVE CONTROL. Turning off B1's showTaskLine left the
+     * header in place — a generated, type-derived instruction quietly took
+     * the place of the sentence the course actually wrote. "An instruction is
+     * present" was true either way, so nothing failed. Where the material
+     * authored an intro, that exact text must be on screen.
+     * ---------------------------------------------------------------- */
+    for (const [course, topic] of [['B1', 1], ['A1', 1]]) {
+        const cfg = COURSES[course];
+        seed = { [course]: { completedTopics: Array.from({ length: topic - 1 }, (_, i) => i + 1),
+                             topicComponents: { [topic]: { vocabularyCompleted: true } } } };
+        await p.setDevice(1440, 900, false);
+        await openTopic(p, site, cfg, topic);
+        const r = await p.evaluate(`
+            var gid=(function(){var it=document.querySelector('.uz-body .b2h-item[data-b2h-item]');
+                if(!it)return null;var k=it.getAttribute('data-b2h-item');return k.slice(0,k.lastIndexOf('-'));})();
+            var t=courseData.topics.find(function(x){return x.id===${topic};});
+            var gs=window.${cfg.host}.groupsOf(t)||[];var g=null;
+            for(var i=0;i<gs.length;i++) if(String(gs[i].id)===gid) g=gs[i];
+            var el=document.querySelector('.uz-body .b2h-howto-task');
+            return { authored: g?(g.intro||null):null,
+                     shown: el?el.textContent.trim():null };`);
+        if (r.authored) {
+            eq(`${course} T${topic} — the authored task line is the one displayed`,
+                r.shown, String(r.authored).trim());
+        } else {
+            ok(!!r.shown, `${course} T${topic} — an instruction is shown even with none authored`);
+        }
+    }
+
+    /* ---------------------------------------------------------------- *
      * 2. FINISHING A TOPIC ACTUALLY FINISHES IT
      * ---------------------------------------------------------------- */
     await p.setDevice(1440, 900, false);
