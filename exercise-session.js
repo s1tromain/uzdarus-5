@@ -629,16 +629,50 @@
 
     Session.prototype._finish = function () {
         this.finished = true;
+        var self = this;
         var payload = null;
         if (typeof this.cfg.finish === 'function') {
             /* The host scores the attempt and owns everything that follows:
                its results markup, its progress store, its Firebase sync. */
             try { payload = this.cfg.finish(this.answers, this.checked); } catch (e) { payload = null; }
         }
-        /* A host that can render a summary keeps the learner in place and shows
-           it; one that cannot simply falls back to the previous behaviour. */
-        if (typeof this.cfg.renderSummary === 'function') this.showSummary(payload);
-        else this.close();
+
+        /* FINISHING IS NETWORK WORK, SO WAIT FOR IT.
+           This used to render the summary the instant cfg.finish() returned.
+           A1 and B1 finish asynchronously — save the result, report the
+           exercises component, read the server's verdict — so the learner was
+           shown "Итоги" while none of that had happened, any rejection went
+           unhandled, and the summary was handed a pending Promise instead of a
+           payload. A2/B2 return a plain object and are unaffected:
+           Promise.resolve() settles immediately for them. */
+        var isThenable = payload && typeof payload.then === 'function';
+        if (!isThenable) {
+            if (typeof this.cfg.renderSummary === 'function') this.showSummary(payload);
+            else this.close();
+            return;
+        }
+
+        this._showSaving();
+        payload.then(function (resolved) {
+            if (typeof self.cfg.renderSummary === 'function') self.showSummary(resolved);
+            else self.close();
+        }, function () {
+            /* The host reports its own failure into the page; the session must
+               not claim success, and must not strand the learner in a blank
+               modal either. */
+            if (typeof self.cfg.renderSummary === 'function') self.showSummary(null);
+            else self.close();
+        });
+    };
+
+    /** A held state while the attempt is being saved — never a blank modal. */
+    Session.prototype._showSaving = function () {
+        if (!this.dom) return;
+        this.dom.foot.innerHTML = '';
+        var b = el('button', 'uz-btn uz-btn-primary', labelOf(this.cfg, 'saving') || 'Сохранение...');
+        b.type = 'button';
+        b.disabled = true;
+        this.dom.foot.appendChild(b);
     };
 
     /**

@@ -173,6 +173,14 @@
         var S = session(), U = ui();
         if (!S || !U || !opts.topic || !opts.mountEl) return null;
 
+        /* The exercise stylesheet, and B1's own task lines.
+           B1 authors a `title` AND an `intro` on all 153 of its groups, but
+           without the page-wide switch the renderer showed neither — twenty
+           topics of unlabelled, uninstructed questions. Both calls are
+           idempotent. */
+        if (typeof U.injectStyles === 'function') U.injectStyles();
+        if (typeof U.setOptions === 'function') U.setOptions({ showTaskLine: true });
+
         var groups = groupsOf(opts.topic);
         if (!groups.length) return null;
 
@@ -227,7 +235,63 @@
                 },
                 clear: function () { store.remove(key); }
             },
-            finish: opts.onFinish || function () {}
+            /* THE SESSION HANDS TWO ARGUMENTS; THE PAGE EXPECTS ONE OBJECT.
+               cfg.finish is invoked as finish(answers, checked), but
+               completeExercises() grades through result.checked — so wiring
+               opts.onFinish here directly meant result.checked was undefined,
+               allGroupsPassed() returned false for every group, the call
+               returned stage:'gate', and b1ApplyOutcome dropped it without a
+               word. The learner finished every exercise correctly and NOTHING
+               was saved, no exercises component was reported, and the topic
+               could never complete. Assemble the shape the page documents, and
+               return the promise so the session can wait for the network. */
+            finish: function (answers, checked) {
+                var result = { answers: answers, checked: checked };
+                var snapshot = buildSnapshot(topicId, groups, result);
+                return Promise.resolve(
+                    typeof opts.onFinish === 'function' ? opts.onFinish(result) : null
+                ).then(function (outcome) {
+                    return { snapshot: snapshot, outcome: outcome || null };
+                }, function () {
+                    return { snapshot: snapshot, outcome: null };
+                });
+            },
+            /* A real closing screen. Without these the session showed an empty
+               modal titled "Итоги" with no score and no button. */
+            renderSummary: function (payload) {
+                var U = ui();
+                if (!U || typeof U.renderExerciseSummary !== 'function') return '';
+                var pl = payload || {};
+                return U.renderExerciseSummary(pl.snapshot, pl.outcome);
+            },
+            bindSummary: function (root, payload, session) {
+                root.addEventListener('click', function (e) {
+                    var btn = e.target && e.target.closest ? e.target.closest('[data-uzsum]') : null;
+                    if (!btn) return;
+                    var act = btn.getAttribute('data-uzsum');
+                    if (act === 'close') {
+                        if (session && typeof session.close === 'function') session.close();
+                        return;
+                    }
+                    if (act === 'vocab') {
+                        if (session && typeof session.close === 'function') session.close();
+                        if (typeof opts.onOpenVocabulary === 'function') opts.onOpenVocabulary(topicId);
+                        return;
+                    }
+                    if (act === 'retry') {
+                        btn.disabled = true;
+                        btn.textContent = 'Сохранение...';
+                        Promise.resolve(
+                            typeof opts.onRetry === 'function' ? opts.onRetry(topicId) : null
+                        ).then(function () {
+                            if (session && typeof session.close === 'function') session.close();
+                        }, function () {
+                            btn.disabled = false;
+                            btn.textContent = 'Qayta urinish';
+                        });
+                    }
+                });
+            }
         });
     }
 

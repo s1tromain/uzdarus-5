@@ -124,7 +124,7 @@
             /* ---- options ---- */
             '.b2h-opts{display:flex;gap:10px;flex-wrap:wrap}',
             '.b2h-opts-test,.b2h-opts-tf{flex-direction:column;gap:9px}',
-            '.b2h-opt{position:relative;font-family:inherit;cursor:pointer;border-radius:12px;',
+            '.b2h-opt-DISABLED{position:relative;font-family:inherit;cursor:pointer;border-radius:12px;',
             'border:2px solid var(--b2-line);background:#fff;color:#3c4260;font-size:1rem;font-weight:600;',
             'padding:12px 20px;display:flex;align-items:center;gap:11px;',
             'transition:transform .18s,border-color .18s,background .18s,box-shadow .18s}',
@@ -151,7 +151,39 @@
             '.b2h-howto p{margin:0 0 9px;color:#4A5468;font-size:.97rem;line-height:1.72;',
             'word-break:normal;overflow-wrap:break-word;hyphens:none;max-width:70ch}',
             '.b2h-howto p:last-child{margin-bottom:0}',
-            '.b2h-howto-t{font-weight:700;color:#1F2430;font-size:1.02rem;margin-bottom:6px}',
+            '.b2h-howto-t{font-weight:700;color:#1F2430;font-size:1.02rem;margin-bottom:6px;',
+            'display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+            /* the exercise TYPE, so the learner knows what kind of task this is */
+            /* ---- end-of-topic summary ---- */
+            '.b2h-sum{background:#fff;border:1px solid var(--b2-line,#e4e7f2);border-radius:18px;',
+            'padding:28px 26px;text-align:center;box-shadow:0 1px 2px rgba(26,28,46,.04)}',
+            '.b2h-sum-ico{font-size:3rem;line-height:1;margin-bottom:10px}',
+            '.b2h-sum-h{font-size:1.35rem;font-weight:800;color:#1F2430;margin-bottom:6px}',
+            '.b2h-sum-score{font-size:2.4rem;font-weight:800;letter-spacing:-.02em;margin:6px 0 2px}',
+            '.b2h-sum-score.ok{color:#1F8A5B}.b2h-sum-score.bad{color:#C63B4E}',
+            '.b2h-sum-sub{color:#6b7290;font-size:.98rem;margin-bottom:16px}',
+            '.b2h-sum-note{border-radius:12px;padding:13px 16px;font-size:.97rem;line-height:1.6;',
+            'margin:14px auto 0;max-width:46ch;text-align:left}',
+            '.b2h-sum-note.done{background:#EFFAF4;border:1px solid #BCE9D4;color:#0B5D46}',
+            '.b2h-sum-note.next{background:#FFF8E8;border:1px solid #F2DDA8;color:#6B4E12}',
+            '.b2h-sum-note.err{background:#FFF5F5;border:1px solid #EFB3B3;color:#8E2B2B}',
+            '.b2h-sum-rows{margin:18px 0 0;text-align:left}',
+            '.b2h-sum-row{display:flex;justify-content:space-between;gap:12px;align-items:center;',
+            'padding:10px 12px;border-radius:10px;background:#FAFBFF;margin-bottom:8px;font-size:.95rem}',
+            '.b2h-sum-row b{font-weight:600;color:#1F2430}',
+            '.b2h-sum-row span{font-weight:700;white-space:nowrap}',
+            '.b2h-sum-row span.ok{color:#1F8A5B}.b2h-sum-row span.bad{color:#C63B4E}',
+            '.b2h-sum-acts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}',
+            '.b2h-sum-btn{font-family:inherit;font-size:1rem;font-weight:700;border:none;cursor:pointer;',
+            'min-height:48px;padding:13px 26px;border-radius:12px;',
+            'background:linear-gradient(135deg,var(--b2-accent,#6C63FF),var(--b2-primary,#3B3F8F));color:#fff}',
+            '.b2h-sum-btn.ghost{background:#fff;color:#3F51B5;border:1px solid #C9D4EE}',
+            '.b2h-sum-btn:disabled{opacity:.6;cursor:default}',
+            '@media(max-width:640px){.b2h-sum{padding:22px 16px}.b2h-sum-btn{width:100%}}',
+
+            '.b2h-howto-type{font-weight:600;font-size:.72rem;letter-spacing:.03em;',
+            'text-transform:uppercase;color:#3F51B5;background:#EEF1FD;border:1px solid #D8DEFA;',
+            'border-radius:999px;padding:3px 10px;white-space:nowrap}',
             '.b2h-howto-task{color:#1F2430;font-size:.99rem;line-height:1.7;margin-bottom:12px;',
             'padding-bottom:12px;border-bottom:1px solid #E3E9F3;word-break:normal;',
             'overflow-wrap:break-word;hyphens:none}',
@@ -452,6 +484,19 @@
     /* ------------------------------------------------------- rendering */
 
     function renderGroup(g) {
+        /* THE RENDERER BRINGS ITS OWN STYLESHEET.
+           Every class emitted below — .b2h-item, .b2h-num, .b2h-opt — is
+           styled ONLY by injectStyles(). A2Host and B2Host happened to call it
+           in their create(); A1Host and B1Host have no create() and never did,
+           so A1 and B1 shipped the same markup with NO CSS AT ALL: questions
+           with no card, the number glued to the text ("1Noma'lum kishiga..."),
+           and answers as 20px user-agent grey buttons. Thirty-two topics of
+           unstyled HTML, and every string-matching test passed because the
+           markup was always correct. A component that emits markup for a
+           stylesheet must guarantee the stylesheet; injectStyles() is
+           idempotent, so this costs nothing and cannot be forgotten again. */
+        injectStyles();
+
         var html = '<div class="b2h">';
 
         /* Tell the learner what this exercise asks of them BEFORE the first
@@ -468,10 +513,29 @@
            the page-wide switch A2 sets. */
         var showTask = (g.showTask && (g.intro || g.namuna))
                     || (OPTIONS.showTaskLine && g.intro);
-        if (g.howTo || showTask) {
+
+        /* A TITLE THAT NEVER RENDERS IS NOT A TITLE.
+           All 68 A1 groups and all 153 B1 groups author a `title`, but the
+           block that displays it was gated on howTo/showTask alone — so a
+           learner opening any A1 or B1 exercise was shown a bare list of
+           questions with no idea what the exercise was. If the material named
+           the exercise, the learner sees the name. */
+        var hasHeader = g.title || g.howTo || showTask;
+        if (hasHeader) {
             var lines = g.howTo ? (Array.isArray(g.howTo) ? g.howTo : [g.howTo]) : [];
+            /* WHAT THE LEARNER IS ACTUALLY BEING ASKED TO DO.
+               Where the material supplies its own task line, that wins and is
+               shown verbatim. Where it supplies none — 60 of A1's 68 groups —
+               the instruction is derived from the exercise's real type, so it
+               can never describe a different task than the one on screen. This
+               is UI metadata: no question, option or answer is touched. */
+            var fallbackTask = (!showTask && !lines.length) ? taskLineFor(g) : '';
             html += '<div class="b2h-howto">' +
-                    (g.title ? '<div class="b2h-howto-t">' + escHtml(g.title) + '</div>' : '') +
+                    (g.title ? '<div class="b2h-howto-t">' + escHtml(g.title) +
+                               '<span class="b2h-howto-type">' + escHtml(typeLabelFor(g)) + '</span>' +
+                               '</div>' : '') +
+                    (fallbackTask
+                        ? '<div class="b2h-howto-task">' + escHtml(fallbackTask) + '</div>' : '') +
                     /* The task itself, in the learner's own language. Courses author
                        it as `intro`; dropping it costs worked examples and word
                        lists that appear nowhere else. */
@@ -821,6 +885,101 @@
             '</div></div>';
     }
 
+    /**
+     * The exercise's real type, as the renderer itself will treat it.
+     *
+     * Deliberately derived from the SAME expression the item loop dispatches
+     * on, so the badge and the instruction can never disagree with the control
+     * the learner is actually given. A group with no `type` renders text
+     * inputs, so it is a written-answer exercise and says so.
+     */
+    function kindOf(g) {
+        if (!g) return 'input';
+        if (g.type === 'choice') return (g.style === 'test') ? 'test' : 'choice';
+        if (g.type === 'builder') return 'builder';
+        if (isSlotted(g)) return 'slot';
+        return 'input';
+    }
+
+    var TYPE_LABEL = {
+        choice:  'Variantni tanlang',
+        test:    'Test',
+        builder: 'Gap tuzing',
+        slot:    "Bo'shliqni to'ldiring",
+        input:   'Yozma javob'
+    };
+
+    var TYPE_TASK = {
+        choice:  "Har bir savol uchun to'g'ri variantni tanlang.",
+        test:    "Har bir savolga to'g'ri javobni belgilang.",
+        builder: "So'zlardan to'g'ri gap tuzing.",
+        slot:    "Bo'shliqqa mos so'zni qo'ying.",
+        input:   "Javobingizni katakchaga yozing."
+    };
+
+    function typeLabelFor(g) { return TYPE_LABEL[kindOf(g)] || TYPE_LABEL.input; }
+    function taskLineFor(g)  { return TYPE_TASK[kindOf(g)]  || TYPE_TASK.input; }
+
+    /**
+     * The end-of-topic summary.
+     *
+     * A1 and B1 shipped WITHOUT one: their hosts defaulted renderSummary to
+     * `function(){return "";}`, and the session clears the footer when it shows
+     * a summary — so finishing a topic produced a blank modal titled "Итоги"
+     * with no score and no button, and the only way out was the × in the
+     * corner. This gives every course the same closing screen: what was
+     * scored, whether the topic is now complete, and one obvious way forward.
+     *
+     * It renders STATE, never policy: whether the topic completed is read from
+     * the outcome the server produced, never decided here.
+     */
+    function renderExerciseSummary(snapshot, outcome) {
+        injectStyles();
+        var snap = snapshot || {};
+        var pct = Number(snap.percentage) || 0;
+        var pass = Number(snap.passPercent) || 80;
+        var ok = pct >= pass;
+        var rows = (snap.groups || []).map(function (g) {
+            var gp = Number(g.percentage) || 0;
+            return '<div class="b2h-sum-row"><b>' + escHtml(g.title || g.groupId) + '</b>' +
+                   '<span class="' + (g.passed === false ? 'bad' : 'ok') + '">' +
+                   (g.correct || 0) + '/' + (g.total || 0) + ' · ' + gp + '%</span></div>';
+        }).join('');
+
+        var note = '';
+        var acts = '';
+        if (outcome && outcome.ok && outcome.topicCompleted) {
+            note = '<div class="b2h-sum-note done">Mavzu to\u2018liq yakunlandi. Keyingi mavzu ochildi.</div>';
+            acts = '<button type="button" class="b2h-sum-btn" data-uzsum="close">Davom etish</button>';
+        } else if (outcome && outcome.ok) {
+            note = '<div class="b2h-sum-note next">Mashqlar saqlandi. Mavzuni to\u2018liq yakunlash uchun ' +
+                   'ushbu mavzuning lug\u2018at bo\u2018limini ham tugating.</div>';
+            acts = '<button type="button" class="b2h-sum-btn" data-uzsum="vocab">Lug\u2018atga o\u2018tish</button>' +
+                   '<button type="button" class="b2h-sum-btn ghost" data-uzsum="close">Yopish</button>';
+        } else if (outcome && outcome.ok === false) {
+            note = '<div class="b2h-sum-note err">' +
+                   escHtml(outcome.message || 'Natijani saqlab bo\u2018lmadi.') + '</div>';
+            acts = '<button type="button" class="b2h-sum-btn" data-uzsum="retry">Qayta urinish</button>' +
+                   '<button type="button" class="b2h-sum-btn ghost" data-uzsum="close">Yopish</button>';
+        } else {
+            note = '<div class="b2h-sum-note err">Natijani saqlab bo\u2018lmadi. ' +
+                   'Internet aloqasini tekshirib, qayta urinib ko\u2018ring.</div>';
+            acts = '<button type="button" class="b2h-sum-btn" data-uzsum="retry">Qayta urinish</button>' +
+                   '<button type="button" class="b2h-sum-btn ghost" data-uzsum="close">Yopish</button>';
+        }
+
+        return '<div class="b2h"><div class="b2h-sum">' +
+               '<div class="b2h-sum-ico">' + (ok ? '\uD83C\uDF89' : '\uD83D\uDCDA') + '</div>' +
+               '<div class="b2h-sum-h">Mashqlar yakunlandi</div>' +
+               '<div class="b2h-sum-score ' + (ok ? 'ok' : 'bad') + '">' + pct + '%</div>' +
+               '<div class="b2h-sum-sub">' + (snap.score || 0) + ' / ' + (snap.total || 0) +
+               ' to\u2018g\u2018ri javob</div>' +
+               (rows ? '<div class="b2h-sum-rows">' + rows + '</div>' : '') +
+               note +
+               '<div class="b2h-sum-acts">' + acts + '</div>' +
+               '</div></div>';
+    }
+
     function renderVocabCard(opts) {
         /* THE CARD BRINGS ITS OWN STYLESHEET.
            Everything below depends on the .b2-vocab-card rules in
@@ -861,6 +1020,7 @@
         renderResults: renderResults,
         renderComingSoon: renderComingSoon,
         renderVocabCard: renderVocabCard,
+        renderExerciseSummary: renderExerciseSummary,
         norm: norm,
         escHtml: escHtml
     };

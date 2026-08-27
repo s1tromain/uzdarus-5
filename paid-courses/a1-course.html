@@ -5797,6 +5797,8 @@
                 }
             });
             a1ApplyOutcome(topicId, uid, groups, result, outcome);
+            /* the summary needs the server's verdict to say what happened */
+            return outcome;
         }
 
         function a1ApplyOutcome(topicId, uid, groups, result, outcome) {
