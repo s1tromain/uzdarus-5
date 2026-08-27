@@ -16,6 +16,7 @@ import {
     getPackByPageName,
     isPrivilegedRole,
     canAccessPaid,
+    canOpenCoursePage,
     getOrCreateDeviceId,
     sha256Hex,
     callApi
@@ -161,7 +162,60 @@ async function completeCourseTopic(course, topicId) {
 
     return result.completedTopics;
 }
+/**
+ * Report ONE HALF of a paid topic as finished.
+ *
+ * A paid topic has two: the vocabulary deck and the exercise section. This is
+ * the only route by which either is recorded, and the only route by which a
+ * topic id enters completedTopics — the server appends it when the SECOND half
+ * lands, and never before.
+ *
+ * The client sends a claim about one half of one topic. It does not send the
+ * array, does not decide whether the topic is finished, and does not read its
+ * own idea of progress back out. Everything below is the SERVER's answer.
+ *
+ * Returns the server payload, or NULL. Null means "no verdict" — a network
+ * failure, or a reply that is not shaped like one — and callers must treat it
+ * as failure and leave the next topic locked. There is deliberately no
+ * optimistic path: a half that was not recorded has not been recorded.
+ */
+async function completeCourseComponent(course, topicId, component) {
+    let result;
+    try {
+        result = await callApi('/api/progress?action=complete-component', 'POST',
+            { course: course, topicId: topicId, component: component });
+    } catch (error) {
+        console.warn('progress: complete-component failed', error?.message || error);
+        return null;
+    }
+
+    /* SHAPE IS PART OF THE VERDICT. A 200 that is missing the fields the caller
+       needs is not a success; treating it as one is how a half-finished topic
+       unlocks the next one. */
+    if (!result || result.ok !== true
+        || typeof result.topicCompleted !== 'boolean'
+        || !Array.isArray(result.completedTopics)
+        || !result.components || typeof result.components !== 'object') {
+        console.warn('progress: complete-component returned an unusable shape');
+        return null;
+    }
+
+    /* Analytics only — nothing gates on it. */
+    if (result.topicCompleted) {
+        const max = result.completedTopics
+            .filter((n) => Number.isFinite(n))
+            .reduce((a, b) => Math.max(a, b), 0);
+        if (max > (_lastTopicPass[course] || 0)) {
+            _lastTopicPass[course] = max;
+            trackEvent('topic_pass', { course: course, topic: max });
+        }
+    }
+
+    return result;
+}
+
 window.completeCourseTopic = completeCourseTopic;
+window.completeCourseComponent = completeCourseComponent;
 
 /**
  * Submit a final exam for SERVER grading. The answers go up; the score and the
@@ -510,7 +564,13 @@ async function enforceAccess() {
                 return;
             }
 
-            const access = canAccessPaid(profile, requiredPack);
+            /* ENTITLEMENT *AND* PROGRESSION. canOpenCoursePage() asks the
+               pack/subscription question first and only then whether the
+               previous course was actually finished, so a learner who owns
+               A1A2 but has not completed A1 cannot reach an A2 page by
+               typing its URL. A learner with no pack is still told they have
+               no access rather than being sent to finish A1. */
+            const access = canOpenCoursePage(profile, window.location.pathname);
             if (!access.allowed) {
                 if (access.reason === 'blocked') {
                     showOverlayMessage('Akkaunt vaqtincha bloklangan. Moderatsiyaga murojaat qiling.');
@@ -538,6 +598,16 @@ async function enforceAccess() {
                 if (access.reason === 'pack') {
                     showOverlayMessage('Ushbu bo‘lim sizning pack huquqingizga kirmaydi.');
                     redirectToDashboard('no-access');
+                    return;
+                }
+
+                /* THE LEARNER OWNS THIS PACK. What they have not done is finish
+                   the course before it, so they are told exactly that — never
+                   "you have no access", which would read as a billing problem
+                   for something they have already paid for. */
+                if (access.reason === 'prerequisite') {
+                    showOverlayMessage(access.message || 'Avval oldingi kursni yakunlang');
+                    redirectToDashboard('prerequisite');
                     return;
                 }
 

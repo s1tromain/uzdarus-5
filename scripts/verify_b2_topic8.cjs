@@ -63,8 +63,18 @@ const frontier = ids[ids.length - 1];
 ok(ids.join(',') === Array.from({ length: frontier }, (_, i) => i + 1).join(','),
     `authored lesson ids are contiguous 1..${frontier}`);
 ok(frontier >= 8, `topic 8 is authored (frontier ${frontier})`);
-ok(!all.find(t => t.id === frontier + 1),
-    `topic ${frontier + 1} has no lesson payload — it stays "coming soon"`);
+/* FINAL-FRONTIER SAFE. While canonical topics remain unauthored, the one just
+   past the authored range must have no payload so its coming-soon shell stays
+   on screen. Once every canonical topic is authored there is no "next" topic
+   at all, and demanding one would assert a phantom Topic 17. */
+if (frontier < syll.length) {
+    ok(!all.find(t => t.id === frontier + 1),
+        `topic ${frontier + 1} has no lesson payload — it stays "coming soon"`);
+} else {
+    eq('the authored frontier is the canonical end of the course', frontier, syll.length);
+    ok(!all.find(t => t.id === frontier + 1),
+        `there is no topic ${frontier + 1} — B2 ends at ${syll.length}`);
+}
 
 /* ---------------------------------------------------------------- grammar */
 const G = t8.grammar || '';
@@ -600,8 +610,20 @@ ex.forEach(g => {
     const vFrontier = Math.max.apply(null, authored);
     ok(authored.indexOf(8) !== -1 && vFrontier >= 8,
         'topic 8 is an authored (unlocked) vocabulary deck');
-    ok(new RegExp('generateLockedTopics\\(' + (vFrontier + 1) + '\\)').test(s),
-        `locked vocabulary topics start right after the last authored deck (${vFrontier + 1})`);
+    /* FINAL-FRONTIER SAFE. While canonical decks remain unauthored they are
+       generated from the next id. Once every canonical deck is real the spread
+       is removed entirely — demanding generateLockedTopics(N+1) then would
+       assert a phantom Topic 17. */
+    const _genSpread = s.indexOf('...generateLockedTopics(') !== -1;
+    if (_genSpread) {
+        ok(new RegExp('generateLockedTopics\\(' + (vFrontier + 1) + '\\)').test(s),
+            `locked vocabulary topics start right after the last authored deck (${vFrontier + 1})`);
+    } else {
+        ok(!new RegExp('generateLockedTopics\\(' + (vFrontier + 1) + '\\)').test(s),
+            'the paid deck list is complete — no future deck is generated');
+        ok(s.split('...generateLockedTopics(').length - 1 === 0,
+            'no generated future deck remains in the paid deck list');
+    }
     ok(!/generateLockedTopics\(8\)/.test(s), 'no stale generateLockedTopics(8) remains');
     ok(/Вид глагола/.test(s) && /Сравнительные конструкции/.test(s),
         'paid vocabulary topics 6-7 intact');
@@ -648,15 +670,27 @@ ex.forEach(g => {
         ok(!t.content, `${mode}: topic 8 is a real lesson, not a coming-soon shell`);
         eq(`${mode}: topic 8 serves 11 exercise groups`,
             (w.eval('b2ExerciseData(8)') || { exercises: [] }).exercises.length, 11);
-        eq(`${mode}: topic ${soonId} has no lesson payload`,
-            w.eval('b2ExerciseData(' + soonId + ')'), null);
-        eq(`${mode}: topic ${soonId} grammar is empty`, next.grammar, '');
-        ok(!!next.content, `${mode}: topic ${soonId} still renders the coming-soon card`);
+        if (soonId <= list.length) {
+            ok(!!next, `${mode}: topic ${soonId} is listed`);
+            eq(`${mode}: topic ${soonId} has no lesson payload`,
+                w.eval('b2ExerciseData(' + soonId + ')'), null);
+            eq(`${mode}: topic ${soonId} grammar is empty`, (next || {}).grammar, '');
+            ok(!!(next || {}).content, `${mode}: topic ${soonId} still renders the coming-soon card`);
+        } else {
+            /* every canonical topic is authored: the course has no next topic */
+            eq(`${mode}: the authored frontier reached the canonical end`, frontier, list.length);
+            ok(!next, `${mode}: there is no topic ${soonId} — the course ends at ${list.length}`);
+            eq(`${mode}: no canonical topic is left as a coming-soon shell`,
+                list.filter((x) => x.content).length, 0);
+        }
         if (mode === 'paid') {
             ok(t.isLocked === false, 'paid: topic 8 is available');
         } else {
             ok(t.isLocked === true, 'demo: topic 8 stays behind the paywall');
-            ok(next.isLocked === true, `demo: topic ${soonId} stays locked too`);
+            /* only assert the next topic's lock state while a next topic exists */
+            if (next) ok(next.isLocked === true, `demo: topic ${soonId} stays locked too`);
+            else ok(list.every((x) => x.id <= 3 || x.isLocked === true),
+                'demo: every topic beyond the free three stays locked');
         }
     });
     ok(/var locked = B2_DEMO_MODE && t\.id > 3;/.test(c),

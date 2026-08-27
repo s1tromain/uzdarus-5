@@ -17,6 +17,10 @@
     <link rel="stylesheet" href="pro-toast.css">
     <link rel="stylesheet" href="pro-ui.css">
     <script src="../shared-normalizer.js"></script>
+    <script src="../exercise-session.js"></script>
+    <script src="../sentence-builder.js"></script>
+    <script src="../course-exercise-ui.js"></script>
+    <script src="../b1-host.js"></script>
     <script defer src="pro-toast.js"></script>
     <script type="module" src="paid-platform.js"></script>
     <link rel="stylesheet" href="../course-global-fixes.css">
@@ -1960,6 +1964,40 @@
             .b1-cert { box-shadow: none; max-width: 100%; }
             .b1-cert-actions { display: none !important; }
         }
+
+        /* ------------------------------------------- FINISHED EXERCISES
+           The exercise section has three non-solving faces: the finished
+           topic, the finished-but-unacknowledged topic, and the read-only
+           review. All must survive a 360px phone, so nothing has a fixed
+           width and every learner-authored string may wrap mid-token. */
+        .b1-done-panel { max-width:100%; background:#f1f8f4; border:1px solid #bfe3cc;
+            border-radius:14px; padding:20px 18px; text-align:center; }
+        .b1-done-title { margin:0 0 6px; font-size:clamp(1rem,3.6vw,1.25rem); overflow-wrap:anywhere; }
+        .b1-done-score { margin:0 0 16px; font-weight:700; color:#1f7a45; overflow-wrap:anywhere; }
+        .b1-cta, .b1-retry-save, .b1-review-close {
+            max-width:100%; border:none; background:var(--primary,#4a6cf7); color:#fff;
+            border-radius:999px; padding:11px 20px; font-weight:700; font-size:.95rem;
+            cursor:pointer; overflow-wrap:anywhere; }
+        .b1-sync-warn, .b1-notice, .b1-save-error {
+            max-width:100%; margin:0 0 14px; background:#fff3e0; border:1px solid #ffcc80;
+            border-radius:12px; padding:14px; color:#8a5300; white-space:pre-line;
+            overflow-wrap:anywhere; text-align:center; }
+        .b1-notice, .b1-save-error { margin:14px 0 0; }
+        .b1-review { max-width:100%; overflow-wrap:anywhere; }
+        .b1-review-head { display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+            justify-content:space-between; margin-bottom:16px; }
+        .b1-review-title { margin:0; font-size:clamp(1rem,3.6vw,1.2rem); min-width:0; }
+        .b1-review-total { font-weight:700; color:#1f7a45; }
+        .b1-review-group { max-width:100%; border:1px solid #e0e0e0; border-radius:12px;
+            padding:14px; margin-bottom:14px; background:#fff; }
+        .b1-review-gtitle { margin:0 0 4px; font-weight:700; }
+        .b1-review-gscore { margin:0 0 12px; font-size:.9rem; color:#555; }
+        .b1-review-item { display:grid; gap:4px; padding:10px 0; border-top:1px solid #f0f0f0; }
+        .b1-review-q { font-weight:600; }
+        .b1-review-given, .b1-review-correct { font-size:.9rem; color:#555; }
+        .b1-review-item.is-correct .b1-review-given { color:#1f7a45; }
+        .b1-review-item.is-wrong .b1-review-given { color:#b3261e; }
+
     </style>
 </head>
 
@@ -7235,6 +7273,7 @@
         };
 
         // ==================== GLOBAL VARIABLES ====================
+        let b1CourseState = null;
         let completedTopics = [];
         let currentTopicId = 1;
         let currentScore = 0;
@@ -7359,6 +7398,11 @@
             try {
                 if (window.getUserProgress && window.getUserQuizResults) {
                     const savedProgress = await window.getUserProgress(currentUserId, 'B1');
+                    /* courses.B1 carries topicComponents — the only authority on
+                       whether the exercises half of a topic was acknowledged.
+                       Without it the page cannot tell "not done" apart from
+                       "done but never reported". */
+                    b1CourseState = savedProgress || null;
                     if (savedProgress && Array.isArray(savedProgress.completedTopics)) {
                         completedTopics = savedProgress.completedTopics;
                         localStorage.setItem(`b1_progress_${currentUserId}`, JSON.stringify(completedTopics));
@@ -7545,8 +7589,26 @@
             
             topicsContainer.innerHTML = '';
             courseData.topics.forEach(topic => {
-                const topicBtn = document.createElement('button');
+                const topicBtn = document.createElement('div');
                 topicBtn.className = 'topic-btn';
+
+                /* A CARD, NOT A BUTTON. This element used to be a <button>, and
+                   the "Lug'atni o'rganish" control inside it is also a <button>
+                   — a button nested in a button, which is invalid HTML the
+                   parser is entitled to split apart, and which leaves the inner
+                   control ambiguous to assistive technology. Making the card a
+                   div keeps its full tap area and every one of its class-based
+                   styles, and the keydown below restores the keyboard
+                   activation the <button> was providing for free. */
+                topicBtn.setAttribute('role', 'button');
+                topicBtn.setAttribute('tabindex', '0');
+                topicBtn.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+                    /* the inner vocabulary button speaks for itself */
+                    if (event.target !== topicBtn) return;
+                    event.preventDefault();
+                    topicBtn.click();
+                });
 
                 // Sequential unlock (Phase 3): customers must finish the previous
                 // topic before the next opens. Privileged roles (developer/admin)
@@ -7766,7 +7828,7 @@
         function loadQuiz(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
-            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises || topic.topic16Exercises || topic.topic17Exercises || topic.topic18Exercises || topic.topic19Exercises || topic.topic20Exercises) { renderTopic1Exercises(topicId); return; }
+            if (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises || topic.topic16Exercises || topic.topic17Exercises || topic.topic18Exercises || topic.topic19Exercises || topic.topic20Exercises) { if (mountB1Practice(topicId)) return; renderTopic1Exercises(topicId); return; }
 
             // Загружаем сохраненные результаты из глобальной переменной (уже загружены из Firebase)
             // The quizResults document is shared by several writers: the native
@@ -9089,6 +9151,389 @@
             return (topic && (topic.topic1Exercises || topic.topic2Exercises || topic.topic3Exercises || topic.topic4Exercises || topic.topic5Exercises || topic.topic6Exercises || topic.topic7Exercises || topic.topic8Exercises || topic.topic9Exercises || topic.topic10Exercises || topic.topic11Exercises || topic.topic12Exercises || topic.topic13Exercises || topic.topic14Exercises || topic.topic15Exercises || topic.topic16Exercises || topic.topic17Exercises || topic.topic18Exercises || topic.topic19Exercises || topic.topic20Exercises)) || null;
         }
 
+        /* ============================ B1 ON THE SHARED EXERCISE STACK
+
+           B1 used to grade a whole topic in one pass: checkTopic1Exercises()
+           summed correct/total across every exercise and compared that single
+           figure to the bar, so 10/10 on exercise 1 paid for 5/10 on exercise 2
+           and the learner advanced past material they had not learned. Every
+           exercise now stands on its own numbers.
+
+           The legacy renderer below is deliberately kept: it still serves as
+           the fallback when the shared stack is unavailable, and it still owns
+           the historical saved-answer view. */
+        function mountB1Practice(topicId) {
+            if (!window.B1Host || !window.UzExerciseSession || !window.UzExerciseUI) return false;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic) return false;
+            if (!window.B1Host.groupsOf(topic).length) return false;
+            if (!quizSection) return false;
+
+            /* the old grader's results panel belongs to the old flow */
+            if (resultsSection) resultsSection.classList.remove('show');
+            if (completeBtn) completeBtn.style.display = 'none';
+            if (retryBtn) retryBtn.style.display = 'none';
+            var staleMatch = document.getElementById('matchingGame');
+            if (staleMatch) staleMatch.remove();
+
+            quizSection.innerHTML = '';
+            var host = document.createElement('div');
+            host.id = 'b1PracticeMount';
+            quizSection.appendChild(host);
+
+            var uid = window.currentUserId
+                || (function () { try { return JSON.parse(localStorage.getItem('currentUser')).id; }
+                                  catch (e) { return null; } })();
+
+            /* WHAT THE LEARNER SEES IS DECIDED FROM DURABLE STATE — the saved
+               attempt and the server's component record — never from anything
+               this session happened to remember. */
+            var state = window.B1Host.pageState({
+                userQuizResults: userQuizResults,
+                topicId: topicId,
+                completedTopics: completedTopics,
+                courseState: b1CourseState
+            });
+            if (state.mode === 'legacy') { b1RenderLegacy(topicId, host); return true; }
+            if (state.mode === 'review' || state.mode === 'sync') {
+                b1RenderDone(topicId, uid, host, state);
+                b1RenderMatching(topicId);
+                return true;
+            }
+
+            var ok = !!window.B1Host.mountPractice({
+                topic: topic, mountEl: host, uid: uid,
+                onFinish: function (result) { return b1FinishExercises(topicId, uid, result); }
+            });
+            if (!ok) { quizSection.innerHTML = ''; return false; }
+            b1RenderMatching(topicId);
+            return true;
+        }
+
+        /* THE MATCHING GAME IS NOT AN EXERCISE. Ten topics render one and the
+           old grader never scored it — it has no answer key and never entered
+           correct/total. Scoring it now would invent a grade the course never
+           had, so it keeps rendering exactly as before, beside the session
+           rather than inside the gate. */
+        function b1RenderMatching(topicId) {
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic || !topic.quiz || !topic.quiz.matchingGame) return;
+            if (typeof loadMatchingGame !== 'function') return;
+            setTimeout(function () {
+                if (document.getElementById('matchingGame')) return;
+                loadMatchingGame(topicId);
+                var mg = document.getElementById('matchingGame');
+                if (!mg) return;
+                /* the two placements the data asks for today are preserved */
+                var wantsFirst = topic.matchingFirst
+                    || (window.B1Host.exDataOf(topic) || { exercises: [] }).exercises
+                        .some(function (g) { return g && g.id === 'matchingSlot'; });
+                if (wantsFirst && quizSection && quizSection.firstChild) {
+                    quizSection.insertBefore(mg, quizSection.firstChild);
+                }
+            }, 60);
+        }
+
+        /* THE COMPLETION PIPELINE. The durable result is saved and AWAITED
+           first; only a save that landed may report the exercises component.
+           Progression comes from the server's reply, never from here. */
+        var b1PendingRetry = null;
+
+        async function b1FinishExercises(topicId, uid, result) {
+            if (!window.B1Host) return;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic) return;
+            var groups = window.B1Host.groupsOf(topic);
+
+            var outcome = await window.B1Host.completeExercises({
+                topicId: topicId, uid: uid, groups: groups, result: result,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                },
+                clearDraft: function () {
+                    try { localStorage.removeItem(window.B1Host.draftKey(uid, topicId)); } catch (e) {}
+                }
+            });
+            b1ApplyOutcome(topicId, uid, groups, result, outcome);
+        }
+
+        function b1ApplyOutcome(topicId, uid, groups, result, outcome) {
+            if (!outcome || outcome.stage === 'gate') return;
+
+            if (!outcome.ok) {
+                b1PendingRetry = outcome.retryComponent
+                    ? { topicId: topicId, uid: uid, groups: groups, result: result,
+                        snapshot: outcome.snapshot }
+                    : { topicId: topicId, uid: uid, groups: groups, result: result };
+                b1ShowSaveError(outcome.message, outcome.retryComponent);
+                return;
+            }
+
+            b1PendingRetry = null;
+            userQuizResults['topic_' + topicId] = userQuizResults['topic_' + topicId] || {};
+            userQuizResults['topic_' + topicId][window.B1Host.RESULT_FIELD] = outcome.snapshot;
+
+            /* record the acknowledgement too, or reopening the topic in this
+               same session shows a sync prompt over work the server confirmed */
+            b1CourseState = b1CourseState || {};
+            b1CourseState.topicComponents = b1CourseState.topicComponents || {};
+            b1CourseState.topicComponents[topicId] =
+                Object.assign({}, b1CourseState.topicComponents[topicId],
+                              { exercisesCompleted: true });
+
+            if (outcome.topicCompleted) {
+                /* THE SERVER'S ARRAY, NOT A LOCAL PUSH. */
+                completedTopics = outcome.completedTopics.slice();
+                if (typeof loadTopics === 'function') loadTopics();
+            } else if (outcome.message) {
+                b1ShowNotice(outcome.message);
+            }
+            if (typeof updateProgress === 'function') updateProgress();
+        }
+
+        /** Retry ONLY what failed. Never the exercises. */
+        async function b1RetrySave() {
+            if (!b1PendingRetry || !window.B1Host) return;
+            var p = b1PendingRetry;
+            var api = {
+                saveQuizResult: window.saveQuizResult,
+                completeCourseComponent: window.completeCourseComponent
+            };
+            var outcome = p.snapshot
+                ? await window.B1Host.retryComponent({
+                    topicId: p.topicId, uid: p.uid, groups: p.groups,
+                    result: p.result, snapshot: p.snapshot, api: api })
+                : await window.B1Host.completeExercises({
+                    topicId: p.topicId, uid: p.uid, groups: p.groups,
+                    result: p.result, api: api });
+            b1ApplyOutcome(p.topicId, p.uid, p.groups, p.result, outcome);
+        }
+
+        function b1ShowNotice(text) {
+            var host = document.getElementById('b1PracticeMount');
+            if (!host) return;
+            var box = document.createElement('div');
+            box.className = 'b1-notice';
+            box.textContent = text;
+            host.appendChild(box);
+        }
+
+        function b1ShowSaveError(text, componentOnly) {
+            var host = document.getElementById('b1PracticeMount');
+            if (!host) return;
+            var old = host.querySelector('.b1-save-error');
+            if (old) old.remove();
+            var box = document.createElement('div');
+            box.className = 'b1-save-error';
+            var msg = document.createElement('p');
+            msg.textContent = text || 'Natijani saqlab bo\u2018lmadi.';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'b1-retry-save';
+            btn.textContent = 'Qayta urinish';
+            btn.onclick = b1RetrySave;
+            box.appendChild(msg); box.appendChild(btn);
+            host.appendChild(box);
+        }
+
+        /** The exercise call-to-action, derived from the DURABLE result. */
+        function b1ExerciseCtaLabel(topicId) {
+            if (!window.B1Host) return 'Mashqlarni bajarish';
+            return window.B1Host.ctaLabel(userQuizResults, topicId);
+        }
+
+        /** Open the finished attempt, read-only. Writes nothing. */
+        function b1OpenReview(topicId) {
+            if (!window.B1Host) return null;
+            var durable = window.B1Host.durableResult(userQuizResults, topicId);
+            if (!durable) return null;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            return window.B1Host.buildReview(durable, window.B1Host.groupsOf(topic));
+        }
+        window.b1ExerciseCtaLabel = b1ExerciseCtaLabel;
+        window.b1OpenReview = b1OpenReview;
+        window.b1RetrySave = b1RetrySave;
+
+        /* ------------------------------------------------ THE FINISHED FACE
+
+           One panel serves both finished states. What separates them is the
+           SERVER: with an acknowledgement this is a completed topic; without
+           one the learning is done but the progression is not, and the only
+           thing offered is the component call — never the 1504 items again. */
+        function b1RenderDone(topicId, uid, host, state) {
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            host.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'b1-done-panel';
+
+            var h = document.createElement('h3');
+            h.className = 'b1-done-title';
+            h.textContent = (topic && topic.title) ? topic.title : ('Mavzu ' + topicId);
+            panel.appendChild(h);
+
+            var d = state.durable;
+            var sc = document.createElement('p');
+            sc.className = 'b1-done-score';
+            sc.textContent = 'Natija: ' + d.score + '/' + d.total + ' (' + d.percentage + '%)';
+            panel.appendChild(sc);
+
+            if (state.mode === 'sync') {
+                var warn = document.createElement('p');
+                warn.className = 'b1-sync-warn';
+                warn.textContent = window.B1Host.MESSAGES.SYNC_PENDING;
+                panel.appendChild(warn);
+
+                var sync = document.createElement('button');
+                sync.type = 'button';
+                sync.className = 'b1-retry-save';
+                sync.textContent = 'Qayta urinish';
+                sync.onclick = function () { return b1SyncComponent(topicId, uid, host); };
+                panel.appendChild(sync);
+            }
+
+            var cta = document.createElement('button');
+            cta.type = 'button';
+            cta.className = 'b1-cta';
+            cta.textContent = b1ExerciseCtaLabel(topicId);
+            cta.onclick = function () { b1RenderReview(topicId, uid, host, state); };
+            panel.appendChild(cta);
+
+            host.appendChild(panel);
+            return true;
+        }
+
+        /* Finished before components existed: completedTopics is the record and
+           it stands; there is simply no attempt to show. */
+        function b1RenderLegacy(topicId, host) {
+            host.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'b1-done-panel';
+            var p = document.createElement('p');
+            p.className = 'b1-done-score';
+            p.textContent = window.B1Host.MESSAGES.LEGACY_DONE;
+            panel.appendChild(p);
+            host.appendChild(panel);
+            return true;
+        }
+
+        /* Report the missing half ALONE, against the already-durable snapshot.
+           No quiz, no re-save, nothing unlocks without the server's word. */
+        async function b1SyncComponent(topicId, uid, host) {
+            if (!window.B1Host) return;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            var groups = window.B1Host.groupsOf(topic);
+            var durable = window.B1Host.durableResult(userQuizResults, topicId);
+            if (!durable) return;
+            var outcome = await window.B1Host.retryComponent({
+                topicId: topicId, uid: uid, groups: groups,
+                result: null, snapshot: durable,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                }
+            });
+            if (outcome && outcome.ok) {
+                b1CourseState = b1CourseState || {};
+                b1CourseState.topicComponents = b1CourseState.topicComponents || {};
+                b1CourseState.topicComponents[topicId] =
+                    b1CourseState.topicComponents[topicId] || {};
+                b1CourseState.topicComponents[topicId].exercisesCompleted = true;
+                try { localStorage.removeItem(window.B1Host.draftKey(uid, topicId)); } catch (e) {}
+                b1ApplyOutcome(topicId, uid, groups, null, outcome);
+                mountB1Practice(topicId);
+                /* AFTER the re-render, or it is drawn and immediately wiped. */
+                if (outcome.message) b1ShowNotice(outcome.message);
+            } else {
+                /* re-render, never append: stacking a second error box under the
+                   panel gave the learner two identical buttons */
+                mountB1Practice(topicId);
+                b1ShowNotice(window.B1Host.MESSAGES.SYNC_PENDING);
+            }
+        }
+
+        /* ------------------------------------------------------- THE REVIEW
+
+           Read-only by construction: every node below is a heading, a
+           paragraph or a span. No input, no radio, no select, no check/retry
+           control — nothing to change and nothing that could rescore the
+           attempt. It writes NOTHING: no save, no component, no draft. */
+        function b1RenderReview(topicId, uid, host, state) {
+            var review = b1OpenReview(topicId);
+            if (!review) return false;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            host.innerHTML = '';
+
+            var wrap = document.createElement('div');
+            wrap.className = 'b1-review';
+
+            var head = document.createElement('div');
+            head.className = 'b1-review-head';
+            var h = document.createElement('h3');
+            h.className = 'b1-review-title';
+            h.textContent = (topic && topic.title) ? topic.title : ('Mavzu ' + topicId);
+            var tot = document.createElement('span');
+            tot.className = 'b1-review-total';
+            tot.textContent = review.score + '/' + review.total + ' (' + review.percentage + '%)';
+            head.appendChild(h); head.appendChild(tot);
+            wrap.appendChild(head);
+
+            (review.groups || []).forEach(function (g) {
+                var box = document.createElement('div');
+                box.className = 'b1-review-group';
+                var gt = document.createElement('p');
+                gt.className = 'b1-review-gtitle';
+                gt.textContent = g.title || g.groupId;
+                var gs = document.createElement('p');
+                gs.className = 'b1-review-gscore';
+                gs.textContent = g.correct + '/' + g.total + ' \u2014 ' + g.percentage + '% \u2014 ' +
+                    (g.passed ? 'o\u2018tdi' : 'o\u2018tmadi');
+                box.appendChild(gt); box.appendChild(gs);
+
+                (g.items || []).forEach(function (it, i) {
+                    var row = document.createElement('div');
+                    row.className = 'b1-review-item' +
+                        (it.correct === true ? ' is-correct' : (it.correct === false ? ' is-wrong' : ''));
+                    var q = document.createElement('p');
+                    q.className = 'b1-review-q';
+                    q.textContent = (i + 1) + '. ' + (it.q == null ? '' : it.q);
+                    var given = document.createElement('p');
+                    given.className = 'b1-review-given';
+                    given.textContent = 'Sizning javobingiz: ' +
+                        (it.given == null || it.given === '' ? '\u2014' : it.given) +
+                        (it.correct === true ? ' \u2713' : (it.correct === false ? ' \u2717' : ''));
+                    row.appendChild(q); row.appendChild(given);
+                    if (it.deterministic) {
+                        var corr = document.createElement('p');
+                        corr.className = 'b1-review-correct';
+                        corr.textContent = 'To\u2018g\u2018ri javob: ' + it.correctAnswer;
+                        row.appendChild(corr);
+                    } else if (it.sample) {
+                        /* An OPEN prompt has no single right answer, so the
+                           authored sentence is offered as an EXAMPLE. Calling
+                           it the correct answer would tell a learner whose own
+                           valid sentence was accepted that they got it wrong. */
+                        var ex = document.createElement('p');
+                        ex.className = 'b1-review-correct';
+                        ex.textContent = 'Namuna javob: ' + it.sample;
+                        row.appendChild(ex);
+                    }
+                    box.appendChild(row);
+                });
+                wrap.appendChild(box);
+            });
+
+            var close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'b1-review-close';
+            close.textContent = 'Yopish';
+            close.onclick = function () { b1RenderDone(topicId, uid, host, state); };
+            wrap.appendChild(close);
+
+            host.appendChild(wrap);
+            return true;
+        }
+
         function renderTopic1Exercises(topicId) {
             var topic = courseData.topics.find(function (t) { return t.id === topicId; });
             var exData = getT1ExData(topic);
@@ -9259,9 +9704,14 @@
             try { await saveQuizResultToFirebase(topicId, data); } catch (e) { console.error("T1 save error", e); }
             userQuizResults["topic_" + topicId] = data;
 
-            var passNeeded = Math.max(PASSING_SCORE, Math.ceil(total * 0.6));
+            /* THE PLATFORM LESSON THRESHOLD IS 80%, not 60%. Compared as an
+               exact integer ratio, so the boundary sits exactly where it is
+               written and no rounding can carry a learner over it. */
+            var LESSON_PASS_PERCENT = 80;
+            var passNeeded = Math.max(PASSING_SCORE, Math.ceil(total * LESSON_PASS_PERCENT / 100));
             var pct = total ? Math.round(correct / total * 100) : 0;
-            var passed = correct >= passNeeded;
+            var passed = correct * 100 >= total * LESSON_PASS_PERCENT
+                && correct >= PASSING_SCORE;
 
             var correctAnswersEl = document.getElementById("correctAnswers");
             if (correctAnswersEl) correctAnswersEl.innerHTML = "";

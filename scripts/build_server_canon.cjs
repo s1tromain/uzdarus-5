@@ -36,11 +36,12 @@ function literal(src, name) {
     throw new Error('unbalanced ' + name);
 }
 
-/* ------------------------------------------------ exams (A1, A2 and B1) */
+/* -------------------------------------- exams (A1, A2, B1 and B2) */
 const EXAM_PAGES = {
     A1: 'paid-courses/a1-final-exam.html',
     A2: 'paid-courses/a2-final-exam.html',
-    B1: 'paid-courses/b1-final-exam.html'
+    B1: 'paid-courses/b1-final-exam.html',
+    B2: 'paid-courses/b2-final-exam.html'
 };
 const exams = {};
 Object.entries(EXAM_PAGES).forEach(([course, rel]) => {

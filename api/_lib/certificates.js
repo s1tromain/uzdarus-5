@@ -16,8 +16,9 @@ import { COURSE_CANON } from './course-canon.js';
 
 // Only courses with a complete topic + final-exam + completion flow can issue
 // certificates. A2 joined that list once its 16 topics and its final exam
-// existed; B2 is still "coming soon" and intentionally excluded. Every course
-// here must also exist in COURSE_CANON — issuance counts its topics.
+// existed, and B2 joined it the same way once its own 16 topics and its final
+// exam existed. Every course here must also exist in COURSE_CANON — issuance
+// counts its topics.
 export const CERT_COURSES = Object.freeze({
     A1: {
         level: 'A1',
@@ -33,6 +34,11 @@ export const CERT_COURSES = Object.freeze({
         level: 'B1',
         courseTitle: "B1 Daraja — Rus tili",
         levelLabel: "B1 «O'rta daraja»"
+    },
+    B2: {
+        level: 'B2',
+        courseTitle: "B2 Daraja — Rus tili",
+        levelLabel: "B2 «Yuqori o'rta daraja»"
     }
 });
 

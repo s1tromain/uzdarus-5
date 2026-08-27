@@ -17,6 +17,14 @@
     <script defer src="pro-toast.js"></script>
     <script type="module" src="paid-platform.js"></script>
     <link rel="stylesheet" href="../course-global-fixes.css">
+    <!-- The shared exercise stack. A1 used to render every exercise of a
+         topic at once and grade them together, which let a good exercise pay
+         for a failed one. These are the same modules A2 and B2 use; a1-host.js
+         only expresses A1's existing exercise data as groups. -->
+    <script defer src="../exercise-session.js"></script>
+    <script defer src="../sentence-builder.js"></script>
+    <script defer src="../course-exercise-ui.js"></script>
+    <script defer src="../a1-host.js"></script>
     <script defer src="../course-global-fixes.js"></script>
     <style>
         * {
@@ -1476,6 +1484,137 @@
             font-weight: 700;
             cursor: pointer;
         }
+
+        /* ------------------------------------------- FINISHED EXERCISES
+           The exercise section has three non-solving faces: the finished
+           topic, the finished-but-unacknowledged topic, and the read-only
+           review. Every one of them has to survive a 360px phone, so nothing
+           here has a fixed width and every learner-authored string is allowed
+           to wrap mid-token — a long Russian answer must not push the page
+           sideways. */
+        .a1-done-panel {
+            max-width: 100%;
+            background: #f1f8f4;
+            border: 1px solid #bfe3cc;
+            border-radius: 14px;
+            padding: 20px 18px;
+            text-align: center;
+        }
+
+        .a1-done-title {
+            margin: 0 0 6px;
+            font-size: clamp(1rem, 3.6vw, 1.25rem);
+            color: var(--dark);
+            overflow-wrap: anywhere;
+        }
+
+        .a1-done-score {
+            margin: 0 0 16px;
+            font-weight: 700;
+            color: #1f7a45;
+            overflow-wrap: anywhere;
+        }
+
+        .a1-cta,
+        .a1-retry-save,
+        .a1-review-close {
+            max-width: 100%;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 999px;
+            padding: 11px 20px;
+            font-weight: 700;
+            font-size: .95rem;
+            cursor: pointer;
+            overflow-wrap: anywhere;
+        }
+
+        .a1-sync-warn {
+            max-width: 100%;
+            margin: 0 0 14px;
+            background: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 12px;
+            padding: 14px;
+            color: #8a5300;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+        }
+
+        .a1-notice,
+        .a1-save-error {
+            max-width: 100%;
+            margin-top: 14px;
+            background: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 12px;
+            padding: 14px;
+            color: #8a5300;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+            text-align: center;
+        }
+
+        .a1-review {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+
+        .a1-review-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .a1-review-title {
+            margin: 0;
+            font-size: clamp(1rem, 3.6vw, 1.2rem);
+            color: var(--dark);
+            min-width: 0;
+        }
+
+        .a1-review-total {
+            font-weight: 700;
+            color: #1f7a45;
+        }
+
+        .a1-review-group {
+            max-width: 100%;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 14px;
+            background: #fff;
+        }
+
+        .a1-review-gtitle {
+            margin: 0 0 4px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .a1-review-gscore {
+            margin: 0 0 12px;
+            font-size: .9rem;
+            color: #555;
+        }
+
+        .a1-review-item {
+            display: grid;
+            gap: 4px;
+            padding: 10px 0;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .a1-review-q { font-weight: 600; color: var(--dark); }
+        .a1-review-given,
+        .a1-review-correct { font-size: .9rem; color: #555; }
+        .a1-review-item.is-correct .a1-review-given { color: #1f7a45; }
+        .a1-review-item.is-wrong .a1-review-given { color: #b3261e; }
 
         /* The Uzbek word being translated. The blank itself is overwritten with
            the chosen Russian word, so without this the learner loses sight of
@@ -4660,6 +4799,7 @@
         };
 
         // ==================== GLOBAL VARIABLES ====================
+        let a1CourseState = null;
         let completedTopics = [];
         let currentTopicId = 1;
         let currentScore = 0;
@@ -4716,6 +4856,12 @@
             try {
                 if (window.getUserProgress && window.getUserQuizResults) {
                     const savedProgress = await window.getUserProgress(currentUserId, 'A1');
+                    /* courses.A1 carries topicComponents — the ONLY authority on
+                       whether the exercises half of a topic was acknowledged.
+                       It used to be read for completedTopics and thrown away,
+                       which left the page unable to tell "not done" from
+                       "done but never reported". */
+                    a1CourseState = savedProgress || null;
                     completedTopics = reconcileCompletedTopics(currentUserId, savedProgress);
 
                     // Certificate completion flags (Firebase-confirmed) — tamper-proof.
@@ -4981,8 +5127,13 @@
         window.__uzFinalizeExerciseTopic = function (topicId, correct, total) {
             if (!Number.isFinite(total) || total <= 0) return;
             const pct = Math.round((correct / total) * 100);
-            const passNeeded = Math.max(1, Math.ceil(total * 0.6));
-            const passed = correct >= passNeeded;
+            /* THE PLATFORM LESSON THRESHOLD IS 80%, not 60%. The comparison is
+               an exact integer ratio rather than a rounded percent: rounding
+               puts the boundary in the wrong place — 39/49 is 79.6% and rounds
+               to 80 — which would pass a learner who had not reached the bar. */
+            const LESSON_PASS_PERCENT = 80;
+            const passNeeded = Math.max(1, Math.ceil(total * LESSON_PASS_PERCENT / 100));
+            const passed = correct * 100 >= total * LESSON_PASS_PERCENT;
 
             const scoreEl = document.getElementById('scoreDisplay');
             if (scoreEl) scoreEl.textContent = `Sizning natijangiz: ${correct}/${total} (${pct}%)`;
@@ -5129,8 +5280,26 @@
 
             topicsContainer.innerHTML = '';
             courseData.topics.forEach(topic => {
-                const topicBtn = document.createElement('button');
+                const topicBtn = document.createElement('div');
                 topicBtn.className = 'topic-btn';
+
+                /* A CARD, NOT A BUTTON. This element used to be a <button>, and
+                   the "Lug'atni o'rganish" control inside it is also a <button>
+                   — a button nested in a button, which is invalid HTML the
+                   parser is entitled to split apart, and which leaves the inner
+                   control ambiguous to assistive technology. Making the card a
+                   div keeps its full tap area and every one of its class-based
+                   styles, and the keydown below restores the keyboard
+                   activation the <button> was providing for free. */
+                topicBtn.setAttribute('role', 'button');
+                topicBtn.setAttribute('tabindex', '0');
+                topicBtn.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+                    /* the inner vocabulary button speaks for itself */
+                    if (event.target !== topicBtn) return;
+                    event.preventDefault();
+                    topicBtn.click();
+                });
 
                 // Sequential unlock (Phase 3): customers must finish the previous
                 // topic before the next opens. Privileged roles (developer/admin)
@@ -5368,14 +5537,389 @@
 
            So: at most one render may be pending, and a render that produces
            nothing says so instead of leaving a void. */
+        /* EVERY SCORED EXERCISE IS EARNED ON ITS OWN.
+
+           These topics used to render all of their exercises on one screen
+           and report a single topic-wide figure, so 10/10 on exercise 1 paid
+           for 5/10 on exercise 2 and the learner moved on. They now step
+           through the shared session, which applies the platform threshold to
+           each exercise before opening the next.
+
+           The bespoke loaders below are kept, unused by this path, because
+           they still render the historical saved-answer views. */
+        function mountA1Practice(topicId) {
+            if (!window.A1Host || !window.UzExerciseSession || !window.UzExerciseUI) return false;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic) return false;
+            var host = document.getElementById("a1PracticeMount");
+            if (!host) {
+                host = document.createElement("div");
+                host.id = "a1PracticeMount";
+                if (quizSection) quizSection.appendChild(host);
+                else return false;
+            }
+            var uid = window.currentUserId
+                || (function () { try { return JSON.parse(localStorage.getItem("currentUser")).id; }
+                                  catch (e) { return null; } })();
+
+            /* WHAT THE LEARNER ACTUALLY SEES IS DECIDED HERE, and it is decided
+               from DURABLE state — the saved attempt and the server's component
+               record — never from anything this session happened to remember.
+               A finished topic must open as a review after a reload, after a
+               trip to the cabinet, and on another device. */
+            var state = window.A1Host.pageState({
+                userQuizResults: userQuizResults,
+                topicId: topicId,
+                completedTopics: completedTopics,
+                courseState: a1CourseState
+            });
+            if (state.mode === 'legacy') return a1RenderLegacy(topicId, host);
+            if (state.mode === 'review' || state.mode === 'sync') {
+                return a1RenderDone(topicId, uid, host, state);
+            }
+
+            return !!window.A1Host.mountPractice({
+                topic: topic, mountEl: host, uid: uid,
+                /* RETURN the promise. The completion is two awaited network
+                   calls, and a caller that cannot see the promise cannot see
+                   whether they were awaited — including the tests. */
+                onFinish: function (result) { return a1FinishExercises(topicId, uid, result); }
+            });
+        }
+
+        /* ------------------------------------------------ THE FINISHED FACE
+
+           One panel serves both finished states. What separates them is the
+           SERVER: with an acknowledgement this is simply a completed topic,
+           without one the learning is done but the progression is not, and the
+           only thing offered is the component call — never the 685 items
+           again. */
+        function a1RenderDone(topicId, uid, host, state) {
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            host.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'a1-done-panel';
+
+            var h = document.createElement('h3');
+            h.className = 'a1-done-title';
+            h.textContent = (topic && topic.title) ? topic.title : ('Mavzu ' + topicId);
+            panel.appendChild(h);
+
+            var d = state.durable;
+            var sc = document.createElement('p');
+            sc.className = 'a1-done-score';
+            sc.textContent = 'Natija: ' + d.score + '/' + d.total + ' (' + d.percentage + '%)';
+            panel.appendChild(sc);
+
+            if (state.mode === 'sync') {
+                var warn = document.createElement('p');
+                warn.className = 'a1-sync-warn';
+                warn.textContent = window.A1Host.MESSAGES.SYNC_PENDING;
+                panel.appendChild(warn);
+
+                var sync = document.createElement('button');
+                sync.type = 'button';
+                sync.className = 'a1-retry-save';
+                sync.textContent = 'Qayta urinish';
+                sync.onclick = function () { return a1SyncComponent(topicId, uid, host); };
+                panel.appendChild(sync);
+            }
+
+            var cta = document.createElement('button');
+            cta.type = 'button';
+            cta.className = 'a1-cta';
+            cta.textContent = a1ExerciseCtaLabel(topicId);
+            cta.onclick = function () { a1RenderReview(topicId, uid, host, state); };
+            panel.appendChild(cta);
+
+            host.appendChild(panel);
+            return true;
+        }
+
+        /* A topic finished before components existed. completedTopics is the
+           record and it stands; there is simply no attempt to show. */
+        function a1RenderLegacy(topicId, host) {
+            host.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'a1-done-panel';
+            var p = document.createElement('p');
+            p.className = 'a1-done-score';
+            p.textContent = window.A1Host.MESSAGES.LEGACY_DONE;
+            panel.appendChild(p);
+            host.appendChild(panel);
+            return true;
+        }
+
+        /* Report the missing half ALONE, against the already-durable snapshot.
+           No quiz, no re-save, and nothing unlocks without the server's word. */
+        async function a1SyncComponent(topicId, uid, host) {
+            if (!window.A1Host) return;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            var groups = window.A1Host.groupsOf(topic);
+            var durable = window.A1Host.durableResult(userQuizResults, topicId);
+            if (!durable) return;
+            var outcome = await window.A1Host.retryComponent({
+                topicId: topicId, uid: uid, groups: groups,
+                result: null, snapshot: durable,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                }
+            });
+            if (outcome && outcome.ok) {
+                /* Acknowledged at last. Record it locally so the panel stops
+                   asking, and only NOW is the leftover draft safe to drop. */
+                a1CourseState = a1CourseState || {};
+                a1CourseState.topicComponents = a1CourseState.topicComponents || {};
+                a1CourseState.topicComponents[topicId] =
+                    a1CourseState.topicComponents[topicId] || {};
+                a1CourseState.topicComponents[topicId].exercisesCompleted = true;
+                try { localStorage.removeItem(window.A1Host.draftKey(uid, topicId)); } catch (e) {}
+                a1ApplyOutcome(topicId, uid, groups, null, outcome);
+                mountA1Practice(topicId);
+                /* AFTER the re-render, or it is drawn and immediately wiped.
+                   This is the line that tells the learner the topic is still
+                   locked on the VOCABULARY half, not on anything they just
+                   did — without it the panel silently stops nagging and the
+                   topic stays shut for no visible reason. */
+                if (outcome.message) a1ShowNotice(outcome.message);
+            } else {
+                /* RE-RENDER, never append. The panel already carries its own
+                   Qayta urinish; stacking a second error box under it gave
+                   the learner two identical buttons and no idea which one
+                   was live. */
+                mountA1Practice(topicId);
+                a1ShowNotice(window.A1Host.MESSAGES.SYNC_PENDING);
+            }
+        }
+
+        /* ------------------------------------------------------ THE REVIEW
+
+           Read-only by construction: every node below is a heading, a
+           paragraph or a span. There is no input, no radio, no select and no
+           check/retry/submit control, so there is nothing for the learner to
+           change and nothing that could rescore the attempt. It also writes
+           NOTHING — no save, no component, no draft. */
+        function a1RenderReview(topicId, uid, host, state) {
+            var review = a1OpenReview(topicId);
+            if (!review) return false;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            host.innerHTML = '';
+
+            var wrap = document.createElement('div');
+            wrap.className = 'a1-review';
+
+            var head = document.createElement('div');
+            head.className = 'a1-review-head';
+            var h = document.createElement('h3');
+            h.className = 'a1-review-title';
+            h.textContent = (topic && topic.title) ? topic.title : ('Mavzu ' + topicId);
+            var tot = document.createElement('span');
+            tot.className = 'a1-review-total';
+            tot.textContent = review.score + '/' + review.total + ' (' + review.percentage + '%)';
+            head.appendChild(h); head.appendChild(tot);
+            wrap.appendChild(head);
+
+            (review.groups || []).forEach(function (g) {
+                var box = document.createElement('div');
+                box.className = 'a1-review-group';
+                var gt = document.createElement('p');
+                gt.className = 'a1-review-gtitle';
+                gt.textContent = g.title || g.groupId;
+                var gs = document.createElement('p');
+                gs.className = 'a1-review-gscore';
+                gs.textContent = g.correct + '/' + g.total + ' — ' + g.percentage + '% — ' +
+                    (g.passed ? 'o‘tdi' : 'o‘tmadi');
+                box.appendChild(gt); box.appendChild(gs);
+
+                (g.items || []).forEach(function (it, i) {
+                    var row = document.createElement('div');
+                    row.className = 'a1-review-item' +
+                        (it.correct === true ? ' is-correct' : (it.correct === false ? ' is-wrong' : ''));
+                    var q = document.createElement('p');
+                    q.className = 'a1-review-q';
+                    q.textContent = (i + 1) + '. ' + (it.q == null ? '' : it.q);
+                    var given = document.createElement('p');
+                    given.className = 'a1-review-given';
+                    given.textContent = 'Sizning javobingiz: ' +
+                        (it.given == null || it.given === '' ? '—' : it.given) +
+                        (it.correct === true ? ' ✓' : (it.correct === false ? ' ✗' : ''));
+                    row.appendChild(q); row.appendChild(given);
+                    if (it.deterministic) {
+                        var corr = document.createElement('p');
+                        corr.className = 'a1-review-correct';
+                        corr.textContent = 'To‘g‘ri javob: ' + it.correctAnswer;
+                        row.appendChild(corr);
+                    }
+                    box.appendChild(row);
+                });
+                wrap.appendChild(box);
+            });
+
+            var close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'a1-review-close';
+            close.textContent = 'Yopish';
+            close.onclick = function () { a1RenderDone(topicId, uid, host, state); };
+            wrap.appendChild(close);
+
+            host.appendChild(wrap);
+            return true;
+        }
+
+        /* THE COMPLETION PIPELINE.
+
+           The order is the point: the durable result is saved and AWAITED
+           first, and only a save that landed is allowed to report the
+           exercises component. A failure at either step leaves the next topic
+           locked, and a failure AFTER the save never asks the learner to solve
+           the topic again — the retry sends the component call alone.
+
+           Progression comes from the server response, never from here. */
+        var a1PendingRetry = null;
+
+        async function a1FinishExercises(topicId, uid, result) {
+            if (!window.A1Host) return;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            if (!topic) return;
+            var groups = window.A1Host.groupsOf(topic);
+
+            var outcome = await window.A1Host.completeExercises({
+                topicId: topicId, uid: uid, groups: groups, result: result,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                },
+                clearDraft: function () {
+                    try {
+                        localStorage.removeItem(window.A1Host.draftKey(uid, topicId));
+                    } catch (e) {}
+                }
+            });
+            a1ApplyOutcome(topicId, uid, groups, result, outcome);
+        }
+
+        function a1ApplyOutcome(topicId, uid, groups, result, outcome) {
+            if (!outcome || outcome.stage === 'gate') return;
+
+            if (!outcome.ok) {
+                /* Nothing unlocks. If the work is already durable the retry is
+                   the component call alone — never the exercises again. */
+                a1PendingRetry = outcome.retryComponent
+                    ? { topicId: topicId, uid: uid, groups: groups, result: result,
+                        snapshot: outcome.snapshot }
+                    : { topicId: topicId, uid: uid, groups: groups, result: result };
+                a1ShowSaveError(outcome.message, outcome.retryComponent);
+                return;
+            }
+
+            a1PendingRetry = null;
+            /* The durable result is now hydrated in memory too, so the CTA
+               switches to review without waiting for a reload. */
+            userQuizResults['topic_' + topicId] = userQuizResults['topic_' + topicId] || {};
+            userQuizResults['topic_' + topicId][window.A1Host.RESULT_FIELD] = outcome.snapshot;
+
+            /* AND SO IS THE ACKNOWLEDGEMENT. Without this the page still holds
+               the topicComponents it hydrated with — no exercises record — so
+               reopening the topic in the same session showed the "not saved"
+               retry over a topic the server had just confirmed. */
+            a1CourseState = a1CourseState || {};
+            a1CourseState.topicComponents = a1CourseState.topicComponents || {};
+            a1CourseState.topicComponents[topicId] =
+                Object.assign({}, a1CourseState.topicComponents[topicId],
+                              { exercisesCompleted: true });
+
+            if (outcome.topicCompleted) {
+                /* THE SERVER\'S ARRAY, NOT A LOCAL PUSH. */
+                completedTopics = outcome.completedTopics.slice();
+                if (typeof loadTopics === 'function') loadTopics();
+            } else if (outcome.message) {
+                a1ShowNotice(outcome.message);
+            }
+            if (typeof updateProgress === 'function') updateProgress();
+        }
+
+        /** Retry ONLY what failed. Never the exercises. */
+        async function a1RetrySave() {
+            if (!a1PendingRetry || !window.A1Host) return;
+            var p = a1PendingRetry;
+            var api = {
+                saveQuizResult: window.saveQuizResult,
+                completeCourseComponent: window.completeCourseComponent
+            };
+            var outcome = p.snapshot
+                ? await window.A1Host.retryComponent({
+                    topicId: p.topicId, uid: p.uid, groups: p.groups,
+                    result: p.result, snapshot: p.snapshot, api: api })
+                : await window.A1Host.completeExercises({
+                    topicId: p.topicId, uid: p.uid, groups: p.groups,
+                    result: p.result, api: api });
+            a1ApplyOutcome(p.topicId, p.uid, p.groups, p.result, outcome);
+        }
+
+        function a1ShowNotice(text) {
+            var host = document.getElementById('a1PracticeMount');
+            if (!host) return;
+            var box = document.createElement('div');
+            box.className = 'a1-notice';
+            box.textContent = text;
+            host.appendChild(box);
+        }
+
+        function a1ShowSaveError(text, componentOnly) {
+            var host = document.getElementById('a1PracticeMount');
+            if (!host) return;
+            var old = host.querySelector('.a1-save-error');
+            if (old) old.remove();
+            var box = document.createElement('div');
+            box.className = 'a1-save-error';
+            var msg = document.createElement('p');
+            msg.textContent = text || 'Natijani saqlab bo‘lmadi.';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'a1-retry-save';
+            btn.textContent = 'Qayta urinish';
+            btn.onclick = a1RetrySave;
+            box.appendChild(msg); box.appendChild(btn);
+            host.appendChild(box);
+        }
+
+        /** The exercise call-to-action, derived from the DURABLE result. */
+        function a1ExerciseCtaLabel(topicId) {
+            if (!window.A1Host) return 'Mashqlarni bajarish';
+            return window.A1Host.ctaLabel(userQuizResults, topicId);
+        }
+
+        /** Open the finished attempt, read-only. Writes nothing. */
+        function a1OpenReview(topicId) {
+            if (!window.A1Host) return null;
+            var durable = window.A1Host.durableResult(userQuizResults, topicId);
+            if (!durable) return null;
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            return window.A1Host.buildReview(durable, window.A1Host.groupsOf(topic));
+        }
+        window.a1ExerciseCtaLabel = a1ExerciseCtaLabel;
+        window.a1OpenReview = a1OpenReview;
+        window.a1RetrySave = a1RetrySave;
+
+        /* EVERY topic routes through the shared session, and every entry names
+           its own topic. An earlier version listed only 6-12 and relied on a
+           generic call elsewhere for topic 5, which let a
+           source-regex test believe topics 1-4 were covered when they were not.
+           Explicit entries make that mistake unrepresentable. */
         const EXERCISE_TOPIC_LOADERS = {
-            6: () => loadTopic6Exercises(6),
-            7: () => loadTopic7Exercises(7),
-            8: () => loadTopic8Exercises(8),
-            9: () => loadTopic9Exercises(9),
-            10: () => loadTopic10Exercises(10),
-            11: () => loadTopic11Exercises(11),
-            12: () => loadTopic12Exercises(12)
+            1: () => mountA1Practice(1) || loadQuiz(1),
+            2: () => mountA1Practice(2) || loadQuiz(2),
+            3: () => mountA1Practice(3) || loadQuiz(3),
+            4: () => mountA1Practice(4) || loadQuiz(4),
+            5: () => mountA1Practice(5) || loadTopic5Exercises(5),
+            6: () => mountA1Practice(6) || loadTopic6Exercises(6),
+            7: () => mountA1Practice(7) || loadTopic7Exercises(7),
+            8: () => mountA1Practice(8) || loadTopic8Exercises(8),
+            9: () => mountA1Practice(9) || loadTopic9Exercises(9),
+            10: () => mountA1Practice(10) || loadTopic10Exercises(10),
+            11: () => mountA1Practice(11) || loadTopic11Exercises(11),
+            12: () => mountA1Practice(12) || loadTopic12Exercises(12)
         };
         let pendingExerciseRender = null;
 

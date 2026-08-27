@@ -646,9 +646,18 @@ const EXPECTED = [
         w.alert = () => {}; w.confirm = () => true;
         w.eval('window.__claims=[];window.__safe=[];window.currentUserId="u1";' +
             'window.saveQuizResult=async()=>1;' +
-            'window.completeCourseTopic=async function(c,t){window.__claims.push({c:c,t:t});' +
+            /* A2 reports the EXERCISES HALF now: complete-topic finalises only
+               what the component record earns, so a whole-topic claim could never
+               append and A2 topics never completed. The legacy route is stubbed
+               too, so a regression back to it shows up as a claim carrying no
+               component. */
+            'window.completeCourseComponent=async function(c,t,cm){window.__claims.push({c:c,t:t,cm:cm});' +
             ' window.__srv=Array.from(new Set([...(window.__srv||[]),t])).sort((a,b)=>a-b);' +
-            ' return window.__srv.slice();};' +
+            ' return {ok:true,course:c,topicId:t,component:cm,' +
+            '  components:{vocabularyCompleted:true,exercisesCompleted:true},' +
+            '  topicCompleted:true,completedTopics:window.__srv.slice(),nextTopic:t+1};};' +
+            'window.completeCourseTopic=async function(c,t){window.__claims.push({c:c,t:t});' +
+            ' return window.__srv ? window.__srv.slice() : [];};' +
             'window.saveUserProgress=async function(u,c,p){window.__safe.push(p);return 1;};' +
             'window.getUserProgress=async()=>({completedTopics:[1,2,3,4,5,6,7]});' +
             'window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};');
@@ -712,6 +721,8 @@ const EXPECTED = [
         await new Promise((r) => setTimeout(r, 150));
         eq('exactly one completion claim', w.__claims.length, 1);
         eq('the claim names course A2', w.__claims[0].c, 'A2');
+        eq('and it claims the EXERCISES half, not the whole topic',
+            w.__claims[0].cm, 'exercises');
         eq('the claim names topic 15', w.__claims[0].t, 15);
         ok(w.__api.getCompleted().includes(15), 'the server answer is adopted');
         ok(w.__safe.every((p) => !('completedTopics' in p)),
@@ -722,7 +733,8 @@ const EXPECTED = [
         /* A REFUSED server save must not unlock anything. */
         {
             const wf = boot();
-            wf.eval('window.completeCourseTopic=async function(){throw new Error("offline");};');
+            wf.eval('window.completeCourseComponent=async function(){throw new Error("offline");};' +
+                    'window.completeCourseTopic=async function(){throw new Error("offline");};');
             wf.__api.setCompleted(DONE.slice());
             wf.eval('currentTopicId=15;');
             wf.__api.loadLesson(15);
@@ -781,6 +793,17 @@ const EXPECTED = [
                         .find((x) => x.getAttribute('data-value') === want);
                     if (b) b.dispatchEvent(new w2.MouseEvent('click', { bubbles: true }));
                 }
+                /* The same click against the SHARED markup. Looking only for the
+                   topic-1 row meant a course-exercise-ui topic was never answered:
+                   the step scored zero and advanced anyway, because A2 had no pass
+                   gate. A2 now enforces the platform 80% rule. */
+                const rowB = host().querySelector(`[data-b2h-row="${key}"]`);
+                if (rowB) {
+                    const want2 = Array.isArray(it.answer) ? it.answer[0] : it.answer;
+                    const bB = [...rowB.querySelectorAll('.b2h-opt')]
+                        .find((x) => x.getAttribute('data-value') === want2);
+                    if (bB) bB.dispatchEvent(new w2.MouseEvent('click', { bubbles: true }));
+                }
                 if (g.type === 'builder') {
                     /* A builder is graded from the CARDS the learner placed, not
                        from the hidden input, so the walk must actually place
@@ -789,11 +812,24 @@ const EXPECTED = [
                     if (w2.UzSentenceBuilder.read(host(), key).trim()) builderFilled++;
                     return;
                 }
-                const inp = host().querySelector(`[data-t1-input="${key}"]`);
-                if (inp) {
-                    inp.value = answerFor(g, it, k);
-                    inp.dispatchEvent(new w2.Event('input', { bubbles: true }));
-                }
+                /* Fill BOTH input markups, then let the host's own writeAnswer —
+                   the function draft-restore uses — handle any type the two
+                   selectors miss. Without this the step scores zero, which used
+                   to advance anyway and now correctly does not. */
+                const wantI = answerFor(g, it, k);
+                ['t1', 'b2h'].forEach((ns) => {
+                    const inp = host().querySelector(`[data-${ns}-input="${key}"]`);
+                    if (inp) {
+                        inp.value = wantI;
+                        inp.dispatchEvent(new w2.Event('input', { bubbles: true }));
+                    }
+                });
+                try {
+                    const UI = w2.UzExerciseUI;
+                    if (UI && typeof UI.writeAnswer === 'function') {
+                        UI.writeAnswer(host(), key, wantI, g, it);
+                    }
+                } catch (e) { /* left to the selectors above */ }
             });
             if (g.id === 'ex5' || g.id === 'ex6') {
                 ok(/Namuna/.test(host().textContent), `${g.id} offers its sample on screen`);

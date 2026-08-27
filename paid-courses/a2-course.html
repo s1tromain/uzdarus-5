@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="pro-toast.css">
     <link rel="stylesheet" href="pro-ui.css">
     <script src="../shared-normalizer.js"></script>
+    <script src="../exercise-lifecycle.js"></script>
     <script defer src="pro-toast.js"></script>
     <script type="module" src="paid-platform.js"></script>
     <link rel="stylesheet" href="../course-global-fixes.css">
@@ -2598,6 +2599,40 @@
             .a2-cert { box-shadow: none; max-width: 100%; }
             .a2-cert-actions { display: none !important; }
         }
+
+        /* ------------------------------------------- FINISHED EXERCISES
+           Three non-solving faces: the finished topic, the finished-but-
+           unacknowledged topic, and the read-only review. All must survive a
+           360px phone, so nothing has a fixed width and every learner-authored
+           string may wrap mid-token. */
+        .a2-done-panel { max-width:100%; background:#f1f8f4; border:1px solid #bfe3cc;
+            border-radius:14px; padding:20px 18px; text-align:center; }
+        .a2-done-title { margin:0 0 6px; font-size:clamp(1rem,3.6vw,1.25rem); overflow-wrap:anywhere; }
+        .a2-done-score { margin:0 0 16px; font-weight:700; color:#1f7a45; overflow-wrap:anywhere; }
+        .a2-cta, .a2-retry-save, .a2-review-close {
+            max-width:100%; border:none; background:var(--primary,#4a6cf7); color:#fff;
+            border-radius:999px; padding:11px 20px; font-weight:700; font-size:.95rem;
+            cursor:pointer; overflow-wrap:anywhere; }
+        .a2-sync-warn, .a2-notice, .a2-save-error {
+            max-width:100%; margin:0 0 14px; background:#fff3e0; border:1px solid #ffcc80;
+            border-radius:12px; padding:14px; color:#8a5300; white-space:pre-line;
+            overflow-wrap:anywhere; text-align:center; }
+        .a2-notice, .a2-save-error { margin:14px 0 0; }
+        .a2-review { max-width:100%; overflow-wrap:anywhere; }
+        .a2-review-head { display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+            justify-content:space-between; margin-bottom:16px; }
+        .a2-review-title { margin:0; font-size:clamp(1rem,3.6vw,1.2rem); min-width:0; }
+        .a2-review-total { font-weight:700; color:#1f7a45; }
+        .a2-review-group { max-width:100%; border:1px solid #e0e0e0; border-radius:12px;
+            padding:14px; margin-bottom:14px; background:#fff; }
+        .a2-review-gtitle { margin:0 0 4px; font-weight:700; }
+        .a2-review-gscore { margin:0 0 12px; font-size:.9rem; color:#555; }
+        .a2-review-item { display:grid; gap:4px; padding:10px 0; border-top:1px solid #f0f0f0; }
+        .a2-review-q { font-weight:600; }
+        .a2-review-given, .a2-review-correct { font-size:.9rem; color:#555; }
+        .a2-review-item.is-correct .a2-review-given { color:#1f7a45; }
+        .a2-review-item.is-wrong .a2-review-given { color:#b3261e; }
+
     </style>
 </head>
 
@@ -5374,6 +5409,8 @@
         };
 
         // ==================== GLOBAL VARIABLES ====================
+        let a2CourseState = null;
+        let a2PendingRetry = null;
         let completedTopics = [];
         let currentTopicId = 1;
         let currentScore = 0;
@@ -5412,6 +5449,7 @@
             if (!userSession) {
                 completedTopics = JSON.parse(localStorage.getItem('a2_progress_guest') || '[]');
                 userQuizResults = {};
+                mergeA2Completion(readLocalA2Completion(), false);
                 console.log('ℹ️ DATA: Guest mode progress loaded from localStorage');
                 return;
             }
@@ -5430,12 +5468,18 @@
             try {
                 if (window.getUserProgress && window.getUserQuizResults) {
                     const savedProgress = await window.getUserProgress(currentUserId, 'A2');
+                    /* courses.A2 carries topicComponents — the only authority on
+                       whether the exercises half of a topic was acknowledged. */
+                    a2CourseState = savedProgress || null;
                     if (savedProgress && Array.isArray(savedProgress.completedTopics)) {
                         completedTopics = savedProgress.completedTopics;
                         localStorage.setItem(`a2_progress_${currentUserId}`, JSON.stringify(completedTopics));
                     } else {
                         completedTopics = JSON.parse(localStorage.getItem(`a2_progress_${currentUserId}`) || '[]');
                     }
+
+                    // Certificate completion flags (Firebase-confirmed) — tamper-proof.
+                    mergeA2Completion(savedProgress, true);
 
                     userQuizResults = await window.getUserQuizResults(currentUserId, 'A2') || {};
                 } else {
@@ -5445,6 +5489,9 @@
                 console.error('❌ DATA: Error loading progress, fallback to localStorage:', error);
                 completedTopics = JSON.parse(localStorage.getItem(`a2_progress_${currentUserId}`) || '[]');
             }
+            // localStorage completion flags act as a fast fallback CACHE only — they can
+            // populate score/date for display but never set fbConfirmed (no cert from cache).
+            mergeA2Completion(readLocalA2Completion(), false);
         }
 
         async function saveQuizResultToFirebase(topicId, quizData) {
@@ -5484,10 +5531,26 @@
             }
 
             try {
-                const authoritative = await window.completeCourseTopic('A2', topicId);
-                if (!Array.isArray(authoritative)) {
+                /* THE EXERCISES HALF, NOT THE WHOLE TOPIC.
+                
+                   This used to claim the topic outright through
+                   completeCourseTopic. Since the component model landed that
+                   route no longer completes anything — it finalises only what
+                   the stored component record already earns — so an A2 learner
+                   who finished the exercises was reporting into a route that
+                   could not append, and the topic never completed. The
+                   exercises half is reported here; the vocabulary deck reports
+                   its own; the SERVER decides when the topic is done. */
+                const ack = await window.completeCourseComponent('A2', topicId, 'exercises');
+                if (!ack || ack.ok !== true
+                    || String(ack.course).toUpperCase() !== 'A2'
+                    || Number(ack.topicId) !== Number(topicId)
+                    || !ack.components || ack.components.exercisesCompleted !== true
+                    || typeof ack.topicCompleted !== 'boolean'
+                    || !Array.isArray(ack.completedTopics)) {
                     return false;
                 }
+                const authoritative = ack.completedTopics;
                 completedTopics = authoritative;
                 try { localStorage.setItem(`a2_progress_${window.currentUserId}`, JSON.stringify(authoritative)); } catch (e) {}
                 return true;
@@ -5613,8 +5676,26 @@
             
             topicsContainer.innerHTML = '';
             courseData.topics.forEach(topic => {
-                const topicBtn = document.createElement('button');
+                const topicBtn = document.createElement('div');
                 topicBtn.className = 'topic-btn';
+
+                /* A CARD, NOT A BUTTON. This element used to be a <button>, and
+                   the "Lug'atni o'rganish" control inside it is also a <button>
+                   — a button nested in a button, which is invalid HTML the
+                   parser is entitled to split apart, and which leaves the inner
+                   control ambiguous to assistive technology. Making the card a
+                   div keeps its full tap area and every one of its class-based
+                   styles, and the keydown below restores the keyboard
+                   activation the <button> was providing for free. */
+                topicBtn.setAttribute('role', 'button');
+                topicBtn.setAttribute('tabindex', '0');
+                topicBtn.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+                    /* the inner vocabulary button speaks for itself */
+                    if (event.target !== topicBtn) return;
+                    event.preventDefault();
+                    topicBtn.click();
+                });
 
                 // Sequential unlock (Phase 3): customers must finish the previous
                 // topic before the next opens. Privileged roles (developer/admin)
@@ -6647,7 +6728,14 @@
                     alert("Progressni saqlab bo'lmadi. Internet aloqasini tekshirib, qayta urinib ko'ring.");
                     return;
                 }
-                if (!completedTopics.includes(topicId)) completedTopics.push(topicId);
+                /* NO LOCAL PUSH. saveProgressToFirebase() has just replaced
+                   completedTopics with the SERVER's array. Adding the id here
+                   too would override the server's verdict in the one case that
+                   matters now: a topic whose exercises are done but whose
+                   vocabulary half is not is deliberately NOT complete, and the
+                   server says so by leaving it out. Pushing it back marked the
+                   topic finished on screen and unlocked the next one against a
+                   record that does not contain it. */
                 /* Host-agnostic: a2-demo.html has no draft store, so this must
                    not assume one exists. */
                 if (typeof clearQuizDraft === 'function') clearQuizDraft(topicId);
@@ -6735,7 +6823,7 @@
             return r === 'developer' || r === 'admin';
         }
         // True only when ALL topics are completed (server-preferred completedTopics).
-        function b1AllTopicsCompleted() {
+        function a2AllTopicsCompleted() {
             if (a2IsPrivileged()) return true;
             const ids = courseData.topics.map(t => t.id);
             return ids.length > 0 && ids.every(id => completedTopics.includes(id));
@@ -6745,7 +6833,7 @@
         // Developer/Admin always have certificate access for testing.
         function a2CertificateUnlocked() {
             if (a2IsPrivileged()) return true;
-            return b1AllTopicsCompleted() && a2Completion.finalExamPassed && a2Completion.fbConfirmed;
+            return a2AllTopicsCompleted() && a2Completion.finalExamPassed && a2Completion.fbConfirmed;
         }
 
         function renderFinalExamEntry() {
@@ -6848,6 +6936,350 @@
             return document.getElementById('a2LegacyBridge') || quizSection;
         }
 
+        /* ============================ A2 EXERCISE LIFECYCLE
+
+           A2 already stepped through its exercises under the shared session and
+           already gated each one at 80%. What it did not have was the second
+           half of the story: a durable attempt the page could recognise after a
+           reload, an authoritative report of the exercises component gated on
+           that attempt actually landing, and a way back into a finished topic
+           that is not a fresh attempt. The rules are the shared ones — the same
+           file A1 and B1's behaviour was proven against — bound to A2. */
+        function a2Lifecycle() {
+            var L = window.UzExerciseLifecycle;
+            return L ? L.create({ course: 'A2', resultField: 'a2ExerciseResult' }) : null;
+        }
+        function a2GroupsOf(topicId) {
+            var topic = courseData.topics.find(function (t) { return t.id === topicId; });
+            var ex = topic ? getT1ExData(topic) : null;
+            return (ex && ex.exercises) || [];
+        }
+        function a2Uid() {
+            return window.currentUserId
+                || (function () { try { return JSON.parse(localStorage.getItem('currentUser')).id; }
+                                  catch (e) { return null; } })();
+        }
+
+        /* THE ORDER IS THE POINT: the attempt is saved and AWAITED first, and
+           only a save that landed may report the component. */
+        async function a2FinishExercises(topicId, result) {
+            var L = a2Lifecycle();
+            if (!L) return null;
+            var uid = a2Uid();
+            var groups = a2GroupsOf(topicId);
+            var outcome = await L.completeExercises({
+                topicId: topicId, uid: uid, groups: groups, result: result,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                },
+                clearDraft: function () {
+                    try { localStorage.removeItem(L.draftKey(uid, topicId)); } catch (e) {}
+                }
+            });
+            a2ApplyOutcome(topicId, uid, groups, result, outcome);
+            return outcome;
+        }
+
+        function a2ApplyOutcome(topicId, uid, groups, result, outcome) {
+            var L = a2Lifecycle();
+            if (!L || !outcome || outcome.stage === 'gate') return;
+
+            if (!outcome.ok) {
+                a2PendingRetry = outcome.retryComponent
+                    ? { topicId: topicId, uid: uid, groups: groups, result: result, snapshot: outcome.snapshot }
+                    : { topicId: topicId, uid: uid, groups: groups, result: result };
+                a2ShowSaveError(outcome.message, outcome.retryComponent);
+                return;
+            }
+
+            a2PendingRetry = null;
+            userQuizResults['topic_' + topicId] = userQuizResults['topic_' + topicId] || {};
+            userQuizResults['topic_' + topicId][L.RESULT_FIELD] = outcome.snapshot;
+
+            /* the acknowledgement, or reopening the topic in this same session
+               shows a sync prompt over work the server just confirmed */
+            a2CourseState = a2CourseState || {};
+            a2CourseState.topicComponents = a2CourseState.topicComponents || {};
+            a2CourseState.topicComponents[topicId] =
+                Object.assign({}, a2CourseState.topicComponents[topicId], { exercisesCompleted: true });
+
+            if (outcome.topicCompleted) {
+                /* THE SERVER'S ARRAY, NEVER A LOCAL PUSH. */
+                completedTopics = outcome.completedTopics.slice();
+                if (typeof loadTopics === 'function') loadTopics();
+            } else if (outcome.message) {
+                a2ShowNotice(outcome.message);
+            }
+            if (typeof updateProgress === 'function') updateProgress();
+        }
+
+        /** Retry ONLY what failed. Never the exercises. */
+        async function a2RetrySave() {
+            var L = a2Lifecycle();
+            if (!a2PendingRetry || !L) return null;
+            var p = a2PendingRetry;
+            var api = {
+                saveQuizResult: window.saveQuizResult,
+                completeCourseComponent: window.completeCourseComponent
+            };
+            var outcome = p.snapshot
+                ? await L.retryComponent({ topicId: p.topicId, uid: p.uid, groups: p.groups,
+                                           result: p.result, snapshot: p.snapshot, api: api })
+                : await L.completeExercises({ topicId: p.topicId, uid: p.uid, groups: p.groups,
+                                              result: p.result, api: api });
+            a2ApplyOutcome(p.topicId, p.uid, p.groups, p.result, outcome);
+            return outcome;
+        }
+
+        function a2Host_() { return document.getElementById('a2PracticeMount') || quizSection; }
+
+        function a2ShowNotice(text) {
+            var host = a2Host_();
+            if (!host) return;
+            var box = document.createElement('div');
+            box.className = 'a2-notice';
+            box.textContent = text;
+            host.appendChild(box);
+        }
+
+        function a2ShowSaveError(text, componentOnly) {
+            var host = a2Host_();
+            if (!host) return;
+            var old = host.querySelector('.a2-save-error');
+            if (old) old.remove();
+            var box = document.createElement('div');
+            box.className = 'a2-save-error';
+            var msg = document.createElement('p');
+            msg.textContent = text || 'Natijani saqlab bo\u2018lmadi.';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'a2-retry-save';
+            btn.textContent = 'Qayta urinish';
+            btn.onclick = a2RetrySave;
+            box.appendChild(msg); box.appendChild(btn);
+            host.appendChild(box);
+        }
+
+        function a2ExerciseCtaLabel(topicId) {
+            var L = a2Lifecycle();
+            return L ? L.ctaLabel(userQuizResults, topicId) : 'Mashqlarni bajarish';
+        }
+
+        function a2OpenReview(topicId) {
+            var L = a2Lifecycle();
+            if (!L) return null;
+            var durable = L.durableResult(userQuizResults, topicId);
+            if (!durable) return null;
+            return L.buildReview(durable, a2GroupsOf(topicId));
+        }
+        window.a2ExerciseCtaLabel = a2ExerciseCtaLabel;
+        window.a2OpenReview = a2OpenReview;
+        window.a2RetrySave = a2RetrySave;
+        window.a2FinishExercises = a2FinishExercises;
+
+        function a2TopicTitle(topicId) {
+            var t = courseData.topics.find(function (x) { return x.id === topicId; });
+            return (t && t.title) ? t.title : ('Mavzu ' + topicId);
+        }
+
+        /* ------------------------------------------------ THE FINISHED FACE
+
+           One panel serves both finished states. What separates them is the
+           SERVER: with an acknowledgement this is simply a completed topic;
+           without one the learning is done but the progression is not, and the
+           only thing offered is the component call — never the exercises
+           again. */
+        function a2RenderDone(topicId, mount, state) {
+            var topic = a2TopicTitle(topicId);
+            mount.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'a2-done-panel';
+
+            var h = document.createElement('h3');
+            h.className = 'a2-done-title';
+            h.textContent = topic;
+            panel.appendChild(h);
+
+            var d = state.durable;
+            var sc = document.createElement('p');
+            sc.className = 'a2-done-score';
+            sc.textContent = 'Natija: ' + d.score + '/' + d.total + ' (' + d.percentage + '%)';
+            panel.appendChild(sc);
+
+            if (state.mode === 'sync') {
+                var warn = document.createElement('p');
+                warn.className = 'a2-sync-warn';
+                warn.textContent = a2Lifecycle().MESSAGES.SYNC_PENDING;
+                panel.appendChild(warn);
+                var sync = document.createElement('button');
+                sync.type = 'button';
+                sync.className = 'a2-retry-save';
+                sync.textContent = 'Qayta urinish';
+                sync.onclick = function () { return a2SyncComponent(topicId, mount); };
+                panel.appendChild(sync);
+            }
+
+            var cta = document.createElement('button');
+            cta.type = 'button';
+            cta.className = 'a2-cta';
+            cta.textContent = a2ExerciseCtaLabel(topicId);
+            cta.onclick = function () { a2RenderReview(topicId, mount, state); };
+            panel.appendChild(cta);
+
+            mount.appendChild(panel);
+            return true;
+        }
+
+        /* Finished before components existed: completedTopics is the record and
+           it stands; there is simply no attempt to show. */
+        function a2RenderLegacy(topicId, mount) {
+            mount.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'a2-done-panel';
+            var el = document.createElement('p');
+            el.className = 'a2-done-score';
+            el.textContent = a2Lifecycle().MESSAGES.LEGACY_DONE;
+            panel.appendChild(el);
+            mount.appendChild(panel);
+            return true;
+        }
+
+        /* Report the missing half ALONE, against the already-durable snapshot. */
+        async function a2SyncComponent(topicId, mount) {
+            var L = a2Lifecycle();
+            if (!L) return;
+            var uid = a2Uid();
+            var groups = a2GroupsOf(topicId);
+            var durable = L.durableResult(userQuizResults, topicId);
+            if (!durable) return;
+            var outcome = await L.retryComponent({
+                topicId: topicId, uid: uid, groups: groups, result: null, snapshot: durable,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                }
+            });
+            if (outcome && outcome.ok) {
+                a2CourseState = a2CourseState || {};
+                a2CourseState.topicComponents = a2CourseState.topicComponents || {};
+                a2CourseState.topicComponents[topicId] =
+                    Object.assign({}, a2CourseState.topicComponents[topicId], { exercisesCompleted: true });
+                try { localStorage.removeItem(L.draftKey(uid, topicId)); } catch (e) {}
+                a2ApplyOutcome(topicId, uid, groups, null, outcome);
+                a2RenderState(topicId, mount);
+                /* AFTER the re-render, or it is drawn and immediately wiped. */
+                if (outcome.message) a2ShowNotice(outcome.message);
+            } else {
+                /* re-render, never append: stacking a second error box under the
+                   panel gave the learner two identical buttons */
+                a2RenderState(topicId, mount);
+                a2ShowNotice(a2Lifecycle().MESSAGES.SYNC_PENDING);
+            }
+        }
+
+        /* ------------------------------------------------------- THE REVIEW
+
+           Read-only by construction: every node below is a heading, a
+           paragraph or a span. No input, no radio, no select, no check or
+           retry control — nothing to change and nothing that could rescore the
+           attempt. It writes NOTHING. */
+        function a2RenderReview(topicId, mount, state) {
+            var review = a2OpenReview(topicId);
+            if (!review) return false;
+            mount.innerHTML = '';
+            var wrap = document.createElement('div');
+            wrap.className = 'a2-review';
+
+            var head = document.createElement('div');
+            head.className = 'a2-review-head';
+            var h = document.createElement('h3');
+            h.className = 'a2-review-title';
+            h.textContent = a2TopicTitle(topicId);
+            var tot = document.createElement('span');
+            tot.className = 'a2-review-total';
+            tot.textContent = review.score + '/' + review.total + ' (' + review.percentage + '%)';
+            head.appendChild(h); head.appendChild(tot);
+            wrap.appendChild(head);
+
+            (review.groups || []).forEach(function (g) {
+                var box = document.createElement('div');
+                box.className = 'a2-review-group';
+                var gt = document.createElement('p');
+                gt.className = 'a2-review-gtitle';
+                gt.textContent = g.title || g.groupId;
+                var gs = document.createElement('p');
+                gs.className = 'a2-review-gscore';
+                gs.textContent = g.correct + '/' + g.total + ' \u2014 ' + g.percentage + '% \u2014 ' +
+                    (g.passed ? 'o\u2018tdi' : 'o\u2018tmadi');
+                box.appendChild(gt); box.appendChild(gs);
+
+                (g.items || []).forEach(function (it, i) {
+                    var row = document.createElement('div');
+                    row.className = 'a2-review-item' +
+                        (it.correct === true ? ' is-correct' : (it.correct === false ? ' is-wrong' : ''));
+                    var q = document.createElement('p');
+                    q.className = 'a2-review-q';
+                    q.textContent = (i + 1) + '. ' + (it.q == null ? '' : it.q);
+                    var given = document.createElement('p');
+                    given.className = 'a2-review-given';
+                    given.textContent = 'Sizning javobingiz: ' +
+                        (it.given == null || it.given === '' ? '\u2014' : it.given) +
+                        (it.correct === true ? ' \u2713' : (it.correct === false ? ' \u2717' : ''));
+                    row.appendChild(q); row.appendChild(given);
+                    if (it.deterministic) {
+                        var corr = document.createElement('p');
+                        corr.className = 'a2-review-correct';
+                        corr.textContent = 'To\u2018g\u2018ri javob: ' + it.correctAnswer;
+                        row.appendChild(corr);
+                    } else if (it.sample) {
+                        /* An OPEN prompt has no single right answer, so the
+                           authored sentence is offered as an example. */
+                        var ex = document.createElement('p');
+                        ex.className = 'a2-review-correct';
+                        ex.textContent = 'Namuna javob: ' + it.sample;
+                        row.appendChild(ex);
+                    }
+                    box.appendChild(row);
+                });
+                wrap.appendChild(box);
+            });
+
+            var close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'a2-review-close';
+            close.textContent = 'Yopish';
+            close.onclick = function () { a2RenderDone(topicId, mount, state); };
+            wrap.appendChild(close);
+
+            mount.appendChild(wrap);
+            return true;
+        }
+
+        /**
+         * WHAT THE LEARNER SEES WHEN THE EXERCISE SECTION OPENS, decided from
+         * DURABLE state — the saved attempt and the server's component record —
+         * never from anything this session happened to remember. Returns true
+         * when it rendered a non-solving face, so the caller knows not to mount
+         * a session over it.
+         */
+        function a2RenderState(topicId, mount) {
+            var L = a2Lifecycle();
+            if (!L || !mount) return false;
+            var state = L.pageState({
+                userQuizResults: userQuizResults,
+                topicId: topicId,
+                completedTopics: completedTopics,
+                courseState: a2CourseState
+            });
+            if (state.mode === 'legacy') return a2RenderLegacy(topicId, mount);
+            if (state.mode === 'review' || state.mode === 'sync') {
+                return a2RenderDone(topicId, mount, state);
+            }
+            return false;
+        }
+        window.a2RenderState = a2RenderState;
+
         function mountA2Practice(topicId) {
             if (!window.A2Host || !quizSection) return;
             var topic = courseData.topics.find(function (t) { return t.id === topicId; });
@@ -6856,6 +7288,11 @@
 
             var mount = document.getElementById('a2PracticeMount');
             if (!mount) return;
+
+            /* A finished topic opens as its result, not as a fresh attempt —
+               and a stale draft can never prompt over durable completion,
+               because no session is mounted at all in that case. */
+            if (a2RenderState(topicId, mount)) return;
 
             window.A2Host.mountPractice({
                 mountEl: mount,
@@ -6895,10 +7332,19 @@
                     passNeeded: a2PassNeeded,
                     /* completion is the legacy button's job; the new screen only
                        presses it, so progress/Firebase stay on one path */
-                    completeTopic: function () {
-                        var btn = document.getElementById('completeBtn');
-                        if (btn && btn.style.display !== 'none' &&
-                            !/tugatilmadi/i.test(btn.textContent)) btn.click();
+                    /* COMPLETION IS THE LIFECYCLE'S, NOT A BUTTON'S.
+                    
+                       This used to press the page's legacy completion button,
+                       which reported progress without ever checking that the
+                       learner's attempt had been durably saved first — so a
+                       failed save could still be followed by a progress claim.
+                       The shared lifecycle saves the attempt, AWAITS it, and
+                       only then reports the exercises half; a failure at either
+                       step leaves the next topic locked and offers the right
+                       retry. The legacy button still exists for the legacy
+                       flow and is untouched. */
+                    completeTopic: function (id, payload) {
+                        return a2FinishExercises(id == null ? topicId : id, payload);
                     },
                     showResults: function (html) {
                         var box = document.getElementById('a2QuizResults');
@@ -7403,14 +7849,21 @@
                     });
                     
                     if (!completedTopics.includes(topicId)) {
-                        console.log('✅ COMPLETING: Adding topic to completed list...', topicId);
-                        completedTopics.push(topicId);
-                        clearQuizDraft(topicId); // ISSUE #4 — topic done, drop the draft
-
-                        // Сохраняем прогресс в Firebase
-                        console.log('💾 SAVING: Calling saveProgressToFirebase...');
+                        /* THE SERVER DECIDES, AND IT IS ASKED FIRST.
+                           This block used to push the id locally and then save,
+                           ignoring the answer — so a refused save still showed
+                           the topic finished and opened the next one. It now
+                           reports the exercises half and adopts whatever array
+                           comes back; a topic still missing its vocabulary half
+                           simply will not be in it. */
+                        console.log('💾 SAVING: reporting the exercises half...');
                         const saved = await saveProgressToFirebase(topicId);
                         console.log('💾 SAVE RESULT:', saved ? 'SUCCESS' : 'FAILED');
+                        if (!saved && !completedTopics.includes(topicId)) {
+                            alert("Progressni saqlab bo'lmadi. Internet aloqasini tekshirib, qayta urinib ko'ring.");
+                            return;
+                        }
+                        clearQuizDraft(topicId); // ISSUE #4 — topic done, drop the draft
                         
                         updateProgress();
                         loadTopics(); // Refresh to show checkmark
@@ -7565,8 +8018,8 @@
             <div class="a2-cert-sub">Ushbu sertifikat quyidagi shaxsga berildi:</div>
             <div class="a2-cert-name" id="a2CertName">Foydalanuvchi</div>
             <div class="a2-cert-body">
-                A2 «O'rta daraja» rus tili kursini muvaffaqiyatli yakunlab,
-                20 ta mavzu va yakuniy imtihonni topshirgani uchun taqdirlanadi.
+                A2 «Elementar daraja» rus tili kursini muvaffaqiyatli yakunlab,
+                16 ta mavzu va yakuniy imtihonni topshirgani uchun taqdirlanadi.
             </div>
             <div class="a2-cert-meta">
                 <div>Yakuniy ball<b id="a2CertScore">—</b></div>

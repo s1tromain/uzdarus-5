@@ -183,7 +183,10 @@ const nextStep = (ctx) => {
     if (n) click(ctx.w, n);
     return !!n;
 };
-const retryBtn = (ctx) => byText(ctx.w, '.uz-foot button', 'Пройти упражнение заново');
+/* The retry control is found by its ACTION, not its wording: the label is
+   product copy (now Uzbek, «Qayta topshirish») and a test that hunts for a
+   particular string breaks every time the copy is translated. */
+const retryBtn = (ctx) => ctx.w.document.querySelector('.uz-foot [data-uz-act="retry"]');
 
 /** Play a whole topic, `wrongPerStep` wrong answers on every exercise. */
 function playTopic(ctx, wrongPerStep) {
@@ -211,7 +214,7 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     ok(!!btnOf(ctx.w), '1.2 practice card rendered');
     ok(ctx.w.document.querySelectorAll('#uz-session-styles').length === 1, '1.3 engine styles injected once');
     ok(ctx.w.document.querySelectorAll('#b2h-styles').length === 1, '1.4 host styles injected once');
-    ok(ctx.w.B2Host.PASS_PERCENT === 85, '1.5 pass threshold is 85%');
+    ok(ctx.w.B2Host.PASS_PERCENT === 80, '1.5 pass threshold is 80%');
     ok(ctx.errors.length === 0, '1.6 no console errors on mount');
 }
 
@@ -252,21 +255,24 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     await flush();
 }
 
-/* ------------------------------------------- 4. 85% PER-EXERCISE GATE */
+/* ------------------------------------------- 4. 80% PER-EXERCISE GATE */
 {
-    /* 8/10 = 80% — below the threshold. */
+    /* 7/10 = 70% — below the threshold. The platform rule is 80%, so 8/10
+       (which this block used to fail on, when B2 alone required 85%) is now
+       a PASS and cannot be used to exercise the gate. §4b below pins that. */
     const ctx = boot({ paid: true });
     mount(ctx);
     click(ctx.w, btnOf(ctx.w));
-    answerStep(ctx, 2);
+    answerStep(ctx, 3);
     checkStep(ctx);
     const w = ctx.w;
-    ok(!!retryBtn(ctx), '4.1 at 80% the retry button is shown');
-    ok(!byText(w, '.uz-foot button', 'Следующее упражнение'), '4.2 at 80% there is NO next button');
+    ok(!!retryBtn(ctx), '4.1 at 70% the retry button is shown');
+    ok(!byText(w, '.uz-foot button', 'Следующее упражнение'), '4.2 at 70% there is NO next button');
     const gate = w.document.querySelector('.uz-gate');
     ok(!!gate, '4.3 a gate message is shown');
-    ok(gate && gate.textContent.includes('85%'), '4.4 the message names the 85% threshold');
-    ok(gate && gate.textContent.includes('80%'), '4.5 the message names the achieved 80%');
+    ok(gate && gate.textContent.includes('80%'), '4.4 the message names the 80% threshold');
+    ok(/Mashqdan o‘tish uchun kamida/.test(gate ? gate.textContent : ''),
+        '4.5 in the product\'s own words');
 
     const before = w.UzExerciseSession.current().cursor;
     click(w, retryBtn(ctx));
@@ -277,6 +283,23 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     ok(!sess.checked['ex1'], '4.8 retry clears this exercise\'s stored score');
     ok(!!byText(w, '.uz-foot button', 'Проверить'), '4.9 retry returns to the check state');
     ok(ctx.errors.length === 0, '4.10 no errors during a blocked attempt');
+}
+
+/* ------------------------------- 4b. THE BOUNDARY IS EXACTLY 80% */
+{
+    /* 8/10 is the first passing score. When B2 required 85% this same paper
+       was blocked; the product rule is 80% for every course, so it passes. */
+    const ctx = boot({ paid: true });
+    mount(ctx);
+    click(ctx.w, btnOf(ctx.w));
+    answerStep(ctx, 2);
+    checkStep(ctx);
+    const w = ctx.w;
+    ok(!retryBtn(ctx), '4b.1 at 8/10 the exercise is PASSED — no retry button');
+    ok(!!byText(w, '.uz-foot button', 'Следующее упражнение'),
+        '4b.2 and the next exercise opens');
+    ok(!w.document.querySelector('.uz-gate'), '4b.3 no gate message is shown');
+    ok(ctx.errors.length === 0, '4b.4 no errors on a passing attempt');
 }
 {
     /* 9/10 = 90% — at or above the threshold. */
@@ -320,27 +343,31 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
         return answers;
     };
 
-    const r84 = api.score(build(84));
-    ok(r84.total === 100, '5.1 topic has 100 gradable items');
-    ok(r84.score === 84, '5.2 84 correct answers score 84');
-    ok(r84.percent === 84, '5.3 percent is 84');
-    ok(r84.passed === false, '5.4 84% does NOT pass');
-    ok(r84.errors === 16, '5.5 error count reported');
+    /* THE BOUNDARY MOVED. These two papers used to be 84 and 85 because B2
+       alone required 85%; the platform lesson rule is 80%, so the pair that
+       straddles the line is now 79 and 80. Both sides are still asserted, so
+       the threshold is pinned from below AND above and cannot drift again. */
+    const r79 = api.score(build(79));
+    ok(r79.total === 100, '5.1 topic has 100 gradable items');
+    ok(r79.score === 79, '5.2 79 correct answers score 79');
+    ok(r79.percent === 79, '5.3 percent is 79');
+    ok(r79.passed === false, '5.4 79% does NOT pass');
+    ok(r79.errors === 21, '5.5 error count reported');
 
-    const r85 = api.score(build(85));
-    ok(r85.percent === 85, '5.6 85 correct answers give exactly 85%');
-    ok(r85.passed === true, '5.7 85% DOES pass — the threshold is inclusive');
+    const r80 = api.score(build(80));
+    ok(r80.percent === 80, '5.6 80 correct answers give exactly 80%');
+    ok(r80.passed === true, '5.7 80% DOES pass — the threshold is inclusive');
 
-    const h84 = api.buildResultsHtml(r84);
-    ok(h84.includes('Тема не пройдена'), '5.8 84% screen says the topic was not passed');
-    ok(h84.includes('data-b2h-act="restart"'), '5.9 84% offers "пройти заново"');
-    ok(!h84.includes('data-b2h-act="complete"'), '5.10 84% offers NO complete button');
-    ok(h84.includes('не засчитана'), '5.11 84% states the topic is not credited');
+    const h79 = api.buildResultsHtml(r79);
+    ok(h79.includes('Тема не пройдена'), '5.8 79% screen says the topic was not passed');
+    ok(h79.includes('data-b2h-act="restart"'), '5.9 79% offers a retry');
+    ok(!h79.includes('data-b2h-act="complete"'), '5.10 79% offers NO complete button');
+    ok(h79.includes('не засчитана'), '5.11 79% states the topic is not credited');
 
-    const h85 = api.buildResultsHtml(r85);
-    ok(h85.includes('Тема пройдена'), '5.12 85% screen says the topic was passed');
-    ok(h85.includes('data-b2h-act="complete"'), '5.13 85% offers "Завершить тему"');
-    ok(!h85.includes('data-b2h-act="restart"'), '5.14 85% does not push a retry');
+    const h80 = api.buildResultsHtml(r80);
+    ok(h80.includes('Тема пройдена'), '5.12 80% screen says the topic was passed');
+    ok(h80.includes('data-b2h-act="complete"'), '5.13 80% offers "Завершить тему"');
+    ok(!h80.includes('data-b2h-act="restart"'), '5.14 80% does not push a retry');
 }
 
 /* ------------------------------------------- 6. FULL RESULTS SCREEN */
@@ -472,7 +499,7 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     mount(ctx2);
     click(ctx2.w, btnOf(ctx2.w));
     ok(!!ctx2.w.document.querySelector('.uz-ask'), '10.4 resume dialogue offered');
-    const cont = byText(ctx2.w, '.uz-ask button', 'Продолжить');
+    const cont = byText(ctx2.w, '.uz-ask button', 'Davom ettirish');
     ok(!!cont, '10.5 Continue offered');
     if (cont) click(ctx2.w, cont);
     ok(ctx2.w.UzExerciseSession.current().cursor === cursorBefore,
@@ -484,7 +511,7 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     const ctx3 = boot({ paid: true, store });
     mount(ctx3);
     click(ctx3.w, btnOf(ctx3.w));
-    const again = byText(ctx3.w, '.uz-ask button', 'Начать заново');
+    const again = byText(ctx3.w, '.uz-ask button', 'Qaytadan boshlash');
     if (again) click(ctx3.w, again);
     ok(ctx3.w.UzExerciseSession.current().cursor === 0, '10.8 Restart returns to exercise 1');
     ok(Object.keys(ctx3.w.UzExerciseSession.current().answers).length === 0, '10.9 Restart clears answers');
@@ -555,7 +582,9 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     ok(/cfg\.renderSummary/.test(ENGINE), '14.7 engine exposes a generic summary hook');
     const hstr = HOST.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
     ok(!/topic\.id\s*===\s*1|topicId\s*===\s*1/.test(hstr), '14.8 host has no Lesson-1 branch');
-    ok((HOST.match(/PASS_PERCENT = 85/g) || []).length === 1, '14.9 the threshold is defined exactly once');
+    ok((HOST.match(/PASS_PERCENT = 80;/g) || []).length === 1,
+        '14.9 the threshold is defined exactly once');
+    ok(!/PASS_PERCENT = 85;/.test(HOST), '14.10 and the old 85% value is gone');
 }
 
 console.log('='.repeat(52));

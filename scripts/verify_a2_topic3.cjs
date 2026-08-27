@@ -122,7 +122,29 @@ eq('choice rows rendered (ex4,8,10,audio)', qs.querySelectorAll('.t1-opts').leng
 eq('every question numbered', qs.querySelectorAll('.t1-num').length, 110);
 
 // ---- grading + completion ----
-w.eval('window.__saved=null;window.saveQuizResultToFirebase=async function(i,d){window.__saved={id:i,d:d};};window.saveProgressToFirebase=async function(){window.__ps=true;};');
+/* STUB THE NETWORK, NOT THE PAGE'S OWN FUNCTION.
+   saveProgressToFirebase used to be replaced wholesale. That worked only
+   because the page pushed the topic id locally before saving and ignored the
+   answer — so a stub that reported nothing still looked like success.
+   Completion now comes from the SERVER's array, so replacing the function
+   removes the only thing that can set it. The component call is stubbed and
+   the real saveProgressToFirebase runs, which is what a browser does. */
+w.eval('window.__saved=null;window.saveQuizResultToFirebase=async function(i,d){window.__saved={id:i,d:d};};');
+if (IS_DEMO) {
+    /* the demo has no server and keeps the legacy whole-topic flow */
+    w.eval('window.saveProgressToFirebase=async function(){window.__ps=true;return true;};');
+} else {
+    w.eval("window.currentUserId='uid-smoke';" +
+      " window.completeCourseTopic=async function(){ return []; };" +
+      " window.completeCourseComponent=async function(course,topicId,component){" +
+      "   window.__ps=true;" +
+      "   window.__componentCalls=(window.__componentCalls||[]);" +
+      "   window.__componentCalls.push({course:course,topicId:topicId,component:component});" +
+      "   return { ok:true, course:course, topicId:topicId, component:component," +
+      "     components:{vocabularyCompleted:true,exercisesCompleted:true}," +
+      "     topicCompleted:true, completedTopics:[topicId], nextTopic:topicId+1 };" +
+      " };");
+}
 function fill(correct) {
   groups.forEach(g => g.items.forEach((item, i) => {
     const key = g.id + '-' + i;

@@ -332,7 +332,7 @@
         '<div class="b2g">',
 
         '<div class="b2g-lead">',
-            '<h4>Sложноподчинённое предложение nima?</h4>',
+            '<h4>Сложноподчинённое предложение nima?</h4>',
             '<p>Bu — <b>bosh gap</b> (главное предложение) va <b>ergash gap</b> (придаточное ',
             'предложение) <b>bog‘lovchi</b> (союз) orqali birlashgan qo‘shma gap. Ergash gap ',
             'mustaqil emas: u bosh gapga tobe bo‘lib, uni izohlaydi, sababini, shartini yoki ',
@@ -3026,6 +3026,1430 @@
         }
     ];
 
+    var LESSON_11_GRAMMAR = "<div class=\"b2g\"><div class=\"b2g-lead\"><div class=\"b2g-lead-title\">Отглагольные существительные</div><p>Bu otlar fe’ldan yasalib, harakatni <b>jarayon</b> yoki <b>tushuncha</b> sifatida ifodalaydi. Ular rasmiy, ilmiy va ishbilarmon nutqda ayniqsa ko‘p uchraydi.</p></div><h4>1. Что такое отглагольное существительное</h4><p>Fe’l harakatni bildiradi, undan yasalgan ot esa o‘sha harakatni <b>narsa/tushuncha</b> sifatida nomlaydi.</p><table class=\"b2g-t\"><tr><th>Fe’l (harakat)</th><th>Ot (jarayon / tushuncha)</th></tr><tr><td>Мы решаем проблему.</td><td>Решение проблемы требует времени.</td></tr><tr><td>Мы развиваем проект.</td><td>Развитие проекта требует новых ресурсов.</td></tr><tr><td>Компания создаёт продукт.</td><td>Создание продукта занимает несколько месяцев.</td></tr></table><h4>2. Почему нельзя образовывать его механически</h4><div class=\"b2g-warn\"><p><b>Muhim:</b> отглагольное существительное <b>bitta qo‘shimchani har qanday fe’lga mexanik ravishda qo‘shish bilan yasalmaydi.</b> Rus tilida bu <b>leksik oilalar</b>: otni fe’l bilan birga yodlash kerak.</p><table class=\"b2g-t\"><tr><th>Fe’l</th><th>Ot — mexanik emas</th></tr><tr><td>анализировать</td><td><b>анализ</b> — «-ция» emas, alohida leksik shakl</td></tr><tr><td>выбирать / выбрать</td><td><b>выбор</b> — qo‘shimchasiz</td></tr><tr><td>принимать / принять</td><td><b>принятие</b> — o‘zak o‘zgaradi</td></tr><tr><td>готовить / подготовить</td><td><b>подготовка</b> — «-ка»</td></tr></table><p>Shuning uchun har bir yangi fe’l uchun otini <b>lug‘atdan</b> tekshiring.</p></div><h4>3. Основные модели образования</h4><p><b>A. -ние / -ение / -ание</b> — eng keng tarqalgan model</p><table class=\"b2g-t\"><tr><th>Fe’l</th><th>Ot</th></tr><tr><td>обсуждать / обсудить</td><td>обсуждение</td></tr><tr><td>использовать</td><td>использование</td></tr><tr><td>планировать</td><td>планирование</td></tr><tr><td>исследовать</td><td>исследование</td></tr><tr><td>получать / получить</td><td>получение</td></tr><tr><td>применять / применить</td><td>применение</td></tr></table><p><b>B. -тие va o‘zak o‘zgarishi</b></p><table class=\"b2g-t\"><tr><th>Fe’l</th><th>Ot</th></tr><tr><td>принимать / принять</td><td>приня<b>тие</b></td></tr><tr><td>развивать / развить</td><td>разви<b>тие</b></td></tr></table><p><b>C. -ка</b></p><table class=\"b2g-t\"><tr><th>Fe’l</th><th>Ot</th></tr><tr><td>готовить / подготовить</td><td>подготов<b>ка</b></td></tr><tr><td>разрабатывать / разработать</td><td>разработ<b>ка</b></td></tr><tr><td>оценивать / оценить</td><td>оцен<b>ка</b></td></tr><tr><td>проверять / проверить</td><td>провер<b>ка</b></td></tr></table><p><b>D. -ция</b> — xalqaro leksik oila</p><table class=\"b2g-t\"><tr><th>Fe’l</th><th>Ot</th></tr><tr><td>организовывать / организовать</td><td>организа<b>ция</b></td></tr><tr><td>адаптировать</td><td>адапта<b>ция</b></td></tr><tr><td>регистрировать</td><td>регистра<b>ция</b></td></tr></table><div class=\"b2g-warn\"><b>Diqqat:</b> bular <b>leksik oilalar</b>. Har qanday <b>-ировать</b> fe’li avtomatik ravishda <b>-ция</b> otini bermaydi: <b>анализировать → анализ</b>, <b>планировать → планирование</b>.</div><p><b>E. Leksik / shaffof bo‘lmagan juftliklar</b></p><table class=\"b2g-t\"><tr><th>Fe’l</th><th>Ot</th></tr><tr><td>анализировать</td><td>анализ</td></tr><tr><td>выбирать / выбрать</td><td>выбор</td></tr></table><h4>4. Вид глагола и существительное</h4><p>Bitta ot ko‘pincha <b>butun vid juftligiga</b> mos keladi. Uni faqat <span class=\"b2g-tone-nsv\">НСВ</span> yoki faqat <span class=\"b2g-tone-sv\">СВ</span> dan mexanik chiqarib bo‘lmaydi.</p><table class=\"b2g-t\"><tr><th>Vid juftligi</th><th>Bitta ot</th></tr><tr><td>решать / решить проблему</td><td>решение проблемы</td></tr><tr><td>обсуждать / обсудить вопрос</td><td>обсуждение вопроса</td></tr><tr><td>создавать / создать продукт</td><td>создание продукта</td></tr><tr><td>принимать / принять решение</td><td>принятие решения</td></tr><tr><td>организовывать / организовать мероприятие</td><td>организация мероприятия</td></tr></table><p>Ya’ni otni <b>leksik birlik</b> sifatida yodlang.</p><h4>5. Глагольное управление → именное управление</h4><p>Fe’l va undan yasalgan ot <b>turli kelishikni</b> talab qilishi mumkin.</p><table class=\"b2g-t\"><tr><th>Fe’l</th><th>Ot</th></tr><tr><td>решать <b>что?</b> проблем<b>у</b> — винительный</td><td>решение <b>чего?</b> проблем<b>ы</b> — родительный</td></tr><tr><td>развивать проект</td><td>развитие проекта</td></tr><tr><td>обсуждать вопрос</td><td>обсуждение вопроса</td></tr><tr><td>анализировать ситуацию</td><td>анализ ситуации</td></tr><tr><td>использовать технологии</td><td>использование технологий</td></tr></table><h4>6. Родительный падеж и другие модели управления</h4><p><b>Konstruksiya:</b> отглагольное существительное + <b>зависимое существительное</b></p><div class=\"b2g-chips\"><span>принятие чего? — решения</span><span>развитие чего? — проекта</span><span>решение чего? — проблемы</span><span>обсуждение чего? — вопроса</span><span>анализ чего? — ситуации</span></div><div class=\"b2g-tip\"><b>Lekin har doim родительный emas.</b> Boshqarish <b>otning o‘ziga</b> bog‘liq:<table class=\"b2g-t\"><tr><th>Ot</th><th>Boshqaruv</th></tr><tr><td>подготовка</td><td><b>к</b> экзамену — дательный</td></tr><tr><td>переход</td><td><b>к</b> новой системе — дательный</td></tr><tr><td>влияние</td><td><b>на</b> результат — винительный</td></tr></table><p>Yangi otni lug‘atdan boshqaruvi bilan birga yodlang.</p></div><h4>7. Глагольная и именная конструкция</h4><div class=\"b2g-warn\"><b>Infinitiv konstruksiya — xato emas!</b> Quyidagi gaplar mutlaqo to‘g‘ri rus tili:<table class=\"b2g-t\"><tr><th>To‘g‘ri gap</th><th>Izoh</th></tr><tr><td>Решать сложные проблемы трудно.</td><td>infinitiv — normal</td></tr><tr><td>Принимать решения иногда нелегко.</td><td>infinitiv — normal</td></tr><tr><td>Изменять систему необходимо.</td><td>infinitiv — normal</td></tr></table><p>Nominalizatsiya — bu <b>uslub</b>, <b>gap tuzilishi</b> va <b>axborotni joylashtirish</b> masalasi, «infinitiv = xato» degani <b>emas</b>.</p></div><h4>8. Согласование сказуемого</h4><p>Kesim <b>bosh ot</b> bilan mos keladi — undan keyingi родительный падежdagi so‘z bilan emas.</p><table class=\"b2g-t\"><tr><th>Gap</th><th>Nega shunday</th></tr><tr><td>Организация мероприятия <b>потребовала</b> много усилий.</td><td>организация — ayol jinsi</td></tr><tr><td>Исследование рынка <b>помогло</b> компании.</td><td>исследование — o‘rta jins</td></tr><tr><td>Анализ ситуации <b>показал</b> необходимость изменений.</td><td>анализ — erkak jinsi</td></tr><tr><td>Принятие решения <b>заняло</b> несколько дней.</td><td>принятие — o‘rta jins</td></tr></table><div class=\"b2g-warn\">❌ <b>Организация мероприятия потребовало…</b> — kesim «мероприятия» ga emas, «организация» ga moslashishi kerak.</div><h4>9. Официальный и академический стиль</h4><table class=\"b2g-t\"><tr><th>Oddiy</th><th>Rasmiyroq</th></tr><tr><td>Мы развиваем проект.</td><td>Развитие проекта является приоритетным направлением.</td></tr><tr><td>Мы обсуждаем вопрос.</td><td>Обсуждение вопроса продолжается.</td></tr><tr><td>Мы анализируем ситуацию.</td><td>Анализ ситуации необходим.</td></tr></table><p>Bunday konstruksiyalar hisobotlar, maqolalar, prezentatsiyalar va ishbilarmon yozishmalarda foydali.</p><div class=\"b2g-tip\"><b>B2 nuansi:</b> nominalizatsiya nutqni rasmiy va ixcham qiladi, lekin <b>haddan ortiq</b> ishlatilsa, gap og‘irlashadi. «Rasmiy = har doim yaxshiroq» degani emas — auditoriya va janrga qarang.</div><h4>10. Частые конструкции и итоговый алгоритм</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>принятие решения</td><td>Принятие решения заняло несколько дней.</td></tr><tr><td>развитие проекта</td><td>Развитие проекта зависит от финансирования.</td></tr><tr><td>решение проблемы</td><td>Решение проблемы требует совместной работы.</td></tr><tr><td>обсуждение вопроса</td><td>Обсуждение вопроса продолжалось два часа.</td></tr><tr><td>изменение ситуации</td><td>Изменение ситуации повлияло на наши планы.</td></tr><tr><td>создание нового продукта</td><td>Создание нового продукта требует времени.</td></tr></table><p><b>Ma’no nuansi:</b> «решение» ikki ma’noda keladi:</p><table class=\"b2g-t\"><tr><th>Ma’no</th><th>Namuna</th></tr><tr><td>harakat / natija</td><td>решение проблемы — muammoni hal qilish</td></tr><tr><td>qaror</td><td>важное решение — muhim qaror; принятие решения — qaror qabul qilish</td></tr></table><p>Shuningdek <b>организация</b> — jarayon ham, tashkilot ham bo‘lishi mumkin; <b>анализ</b> — jarayon ham, natija ham.</p><div class=\"b2g-check\"><h4>Itogiy algoritm</h4><ul class=\"b2g-list\"><li>Fe’lni aniqlang va uning <b>otini lug‘atdan</b> tekshiring — mexanik yasamang.</li><li>Otning <b>boshqaruvini</b> aniqlang: ko‘pincha родительный, lekin <b>подготовка к…</b> kabi istisnolar bor.</li><li>Kesimni <b>bosh otga</b> moslang, undan keyingi so‘zga emas.</li><li>Uslubni tanlang: nominalizatsiya rasmiyroq, infinitiv esa tabiiyroq va yengilroq.</li></ul></div></div>";
+
+    var LESSON_11_EXERCISES = [
+        {
+            id: "ex1",
+            type: "input",
+            icon: "fa-arrow-right-arrow-left",
+            showTask: true,
+            title: "1-mashq. Fe'lni otga aylantiring",
+            intro: "Fe'ldan yasalgan otni yozing. Otni mexanik yasamang — leksik shaklni eslang.",
+            namuna: "решать → решение",
+            items: [
+                { q: "развивать → ______", answer: "развитие" },
+                { q: "принимать → ______", answer: "принятие" },
+                { q: "обсуждать → ______", answer: "обсуждение" },
+                { q: "создавать → ______", answer: "создание" },
+                { q: "изменять → ______", answer: "изменение" },
+                { q: "организовать → ______", answer: "организация" },
+                { q: "анализировать → ______", answer: "анализ" },
+                { q: "использовать → ______", answer: "использование" },
+                { q: "планировать → ______", answer: "планирование" },
+                { q: "исследовать → ______", answer: "исследование" }
+            ]
+        },
+        {
+            id: "ex2",
+            type: "input",
+            icon: "fa-link",
+            showTask: true,
+            title: "2-mashq. Fe'l birikmasini otli birikmaga aylantiring",
+            intro: "Fe'l birikmasini otli birikmaga aylantiring. Ikkinchi so'z родительный падежga o'tadi.",
+            namuna: "принимать решение → принятие решения",
+            items: [
+                { q: "развивать проект → ______", answer: "развитие проекта" },
+                { q: "решать проблему → ______", answer: "решение проблемы" },
+                { q: "обсуждать вопрос → ______", answer: "обсуждение вопроса" },
+                { q: "создавать программу → ______", answer: "создание программы" },
+                { q: "анализировать ситуацию → ______", answer: "анализ ситуации" },
+                { q: "планировать работу → ______", answer: "планирование работы" },
+                { q: "организовать мероприятие → ______", answer: "организация мероприятия" },
+                { q: "изменять систему → ______", answer: "изменение системы" },
+                { q: "использовать технологии → ______", answer: "использование технологий" },
+                { q: "исследовать рынок → ______", answer: "исследование рынка" }
+            ]
+        },
+        {
+            id: "ex3",
+            type: "choice",
+            style: "test",
+            icon: "fa-list-check",
+            showTask: true,
+            title: "3-mashq. To'g'ri variantni tanlang",
+            intro: "Gapga mos shaklni tanlang: ega o'rnida ot kerakmi yoki fe'l?",
+            namuna: "______ проекта заняло несколько месяцев. → Развитие",
+            items: [
+                { q: "______ решения требует времени.", options: ["Принятие", "Принимать", "Принимает"], answer: "Принятие" },
+                { q: "______ проблемы стало нашей главной задачей.", options: ["Решать", "Решение", "Решает"], answer: "Решение" },
+                { q: "______ нового продукта требует больших ресурсов.", options: ["Создание", "Создавать", "Создаёт"], answer: "Создание" },
+                { q: "______ ситуации показал необходимость изменений.", options: ["Анализировать", "Анализ", "Анализирует"], answer: "Анализ" },
+                { q: "______ вопроса продолжалось два часа.", options: ["Обсуждение", "Обсуждать", "Обсуждает"], answer: "Обсуждение" },
+                { q: "______ системы начнётся в следующем месяце.", options: ["Изменение", "Изменять", "Изменяет"], answer: "Изменение" },
+                { q: "______ мероприятия заняла несколько недель.", options: ["Подготовка", "Подготавливать", "Подготавливает"], answer: "Подготовка" },
+                { q: "______ современных технологий повышает эффективность работы.", options: ["Использование", "Использовать", "Использует"], answer: "Использование" },
+                { q: "______ проекта зависит от финансирования.", options: ["Развитие", "Развивать", "Развивает"], answer: "Развитие" },
+                { q: "______ результатов исследования займёт несколько дней.", options: ["Анализ", "Анализировать", "Анализирует"], answer: "Анализ" }
+            ]
+        },
+        {
+            id: "ex4",
+            type: "input",
+            icon: "fa-pen",
+            showTask: true,
+            title: "4-mashq. Qavs ichidagi fe'lni ot shakliga qo'ying",
+            intro: "Qavs ichidagi fe'ldan ot yasang va bosh harf bilan yozing. Kesim bosh otga moslashganiga e'tibor bering.",
+            namuna: "(развивать) ______ проекта требует новых ресурсов. → Развитие",
+            items: [
+                { q: "(решать) ______ проблемы требует совместной работы.", answer: "Решение" },
+                { q: "(принимать) ______ решения заняло много времени.", answer: "Принятие" },
+                { q: "(обсуждать) ______ вопроса продолжалось долго.", answer: "Обсуждение" },
+                { q: "(создавать) ______ нового проекта начнётся в сентябре.", answer: "Создание" },
+                { q: "(анализировать) ______ ситуации выявил несколько ошибок.", answer: "Анализ" },
+                { q: "(изменять) ______ системы необходимо для повышения эффективности.", answer: "Изменение" },
+                { q: "(использовать) ______ технологий значительно ускоряет работу.", answer: "Использование" },
+                { q: "(планировать) ______ работы занимает несколько дней.", answer: "Планирование" },
+                { q: "(организовать) ______ мероприятия потребовала много усилий.", answer: "Организация" },
+                { q: "(исследовать) ______ рынка помогло компании определить стратегию.", answer: "Исследование" }
+            ]
+        },
+        {
+            id: "ex5",
+            type: "input",
+            icon: "fa-diagram-project",
+            showTask: true,
+            title: "5-mashq. Родительный падежni to'g'ri qo'llang",
+            intro: "Ikkinchi otni родительный падежga qo'yib, to'liq birikmani yozing.",
+            namuna: "принятие + решение → принятие решения",
+            items: [
+                { q: "развитие + проект → ______", answer: "развитие проекта" },
+                { q: "решение + проблема → ______", answer: "решение проблемы" },
+                { q: "обсуждение + вопрос → ______", answer: "обсуждение вопроса" },
+                { q: "создание + программа → ______", answer: "создание программы" },
+                { q: "анализ + ситуация → ______", answer: "анализ ситуации" },
+                { q: "изменение + система → ______", answer: "изменение системы" },
+                { q: "использование + технология → ______", answer: "использование технологии" },
+                { q: "подготовка + мероприятие → ______", answer: "подготовка мероприятия" },
+                { q: "исследование + рынок → ______", answer: "исследование рынка" },
+                { q: "планирование + работа → ______", answer: "планирование работы" }
+            ]
+        },
+        {
+            id: "ex6",
+            type: "input",
+            icon: "fa-rotate",
+            showTask: true,
+            title: "6-mashq. Gapni otli konstruksiya bilan qayta tuzing",
+            intro: "Bo'sh joyga faqat otli birikmani yozing. Gapning ikkinchi qismi o'zgarmaydi.",
+            namuna: "Мы развиваем новый проект. → Развитие нового проекта является нашей главной задачей.",
+            items: [
+                { q: "Компания создаёт новую систему.\n→ ______ является приоритетом компании.", answer: "Создание новой системы" },
+                { q: "Мы решаем эту проблему.\n→ ______ требует времени.", answer: "Решение этой проблемы" },
+                { q: "Руководство принимает важное решение.\n→ ______ было непростым.", answer: "Принятие важного решения" },
+                { q: "Специалисты анализируют ситуацию.\n→ ______ показал положительные результаты.", answer: "Анализ ситуации" },
+                { q: "Сотрудники обсуждают этот вопрос.\n→ ______ продолжалось несколько часов.", answer: "Обсуждение этого вопроса" },
+                { q: "Компания использует современные технологии.\n→ ______ повышает эффективность работы.", answer: "Использование современных технологий" },
+                { q: "Команда разрабатывает новую стратегию.\n→ ______ займёт несколько недель.", answer: "Разработка новой стратегии" },
+                { q: "Организаторы готовят мероприятие.\n→ ______ требует больших усилий.", answer: "Подготовка мероприятия" },
+                { q: "Учёные исследуют новый метод.\n→ ______ продолжается уже несколько месяцев.", answer: "Исследование нового метода" },
+                { q: "Компания изменяет систему работы.\n→ ______ необходимо для дальнейшего развития.", answer: "Изменение системы работы" }
+            ]
+        },
+        {
+            id: "ex7",
+            type: "input",
+            icon: "fa-fill-drip",
+            showTask: true,
+            title: "7-mashq. Bo'sh joyni mos ot bilan to'ldiring",
+            intro: "So'zlar: развитие, решение, принятие, обсуждение, создание, анализ, изменение, использование, подготовка, исследование. Har bir otni faqat BIR MARTA ishlating.",
+            namuna: "______ проекта заняло много времени. → Развитие",
+            items: [
+                { q: "______ проблемы оказалось сложнее, чем мы ожидали.", answer: "Решение" },
+                { q: "______ решения потребовало дополнительной информации.", answer: "Принятие" },
+                { q: "______ вопроса перенесли на следующую неделю.", answer: "Обсуждение" },
+                { q: "______ нового продукта начнётся в следующем месяце.", answer: "Создание" },
+                { q: "______ ситуации показал необходимость изменений.", answer: "Анализ" },
+                { q: "______ системы положительно повлияло на результат.", answer: "Изменение" },
+                { q: "______ современных технологий помогает экономить время.", answer: "Использование" },
+                { q: "______ к экзамену требует регулярной работы.", answer: "Подготовка" },
+                { q: "______ рынка показало новые возможности.", answer: "Исследование" },
+                { q: "______ проекта зависит от работы всей команды.", answer: "Развитие" }
+            ]
+        },
+        {
+            id: "ex8",
+            type: "input",
+            icon: "fa-pen-to-square",
+            showTask: true,
+            title: "8-mashq. Oddiy uslubdan rasmiy uslubga o'tkazing",
+            intro: "Gapni mos отглагольное существительное yordamida rasmiyroq uslubda qayta yozing. Bu ochiq mashq — bir nechta to'g'ri variant bor.",
+            namuna: "Мы решили проблему. → Решение проблемы стало нашей главной задачей.",
+            items: [
+                { free: true, q: "Мы развиваем проект.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Мы обсуждаем новый план.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Компания создаёт новую программу.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Специалисты анализируют данные.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Руководство изменяет систему.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Мы используем новые технологии.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Команда готовит презентацию.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Учёные исследуют проблему.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Сотрудники планируют работу.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." },
+                { free: true, q: "Руководство принимает решение.", answer: null, placeholder: "Rasmiy uslubdagi to‘liq gap yozing..." }
+            ]
+        },
+        {
+            id: "ex9",
+            type: "input",
+            icon: "fa-eraser",
+            showTask: true,
+            title: "9-mashq. Xatoni toping va tuzating",
+            intro: "Har bir gapda otli konstruksiya yoki moslashuv xatosi bor. To'g'rilangan to'liq gapni yozing.",
+            namuna: "Развитие проекта требуют времени. → Развитие проекта требует времени.",
+            items: [
+                { q: "Решение проблема требует опыта.", answer: "Решение проблемы требует опыта." },
+                { q: "Принятие решение заняло много времени.", answer: "Принятие решения заняло много времени." },
+                { q: "Обсуждение вопрос продолжалось долго.", answer: "Обсуждение вопроса продолжалось долго." },
+                { q: "Создание нового проекта требуют финансирования.", answer: "Создание нового проекта требует финансирования." },
+                { q: "Анализ ситуации показало несколько ошибок.", answer: "Анализ ситуации показал несколько ошибок." },
+                { q: "Изменение системе необходимо.", answer: "Изменение системы необходимо." },
+                { q: "Использование современные технологии повышает эффективность.", answer: "Использование современных технологий повышает эффективность." },
+                { q: "Планирование работы занимают несколько дней.", answer: "Планирование работы занимает несколько дней." },
+                { q: "Организация мероприятие потребовала много усилий.", answer: "Организация мероприятия потребовала много усилий." },
+                { q: "Исследование рынка продолжают уже несколько месяцев.", answer: "Исследование рынка продолжается уже несколько месяцев." }
+            ]
+        },
+        {
+            id: "ex10",
+            type: "input",
+            icon: "fa-language",
+            showTask: true,
+            title: "10-mashq. O'zbekchadan rus tiliga tarjima qiling",
+            intro: "Отглагольное существительное qatnashgan ruscha birikmani yozing.",
+            namuna: "loyihani rivojlantirish → развитие проекта",
+            items: [
+                { q: "strategiya ishlab chiqish", answer: "разработка стратегии" },
+                { q: "maqsadga erishish", answer: "достижение цели" },
+                { q: "sifatni yaxshilash", answer: "улучшение качества" },
+                { q: "samaradorlikni oshirish", answer: "повышение эффективности" },
+                { q: "xarajatlarni kamaytirish", answer: "снижение расходов" },
+                { q: "daromadlarni oshirish", answer: "увеличение доходов" },
+                { q: "imkoniyatlarni kengaytirish", answer: "расширение возможностей" },
+                { q: "ma’lumot olish", answer: "получение информации" },
+                { q: "bilimlarni qo‘llash", answer: "применение знаний" },
+                { q: "natijalarni baholash", answer: "оценка результатов" }
+            ]
+        },
+        {
+            id: "audio1",
+            type: "choice",
+            style: "tf",
+            icon: "fa-headphones",
+            showTask: true,
+            title: "Audio bo'yicha «Rost yoki yolg'on» mashqi",
+            intro: "«Развитие нового проекта» audiosini tinglang va gaplar «Правда» yoki «Ложь» ekanini aniqlang.",
+            audioSrc: "audios/%D0%912%2011%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
+            items: [
+                { q: "Современный проект требует только хорошей идеи.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "В начале работы команда проводит анализ ситуации.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Команда не обсуждает план проекта.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Принятие решений является важной частью работы над проектом.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Руководитель должен учитывать возможные риски.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Решение проблемы всегда требует только одного варианта.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Для успешной работы могут использоваться современные технологии.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Команда регулярно оценивает результаты своей работы.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Если первоначальный план не работает, стратегию нельзя изменить.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Успех проекта зависит от эффективного сотрудничества команды.", options: ["Правда", "Ложь"], answer: "Правда" }
+            ]
+        }
+    ];
+
+    var LESSON_12_GRAMMAR = "<div class=\"b2g\"><div class=\"b2g-lead\"><div class=\"b2g-lead-title\">Пассивные конструкции</div><p>Passiv konstruksiya harakatni <b>kim</b> bajarganiga emas, harakat <b>nimaga</b> ta’sir qilganiga e’tibor qaratadi. U ish jarayonlari, texnologiya va rasmiy uslubda ayniqsa ko‘p ishlatiladi.</p></div><h4>1. Что такое пассивная конструкция</h4><table class=\"b2g-t\"><tr><th>Актив — bajaruvchi muhim</th><th>Пассив — obyekt/natija muhim</th></tr><tr><td>Компания разработала новый проект.</td><td>Новый проект был разработан компанией.</td></tr><tr><td>Специалисты проверяют документы.</td><td>Документы проверяются специалистами.</td></tr><tr><td>Руководство приняло решение.</td><td>Было принято решение.</td></tr></table><p>Bajaruvchi noma’lum yoki muhim bo‘lmasa, u umuman aytilmaydi: <b>Было принято решение.</b> · <b>Проект разрабатывается.</b></p><h4>2. Актив → пассив: роли членов предложения</h4><p>Passivga o‘tkazishda gap bo‘laklari <b>rol almashadi</b>.</p><table class=\"b2g-t\"><tr><th>Актив</th><th>Пассив</th></tr><tr><td><b>подлежащее:</b> компания</td><td><b>агент:</b> компанией — творительный падеж</td></tr><tr><td><b>сказуемое:</b> разработала</td><td><b>сказуемое:</b> был разработан</td></tr><tr><td><b>прямое дополнение:</b> проект — винительный</td><td><b>подлежащее:</b> проект — именительный</td></tr></table><div class=\"b2g-tip\">Asosiy qoida: aktiv gapdagi <b>to‘g‘ridan-to‘g‘ri to‘ldiruvchi</b> (винительный падеж) passiv gapda <b>ega</b> (именительный падеж) bo‘lib qoladi.</div><h4>3. Краткое страдательное причастие и согласование</h4><p>Qisqa sifatdosh <b>ega</b> bilan jins va songa moslashadi.</p><table class=\"b2g-t\"><tr><th>Ega</th><th>Qisqa sifatdosh</th></tr><tr><td>проект — erkak</td><td>разработан</td></tr><tr><td>система — ayol</td><td>разработана</td></tr><tr><td>решение — o‘rta</td><td>принято</td></tr><tr><td>документы — ko‘plik</td><td>подготовлены</td></tr></table><p><b>Быть</b> ham, sifatdosh ham bir vaqtda moslashadi:</p><table class=\"b2g-t\"><tr><th>O‘tgan zamon</th><th>Kelasi zamon</th></tr><tr><td>проект <b>был</b> разработан</td><td>проект <b>будет</b> разработан</td></tr><tr><td>система <b>была</b> разработана</td><td>система <b>будет</b> разработана</td></tr><tr><td>решение <b>было</b> принято</td><td>решение <b>будет</b> принято</td></tr><tr><td>документы <b>были</b> подготовлены</td><td>документы <b>будут</b> подготовлены</td></tr></table><h4>4. Настоящее состояние: нулевая связка</h4><p>Hozirgi zamonda natija/holatni bildirganda <b>быть</b> fe’li <b>tushib qoladi</b>.</p><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>Документ подписан.</td><td>Hujjat imzolangan.</td></tr><tr><td>Решение принято.</td><td>Qaror qabul qilingan.</td></tr><tr><td>Система установлена.</td><td>Tizim o‘rnatilgan.</td></tr><tr><td>Ошибки исправлены.</td><td>Xatolar tuzatilgan.</td></tr></table><div class=\"b2g-warn\">❌ <b>Документ есть подписан.</b> — rus tilida bunday deyilmaydi. Hozirgi zamonda bog‘lama <b>yozilmaydi</b>.</div><h4>5. Процесс: пассив на -ся</h4><p>Jarayon davom etayotganini yoki muntazam takrorlanishini bildirish uchun <b>-ся</b> shakli ishlatiladi — odatda <b>tugallanmagan</b> fe’ldan.</p><table class=\"b2g-t\"><tr><th>Ma’no</th><th>Namuna</th></tr><tr><td>hozir davom etayapti</td><td>Система сейчас тестируется.</td></tr><tr><td>muntazam takrorlanadi</td><td>Документы проверяются каждый день.</td></tr><tr><td>umumiy texnologik jarayon</td><td>Данные обрабатываются автоматически.</td></tr></table><div class=\"b2g-warn\"><b>Diqqat: har qanday -ся passiv emas!</b> <b>-ся</b> rus tilida ko‘p vazifa bajaradi. U faqat aktiv gapga qayta yozish mumkin bo‘lgandagina passiv hisoblanadi:<table class=\"b2g-t\"><tr><th>Passiv -ся</th><th>Aktiv muqobili</th></tr><tr><td>Документы проверяются сотрудниками.</td><td>Сотрудники проверяют документы.</td></tr><tr><td>Проект разрабатывается инженерами.</td><td>Инженеры разрабатывают проект.</td></tr></table><p>Ammo <b>улыбаться · бояться · надеяться</b> — bular <b>-ся</b> bilan tugasa ham passiv emas.</p></div><p>Pedagogik qarama-qarshilik: <b>jarayon / takror</b> → ko‘pincha tugallanmagan <b>-ся</b>; <b>tugallangan natija</b> → ko‘pincha qisqa sifatdosh.</p><h4>6. Прошедшее и будущее с «быть»</h4><table class=\"b2g-t\"><tr><th>Zamon</th><th>Namuna</th></tr><tr><td>O‘tgan zamon</td><td>Документ был подписан вчера. · Документы были подписаны вчера.</td></tr><tr><td>Hozirgi holat</td><td>Документ подписан. — bog‘lamasiz</td></tr><tr><td>Kelasi zamon</td><td>Документ будет подписан завтра. · Документы будут подписаны завтра.</td></tr></table><h4>7. Исполнитель: творительный падеж</h4><p>Bajaruvchi <b>кем?</b> savoliga javob beradi va <b>творительный падеж</b>da keladi.</p><table class=\"b2g-t\"><tr><th>Именительный</th><th>Творительный</th></tr><tr><td>компания</td><td>компанией</td></tr><tr><td>специалист</td><td>специалистом</td></tr><tr><td>инженеры</td><td>инженерами</td></tr><tr><td>руководство</td><td>руководством</td></tr></table><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>Проект был разработан инженерами.</td><td>Loyiha muhandislar tomonidan ishlab chiqildi.</td></tr><tr><td>Решение было принято руководством.</td><td>Qaror rahbariyat tomonidan qabul qilindi.</td></tr></table><div class=\"b2g-tip\"><b>B2 nuansi:</b> bajaruvchini ko‘rsatish <b>majburiy emas</b>. Rus tili uni ayon yoki muhim bo‘lmaganda ko‘pincha <b>tushirib qoldiradi</b>: <b>Документы были подготовлены заранее.</b> Har bir passiv gapga sun’iy ravishda agent qo‘shmang.</div><h4>8. «Было принято решение»: порядок слов, а не безличность</h4><div class=\"b2g-warn\">Bu gap <b>shaxssiz emas</b>. Unda ega bor — bu <b>решение</b>, именительный падежda. U shunchaki kesimdan <b>keyin</b> turadi, chunki rasmiy rus tilida kesim oldinga chiqishi odatiy.</div><table class=\"b2g-t\"><tr><th>Bir xil grammatik yadro</th><th>Faqat so‘z tartibi boshqacha</th></tr><tr><td>Решение было принято.</td><td>Было принято решение.</td></tr><tr><td>Система была создана.</td><td>Была создана система.</td></tr><tr><td>Правила были разработаны.</td><td>Были разработаны правила.</td></tr><tr><td>Договор был подписан.</td><td>Был подписан договор.</td></tr></table><p><b>Moslashuv buni isbotlaydi:</b> kesim baribir egaga moslashadi — <b>было</b> принято реше<b>ние</b>, <b>была</b> создана систе<b>ма</b>, <b>были</b> разработаны прави<b>ла</b>.</p><p>Shu sababli ko‘p ishlatiladigan model: <b>Было принято решение + infinitiv</b> — <i>Было принято решение изменить план.</i></p><h4>9. Где пассив естественен и где нет</h4><div class=\"b2g-warn\"><p>Passiv <b>mexanik</b> yasalmaydi. U asosan <b>o‘timli</b> (to‘g‘ridan-to‘g‘ri to‘ldiruvchi oladigan) fe’llar bilan bog‘liq: to‘ldiruvchi ega bo‘la olsagina passiv mumkin.</p><p>Shuning uchun «har qanday fe’lga <b>-ся</b> qo‘shsam passiv bo‘ladi» yoki «har qanday fe’ldan qisqa sifatdosh yasayman» degan qoida <b>yo‘q</b>. Har bir fe’lning o‘z shakli bor — uni lug‘atdan tekshiring.</p></div><div class=\"b2g-chips\"><span>разработать → разработан</span><span>создать → создана</span><span>принять → принято</span><span>подготовить → подготовлены</span><span>подписать → подписан</span></div><h4>10. Пассив в официальном и техническом стиле</h4><p>Passiv quyidagi sohalarda tabiiy: ish jarayonlari, texnologiya, ishlab chiqarish, ilmiy tadqiqotlar, loyihalar, rasmiy hujjatlar, yangiliklar va hisobotlar.</p><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>Новый проект был запущен в январе.</td><td>Yangi loyiha yanvarda ishga tushirildi.</td></tr><tr><td>Новая технология внедряется на предприятии.</td><td>Yangi texnologiya korxonada joriy qilinmoqda.</td></tr><tr><td>Данные обрабатываются автоматически.</td><td>Ma’lumotlar avtomatik qayta ishlanadi.</td></tr><tr><td>Результаты исследования были опубликованы вчера.</td><td>Tadqiqot natijalari kecha e’lon qilindi.</td></tr></table><div class=\"b2g-tip\"><b>Passiv har doim yaxshiroq degani emas.</b> Bajaruvchi muhim bo‘lganda aktiv tabiiyroq: <b>Компания запустила проект.</b> Keraksiz passiv gapni og‘irlashtiradi.</div><div class=\"b2g-check\"><h4>Itogiy algoritm</h4><ul class=\"b2g-list\"><li>Aktiv gapdagi <b>to‘ldiruvchini</b> toping — u passiv gapda <b>ega</b> bo‘ladi.</li><li>Ma’noni tanlang: <b>jarayon/takror</b> → <b>-ся</b>; <b>hozirgi natija</b> → qisqa sifatdosh, bog‘lamasiz; <b>o‘tgan natija</b> → был/была/было/были + sifatdosh; <b>kelasi natija</b> → будет/будут + sifatdosh.</li><li>Kesimni <b>egaga</b> moslang — bog‘lama ham, sifatdosh ham.</li><li>Bajaruvchi muhim bo‘lsa — <b>творительный падеж</b>; muhim bo‘lmasa — <b>tushiring</b>.</li><li>Bu fe’l uchun passiv tabiiy ekanini tekshiring — mexanik yasamang.</li></ul></div></div>";
+
+    var LESSON_12_EXERCISES = [
+        {
+            id: "ex1",
+            type: "input",
+            icon: "fa-rotate",
+            showTask: true,
+            title: "1-mashq. Aktiv gapni passiv gapga aylantiring",
+            intro: "Gapni passivga aylantiring: avvalgi to'ldiruvchidan boshlang, o'tgan zamon passivini ishlating va bajaruvchini gap OXIRIDA творительный падежda saqlang.",
+            namuna: "Компания разработала новый проект. → Новый проект был разработан компанией.",
+            items: [
+                { q: "Специалисты разработали новую систему.", answer: "Новая система была разработана специалистами." },
+                { q: "Руководство приняло важное решение.", answer: "Важное решение было принято руководством." },
+                { q: "Инженеры создали современную технологию.", answer: "Современная технология была создана инженерами." },
+                { q: "Сотрудники подготовили документы.", answer: "Документы были подготовлены сотрудниками." },
+                { q: "Компания запустила новый проект.", answer: "Новый проект был запущен компанией." },
+                { q: "Учёные провели исследование.", answer: "Исследование было проведено учёными." },
+                { q: "Программисты обновили программу.", answer: "Программа была обновлена программистами." },
+                { q: "Менеджеры обсудили проблему.", answer: "Проблема была обсуждена менеджерами." },
+                { q: "Работники проверили оборудование.", answer: "Оборудование было проверено работниками." },
+                { q: "Директор подписал договор.", answer: "Договор был подписан директором." }
+            ]
+        },
+        {
+            id: "ex2",
+            type: "input",
+            icon: "fa-equals",
+            showTask: true,
+            title: "2-mashq. был / была / было / были",
+            intro: "Egaga qarab mos bog'lamani yozing. Faqat bitta so'z yozing.",
+            namuna: "Новая программа ___ разработана специалистами. → была",
+            items: [
+                { q: "Новый проект ______ запущен в прошлом месяце.", answer: "был" },
+                { q: "Новая система ______ создана инженерами.", answer: "была" },
+                { q: "Важное решение ______ принято руководством.", answer: "было" },
+                { q: "Все документы ______ подготовлены заранее.", answer: "были" },
+                { q: "Новая технология ______ внедрена на предприятии.", answer: "была" },
+                { q: "Результаты исследования ______ опубликованы вчера.", answer: "были" },
+                { q: "Новое оборудование ______ установлено в цехе.", answer: "было" },
+                { q: "Все проблемы ______ успешно решены.", answer: "были" },
+                { q: "Информация ______ проверена специалистами.", answer: "была" },
+                { q: "Новые правила ______ разработаны компанией.", answer: "были" }
+            ]
+        },
+        {
+            id: "ex3",
+            type: "input",
+            icon: "fa-arrows-rotate",
+            showTask: true,
+            title: "3-mashq. -ся shaklidagi passiv fe'lni qo'ying",
+            intro: "Qavs ichidagi fe'ldan -ся shaklini yasang va faqat fe'l shaklini yozing.",
+            namuna: "Проект сейчас ______ специалистами. (разрабатывать) → разрабатывается",
+            items: [
+                { q: "Новая программа сейчас ______ программистами. (тестировать)", answer: "тестируется" },
+                { q: "Документы каждый день ______ сотрудниками. (проверять)", answer: "проверяются" },
+                { q: "Новая система сейчас ______ инженерами. (создавать)", answer: "создаётся" },
+                { q: "Информация регулярно ______ на сайте. (обновлять)", answer: "обновляется" },
+                { q: "Оборудование ______ специалистами. (проверять)", answer: "проверяется" },
+                { q: "Новый проект сейчас ______ нашей командой. (обсуждать)", answer: "обсуждается" },
+                { q: "Данные автоматически ______ системой. (обрабатывать)", answer: "обрабатываются" },
+                { q: "Новая технология ______ на предприятии. (внедрять)", answer: "внедряется" },
+                { q: "Все заявки ______ менеджерами. (рассматривать)", answer: "рассматриваются" },
+                { q: "Программа сейчас ______ пользователями. (тестировать)", answer: "тестируется" }
+            ]
+        },
+        {
+            id: "ex4",
+            type: "input",
+            icon: "fa-check-double",
+            showTask: true,
+            title: "4-mashq. был/была/было/были + страдательное причастие",
+            intro: "Berilgan so'zlardan to'liq passiv gap tuzing. Bog'lama ham, sifatdosh ham egaga moslashadi.",
+            namuna: "Документы / подготовить → Документы были подготовлены.",
+            items: [
+                { q: "Новый проект / разработать", answer: "Новый проект был разработан." },
+                { q: "Система / создать", answer: "Система была создана." },
+                { q: "Решение / принять", answer: "Решение было принято." },
+                { q: "Документы / проверить", answer: "Документы были проверены." },
+                { q: "Технология / внедрить", answer: "Технология была внедрена." },
+                { q: "Результаты / опубликовать", answer: "Результаты были опубликованы." },
+                { q: "Оборудование / установить", answer: "Оборудование было установлено." },
+                { q: "Проблема / решить", answer: "Проблема была решена." },
+                { q: "Договор / подписать", answer: "Договор был подписан." },
+                { q: "Новые правила / разработать", answer: "Новые правила были разработаны." }
+            ]
+        },
+        {
+            id: "ex5",
+            type: "input",
+            icon: "fa-user-gear",
+            showTask: true,
+            title: "5-mashq. Кем? — bajaruvchini to'g'ri shaklga qo'ying",
+            intro: "Qavs ichidagi so'zni творительный падежga qo'ying. Faqat o'sha so'zni yozing.",
+            namuna: "Проект был разработан ______. (инженеры) → инженерами",
+            items: [
+                { q: "Документ был подготовлен ______. (специалист)", answer: "специалистом" },
+                { q: "Система была создана ______. (программисты)", answer: "программистами" },
+                { q: "Решение было принято ______. (руководство)", answer: "руководством" },
+                { q: "Исследование было проведено ______. (учёные)", answer: "учёными" },
+                { q: "Договор был подписан ______. (директор)", answer: "директором" },
+                { q: "Новая технология была разработана ______. (компания)", answer: "компанией" },
+                { q: "Оборудование было установлено ______. (рабочие)", answer: "рабочими" },
+                { q: "Программа была протестирована ______. (пользователи)", answer: "пользователями" },
+                { q: "Проект был представлен ______. (менеджер)", answer: "менеджером" },
+                { q: "Новые правила были предложены ______. (сотрудники)", answer: "сотрудниками" }
+            ]
+        },
+        {
+            id: "ex6",
+            type: "choice",
+            style: "test",
+            icon: "fa-scale-balanced",
+            showTask: true,
+            title: "6-mashq. Aktiv yoki passiv konstruksiyani tanlang",
+            intro: "Qavsda ko'rsatilgan maqsadli залогga mos variantni tanlang: [АКТИВ] yoki [ПАССИВ].",
+            namuna: "[АКТИВ] Компания ______ новый проект. → запустила",
+            items: [
+                { q: "[АКТИВ] Руководство ______ важное решение.", options: ["приняло", "было принято"], answer: "приняло" },
+                { q: "[ПАССИВ] Новый проект ______ в прошлом году.", options: ["разработала компания", "был разработан компанией"], answer: "был разработан компанией" },
+                { q: "[АКТИВ] Специалисты ______ систему.", options: ["тестируют", "тестируется"], answer: "тестируют" },
+                { q: "[ПАССИВ] Документы ______ вчера.", options: ["подготовили сотрудники", "были подготовлены сотрудниками"], answer: "были подготовлены сотрудниками" },
+                { q: "[ПАССИВ] Новая технология ______ на предприятии.", options: ["внедряется", "внедряют"], answer: "внедряется" },
+                { q: "[АКТИВ] Инженеры ______ оборудование.", options: ["проверяют", "проверяется"], answer: "проверяют" },
+                { q: "[ПАССИВ] Все данные ______ автоматически.", options: ["обрабатываются", "обрабатывают"], answer: "обрабатываются" },
+                { q: "[АКТИВ] Компания ______ новую программу.", options: ["создала", "была создана"], answer: "создала" },
+                { q: "[ПАССИВ] Результаты исследования ______ вчера.", options: ["опубликовали", "были опубликованы"], answer: "были опубликованы" },
+                { q: "[АКТИВ] Менеджеры ______ проблему на встрече.", options: ["обсудили", "была обсуждена"], answer: "обсудили" }
+            ]
+        },
+        {
+            id: "ex7",
+            type: "input",
+            icon: "fa-gavel",
+            showTask: true,
+            title: "7-mashq. «Было принято решение…»",
+            intro: "Gapni «Было принято решение + infinitiv» modeli bilan qayta yozing va to'liq gap yozing.",
+            namuna: "Руководство решило изменить план. → Было принято решение изменить план.",
+            items: [
+                { q: "Компания решила открыть новый филиал.", answer: "Было принято решение открыть новый филиал." },
+                { q: "Руководство решило перенести встречу.", answer: "Было принято решение перенести встречу." },
+                { q: "Команда решила изменить стратегию.", answer: "Было принято решение изменить стратегию." },
+                { q: "Директор решил обновить оборудование.", answer: "Было принято решение обновить оборудование." },
+                { q: "Компания решила запустить новый продукт.", answer: "Было принято решение запустить новый продукт." },
+                { q: "Специалисты решили провести дополнительное исследование.", answer: "Было принято решение провести дополнительное исследование." },
+                { q: "Руководство решило внедрить новую систему.", answer: "Было принято решение внедрить новую систему." },
+                { q: "Команда решила начать проект в сентябре.", answer: "Было принято решение начать проект в сентябре." },
+                { q: "Компания решила изменить условия работы.", answer: "Было принято решение изменить условия работы." },
+                { q: "Руководство решило увеличить количество сотрудников.", answer: "Было принято решение увеличить количество сотрудников." }
+            ]
+        },
+        {
+            id: "ex8",
+            type: "input",
+            icon: "fa-link",
+            showTask: true,
+            title: "8-mashq. Ikki gapni bitta passiv gapga birlashtiring",
+            intro: "Ikki gapni passiv konstruksiya yordamida BITTA to'liq gapga birlashtiring. Bu ochiq mashq — bir nechta to'g'ri variant bor.",
+            namuna: "Специалисты разработали систему. Система работает автоматически. → Специалистами была разработана система, которая работает автоматически.",
+            items: [
+                { free: true, q: "Инженеры создали новое оборудование.\nОборудование используется на заводе.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Компания разработала программу.\nПрограмма помогает сотрудникам.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Учёные провели исследование.\nИсследование показало интересные результаты.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Специалисты подготовили отчёт.\nОтчёт был представлен директору.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Программисты создали приложение.\nПриложение используется клиентами.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Компания внедрила новую систему.\nСистема ускоряет работу.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Сотрудники подготовили документы.\nДокументы были отправлены партнёрам.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Руководство разработало новые правила.\nПравила применяются с января.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Инженеры протестировали технологию.\nТехнология используется на производстве.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." },
+                { free: true, q: "Учёные опубликовали результаты.\nРезультаты были представлены на конференции.", answer: null, placeholder: "Passiv konstruksiyali bitta to‘liq gap yozing..." }
+            ]
+        },
+        {
+            id: "ex9",
+            type: "input",
+            icon: "fa-eraser",
+            showTask: true,
+            title: "9-mashq. Xatoni toping va gapni to'g'rilang",
+            intro: "Har bir gapda moslashuv xatosi bor. To'g'rilangan to'liq gapni yozing.",
+            namuna: "Новая система был разработана специалистами. → Новая система была разработана специалистами.",
+            items: [
+                { q: "Новый проект была запущен компанией.", answer: "Новый проект был запущен компанией." },
+                { q: "Документы был подготовлены сотрудниками.", answer: "Документы были подготовлены сотрудниками." },
+                { q: "Новая технология были внедрена на предприятии.", answer: "Новая технология была внедрена на предприятии." },
+                { q: "Решение была принято руководством.", answer: "Решение было принято руководством." },
+                { q: "Все данные был обработаны системой.", answer: "Все данные были обработаны системой." },
+                { q: "Новые правила было разработаны специалистами.", answer: "Новые правила были разработаны специалистами." },
+                { q: "Программа были протестирована пользователями.", answer: "Программа была протестирована пользователями." },
+                { q: "Оборудование была установлено инженерами.", answer: "Оборудование было установлено инженерами." },
+                { q: "Результаты исследования было опубликованы вчера.", answer: "Результаты исследования были опубликованы вчера." },
+                { q: "Важные документы были подписан директором.", answer: "Важные документы были подписаны директором." }
+            ]
+        },
+        {
+            id: "ex10",
+            type: "input",
+            icon: "fa-clock",
+            showTask: true,
+            title: "10-mashq. Passivning mos zamon va turini qo'ying",
+            intro: "Vaqt ko'rsatkichiga qarab mos passiv shaklni yozing: jarayon (-ся), hozirgi natija (bog'lamasiz), o'tgan yoki kelasi natija.",
+            namuna: "Вчера договор ______. (подписать) → был подписан",
+            items: [
+                { q: "В прошлом году проект ______. (разработать)", answer: "был разработан" },
+                { q: "Сейчас новая версия ______ пользователями. (тестировать)", answer: "тестируется" },
+                { q: "Завтра документы ______ руководителем. (подписать)", answer: "будут подписаны" },
+                { q: "Решение уже ______. (принять)", answer: "принято" },
+                { q: "Данные каждый день ______ автоматически. (обрабатывать)", answer: "обрабатываются" },
+                { q: "На следующей неделе новая функция ______. (запустить)", answer: "будет запущена" },
+                { q: "Оборудование вчера ______ в цехе. (установить)", answer: "было установлено" },
+                { q: "Информация регулярно ______ на сайте. (обновлять)", answer: "обновляется" },
+                { q: "Результаты ______ к пятнице. (опубликовать)", answer: "будут опубликованы" },
+                { q: "Ошибка уже ______. (исправить)", answer: "исправлена" }
+            ]
+        },
+        {
+            id: "audio1",
+            type: "choice",
+            style: "tf",
+            icon: "fa-headphones",
+            showTask: true,
+            title: "Audio bo'yicha «Rost yoki yolg'on» mashqi",
+            intro: "«Как создаётся современный продукт?» audiosini tinglang va gaplar «Правда» yoki «Ложь» ekanini aniqlang.",
+            audioSrc: "audios/%D0%912%2012%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
+            items: [
+                { q: "Сначала проводится исследование рынка и анализируются потребности клиентов.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Сначала продукт сразу запускается без предварительной проверки.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Специалистами создаётся первый вариант продукта.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Перед запуском продукт не тестируется.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Найденные во время тестирования ошибки исправляются.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "После запуска продукт больше никогда не обновляется.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Новые функции могут добавляться после запуска продукта.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Отзывы пользователей анализируются при совершенствовании продукта.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Современные мобильные приложения никогда не изменяются.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "В описании рабочих и технологических процессов часто используются пассивные конструкции.", options: ["Правда", "Ложь"], answer: "Правда" }
+            ]
+        }
+    ];
+
+    var LESSON_13_GRAMMAR = "<div class=\"b2g\"><div class=\"b2g-lead\"><div class=\"b2g-lead-title\">Предлоги и управление</div><p>Ba’zi predloglar o‘zidan keyin qat’iy bir kelishikni talab qiladi. Bu hodisa <b>управление</b> deyiladi. Predlogni to‘g‘ri kelishik bilan <b>birga</b> bilish — rasmiy nutq, hujjatlar va ish yozishmalari uchun B2 darajadagi asosiy talab.</p></div><h4>1. Что такое управление</h4><p>Predlogni yolg‘iz yodlash yetarli emas: har bir predlog <b>o‘z savolini</b> va <b>o‘z kelishigini</b> olib yuradi. Predlogdan keyin kelgan ot ham, uni aniqlab kelgan sifat ham <b>o‘sha kelishikka</b> qo‘yiladi.</p><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Savol va kelishik</th></tr><tr><td>благодаря</td><td>кому? чему? — <b>дательный падеж</b></td></tr><tr><td>несмотря на</td><td>кого? что? — <b>винительный падеж</b></td></tr><tr><td>в связи с</td><td>кем? чем? — <b>творительный падеж</b></td></tr><tr><td>согласно</td><td>кому? чему? — <b>дательный падеж</b></td></tr><tr><td>в соответствии с</td><td>кем? чем? — <b>творительный падеж</b></td></tr></table><div class=\"b2g-tip\">Yangi konstruksiyani <b>savoli bilan birga</b> yodlang: «благодаря — чему?», «несмотря на — что?». Savolning o‘zi kelishikni aytib turadi.</div><h4>2. Благодаря + дательный падеж</h4><p><b>благодаря кому? чему?</b> — natijaga <b>imkon bergan</b> sabab.</p><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>Благодаря опыту сотрудник быстро решил проблему.</td><td>Tajribasi tufayli xodim muammoni tez hal qildi.</td></tr><tr><td>Благодаря поддержке коллег проект был успешно завершён.</td><td>Hamkasblarning yordami tufayli loyiha muvaffaqiyatli yakunlandi.</td></tr><tr><td>Благодаря новым технологиям компания сократила расходы.</td><td>Yangi texnologiyalar tufayli kompaniya xarajatlarni kamaytirdi.</td></tr></table><div class=\"b2g-warn\">❌ <b>благодаря хорошую работу</b> · ✅ <b>благодаря хорошей работе</b> — sifat ham, ot ham дательный падежda.</div><p><b>Ma’no nuansi.</b> <b>благодаря</b> odatda <b>qulay yoki betaraf</b>, natijaga imkon bergan sababni kiritadi. Salbiy, istalmagan sabab uchun rus tilida ko‘pincha boshqa vosita tanlanadi:</p><table class=\"b2g-t\"><tr><th>Vosita</th><th>Odatdagi ma’no</th></tr><tr><td><b>благодаря</b> + Д.п.</td><td>qulay, imkon beruvchi sabab: <b>Благодаря поддержке партнёров работа идёт по графику.</b></td></tr><tr><td><b>из-за</b> + Р.п.</td><td>istalmagan, muammoli sabab: <b>Из-за технических проблем система не работает.</b></td></tr><tr><td><b>в связи с</b> + Т.п.</td><td>betaraf yoki rasmiy sabab va bog‘liqlik: <b>В связи с изменением графика встреча переносится.</b></td></tr></table><div class=\"b2g-tip\">Bu <b>tendensiya</b>, temir qoida emas — <b>благодаря</b> «faqat ijobiy» degan qat’iy cheklov yo‘q. Amaliy tanlov: sabab yordam bergan bo‘lsa — <b>благодаря</b>; xalaqit bergan bo‘lsa — <b>из-за</b>; betaraf rasmiy bayon bo‘lsa — <b>в связи с</b>.</div><h4>3. Несмотря на + винительный падеж</h4><p><b>несмотря на кого? что?</b> — to‘siq bo‘lgan, ammo harakatni <b>to‘xtatmagan</b> holat.</p><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>Несмотря на трудности, работа продолжилась.</td><td>Qiyinchiliklarga qaramay, ish davom etdi.</td></tr><tr><td>Несмотря на плохую погоду, сотрудники приехали на встречу.</td><td>Yomon ob-havoga qaramay, xodimlar uchrashuvga kelishdi.</td></tr><tr><td>Несмотря на высокую стоимость, услуга пользуется спросом.</td><td>Yuqori narxga qaramay, xizmatga talab katta.</td></tr></table><div class=\"b2g-warn\"><p><b>Diqqat — yozilishi.</b> <b>несмотря на</b> qo‘shib yoziladi va predlog hisoblanadi, «-ga qaramay» ma’nosini beradi: <b>Несмотря на трудности, мы продолжили работу.</b></p><p><b>не смотря</b> ajratib yoziladi va ravishdosh bo‘ladi, tom ma’noda «qaramay turib, qaramasdan»: <b>Он шёл, не смотря по сторонам.</b> Bu Topic 13 konstruksiyasi emas.</p></div><h4>4. В связи с + творительный падеж</h4><p><b>в связи с кем? чем?</b> — rasmiy uslubdagi betaraf sabab yoki bog‘liqlik. E’lonlar, arizalar, xatlar va ish yozishmalarida eng ko‘p uchraydigan konstruksiya.</p><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>В связи с изменением графика встреча переносится.</td><td>Jadval o‘zgarishi munosabati bilan uchrashuv ko‘chiriladi.</td></tr><tr><td>В связи с ремонтом офис будет закрыт.</td><td>Ta’mirlash munosabati bilan ofis yopiq bo‘ladi.</td></tr><tr><td>В связи с необходимостью срочного решения вопроса совещание перенесли на утро.</td><td>Masalani zudlik bilan hal qilish zarurati sababli majlis ertalabga ko‘chirildi.</td></tr></table><div class=\"b2g-tip\"><p>Oxirgi misolda <b>ikkita</b> boshqaruv bir vaqtda ishlaydi:</p><p><b>в связи с</b> → чем? → <b>необходимостью</b> — творительный падеж; birikma ichida esa <b>решение</b> → чего? → <b>вопроса</b> — родительный падеж.</p></div><div class=\"b2g-warn\">❌ <b>решения вопрос</b> · ✅ <b>решения вопроса</b> — fe’ldan yasalgan «решение» oti o‘zidan keyin родительный падежni talab qiladi.</div><h4>5. Согласно + дательный падеж</h4><p><b>согласно кому? чему?</b> — qoida, qonun, hujjat, qaror yoki rejaga <b>asoslanib</b> ish bajarilayotganini bildiradi.</p><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>Согласно закону работодатель обязан соблюдать права сотрудников.</td><td>Qonunga muvofiq ish beruvchi xodimlarning huquqlariga rioya qilishi shart.</td></tr><tr><td>Согласно договору оплата производится в конце месяца.</td><td>Shartnomaga muvofiq to‘lov oy oxirida amalga oshiriladi.</td></tr><tr><td>Согласно плану проект должен быть завершён в декабре.</td><td>Rejaga muvofiq loyiha dekabrda yakunlanishi kerak.</td></tr></table><div class=\"b2g-warn\">❌ согласно закон<b>а</b> · ❌ согласно договор<b>ом</b> · ✅ согласно закон<b>у</b> · ✅ согласно договор<b>у</b></div><div class=\"b2g-tip\"><p><b>Chalkashtirmang.</b> <b>согласно договору</b> — «shartnomaga muvofiq»: predlog + дательный падеж.</p><p><b>согласен с договором</b> — «shartnomaga roziman»: qisqa sifat <b>согласен</b> + <b>с</b> + творительный падеж. Bu butunlay boshqa struktura. Maqsadli konstruksiya sifatida <b>согласно с договором</b> deb yozmang.</p></div><h4>6. В соответствии с + творительный падеж</h4><p><b>в соответствии с кем? чем?</b> — qoida yoki talablarga <b>rasmiy muvofiqlik</b>.</p><table class=\"b2g-t\"><tr><th>Rus tilida</th><th>Tarjima</th></tr><tr><td>В соответствии с законом работодатель обязан соблюдать права сотрудников.</td><td>Qonunga muvofiq ish beruvchi xodimlarning huquqlariga rioya qilishi shart.</td></tr><tr><td>В соответствии с требованиями документы необходимо обновить.</td><td>Talablarga muvofiq hujjatlarni yangilash zarur.</td></tr></table><table class=\"b2g-t\"><tr><th>Согласно + Д.п.</th><th>В соответствии с + Т.п.</th></tr><tr><td>Согласно закону…</td><td>В соответствии с законом…</td></tr><tr><td>Согласно требованиям…</td><td>В соответствии с требованиями…</td></tr></table><div class=\"b2g-tip\">Ikkalasi ham «-ga muvofiq» deb tarjima qilinadi va ko‘p kontekstda yaqin turadi, lekin <b>в соответствии с</b> ancha <b>rasmiy va kanselyar</b> ohangga ega — qonunchilik, hujjat va talablar tilida kuchliroq. Ular <b>har qanday</b> kontekstda bir-birining o‘rnini bosa oladi deb hisoblamang. Kelishik esa hech qachon almashmaydi: <b>согласно</b> — дательный, <b>в соответствии с</b> — творительный.</div><h4>7. Как выбрать конструкцию по смыслу</h4><table class=\"b2g-t\"><tr><th>Konstruksiya va kelishik</th><th>Ma’no va namuna</th></tr><tr><td><b>благодаря</b> · Д.п.</td><td>imkon bergan, qulay sabab — <b>Благодаря поддержке коллег…</b></td></tr><tr><td><b>несмотря на</b> · В.п.</td><td>to‘siq bo‘ldi, lekin harakat baribir bajarildi — <b>Несмотря на трудности…</b></td></tr><tr><td><b>в связи с</b> · Т.п.</td><td>betaraf yoki rasmiy sabab va bog‘liqlik — <b>В связи с изменением графика…</b></td></tr><tr><td><b>согласно</b> · Д.п.</td><td>qoida, hujjat, reja yoki manbaga asoslanish — <b>Согласно договору…</b></td></tr><tr><td><b>в соответствии с</b> · Т.п.</td><td>talab yoki qoidaga rasmiy muvofiqlik — <b>В соответствии с требованиями…</b></td></tr></table><div class=\"b2g-chips\"><span>sabab yordam berdi → благодаря</span><span>sabab xalaqit berdi → из-за</span><span>to‘siq bo‘ldi, lekin bajarildi → несмотря на</span><span>betaraf rasmiy sabab → в связи с</span><span>hujjatga asoslanib → согласно</span><span>talabga muvofiq → в соответствии с</span></div><h4>8. Как меняются прилагательные и существительные</h4><p>Kelishik <b>butun birikmaga</b> tegishli: sifat ham, ot ham birga o‘zgaradi — faqat bittasi emas.</p><table class=\"b2g-t\"><tr><th>Boshlang‘ich shakl</th><th>Konstruksiyada</th></tr><tr><td>хорошая подготовка</td><td>благодаря хорош<b>ей</b> подготовк<b>е</b></td></tr><tr><td>новые технологии</td><td>благодаря нов<b>ым</b> технологи<b>ям</b></td></tr><tr><td>сложная ситуация</td><td>несмотря на сложн<b>ую</b> ситуаци<b>ю</b></td></tr><tr><td>плохая погода</td><td>несмотря на плох<b>ую</b> погод<b>у</b></td></tr><tr><td>экономические трудности</td><td>несмотря на экономическ<b>ие</b> трудност<b>и</b></td></tr><tr><td>изменение графика</td><td>в связи с изменени<b>ем</b> графика</td></tr><tr><td>ремонт офиса</td><td>в связи с ремонт<b>ом</b> офиса</td></tr><tr><td>технические проблемы</td><td>в связи с техническ<b>ими</b> проблем<b>ами</b></td></tr><tr><td>новый закон</td><td>согласно нов<b>ому</b> закон<b>у</b></td></tr><tr><td>утверждённый план</td><td>согласно утверждённ<b>ому</b> план<b>у</b></td></tr><tr><td>новые требования</td><td>в соответствии с нов<b>ыми</b> требовани<b>ями</b></td></tr></table><h4>9. Формальный стиль без перегрузки</h4><div class=\"b2g-warn\"><p>Bitta gapga to‘rtta rasmiy konstruksiyani ketma-ket tiqishtirish grammatik jihatdan mumkin, lekin bu <b>yomon uslub</b> va taqlid qilish uchun namuna emas:</p><p>❌ <i>Согласно новому плану, несмотря на экономические трудности, благодаря поддержке партнёров, проект продолжается в связи с необходимостью его завершения.</i> — o‘quvchi gapning asosiy fikrini yo‘qotadi.</p></div><p>Rasmiy yozuv <b>aniq</b> bo‘lishi kerak, <b>og‘ir</b> emas. Odatda bitta gapda <b>bitta</b>, ko‘pi bilan <b>ikkita</b> konstruksiya yetarli:</p><table class=\"b2g-t\"><tr><th>Tabiiy namuna</th><th>Nega yaxshi</th></tr><tr><td>Согласно новому плану, проект продолжается несмотря на экономические трудности.</td><td>asos va to‘siq — ikkita konstruksiya, fikr aniq</td></tr><tr><td>Благодаря поддержке партнёров работа идёт по графику, а в связи с необходимостью завершить проект сроки контролируются особенно строго.</td><td>ikki qism, har birida bittadan konstruksiya</td></tr></table><div class=\"b2g-tip\">Agar bitta gapda ikkitadan ortiq rasmiy konstruksiya to‘planib qolsa — uni <b>ikki gapga bo‘ling</b>. B2 darajadagi yozma ish uchun bu eng foydali uslub qoidasi.</div><h4>10. Типичные ошибки</h4><table class=\"b2g-t\"><tr><th>❌ Xato</th><th>✅ To‘g‘ri</th></tr><tr><td>благодаря хорошую подготовку</td><td>благодаря хорошей подготовке</td></tr><tr><td>несмотря на сложной ситуации</td><td>несмотря на сложную ситуацию</td></tr><tr><td>согласно закона · согласно договором</td><td>согласно закону · согласно договору</td></tr><tr><td>в связи с изменение графика</td><td>в связи с изменением графика</td></tr><tr><td>в соответствии с требований</td><td>в соответствии с требованиями</td></tr><tr><td>решения вопрос</td><td>решения вопроса</td></tr></table><div class=\"b2g-check\"><h4>Itogiy algoritm</h4><ul class=\"b2g-list\"><li>Avval <b>ma’noni</b> aniqlang: sabab? to‘siq? betaraf rasmiy sabab? hujjat yoki qoidaga asos? talabga muvofiqlik?</li><li>Ma’noga mos <b>konstruksiyani</b> tanlang.</li><li>Konstruksiya bilan birga uning <b>kelishigini</b> darhol eslang: благодаря — Д.п., несмотря на — В.п., в связи с — Т.п., согласно — Д.п., в соответствии с — Т.п.</li><li><b>Sifatni ham, otni ham</b> o‘sha kelishikka qo‘ying.</li><li>Ma’no tabiiyligini tekshiring: yordam bergan sabab — <b>благодаря</b>, xalaqit bergan sabab — <b>из-за</b>.</li><li>Bitta gapga bir nechta rasmiy konstruksiyani <b>keraksiz</b> to‘plamang — kerak bo‘lsa gapni ikkiga bo‘ling.</li></ul></div></div>";
+
+    var LESSON_13_EXERCISES = [
+        {
+            id: "ex1",
+            type: "input",
+            icon: "fa-link",
+            showTask: true,
+            title: "1-mashq. To‘g‘ri predlogni tanlang",
+            intro: "Faqat mos konstruksiyani yozing: благодаря, несмотря на, в связи с yoki согласно. Gapning qolgan qismi o‘zgarmaydi — kelishik qaysi predlog kerakligini ko‘rsatib turibdi.",
+            namuna: "______ поддержке коллег проект был успешно завершён. → Благодаря",
+            items: [
+                { q: "______ новым технологиям компания увеличила производство.", answer: "Благодаря" },
+                { q: "______ сложную ситуацию сотрудники продолжили работу.", answer: "Несмотря на" },
+                { q: "______ изменением расписания встреча переносится.", answer: "В связи с" },
+                { q: "______ договору оплата производится ежемесячно.", answer: "Согласно" },
+                { q: "______ помощи специалистов проблема была решена.", answer: "Благодаря" },
+                { q: "______ плохую погоду мероприятие состоялось.", answer: "Несмотря на" },
+                { q: "______ необходимостью срочного ремонта офис будет закрыт.", answer: "В связи с" },
+                { q: "______ правилам безопасности сотрудники должны использовать защитную одежду.", answer: "Согласно" },
+                { q: "______ профессиональному опыту специалист быстро нашёл решение.", answer: "Благодаря" },
+                { q: "______ экономические трудности компания продолжает развиваться.", answer: "Несмотря на" }
+            ]
+        },
+        {
+            id: "ex2",
+            type: "input",
+            icon: "fa-pen",
+            showTask: true,
+            title: "2-mashq. Qavs ichidagi so‘zni to‘g‘ri kelishikka qo‘ying",
+            intro: "Faqat qavs ichidagi birikmani to‘g‘ri kelishikda yozing. Sifat ham, ot ham o‘zgaradi.",
+            namuna: "Благодаря (опытный специалист) проблема была решена. → опытному специалисту",
+            items: [
+                { q: "Благодаря (поддержка коллег) проект был завершён.", answer: "поддержке коллег" },
+                { q: "Согласно (новый закон) компания изменила правила.", answer: "новому закону" },
+                { q: "Несмотря на (сложная ситуация) сотрудники продолжили работу.", answer: "сложную ситуацию" },
+                { q: "В связи с (ремонт офиса) встреча состоится онлайн.", answer: "ремонтом офиса" },
+                { q: "Благодаря (современные технологии) производство стало быстрее.", answer: "современным технологиям" },
+                { q: "Согласно (договор) клиент должен оплатить услугу заранее.", answer: "договору" },
+                { q: "Несмотря на (экономические трудности) предприятие продолжает работать.", answer: "экономические трудности" },
+                { q: "В связи с (изменение графика) занятие перенесли.", answer: "изменением графика" },
+                { q: "Благодаря (профессиональный подход) команда добилась успеха.", answer: "профессиональному подходу" },
+                { q: "Согласно (утверждённый план) работа должна завершиться в сентябре.", answer: "утверждённому плану" }
+            ]
+        },
+        {
+            id: "ex3",
+            type: "input",
+            icon: "fa-triangle-exclamation",
+            showTask: true,
+            title: "3-mashq. Xatoni toping va tuzating",
+            intro: "Har bir gapda boshqaruv xatosi bor: predlogdan keyingi kelishik noto‘g‘ri. To‘g‘rilangan gapni to‘liq yozing.",
+            namuna: "Согласно нового закона компания изменила правила. → Согласно новому закону компания изменила правила.",
+            items: [
+                { q: "Благодаря хорошую подготовку команда победила.", answer: "Благодаря хорошей подготовке команда победила." },
+                { q: "Несмотря на сложной ситуации проект продолжается.", answer: "Несмотря на сложную ситуацию проект продолжается." },
+                { q: "Согласно договором клиент должен оплатить услугу.", answer: "Согласно договору клиент должен оплатить услугу." },
+                { q: "В связи с изменение графика встреча отменяется.", answer: "В связи с изменением графика встреча отменяется." },
+                { q: "Благодаря опытному сотрудника проблема была решена.", answer: "Благодаря опытному сотруднику проблема была решена." },
+                { q: "Несмотря на экономическим трудностям компания развивается.", answer: "Несмотря на экономические трудности компания развивается." },
+                { q: "Согласно новым правила компания должна изменить систему.", answer: "Согласно новым правилам компания должна изменить систему." },
+                { q: "В связи с ремонту офис временно закрыт.", answer: "В связи с ремонтом офис временно закрыт." },
+                { q: "Благодаря поддержкой партнёров компания достигла успеха.", answer: "Благодаря поддержке партнёров компания достигла успеха." },
+                { q: "Несмотря на высокой стоимости услуга остаётся популярной.", answer: "Несмотря на высокую стоимость услуга остаётся популярной." }
+            ]
+        },
+        {
+            id: "ex4",
+            type: "input",
+            icon: "fa-code-merge",
+            showTask: true,
+            title: "4-mashq. Gaplarni birlashtiring",
+            intro: "Ikki gapni Topic 13 konstruksiyalaridan biri yordamida bitta tabiiy gapga birlashtiring. Bir nechta to‘g‘ri variant bo‘lishi mumkin — to‘liq gap yozing.",
+            namuna: "Компания получила дополнительное финансирование. Проект был успешно завершён. → Благодаря дополнительному финансированию проект был успешно завершён.",
+            items: [
+                { q: "Сотрудники получили поддержку руководства. Они успешно завершили работу.", free: true, answer: null },
+                { q: "Изменился график. Встречу перенесли на понедельник.", free: true, answer: null },
+                { q: "Был принят новый закон. Компания изменила правила.", free: true, answer: null },
+                { q: "Возникли финансовые проблемы. Компания продолжила работу.", free: true, answer: null },
+                { q: "Появились новые технологии. Производительность увеличилась.", free: true, answer: null },
+                { q: "Проводится ремонт. Офис временно закрыт.", free: true, answer: null },
+                { q: "Команда имеет большой опыт. Она быстро решила проблему.", free: true, answer: null },
+                { q: "Были сложные обстоятельства. Проект не остановился.", free: true, answer: null },
+                { q: "Был подписан новый договор. Условия сотрудничества изменились.", free: true, answer: null },
+                { q: "Сотрудники получили профессиональное обучение. Качество работы повысилось.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex5",
+            type: "choice",
+            icon: "fa-list-check",
+            showTask: true,
+            title: "5-mashq. Boshqaruvdagi kelishikni aniqlang",
+            intro: "Berilgan konstruksiyadan keyingi so‘z qaysi kelishikda turibdi?",
+            namuna: "благодаря опыту → Дательный",
+            items: [
+                { q: "благодаря поддержке коллег", options: ["Дательный", "Винительный", "Творительный"], answer: "Дательный" },
+                { q: "несмотря на сложные обстоятельства", options: ["Дательный", "Винительный", "Творительный"], answer: "Винительный" },
+                { q: "в связи с изменением расписания", options: ["Дательный", "Винительный", "Творительный"], answer: "Творительный" },
+                { q: "согласно новому закону", options: ["Дательный", "Винительный", "Творительный"], answer: "Дательный" },
+                { q: "благодаря профессиональному опыту", options: ["Дательный", "Винительный", "Творительный"], answer: "Дательный" },
+                { q: "несмотря на экономические трудности", options: ["Дательный", "Винительный", "Творительный"], answer: "Винительный" },
+                { q: "согласно договору", options: ["Дательный", "Винительный", "Творительный"], answer: "Дательный" },
+                { q: "благодаря современным технологиям", options: ["Дательный", "Винительный", "Творительный"], answer: "Дательный" },
+                { q: "в связи с ремонтом здания", options: ["Дательный", "Винительный", "Творительный"], answer: "Творительный" },
+                { q: "согласно правилам компании", options: ["Дательный", "Винительный", "Творительный"], answer: "Дательный" }
+            ]
+        },
+        {
+            id: "ex6",
+            type: "input",
+            icon: "fa-comments",
+            showTask: true,
+            title: "6-mashq. «Почему? Несмотря на что? Согласно чему?» savollariga javob bering",
+            intro: "Savolga to‘liq gap bilan javob bering va imkon qadar Topic 13 konstruksiyalaridan birini ishlating.",
+            namuna: "Почему проект завершился успешно? → Благодаря хорошей подготовке команды проект завершился успешно.",
+            items: [
+                { q: "Почему компания увеличила прибыль?", free: true, answer: null },
+                { q: "Несмотря на что сотрудники продолжили работу?", free: true, answer: null },
+                { q: "В связи с чем встречу перенесли?", free: true, answer: null },
+                { q: "Согласно чему были изменены правила?", free: true, answer: null },
+                { q: "Почему специалист быстро решил проблему?", free: true, answer: null },
+                { q: "Несмотря на что проект продолжился?", free: true, answer: null },
+                { q: "В связи с чем офис временно закрыли?", free: true, answer: null },
+                { q: "Согласно чему сотрудники должны соблюдать эти требования?", free: true, answer: null },
+                { q: "Почему качество работы улучшилось?", free: true, answer: null },
+                { q: "Несмотря на что компания продолжает развиваться?", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex7",
+            type: "input",
+            icon: "fa-file-signature",
+            showTask: true,
+            title: "7-mashq. Rasmiy uslubga o‘zgartiring",
+            intro: "Gapni qavs ichida ko‘rsatilgan rasmiy konstruksiya bilan qayta yozing. Ma’noni saqlang, faqat konstruksiyani almashtiring.",
+            namuna: "Из-за ремонта офис закрыт. [в связи с] → В связи с ремонтом офис закрыт.",
+            items: [
+                { q: "Из-за изменения графика встречу перенесли. [в связи с]", answer: "В связи с изменением графика встречу перенесли." },
+                { q: "По новому закону компания должна изменить правила. [согласно]", answer: "Согласно новому закону компания должна изменить правила." },
+                { q: "С помощью коллег работа была выполнена быстро. [благодаря]", answer: "Благодаря помощи коллег работа была выполнена быстро." },
+                { q: "Хотя были трудности, проект продолжился. [несмотря на]", answer: "Несмотря на трудности, проект продолжился." },
+                { q: "По договору клиент должен оплатить услугу заранее. [согласно]", answer: "Согласно договору клиент должен оплатить услугу заранее." },
+                { q: "Из-за технических проблем система временно не работает. [в связи с]", answer: "В связи с техническими проблемами система временно не работает." },
+                { q: "Хотя была высокая стоимость, услуга стала популярной. [несмотря на]", answer: "Несмотря на высокую стоимость, услуга стала популярной." },
+                { q: "По плану работа должна закончиться в декабре. [согласно]", answer: "Согласно плану работа должна закончиться в декабре." },
+                { q: "Новые технологии помогли увеличить производство. [благодаря]", answer: "Благодаря новым технологиям производство увеличилось." },
+                { q: "Хотя были финансовые проблемы, компания не закрылась. [несмотря на]", answer: "Несмотря на финансовые проблемы, компания не закрылась." }
+            ]
+        },
+        {
+            id: "ex8",
+            type: "input",
+            icon: "fa-language",
+            showTask: true,
+            title: "8-mashq. Tarjima qiling",
+            intro: "Rus tiliga tabiiy tarjima qiling va mos Topic 13 konstruksiyasidan foydalaning. Bir nechta to‘g‘ri variant bo‘lishi mumkin.",
+            namuna: "Hamkasblarning yordami tufayli loyiha muvaffaqiyatli yakunlandi. → Благодаря поддержке коллег проект был успешно завершён.",
+            items: [
+                { q: "Yangi texnologiyalar tufayli kompaniya xarajatlarni kamaytirdi.", free: true, answer: null },
+                { q: "Qiyinchiliklarga qaramay, loyiha davom etdi.", free: true, answer: null },
+                { q: "Jadvalning o‘zgarishi munosabati bilan uchrashuv bekor qilindi.", free: true, answer: null },
+                { q: "Qonunga muvofiq, xodimlarning huquqlari himoya qilinadi.", free: true, answer: null },
+                { q: "Mutaxassisning tajribasi tufayli muammo tez hal qilindi.", free: true, answer: null },
+                { q: "Moliyaviy qiyinchiliklarga qaramay, kompaniya rivojlanmoqda.", free: true, answer: null },
+                { q: "Ta’mirlash ishlari munosabati bilan ofis yopiq.", free: true, answer: null },
+                { q: "Shartnomaga muvofiq, to‘lov oyning oxirida amalga oshiriladi.", free: true, answer: null },
+                { q: "Hamkorlarning qo‘llab-quvvatlashi tufayli kompaniya yangi bozorga chiqdi.", free: true, answer: null },
+                { q: "Noqulay sharoitlarga qaramay, xodimlar ishni davom ettirdilar.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex9",
+            type: "input",
+            icon: "fa-align-left",
+            showTask: true,
+            title: "9-mashq. Rasmiy gapni davom ettiring",
+            intro: "Berilgan boshlanishni mazmunli va tugallangan rasmiy gapga aylantiring.",
+            namuna: "В связи с изменением законодательства… → В связи с изменением законодательства компания пересмотрела внутренние правила.",
+            items: [
+                { q: "Согласно новому закону…", free: true, answer: null },
+                { q: "Благодаря поддержке руководства…", free: true, answer: null },
+                { q: "Несмотря на финансовые трудности…", free: true, answer: null },
+                { q: "В связи с изменением графика…", free: true, answer: null },
+                { q: "Согласно условиям договора…", free: true, answer: null },
+                { q: "Благодаря профессионализму сотрудников…", free: true, answer: null },
+                { q: "Несмотря на высокую конкуренцию…", free: true, answer: null },
+                { q: "В связи с необходимостью модернизации…", free: true, answer: null },
+                { q: "Согласно утверждённому плану…", free: true, answer: null },
+                { q: "Благодаря внедрению новых технологий…", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex10",
+            type: "input",
+            icon: "fa-diagram-project",
+            showTask: true,
+            title: "10-mashq. Vaziyat bo‘yicha gap tuzing",
+            intro: "Berilgan so‘zlardan to‘liq va tabiiy gap tuzing: konstruksiyani to‘g‘ri kelishik bilan ishlating va fe’lni kerakli shaklga qo‘ying.",
+            namuna: "В связи с / ремонт / офис / закрыть → В связи с ремонтом офис закрыт.",
+            items: [
+                { q: "Благодаря / поддержка коллег / проект / успешно завершить.", free: true, answer: null },
+                { q: "Несмотря на / трудности / компания / продолжать работу.", free: true, answer: null },
+                { q: "Согласно / новый закон / организация / изменить правила.", free: true, answer: null },
+                { q: "В связи с / изменение графика / встреча / перенести.", free: true, answer: null },
+                { q: "Благодаря / современные технологии / качество / улучшиться.", free: true, answer: null },
+                { q: "Несмотря на / высокая стоимость / услуга / пользоваться спросом.", free: true, answer: null },
+                { q: "Согласно / договор / клиент / оплатить услугу.", free: true, answer: null },
+                { q: "В связи с / технические проблемы / система / временно не работать.", free: true, answer: null },
+                { q: "Благодаря / профессиональный опыт / специалист / быстро решить проблему.", free: true, answer: null },
+                { q: "Несмотря на / экономические трудности / предприятие / продолжать развиваться.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "audio1",
+            type: "choice",
+            style: "tf",
+            icon: "fa-headphones",
+            showTask: true,
+            title: "Audio bo'yicha «Rost yoki yolg'on» mashqi",
+            intro: "«Работа и общество» audiosini tinglang va gaplar «Правда» yoki «Ложь» ekanini aniqlang.",
+            audioSrc: "audios/%D0%912%2013%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
+            items: [
+                { q: "Современные технологии помогают сделать рабочие процессы быстрее и эффективнее.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Современные компании не сталкиваются с экономическими трудностями.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Благодаря поддержке коллег специалистам легче решать сложные задачи.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "В связи с изменением законодательства компании иногда пересматривают внутренние правила.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Согласно новому закону работодатель не обязан соблюдать права сотрудников.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Работодатель и работник имеют определённые права и обязанности согласно договору.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "В тексте говорится, что проблемы на работе нужно всегда игнорировать.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Профессионализм и сотрудничество имеют важное значение для успешной работы.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Несмотря на трудности, организация может достигать хороших результатов.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Согласно тексту, успех компании зависит только от современных технологий.", options: ["Правда", "Ложь"], answer: "Ложь" }
+            ]
+        }
+    ];
+
+    var LESSON_14_GRAMMAR = "<div class=\"b2g\"><div class=\"b2g-lead\"><div class=\"b2g-lead-title\">Средства аргументации</div><p><b>Средства аргументации</b> — bu <b>nutqiy konstruksiyalar</b>, <b>bog‘lovchi so‘zlar</b>, <b>kirish (diskursiv) vositalar</b> va <b>dalil qurish modellari</b> majmuasi. B2 darajada fikrni shunchaki aytish yetarli emas: uni <b>asoslash</b>, <b>misol bilan tasdiqlash</b>, <b>qarama-qarshi tomonni ko‘rsatish</b> va <b>xulosaga olib kelish</b> kerak.</p></div><h4>1. Что такое средства аргументации</h4><p>Bularning hammasi bitta grammatik kategoriya emas. Ular <b>vazifasiga ko‘ra</b> guruhlanadi:</p><table class=\"b2g-t\"><tr><th>Turi</th><th>Namuna</th></tr><tr><td>nutqiy konstruksiya</td><td>Я считаю, что… · Я не совсем согласен с тем, что…</td></tr><tr><td>bog‘lovchi (soyuz)</td><td>потому что · так как · поскольку · но</td></tr><tr><td>kirish / diskursiv vosita</td><td>например · таким образом · на мой взгляд · однако</td></tr><tr><td>dalil qurish modeli</td><td>tezis → sabab → misol → qarama-qarshi fikr → xulosa</td></tr></table><div class=\"b2g-warn\"><p><b>Diqqat:</b> <b>например</b>, <b>однако</b>, <b>таким образом</b> kabi so‘zlar <b>grammatik konstruksiya emas</b> — ular <b>bog‘lovchi va kirish vositalari</b>. Ularni «grammatika» deb emas, <b>vazifasi</b> bo‘yicha yodlang: sabab? misol? qarshilik? xulosa?</p></div><div class=\"b2g-tip\">Asosiy model: <b>fikr + sabab + dalil + qarama-qarshi nuqtai nazar + xulosa</b>.</div><h4>2. Тезис и позиция</h4><p>Argument <b>tezis</b>dan boshlanadi — bu sizning pozitsiyangiz.</p><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Kuchi va ohangi</th></tr><tr><td>Я думаю, что… · На мой взгляд,… · По моему мнению,…</td><td>betaraf, odatiy</td></tr><tr><td>Я считаю, что… · Я придерживаюсь мнения, что…</td><td>aniq, ishonchli</td></tr><tr><td>Я убеждён, что…</td><td>kuchli shaxsiy ishonch</td></tr><tr><td>Очевидно, что… · Нельзя отрицать, что…</td><td>kategorik, ritorik</td></tr></table><div class=\"b2g-warn\"><p><b>Eng muhim qoida:</b> fikr bildiruvchi vosita <b>o‘zi dalil emas</b>.</p><p>«<b>Я считаю, что это полезно</b>» — bu faqat <b>tezis</b>. Unga <b>sabab</b>, <b>misol</b> yoki <b>fakt</b> qo‘shilmasa, argument bo‘lmaydi.</p></div><div class=\"b2g-warn\"><p><b>Очевидно, что…</b> va <b>Нельзя отрицать, что…</b> — bu <b>isbot emas</b>, balki kuchli ritorik vosita. Ularni faqat fikringizni haqiqatan asoslay olsangiz ishlating; aks holda gap asossiz va bosim o‘tkazuvchi bo‘lib eshitiladi.</p></div><h4>3. С одной стороны / с другой стороны</h4><p>Bu juftlik mavzuning <b>ikki tomonini</b> ko‘rsatadi: ikki jihat, ikki nuqtai nazar yoki afzallik va kamchilik.</p><table class=\"b2g-t\"><tr><th>Birinchi tomon</th><th>Ikkinchi tomon</th></tr><tr><td>С одной стороны, социальные сети помогают быстро получать информацию.</td><td>С другой стороны, они могут отнимать много времени.</td></tr><tr><td>С одной стороны, работа из дома удобна.</td><td>С другой стороны, некоторым людям не хватает живого общения.</td></tr><tr><td>С одной стороны, путешествия стоят дорого.</td><td>С другой стороны, они дают человеку новый опыт.</td></tr></table><div class=\"b2g-tip\"><p>Ikkinchi qism birinchisining <b>mantiqiy inkori bo‘lishi shart emas</b>. U shunchaki <b>boshqa jihat</b> bo‘lishi mumkin: «дорого» ning inkori «дёшево» emas — «новый опыт» butunlay boshqa o‘lchov.</p><p><b>Tinish belgisi:</b> gap boshida kelganda <b>С одной стороны,</b> va <b>С другой стороны,</b> vergul bilan ajratiladi.</p></div><h4>4. Вежливое несогласие</h4><p>Muloyim qarshi chiqish B2 munozarasining asosiy ko‘nikmasi.</p><table class=\"b2g-t\"><tr><th>Shakl</th><th>Izoh</th></tr><tr><td>Я не совсем <b>согласен</b> с тем, что…</td><td>erkak kishi haqida</td></tr><tr><td>Я не совсем <b>согласна</b> с тем, что…</td><td>ayol kishi haqida</td></tr><tr><td>Мне трудно полностью согласиться с тем, что…</td><td>jinsdan qat’i nazar — universal</td></tr><tr><td>Я не могу полностью согласиться с тем, что…</td><td>jinsdan qat’i nazar — universal</td></tr></table><div class=\"b2g-chips\"><span>Я не совсем согласен с тем, что интернет только мешает учёбе.</span><span>Я не совсем согласна с тем, что деньги являются главным фактором счастья.</span><span>Я понимаю вашу точку зрения, но не могу полностью с ней согласиться.</span></div><div class=\"b2g-tip\"><b>Я не согласен!</b> — grammatik jihatdan to‘g‘ri, lekin <b>keskin</b> eshitiladi. Munozarada yumshatilgan shakl ko‘pincha samaraliroq: u suhbatdoshni himoyaga o‘tishga majburlamaydi.</div><h4>5. Причина и обоснование</h4><p>Tezisdan keyin <b>sabab</b> keladi. Vositalar ma’noda emas, <b>uslubda</b> farq qiladi.</p><table class=\"b2g-t\"><tr><th>Vosita</th><th>Uslub va qo‘llanishi</th></tr><tr><td>потому что</td><td>betaraf, eng keng tarqalgan; odatda gapning ikkinchi qismida</td></tr><tr><td>так как</td><td>betaraf; yozma izohda qulay, gap boshida ham kela oladi</td></tr><tr><td>поскольку</td><td>kitobiy, rasmiyroq</td></tr><tr><td>дело в том, что</td><td>izohga urg‘u beradi — «gap aslida shundaki»</td></tr><tr><td>это связано с тем, что</td><td>sababiy bog‘liqlikni ko‘rsatadi, rasmiy uslubda ko‘p</td></tr></table><div class=\"b2g-chips\"><span>Я считаю, что спорт необходим каждому человеку, потому что он помогает поддерживать здоровье.</span><span>Поскольку рынок быстро меняется, компаниям приходится адаптироваться.</span></div><div class=\"b2g-warn\"><p>Bu vositalar <b>har qanday sintaktik o‘rinda bir-birining o‘rnini bosa olmaydi</b>. Masalan, <b>потому что</b> odatda gap boshida yolg‘iz turmaydi, <b>поскольку</b> esa bemalol turadi.</p></div><h4>6. Пример и доказательство</h4><p>Misol fikrni <b>tushunarli</b> qiladi, lekin uni <b>isbotlamaydi</b>.</p><table class=\"b2g-t\"><tr><th>Vosita</th><th>Namuna</th></tr><tr><td>например</td><td>Я считаю, что цифровые сервисы экономят время. Например, через приложение можно оплатить счёт.</td></tr><tr><td>к примеру</td><td>К примеру, знание языка помогает найти работу за рубежом.</td></tr><tr><td>это можно объяснить тем, что</td><td>Это можно объяснить тем, что люди стали чаще работать удалённо.</td></tr></table><div class=\"b2g-warn\"><p><b>Пример ≠ доказательство.</b> Bitta misol — bu <b>illyustratsiya</b>. Kuchliroq dalil: <b>факт</b>, <b>статистика</b>, <b>результат исследования</b>. B2 darajada shu farqni ko‘rsata olish argument sifatini oshiradi.</p></div><h4>7. Контраст и контраргумент</h4><p>Qarshi fikr vositalari <b>bir xil emas</b> — har birining o‘z ma’no soyasi bor.</p><table class=\"b2g-t\"><tr><th>Vosita</th><th>Ma’nosi</th></tr><tr><td><b>но</b></td><td>oddiy qarama-qarshilik, betaraf uslub</td></tr><tr><td><b>однако</b></td><td>rasmiyroq, kitobiy qarama-qarshilik</td></tr><tr><td><b>тем не менее</b></td><td>yon berish: oldingi fakt to‘g‘ri bo‘lsa ham, keyingi fikr kuchda qoladi</td></tr><tr><td><b>с другой стороны</b></td><td>boshqa jihat yoki nuqtai nazar</td></tr><tr><td><b>несмотря на это</b></td><td>bunga qaramay</td></tr><tr><td><b>в то же время</b></td><td>shu bilan birga, bir vaqtning o‘zida</td></tr></table><div class=\"b2g-chips\"><span>Онлайн-работа удобна, однако она подходит не всем.</span><span>Обучение в интернете имеет много преимуществ. Тем не менее оно требует высокой самоорганизации.</span></div><h4>8. Смягчение и признание другой позиции</h4><p><b>Yumshatish</b> — bu har doim ikkilanish emas. Uning vazifasi ko‘pincha <b>kategoriklikni kamaytirish</b>, <b>hurmat ko‘rsatish</b> va <b>boshqa fikrga joy qoldirish</b>.</p><div class=\"b2g-chips\"><span>Мне кажется, что…</span><span>Я бы сказал, что…</span><span>Я бы не стал утверждать, что…</span><span>Насколько я понимаю,…</span><span>Я не уверен, что…</span></div><p>Kuchli argumentatsiya suhbatdoshni <b>butunlay rad etmaydi</b>. Avval uning fikridagi to‘g‘ri jihat tan olinadi, keyin o‘z pozitsiyasi himoya qilinadi.</p><table class=\"b2g-t\"><tr><th>Model</th><th>Namuna</th></tr><tr><td>Я согласен с тем, что…, однако…</td><td>Я согласен с тем, что социальные сети помогают общаться. Однако они могут негативно влиять на концентрацию внимания.</td></tr><tr><td>Нельзя не признать, что…, но…</td><td>Нельзя не признать, что технологии экономят время, но они требуют самоконтроля.</td></tr><tr><td>Я понимаю этот аргумент, однако…</td><td>Я понимаю этот аргумент, однако он объясняет не всю ситуацию.</td></tr><tr><td>В какой-то степени я с вами согласен, но…</td><td>В какой-то степени я с вами согласен, но, на мой взгляд, есть и другие причины.</td></tr></table><div class=\"b2g-tip\">Sxema: <b>tan olish → qarama-qarshilik → o‘z pozitsiyasini himoya qilish</b>.</div><h4>9. Вывод и логическое следствие</h4><p>Xulosa vositalari ham bir-birining aniq sinonimi emas.</p><table class=\"b2g-t\"><tr><th>Vosita</th><th>Ma’nosi</th></tr><tr><td><b>поэтому</b></td><td>bevosita natija</td></tr><tr><td><b>следовательно</b></td><td>mantiqiy xulosa, rasmiyroq</td></tr><tr><td><b>таким образом</b></td><td>umumlashtirish va xulosa</td></tr><tr><td><b>в итоге</b></td><td>pirovard natija</td></tr><tr><td><b>в заключение</b></td><td>yakuniy qism, nutqning oxiri</td></tr><tr><td><b>из этого следует, что</b></td><td>bundan mantiqan kelib chiqadi</td></tr></table><div class=\"b2g-chips\"><span>Онлайн-обучение имеет как преимущества, так и недостатки. Таким образом, каждый выбирает подходящий ему формат.</span></div><h4>10. Полная модель аргумента и типичные ошибки</h4><table class=\"b2g-t\"><tr><th>Bosqich</th><th>Namuna</th></tr><tr><td><b>1. Позиция</b></td><td>На мой взгляд, социальные сети играют важную роль в современной жизни.</td></tr><tr><td><b>2. Причина</b></td><td>Это связано с тем, что они позволяют быстро обмениваться информацией.</td></tr><tr><td><b>3. Пример</b></td><td>Например, благодаря социальным сетям люди могут поддерживать связь с друзьями и коллегами.</td></tr><tr><td><b>4. Контраргумент</b></td><td>С другой стороны, чрезмерное использование социальных сетей может привести к потере времени.</td></tr><tr><td><b>5. Ответ</b></td><td>Я не совсем согласен с тем, что социальные сети приносят только вред.</td></tr><tr><td><b>6. Вывод</b></td><td>Таким образом, всё зависит от того, как человек ими пользуется.</td></tr></table><div class=\"b2g-warn\"><p><b>Tinish belgisi — eng ko‘p uchraydigan xato.</b></p><p>❌ <b>Тем не менее, оно требует…</b> · ✅ <b>Тем не менее оно требует высокой самоорганизации.</b> — <b>тем не менее</b> odatda o‘zi kirish birikmasi emas va vergul talab qilmaydi.</p><p>❌ <b>Однако, это подходит не всем.</b> · ✅ <b>Однако это подходит не всем.</b> — gap boshidagi <b>однако</b> bog‘lovchi vazifasida vergul olmaydi.</p><p>✅ Lekin <b>Таким образом,</b> · <b>Следовательно,</b> · <b>Например,</b> kirish birikmalari sifatida vergul bilan ajratiladi.</p></div><div class=\"b2g-warn\"><p><b>Boshqa tipik xatolar:</b> bitta gapga barcha vositalarni to‘plash; «Я считаю, что…» dan keyin sababni umuman keltirmaslik; <b>Очевидно, что…</b> ni dalil o‘rnida ishlatish.</p></div><div class=\"b2g-check\"><h4>Itogiy o‘z-o‘zini tekshirish</h4><ul class=\"b2g-list\"><li>Tezisim aniq shakllanganmi?</li><li>Sabab bormi — faqat «men shunday o‘ylayman» emasmi?</li><li>Misol yoki tasdiq bormi?</li><li>Mavzu bahsli bo‘lsa, boshqa tomonni ko‘rsatdimmi?</li><li>Qarshi chiqayotgan bo‘lsam, javobim hurmatli eshitiladimi?</li><li>Bog‘lovchi ma’noga mos keladimi: sabab / qarama-qarshilik / natija / xulosa?</li><li>Vergullar to‘g‘ri qo‘yilganmi (<b>Однако</b> va <b>тем не менее</b> dan keyin keraksiz vergul yo‘qmi)?</li><li>Xulosa haqiqatan oldingi dalillardan kelib chiqadimi?</li></ul></div></div>";
+
+    var LESSON_14_EXERCISES = [
+        {
+            id: "ex1",
+            type: "input",
+            icon: "fa-scale-balanced",
+            showTask: true,
+            title: "1-mashq. С одной стороны…, с другой стороны…",
+            intro: "Ikki fikrni «С одной стороны, … С другой стороны, …» konstruksiyasi bilan bitta izchil javobga birlashtiring. Vergullarga e’tibor bering.",
+            namuna: "Онлайн-работа удобна / она требует дисциплины. → С одной стороны, онлайн-работа удобна. С другой стороны, она требует дисциплины.",
+            items: [
+                { q: "Социальные сети помогают общаться / они отнимают много времени.", free: true, answer: null },
+                { q: "Жизнь в большом городе интересна / в городе много шума.", free: true, answer: null },
+                { q: "Работа из дома комфортна / дома трудно сосредоточиться.", free: true, answer: null },
+                { q: "Путешествия расширяют кругозор / они требуют больших расходов.", free: true, answer: null },
+                { q: "Интернет позволяет быстро получать информацию / не вся информация достоверна.", free: true, answer: null },
+                { q: "Спорт полезен для здоровья / занятия спортом требуют времени.", free: true, answer: null },
+                { q: "Онлайн-курсы удобны / они требуют самодисциплины.", free: true, answer: null },
+                { q: "Жизнь за границей даёт новый опыт / адаптация может быть сложной.", free: true, answer: null },
+                { q: "Современные технологии экономят время / люди становятся зависимыми от них.", free: true, answer: null },
+                { q: "Высокая зарплата важна / интересная работа тоже имеет большое значение.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex2",
+            type: "input",
+            icon: "fa-comment-slash",
+            showTask: true,
+            title: "2-mashq. Я не совсем согласен…",
+            intro: "Berilgan fikrga muloyim qarshi chiqing. «Я не совсем согласен / согласна с тем, что…» yoki jinsdan qat’i nazar ishlatiladigan «Мне трудно полностью согласиться с тем, что…» shaklidan foydalaning va sababini qo‘shing.",
+            namuna: "— Все люди должны работать удалённо. → Я не совсем согласен с тем, что все люди должны работать удалённо, потому что многим важно живое общение.",
+            items: [
+                { q: "Деньги — самое главное в жизни.", free: true, answer: null },
+                { q: "Интернет только мешает учёбе.", free: true, answer: null },
+                { q: "Молодые люди не любят читать книги.", free: true, answer: null },
+                { q: "Жить в большом городе лучше, чем в маленьком.", free: true, answer: null },
+                { q: "Высокая зарплата делает человека счастливым.", free: true, answer: null },
+                { q: "Социальные сети вредны для общества.", free: true, answer: null },
+                { q: "Все студенты должны учиться онлайн.", free: true, answer: null },
+                { q: "Путешествия — это пустая трата денег.", free: true, answer: null },
+                { q: "Современные технологии делают людей ленивыми.", free: true, answer: null },
+                { q: "Успешный человек обязательно должен много работать.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex3",
+            type: "input",
+            icon: "fa-link",
+            showTask: true,
+            title: "3-mashq. Fikrga sabab qo‘shing",
+            intro: "Gapni «потому что», «так как» yoki «поскольку» yordamida davom ettiring. Sabab haqiqiy bo‘lsin — faqat fikrni takrorlamang.",
+            namuna: "Я предпочитаю работать дома, … → Я предпочитаю работать дома, потому что дома мне легче сосредоточиться.",
+            items: [
+                { q: "Я считаю, что спорт необходим каждому человеку, …", free: true, answer: null },
+                { q: "Я предпочитаю путешествовать самостоятельно, …", free: true, answer: null },
+                { q: "Многие люди работают удалённо, …", free: true, answer: null },
+                { q: "Я стараюсь меньше пользоваться социальными сетями, …", free: true, answer: null },
+                { q: "Образование играет важную роль в жизни человека, …", free: true, answer: null },
+                { q: "Некоторые люди предпочитают жить за городом, …", free: true, answer: null },
+                { q: "Я считаю, что иностранные языки нужно изучать с детства, …", free: true, answer: null },
+                { q: "Молодые люди часто меняют работу, …", free: true, answer: null },
+                { q: "Необходимо развивать современные технологии, …", free: true, answer: null },
+                { q: "Я предпочитаю читать новости в интернете, …", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex4",
+            type: "input",
+            icon: "fa-lightbulb",
+            showTask: true,
+            title: "4-mashq. Dalil keltiring",
+            intro: "Har bir fikrga «например» yoki «к примеру» bilan aniq misol qo‘shing. Misol fikrni tasdiqlasin.",
+            namuna: "Современные технологии упрощают жизнь. → Современные технологии упрощают жизнь. Например, с помощью мобильных приложений мы можем оплачивать счета.",
+            items: [
+                { q: "Интернет значительно экономит наше время.", free: true, answer: null },
+                { q: "Спорт положительно влияет на здоровье.", free: true, answer: null },
+                { q: "Путешествия помогают лучше понимать другие культуры.", free: true, answer: null },
+                { q: "Социальные сети позволяют поддерживать связь с людьми.", free: true, answer: null },
+                { q: "Чтение развивает мышление.", free: true, answer: null },
+                { q: "Иностранные языки открывают новые возможности.", free: true, answer: null },
+                { q: "Работа в команде имеет много преимуществ.", free: true, answer: null },
+                { q: "Современное образование становится более доступным.", free: true, answer: null },
+                { q: "Планирование помогает эффективнее использовать время.", free: true, answer: null },
+                { q: "Технологии изменили привычки современного человека.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex5",
+            type: "input",
+            icon: "fa-code-branch",
+            showTask: true,
+            title: "5-mashq. Qarama-qarshi fikrni «однако» bilan bog‘lang",
+            intro: "Ikki gapni «однако» yordamida bitta gapga bog‘lang. Takrorlanishdan qoching va vergulni to‘g‘ri qo‘ying.",
+            namuna: "Онлайн-обучение удобно. Оно требует самодисциплины. → Онлайн-обучение удобно, однако оно требует самодисциплины.",
+            items: [
+                { q: "Интернет предоставляет огромное количество информации. Не вся информация достоверна.", free: true, answer: null },
+                { q: "Большой город предлагает много возможностей. Жизнь в нём дорогая.", free: true, answer: null },
+                { q: "Работа из дома комфортна. Иногда трудно отделить работу от личной жизни.", free: true, answer: null },
+                { q: "Социальные сети помогают общаться. Они могут вызывать зависимость.", free: true, answer: null },
+                { q: "Путешествия дают много впечатлений. Они могут быть дорогими.", free: true, answer: null },
+                { q: "Высокая зарплата важна. Она не всегда приносит удовлетворение от работы.", free: true, answer: null },
+                { q: "Технологии экономят время. Они требуют постоянного обновления знаний.", free: true, answer: null },
+                { q: "Онлайн-курсы доступны всем. Не каждый человек способен самостоятельно организовать обучение.", free: true, answer: null },
+                { q: "Молодёжь быстро осваивает технологии. Иногда ей не хватает живого общения.", free: true, answer: null },
+                { q: "Спорт полезен для здоровья. Неправильные тренировки могут привести к травмам.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex6",
+            type: "input",
+            icon: "fa-feather",
+            showTask: true,
+            title: "6-mashq. Fikrni yumshoq tarzda bildiring",
+            intro: "Keskin fikrni yumshating: «Мне кажется, что…», «На мой взгляд,…», «Я не уверен, что…» yoki «Я бы не стал утверждать, что…» dan birini tanlang. Mavzuni saqlang.",
+            namuna: "Интернет вреден. → Я бы не стал утверждать, что интернет вреден.",
+            items: [
+                { q: "Все люди должны работать удалённо.", free: true, answer: null },
+                { q: "Деньги делают человека счастливым.", free: true, answer: null },
+                { q: "Социальные сети бесполезны.", free: true, answer: null },
+                { q: "Молодые люди не интересуются политикой.", free: true, answer: null },
+                { q: "Большой город лучше маленького.", free: true, answer: null },
+                { q: "Онлайн-образование заменит традиционное образование.", free: true, answer: null },
+                { q: "Все люди должны заниматься спортом.", free: true, answer: null },
+                { q: "Технологии делают людей зависимыми.", free: true, answer: null },
+                { q: "Путешествия необходимы каждому человеку.", free: true, answer: null },
+                { q: "Высокая зарплата — главный критерий хорошей работы.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex7",
+            type: "choice",
+            icon: "fa-list-check",
+            showTask: true,
+            title: "7-mashq. To‘g‘ri argumentativ bog‘lovchini tanlang",
+            intro: "Gap ma’nosiga qarab mos bog‘lovchini tanlang: sabab, qarama-qarshilik, yon berish yoki xulosa.",
+            namuna: "Работа из дома удобна, ______ иногда трудно сосредоточиться. (однако / поэтому) → однако",
+            items: [
+                { q: "Интернет предоставляет много возможностей, ______ он может быть источником недостоверной информации.", options: ["однако", "поэтому"], answer: "однако" },
+                { q: "Я много работал, ______ смог успешно закончить проект.", options: ["поэтому", "с другой стороны"], answer: "поэтому" },
+                { q: "Спорт полезен для здоровья, ______ необходимо соблюдать правильную технику.", options: ["однако", "таким образом"], answer: "однако" },
+                { q: "Я понимаю вашу точку зрения, ______ не совсем с ней согласен.", options: ["но", "поэтому"], answer: "но" },
+                { q: "Путешествия стоят дорого, ______ они дают человеку новый опыт.", options: ["тем не менее", "следовательно"], answer: "тем не менее" },
+                { q: "Он хорошо подготовился к экзамену, ______ успешно его сдал.", options: ["поэтому", "однако"], answer: "поэтому" },
+                { q: "______, онлайн-обучение удобно. С другой стороны, оно требует дисциплины.", options: ["С одной стороны", "В итоге"], answer: "С одной стороны" },
+                { q: "У этой работы высокая зарплата. ______ она требует слишком много времени.", options: ["Тем не менее", "Поэтому"], answer: "Тем не менее" },
+                { q: "Мы рассмотрели все аргументы. ______, решение было принято.", options: ["Таким образом", "Однако"], answer: "Таким образом" },
+                { q: "Я согласен с вами в некоторых вопросах. ______ есть моменты, которые я хотел бы уточнить.", options: ["Однако", "Поэтому"], answer: "Однако" }
+            ]
+        },
+        {
+            id: "ex8",
+            type: "input",
+            icon: "fa-comments",
+            showTask: true,
+            title: "8-mashq. Qarshi fikrga javob bering",
+            intro: "«Я понимаю вашу точку зрения, но…» yoki «Я согласен с вами в какой-то степени, однако…» bilan javob bering: avval to‘g‘ri jihatni tan oling, so‘ng o‘z pozitsiyangizni bildiring.",
+            namuna: "— Работа из дома намного лучше работы в офисе. → Я понимаю вашу точку зрения, но работа из дома подходит не всем.",
+            items: [
+                { q: "Социальные сети только вредят людям.", free: true, answer: null },
+                { q: "Молодые люди должны обязательно жить отдельно от родителей.", free: true, answer: null },
+                { q: "Деньги — главный показатель успеха.", free: true, answer: null },
+                { q: "Все должны изучать иностранные языки.", free: true, answer: null },
+                { q: "Онлайн-образование лучше традиционного.", free: true, answer: null },
+                { q: "Путешествовать нужно как можно чаще.", free: true, answer: null },
+                { q: "Современные технологии делают жизнь слишком сложной.", free: true, answer: null },
+                { q: "Большой город предоставляет больше возможностей.", free: true, answer: null },
+                { q: "Работа должна приносить только высокий доход.", free: true, answer: null },
+                { q: "Человек не может быть успешным без высшего образования.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex9",
+            type: "input",
+            icon: "fa-align-left",
+            showTask: true,
+            title: "9-mashq. Argumentni to‘liq tuzing",
+            intro: "Mavzu bo‘yicha 3–4 ta to‘liq gapdan iborat argument yozing: pozitsiya, sabab yoki misol, qarama-qarshi tomon va xulosa.",
+            namuna: "Работа из дома → На мой взгляд, работа из дома имеет много преимуществ. С одной стороны, она позволяет экономить время. С другой стороны, человеку бывает сложно сосредоточиться. Таким образом, такой формат подходит не всем.",
+            items: [
+                { q: "Социальные сети", free: true, answer: null },
+                { q: "Онлайн-образование", free: true, answer: null },
+                { q: "Путешествия", free: true, answer: null },
+                { q: "Работа из дома", free: true, answer: null },
+                { q: "Жизнь в большом городе", free: true, answer: null },
+                { q: "Современные технологии", free: true, answer: null },
+                { q: "Изучение иностранных языков", free: true, answer: null },
+                { q: "Спорт", free: true, answer: null },
+                { q: "Высокая зарплата", free: true, answer: null },
+                { q: "Чтение книг", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex10",
+            type: "choice",
+            icon: "fa-diagram-project",
+            showTask: true,
+            title: "10-mashq. Argumentdagi vazifani aniqlang",
+            intro: "Har bir gap argumentda qaysi vazifani bajaryapti?",
+            namuna: "Например, через приложение можно оплатить счёт. → Пример",
+            items: [
+                { q: "На мой взгляд, онлайн-образование даёт студентам больше гибкости.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Позиция" },
+                { q: "Я считаю, что чтение необходимо для развития мышления.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Позиция" },
+                { q: "Это связано с тем, что регулярная практика помогает быстрее запоминать новую информацию.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Причина" },
+                { q: "Я предпочитаю работать утром, потому что в это время мне легче сосредоточиться.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Причина" },
+                { q: "Например, с помощью мобильного приложения можно оплатить коммунальные услуги за несколько минут.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Пример" },
+                { q: "К примеру, знание иностранного языка позволяет общаться с людьми из других стран.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Пример" },
+                { q: "С другой стороны, постоянная работа из дома может уменьшать количество живого общения.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Контраргумент" },
+                { q: "Однако высокая зарплата не всегда означает, что человек доволен своей работой.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Контраргумент" },
+                { q: "Таким образом, при выборе формата обучения необходимо учитывать индивидуальные особенности человека.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Вывод" },
+                { q: "Из этого следует, что одной высокой зарплаты недостаточно для удовлетворённости работой.", options: ["Позиция", "Причина", "Пример", "Контраргумент", "Вывод"], answer: "Вывод" }
+            ]
+        },
+        {
+            id: "audio1",
+            type: "choice",
+            style: "tf",
+            icon: "fa-headphones",
+            showTask: true,
+            title: "Audio bo‘yicha «Rost yoki yolg‘on» mashqi",
+            intro: "Audioni tinglang va gaplar «Правда» yoki «Ложь» ekanini aniqlang.",
+            audioSrc: "audios/%D0%912%2014%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
+            items: [
+                { q: "Современные технологии стали частью повседневной жизни человека.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Автор считает, что технологии имеют только положительные стороны.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "С помощью интернета сегодня можно оплачивать счета и записываться к врачу.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Онлайн-сервисы могут быть удобны для людей, которые живут далеко от крупных городов.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Автор считает, что использование смартфона всегда улучшает качество отдыха.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Постоянное использование технологий может уменьшать количество времени на живое общение.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Автор полностью согласен с мнением, что технологии делают людей ленивыми.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "По мнению автора, проблема заключается не только в технологиях, но и в том, как человек ими пользуется.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Автор считает, что современные технологии нельзя использовать для учёбы и работы.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "В заключении автор рекомендует использовать технологии разумно и контролировать своё время.", options: ["Правда", "Ложь"], answer: "Правда" }
+            ]
+        }
+    ];
+
+    var LESSON_15_GRAMMAR = "<div class=\"b2g\"><div class=\"b2g-lead\"><div class=\"b2g-lead-title\">Стилистика речи</div><p>Bu darsda biz asosan <b>речевой регистр</b> — muloqot registri haqida gaplashamiz: vaziyat, suhbatdosh, munosabat, maqsad va ohangga qarab til vositalarini tanlash. Qulaylik uchun uchta o‘quv yorlig‘idan foydalanamiz: <b>официальный</b>, <b>нейтральный</b>, <b>неофициальный</b>.</p></div><h4>1. Что такое речевой регистр</h4><p>Registr — bu <b>vaziyatga moslashish</b>. Zanjir shunday ishlaydi:</p><div class=\"b2g-chips\"><span>Ситуация</span><span>→ собеседник</span><span>→ отношения</span><span>→ цель общения</span><span>→ регистр va til vositalari</span></div><div class=\"b2g-warn\"><p><b>Eng muhim g‘oya:</b> gap <b>grammatik jihatdan to‘g‘ri</b> bo‘lishi <b>uslubiy jihatdan mos</b> ekanini anglatmaydi.</p><p><b>Слушай, когда встречаемся?</b> — do‘st bilan mutlaqo normal. · <b>Не могли бы вы уточнить время встречи?</b> — mijoz yoki rahbar bilan mos. Ikkalasi ham grammatik jihatdan to‘g‘ri, lekin <b>o‘z o‘rnida</b>.</p></div><div class=\"b2g-tip\">Bu uchta yorliq — <b>o‘quv qulayligi</b> uchun. Rus tilining barcha funksional uslublari tizimi bundan kengroq; bizga hozir <b>muloqot registri</b> kerak.</div><h4>2. Официальное общение</h4><p>Ish, hujjatlar, rahbar, mijoz yoki notanish inson bilan muloqot. Nutq <b>muloyim</b>, <b>aniq</b> va <b>o‘lchovli masofada</b> bo‘ladi.</p><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Разрешите уточнить…</td><td>Разрешите уточнить, когда состоится встреча?</td></tr><tr><td>Я хотел бы отметить…</td><td>Я хотел бы отметить, что данный вопрос требует дополнительного обсуждения.</td></tr><tr><td>Позвольте уточнить…</td><td>Позвольте уточнить некоторые детали.</td></tr><tr><td>Хотелось бы обратить внимание на…</td><td>Хотелось бы обратить внимание на сроки.</td></tr><tr><td>Не могли бы Вы уточнить…?</td><td>Не могли бы Вы уточнить сроки выполнения проекта?</td></tr><tr><td>Будьте добры, сообщите…</td><td>Будьте добры, сообщите результаты.</td></tr><tr><td>Прошу обратить внимание…</td><td>Прошу обратить внимание на этот пункт договора.</td></tr></table><div class=\"b2g-warn\"><p><b>Diqqat:</b> rasmiy nutq <b>muloyim va aniq</b> bo‘lishi kerak, <b>keraksiz kanselyar</b> emas. Va <b>har qanday hamkasb bilan har doim rasmiy gapirish shart emas</b> — bu munosabatlarga bog‘liq. Yaqin ishlaydigan hamkasb bilan neytral registr ko‘pincha tabiiyroq.</p></div><h4>3. Нейтральное общение</h4><p>Kundalik ish suhbatlari, tanishlar, hamkasblar. Na juda rasmiy, na juda erkin.</p><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Я хотел бы узнать…</td><td>Я хотел бы узнать, когда будет готов документ.</td></tr><tr><td>Можно уточнить…?</td><td>Можно уточнить, во сколько начинается встреча?</td></tr><tr><td>Давайте обсудим…</td><td>Давайте обсудим этот вопрос завтра.</td></tr><tr><td>Давайте рассмотрим…</td><td>Давайте рассмотрим другой вариант.</td></tr><tr><td>Как Вы думаете…?</td><td>Как Вы думаете, стоит ли это менять?</td></tr></table><div class=\"b2g-warn\"><p><b>Muhim nuans:</b> neytral registr <b>bitta olmoshga bog‘lanmagan</b>. Munosabatga qarab neytral suhbatda <b>вы</b> ham, <b>ты</b> ham bo‘lishi mumkin.</p><p><b>Давайте…</b> ham faqat neytral emas — u <b>muloyim va rasmiyroq</b> vaziyatlarda ham bemalol ishlatiladi. Ya’ni registrni <b>bitta so‘z</b> emas, <b>butun vaziyat va ohang</b> belgilaydi.</p></div><h4>4. Неофициальное общение</h4><p>Do‘stlar, yaqinlar, yaxshi tanishlar. Nutq erkin, sodda va samimiy.</p><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Давай обсудим…</td><td>Давай обсудим это вечером.</td></tr><tr><td>Давай уточним…</td><td>Давай уточним детали завтра.</td></tr><tr><td>Слушай, я хотел спросить…</td><td>Слушай, я хотел тебя кое о чём спросить.</td></tr><tr><td>Как ты думаешь…?</td><td>Как ты думаешь, нам стоит изменить план?</td></tr><tr><td>Что скажешь насчёт…?</td><td>Что скажешь насчёт этого варианта?</td></tr><tr><td>Давай поговорим об этом…</td><td>Давай поговорим об этом позже.</td></tr></table><div class=\"b2g-tip\"><b>Слушай…</b> do‘st bilan ko‘p vaziyatlarda normal, lekin <b>notanish inson</b>, <b>mijoz</b>, <b>rahbar</b> yoki <b>o‘qituvchi</b> bilan haddan tashqari to‘g‘ridan-to‘g‘ri eshitilishi mumkin — bu munosabat va ohangga bog‘liq.</div><h4>5. Одна мысль в трёх регистрах</h4><table class=\"b2g-t\"><tr><th>Registr</th><th>Namuna</th></tr><tr><td>официальный</td><td>Разрешите уточнить, когда будет готов отчёт?</td></tr><tr><td>нейтральный</td><td>Можно уточнить, когда будет готов отчёт?</td></tr><tr><td>неофициальный</td><td>Слушай, когда будет готов отчёт?</td></tr></table><table class=\"b2g-t\"><tr><th>Registr</th><th>Namuna</th></tr><tr><td>официальный</td><td>Я хотел бы отметить, что данный вопрос требует дополнительного рассмотрения.</td></tr><tr><td>нейтральный</td><td>Я хотел бы сказать, что этот вопрос нужно ещё обсудить.</td></tr><tr><td>неофициальный</td><td>Думаю, нам надо ещё это обсудить.</td></tr></table><div class=\"b2g-warn\"><p><b>Registr — bu shkala, uchta qat’iy quti emas.</b> Ba’zi iboralar ikki registr orasida turadi: <b>Можно уточнить один момент?</b> neytral suhbatda ham, muloyim professional suhbatda ham mos keladi.</p><p>Shuning uchun registrni aniqlashda <b>kontekst</b> — kim bilan va qanday vaziyatda — hal qiluvchi ahamiyatga ega.</p></div><h4>6. Вы / ты и степень дистанции</h4><table class=\"b2g-t\"><tr><th>Olmosh</th><th>Qachon</th></tr><tr><td><b>вы</b></td><td>rasmiy yoki hurmatli muloqot, notanish inson, mijoz, rahbar: <b>Не могли бы вы помочь мне?</b></td></tr><tr><td><b>ты</b></td><td>norasmiy muloqot, do‘st, yaqin inson: <b>Ты можешь мне помочь?</b></td></tr></table><div class=\"b2g-tip\"><p><b>Yozuvdagi bosh harf.</b> <b>вы</b> — oddiy grammatik olmosh. <b>Вы</b> bosh harf bilan yozma murojaatda <b>bitta aniq shaxsga</b> hurmat belgisi sifatida ishlatilishi mumkin.</p><p>Lekin bosh harfning o‘zi <b>rasmiylik yaratmaydi</b> — u faqat yozuv an’anasi.</p></div><div class=\"b2g-warn\"><p><b>Rasmiylik faqat «вы / ты» emas.</b> Taqqoslang:</p><p><b>Вы можете прислать документ?</b> — neytral so‘rov · <b>Будьте добры, пришлите документ.</b> — muloyim rasmiy · <b>Эй, вы мне документ пришлёте?</b> — ichida <b>вы</b> bor, lekin ohang mutlaqo muloyim emas.</p><p>Demak registr <b>olmosh</b>, <b>leksika</b>, <b>to‘g‘ridan-to‘g‘rilik darajasi</b>, <b>tayyor formula</b>, <b>ohang</b> va <b>kontekst</b>ning yig‘indisidir.</p></div><h4>7. Вежливость, прямота и тон</h4><p>Muloyimlik ko‘pincha <b>to‘g‘ridan-to‘g‘rilikni yumshatish</b> orqali ifodalanadi.</p><table class=\"b2g-t\"><tr><th>To‘g‘ridan-to‘g‘ri</th><th>Yumshatilgan</th></tr><tr><td>Пришлите документ.</td><td>Не могли бы вы прислать документ?</td></tr><tr><td>Объясните ситуацию.</td><td>Хотелось бы понять ситуацию подробнее.</td></tr><tr><td>Когда отчёт?</td><td>Подскажите, пожалуйста, когда будет готов отчёт.</td></tr></table><div class=\"b2g-warn\"><p><b>Jins masalasi.</b> Manba doimo <b>Я хотел бы…</b> shaklini beradi. Rus tilida bu <b>o‘tgan zamon shakli</b> bo‘lgani uchun <b>so‘zlovchining jinsiga</b> mos keladi:</p><p><b>Я хотел бы уточнить один момент.</b> — erkak kishi · <b>Я хотела бы уточнить один момент.</b> — ayol kishi · <b>Хотелось бы уточнить один момент.</b> — jinsdan qat’i nazar, universal shakl.</p></div><h4>8. Как менять стиль, не меняя смысл</h4><p>Registrni o‘zgartirganda <b>kommunikativ maqsad saqlanishi</b> shart.</p><table class=\"b2g-t\"><tr><th>Norasmiy</th><th>Rasmiy — maqsad saqlangan</th></tr><tr><td>Можешь отправить мне документы?</td><td>Не могли бы Вы отправить мне документы?</td></tr><tr><td>Давай поговорим об этом.</td><td>Хотелось бы обсудить этот вопрос.</td></tr><tr><td>Скажи, когда будет готов отчёт?</td><td>Подскажите, пожалуйста, когда будет готов отчёт.</td></tr></table><div class=\"b2g-warn\"><p><b>Xato yo‘nalishlar:</b> so‘rovni <b>buyruqqa</b> aylantirish (<i>Отправьте документы немедленно.</i>) yoki savolni <b>umuman boshqa gapga</b> aylantirish. Registr o‘zgaradi — <b>maqsad emas</b>.</p></div><h4>9. Типичные стилистические ошибки</h4><table class=\"b2g-t\"><tr><th>❌ Vaziyatga mos emas</th><th>✅ Mos</th></tr><tr><td>Rahbar bilan: <b>Эй, скажи, когда будет отчёт?</b></td><td>Не могли бы Вы уточнить, когда будет готов отчёт?</td></tr><tr><td>Do‘st bilan: <b>Не могли бы Вы помочь мне?</b></td><td>Можешь мне помочь?</td></tr><tr><td>Mijoz bilan: <b>Давай обсудим цену.</b></td><td>Давайте обсудим стоимость.</td></tr><tr><td>Do‘st bilan: <b>Позвольте узнать Ваше мнение.</b></td><td>Что скажешь?</td></tr></table><div class=\"b2g-tip\">Ikkala yo‘nalish ham xato bo‘lishi mumkin: <b>haddan tashqari erkin</b> ham, <b>keraksiz rasmiy</b> ham. Do‘stga rasmiy formula bilan murojaat qilish sovuq va g‘alati eshitiladi.</div><h4>10. Алгоритм выбора регистра</h4><table class=\"b2g-t\"><tr><th>Vaziyat</th><th>Mos gap</th></tr><tr><td>Rahbar bilan</td><td>Разрешите уточнить, когда необходимо предоставить отчёт?</td></tr><tr><td>Hamkasb bilan</td><td>Можно уточнить, когда нужно предоставить отчёт?</td></tr><tr><td>Do‘st bilan</td><td>Слушай, когда нужно сдать отчёт?</td></tr></table><div class=\"b2g-check\"><h4>Itogiy o‘z-o‘zini tekshirish</h4><ul class=\"b2g-list\"><li>Kim bilan gaplashyapman?</li><li>Bizning munosabatimiz qanday?</li><li>Muloqotning maqsadi nima?</li><li>Rasmiy / neytral / norasmiy registrdan qaysi biri mos?</li><li><b>Вы</b> yoki <b>ты</b>?</li><li>So‘rov yoki fikr yetarlicha muloyimmi?</li><li>Registrni o‘zgartirganda asosiy ma’noni saqladimmi?</li><li>Gap grammatik jihatdan to‘g‘ri bo‘lishi bilan birga vaziyatga ham mosmi?</li></ul></div></div>";
+
+    var LESSON_15_EXERCISES = [
+        {
+            id: "ex1",
+            type: "choice",
+            icon: "fa-layer-group",
+            showTask: true,
+            title: "1-mashq. Uslubni aniqlang",
+            intro: "Gap qaysi registrga mos? Ba’zi iboralar yolg‘iz holda ikki registr orasida turadi — shuning uchun bunday qatorlarda vaziyat ko‘rsatilgan.",
+            namuna: "«Разрешите уточнить дату встречи?» → официальный",
+            items: [
+                { q: "Не могли бы Вы сообщить результаты?", options: ["официальный", "нейтральный", "неофициальный"], answer: "официальный" },
+                { q: "Давай обсудим это вечером.", options: ["официальный", "нейтральный", "неофициальный"], answer: "неофициальный" },
+                { q: "Разговор с коллегой: «Можно уточнить время начала?»", options: ["официальный", "нейтральный", "неофициальный"], answer: "нейтральный" },
+                { q: "Я хотел бы отметить несколько важных моментов.", options: ["официальный", "нейтральный", "неофициальный"], answer: "официальный" },
+                { q: "Слушай, как ты думаешь, стоит ли нам соглашаться?", options: ["официальный", "нейтральный", "неофициальный"], answer: "неофициальный" },
+                { q: "Обычный разговор с коллегой: «Давайте обсудим этот вопрос».", options: ["официальный", "нейтральный", "неофициальный"], answer: "нейтральный" },
+                { q: "Позвольте уточнить некоторые детали.", options: ["официальный", "нейтральный", "неофициальный"], answer: "официальный" },
+                { q: "Что скажешь насчёт этого предложения?", options: ["официальный", "нейтральный", "неофициальный"], answer: "неофициальный" },
+                { q: "Разговор с коллегой: «Я хотел бы узнать дополнительную информацию».", options: ["официальный", "нейтральный", "неофициальный"], answer: "нейтральный" },
+                { q: "Будьте добры, отправьте мне документы.", options: ["официальный", "нейтральный", "неофициальный"], answer: "официальный" }
+            ]
+        },
+        {
+            id: "ex2",
+            type: "input",
+            icon: "fa-user-tie",
+            showTask: true,
+            title: "2-mashq. Rasmiy uslubga o‘zgartiring",
+            intro: "Gapni rasmiy/professional vaziyatga moslab qayta yozing. Asosiy kommunikativ maqsadni saqlang: so‘rov so‘rovligicha, savol savolligicha qolsin.",
+            namuna: "Давай поговорим об этом. → Хотелось бы обсудить этот вопрос.",
+            items: [
+                { q: "Слушай, когда будет встреча?", free: true, answer: null },
+                { q: "Можешь отправить мне документы?", free: true, answer: null },
+                { q: "Давай обсудим этот вопрос.", free: true, answer: null },
+                { q: "Ты можешь объяснить мне ситуацию?", free: true, answer: null },
+                { q: "Скажи, когда будет готов отчёт?", free: true, answer: null },
+                { q: "Давай перенесём встречу.", free: true, answer: null },
+                { q: "Ты можешь уточнить информацию?", free: true, answer: null },
+                { q: "Расскажи мне подробнее об этом проекте.", free: true, answer: null },
+                { q: "Давай рассмотрим другой вариант.", free: true, answer: null },
+                { q: "Скажи, почему изменился план?", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex3",
+            type: "input",
+            icon: "fa-user-group",
+            showTask: true,
+            title: "3-mashq. Norasmiy uslubga o‘zgartiring",
+            intro: "Rasmiy gapni do‘st yoki yaqin inson bilan suhbatga moslang. Ma’no o‘zgarmasin — faqat registr o‘zgarsin.",
+            namuna: "Не могли бы Вы уточнить информацию? → Можешь уточнить информацию?",
+            items: [
+                { q: "Разрешите уточнить, когда Вы приедете?", free: true, answer: null },
+                { q: "Я хотел бы узнать Ваше мнение.", free: true, answer: null },
+                { q: "Не могли бы Вы помочь мне?", free: true, answer: null },
+                { q: "Позвольте задать Вам вопрос.", free: true, answer: null },
+                { q: "Я хотел бы обсудить этот вопрос.", free: true, answer: null },
+                { q: "Не могли бы Вы объяснить ситуацию?", free: true, answer: null },
+                { q: "Разрешите уточнить некоторые детали.", free: true, answer: null },
+                { q: "Хотелось бы узнать Ваше мнение.", free: true, answer: null },
+                { q: "Прошу Вас сообщить мне результаты.", free: true, answer: null },
+                { q: "Позвольте предложить другой вариант.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex4",
+            type: "choice",
+            icon: "fa-list-check",
+            showTask: true,
+            title: "4-mashq. To‘g‘ri konstruksiyani tanlang",
+            intro: "Vaziyatga eng mos keladigan ruscha iborani tanlang.",
+            namuna: "Rahbardan ma’lumot so‘rash → Не могли бы Вы уточнить?",
+            items: [
+                { q: "Rahbardan muddatni aniqlashtirish", options: ["Давай уточним.", "Не могли бы Вы уточнить сроки?", "Слушай, когда это будет?"], answer: "Не могли бы Вы уточнить сроки?" },
+                { q: "Do‘st bilan rejani muhokama qilish", options: ["Давай обсудим план.", "Позвольте обсудить план.", "Прошу обсудить план."], answer: "Давай обсудим план." },
+                { q: "Rasmiy uchrashuvda fikr bildirish", options: ["Я хотел бы отметить…", "Слушай, я думаю…", "Давай скажу…"], answer: "Я хотел бы отметить…" },
+                { q: "Hamkasbdan ma’lumot so‘rash", options: ["Можно уточнить информацию?", "Эй, скажи информацию.", "Давай-ка рассказывай."], answer: "Можно уточнить информацию?" },
+                { q: "Do‘stdan maslahat so‘rash", options: ["Не могли бы Вы высказать мнение?", "Как ты думаешь?", "Позвольте узнать Ваше мнение."], answer: "Как ты думаешь?" },
+                { q: "Rasmiy murojaat", options: ["Слушай, помоги.", "Давай помоги мне.", "Не могли бы Вы мне помочь?"], answer: "Не могли бы Вы мне помочь?" },
+                { q: "Do‘st bilan muammoni muhokama qilish", options: ["Давай обсудим проблему.", "Позвольте обсудить проблему.", "Прошу Вас обсудить проблему."], answer: "Давай обсудим проблему." },
+                { q: "Rasmiy nutqda fikrni ta’kidlash", options: ["Я хотел бы отметить…", "Слушай, я хочу сказать…", "Давай я скажу…"], answer: "Я хотел бы отметить…" },
+                { q: "Hamkasb bilan neytral suhbat", options: ["Можно уточнить один момент?", "Эй, объясни.", "Разрешите уточнить, господин…"], answer: "Можно уточнить один момент?" },
+                { q: "Do‘st bilan suhbat", options: ["Что скажешь насчёт этого варианта?", "Будьте добры, оцените данный вариант.", "Позвольте узнать Ваше мнение."], answer: "Что скажешь насчёт этого варианта?" }
+            ]
+        },
+        {
+            id: "ex5",
+            type: "choice",
+            icon: "fa-user-check",
+            showTask: true,
+            title: "5-mashq. «Вы» yoki «ты»?",
+            intro: "Vaziyatga qarab mos olmoshni tanlang. Har bir bo‘sh joy grammatik jihatdan haqiqiy: qo‘yilgan olmosh gapga to‘liq mos tushadi.",
+            namuna: "Rahbar bilan: «Не могли бы ___ уточнить информацию?» → Вы",
+            items: [
+                { q: "Do‘sting bilan: «Как ___ думаешь?»", options: ["Вы", "ты"], answer: "ты" },
+                { q: "O‘qituvchi bilan: «Не могли бы ___ объяснить это правило?»", options: ["Вы", "ты"], answer: "Вы" },
+                { q: "Yaqin inson bilan: «___ хочешь обсудить это вечером?»", options: ["Вы", "ты"], answer: "ты" },
+                { q: "Mijoz bilan: «Хотелось бы уточнить, когда ___ сможете приехать».", options: ["Вы", "ты"], answer: "Вы" },
+                { q: "Do‘st bilan: «___ можешь помочь мне?»", options: ["Вы", "ты"], answer: "ты" },
+                { q: "Rahbar bilan: «Подскажите, пожалуйста, когда ___ сможете обсудить этот вопрос».", options: ["Вы", "ты"], answer: "Вы" },
+                { q: "Hamkasb bilan hurmatli neytral suhbat: «Как ___ считаете?»", options: ["Вы", "ты"], answer: "Вы" },
+                { q: "Yaqin do‘st bilan: «Что ___ скажешь по этому поводу?»", options: ["Вы", "ты"], answer: "ты" },
+                { q: "Notanish inson bilan: «Не могли бы ___ подсказать дорогу?»", options: ["Вы", "ты"], answer: "Вы" },
+                { q: "Aka-uka yoki opa-singil bilan: «___ сможешь поговорить позже?»", options: ["Вы", "ты"], answer: "ты" }
+            ]
+        },
+        {
+            id: "ex6",
+            type: "input",
+            icon: "fa-pen",
+            showTask: true,
+            title: "6-mashq. Gapni davom ettiring",
+            intro: "Berilgan boshlanishni mantiqan va registrga mos ravishda tugallangan gapga aylantiring.",
+            namuna: "Разрешите уточнить… → Разрешите уточнить, когда начнётся совещание?",
+            items: [
+                { q: "Разрешите уточнить…", free: true, answer: null },
+                { q: "Я хотел бы отметить…", free: true, answer: null },
+                { q: "Не могли бы Вы…", free: true, answer: null },
+                { q: "Позвольте уточнить…", free: true, answer: null },
+                { q: "Можно уточнить…", free: true, answer: null },
+                { q: "Давайте обсудим…", free: true, answer: null },
+                { q: "Я хотел бы узнать…", free: true, answer: null },
+                { q: "Давай обсудим…", free: true, answer: null },
+                { q: "Слушай, я хотел спросить…", free: true, answer: null },
+                { q: "Как ты думаешь…?", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex7",
+            type: "input",
+            icon: "fa-comments",
+            showTask: true,
+            title: "7-mashq. Vaziyatga mos gap tuzing",
+            intro: "Har bir vaziyat uchun registrga mos to‘liq ruscha gap tuzing.",
+            namuna: "Rahbardan uchrashuv vaqtini so‘rash → Разрешите уточнить, во сколько состоится встреча?",
+            items: [
+                { q: "O‘qituvchidan topshiriq muddatini so‘rash.", free: true, answer: null },
+                { q: "Do‘stdan uning fikrini so‘rash.", free: true, answer: null },
+                { q: "Mijozdan qo‘shimcha ma’lumot so‘rash.", free: true, answer: null },
+                { q: "Hamkasb bilan loyiha haqida gaplashish.", free: true, answer: null },
+                { q: "Rahbarga muhim fikrni aytish.", free: true, answer: null },
+                { q: "Do‘st bilan dam olish rejasini muhokama qilish.", free: true, answer: null },
+                { q: "Notanish kishidan yordam so‘rash.", free: true, answer: null },
+                { q: "Hamkasbdan hujjatni yuborishini so‘rash.", free: true, answer: null },
+                { q: "Do‘stdan nima uchun kechikkanini so‘rash.", free: true, answer: null },
+                { q: "Rasmiy uchrashuvda boshqa variant taklif qilish.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex8",
+            type: "input",
+            icon: "fa-triangle-exclamation",
+            showTask: true,
+            title: "8-mashq. Xatoni toping va tuzating",
+            intro: "Gap grammatik jihatdan to‘g‘ri, lekin vaziyatga mos emas. Uni ko‘rsatilgan suhbatdoshga moslab qayta yozing. Bir nechta to‘g‘ri variant bo‘lishi mumkin.",
+            namuna: "Rahbar bilan: «Слушай, когда будет встреча?» → Разрешите уточнить, когда состоится встреча?",
+            items: [
+                { q: "Rahbar bilan: «Эй, скажи, когда будет отчёт?»", free: true, answer: null },
+                { q: "Do‘st bilan: «Не могли бы Вы помочь мне?»", free: true, answer: null },
+                { q: "Mijoz bilan: «Давай обсудим цену.»", free: true, answer: null },
+                { q: "Do‘st bilan: «Позвольте узнать Ваше мнение.»", free: true, answer: null },
+                { q: "Rahbar bilan: «Слушай, я хотел кое-что сказать.»", free: true, answer: null },
+                { q: "Hamkasb bilan: «Эй, отправь мне документ.»", free: true, answer: null },
+                { q: "Do‘st bilan: «Прошу Вас подождать меня.»", free: true, answer: null },
+                { q: "Mijoz bilan: «Слушай, когда ты сможешь приехать?»", free: true, answer: null },
+                { q: "Do‘st bilan: «Будьте добры, объясните мне ситуацию.»", free: true, answer: null },
+                { q: "Rahbar bilan: «Давай перенесём встречу.»", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex9",
+            type: "input",
+            icon: "fa-layer-group",
+            showTask: true,
+            title: "9-mashq. Bir fikrni 3 xil uslubda ayting",
+            intro: "Har bir vaziyatni UCHTA registrda yozing: официальный, нейтральный va неофициальный. Uchala variantni ham javobingizda ko‘rsating.",
+            namuna: "Uchrashuv vaqtini so‘rash → официальный: Разрешите уточнить, во сколько состоится встреча? · нейтральный: Можно уточнить, во сколько будет встреча? · неофициальный: Слушай, во сколько встречаемся?",
+            items: [
+                { q: "Ma’lumotni aniqlashtirish.", free: true, answer: null },
+                { q: "Yordam so‘rash.", free: true, answer: null },
+                { q: "Fikr so‘rash.", free: true, answer: null },
+                { q: "Muammoni muhokama qilish.", free: true, answer: null },
+                { q: "Hujjatni yuborishni so‘rash.", free: true, answer: null },
+                { q: "Uchrashuvni boshqa vaqtga ko‘chirish.", free: true, answer: null },
+                { q: "Reja haqida gapirish.", free: true, answer: null },
+                { q: "Qo‘shimcha ma’lumot so‘rash.", free: true, answer: null },
+                { q: "Qarorni muhokama qilish.", free: true, answer: null },
+                { q: "Biror narsani tushuntirishni so‘rash.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex10",
+            type: "input",
+            icon: "fa-comment-dots",
+            showTask: true,
+            title: "10-mashq. Dialog tuzing",
+            intro: "Berilgan vaziyat asosida 4–6 replikadan iborat dialog tuzing va vaziyatga mos registrdan foydalaning.",
+            namuna: "Rahbar va xodim — loyiha muddati → — Разрешите уточнить, когда необходимо представить проект? — До конца недели. — Я хотел бы отметить, что нам потребуется дополнительное время. — Хорошо, давайте обсудим возможные сроки.",
+            items: [
+                { q: "Rahbar va xodim — loyiha muddati.", free: true, answer: null },
+                { q: "O‘qituvchi va talaba — topshiriq.", free: true, answer: null },
+                { q: "Mijoz va xodim — xizmat haqida.", free: true, answer: null },
+                { q: "Ikki do‘st — dam olish rejasi.", free: true, answer: null },
+                { q: "Ikki hamkasb — yangi loyiha.", free: true, answer: null },
+                { q: "Do‘stlar — sayohat rejalari.", free: true, answer: null },
+                { q: "Rahbar va xodim — uchrashuvni ko‘chirish.", free: true, answer: null },
+                { q: "Mijoz va menejer — shartnoma tafsilotlari.", free: true, answer: null },
+                { q: "Ikki do‘st — muammoli vaziyat.", free: true, answer: null },
+                { q: "Hamkasblar — yangi taklifni muhokama qilish.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "audio1",
+            type: "choice",
+            style: "tf",
+            icon: "fa-headphones",
+            showTask: true,
+            title: "Разговор в разных ситуациях",
+            intro: "«Разговор в разных ситуациях» audiosini tinglang va gaplar «Правда» yoki «Ложь» ekanini aniqlang.",
+            audioSrc: "audios/%D0%912%2015%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
+            items: [
+                { q: "Современный человек общается только с коллегами и руководителями.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Стиль речи зависит от ситуации и собеседника.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "На работе обычно используется официальный или нейтральный стиль.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Фраза «Разрешите уточнить…» относится к неофициальному стилю.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Во время деловой встречи можно использовать выражение «Я хотел бы отметить…».", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "С коллегами всегда необходимо использовать только официальный стиль.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Фраза «Давай обсудим это вечером» характерна для неофициального общения.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "С друзьями можно использовать конструкции «Слушай…» и «Как ты думаешь…?».", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Выбор стиля зависит только от того, что человек хочет сказать.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Правильный выбор языковых средств помогает сделать общение более эффективным.", options: ["Правда", "Ложь"], answer: "Правда" }
+            ]
+        }
+    ];
+
+    var LESSON_16_GRAMMAR = "<div class=\"b2g\"><div class=\"b2g-lead\"><div class=\"b2g-lead-title\">Повторение сложных конструкций B2</div><p>Bu — B2 kursining <b>yakuniy darsi</b>. Bu yerda biz yangi grammatikani o‘rganmaymiz, balki kurs davomida yig‘ilgan <b>murakkab konstruksiyalarni birga ishlatishni</b> mashq qilamiz: pozitsiya, dalil, qarama-qarshi nuqtayi nazar, sabab-natija, shart va xulosa.</p></div><h4>1. Итоговая карта B2</h4><p>Kuchli B2 javobi — bu bitta konstruksiya emas, balki <b>vazifalar zanjiri</b>. Har bir vosita o‘z ishini bajaradi:</p><table class=\"b2g-t\"><tr><th>Vazifa</th><th>Vosita</th></tr><tr><td>pozitsiya</td><td>По моему мнению, … · С точки зрения + Р.п.</td></tr><tr><td>ehtiyotkor talqin</td><td>Насколько я понимаю, … · Если я правильно понимаю, …</td></tr><tr><td>kuchli tan olish</td><td>Нельзя отрицать, что… · Нельзя не признать, что…</td></tr><tr><td>qarama-qarshilik</td><td>С одной стороны, … с другой стороны, … · Однако… · Тем не менее…</td></tr><tr><td>asoslash</td><td>Дело в том, что… · Основная проблема заключается в том, что…</td></tr><tr><td>sabab va natija</td><td>Это приводит к тому, что… · В результате + Р.п.</td></tr><tr><td>shart</td><td>Если …, (то) … · При условии, что…</td></tr><tr><td>xulosa</td><td>Таким образом, … · В конечном счёте …</td></tr></table><div class=\"b2g-tip\">Maqsad — barcha vositalarni bitta gapga tiqishtirish emas. Maqsad — <b>kerakli vazifaga kerakli vositani</b> tanlash.</div><h4>2. Позиция и точка зрения</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>По моему мнению, + gap</td><td>По моему мнению, современное общество слишком сильно зависит от технологий.</td></tr><tr><td>По моему мнению, + gap</td><td>По моему мнению, образование должно быть доступным для всех.</td></tr><tr><td>С точки зрения + <b>родительный падеж</b></td><td>С точки зрения общества, эта проблема требует серьёзного решения.</td></tr><tr><td>С точки зрения + <b>родительный падеж</b></td><td>С точки зрения молодёжи, социальные сети имеют как преимущества, так и недостатки.</td></tr></table><div class=\"b2g-warn\"><p><b>Kelishik.</b> <b>С точки зрения</b> dan keyin <b>родительный падеж</b> keladi — bosh kelishik emas.</p><p>✅ с точки зрения <b>общества</b> · ✅ с точки зрения <b>эксперта</b> · ✅ с точки зрения <b>молодёжи</b> · ❌ с точки зрения <b>общество</b></p></div><h4>3. Осторожная интерпретация и проверка понимания</h4><p>Bu vositalar fikrni <b>mutlaq haqiqat</b> sifatida emas, o‘z tushunchasi sifatida bildiradi.</p><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Насколько я понимаю, …</td><td>Насколько я понимаю, проблема заключается не только в экономике.</td></tr><tr><td>Насколько я понимаю, …</td><td>Насколько я понимаю, государство уже принимает определённые меры.</td></tr><tr><td>Если я правильно понимаю, …</td><td>Если я правильно понимаю, вы считаете, что социальные сети необходимо ограничить?</td></tr><tr><td>Если я правильно понимаю, …</td><td>Если я правильно понимаю, главная причина проблемы — отсутствие контроля.</td></tr></table><div class=\"b2g-tip\"><b>Farq:</b> <b>Насколько я понимаю</b> — o‘z talqinini bildiradi; <b>Если я правильно понимаю</b> — ko‘pincha <b>suhbatdoshning</b> pozitsiyasini tekshiradi va savol bilan tugashi mumkin.</div><h4>4. Сильное признание</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Нельзя отрицать, что…</td><td>Нельзя отрицать, что технологии изменили нашу жизнь.</td></tr><tr><td>Нельзя отрицать, что…</td><td>Нельзя отрицать, что социальные сети оказывают большое влияние на молодёжь.</td></tr><tr><td>Нельзя не признать, что…</td><td>Нельзя не признать, что интернет значительно упростил доступ к информации.</td></tr><tr><td>Нельзя не признать, что…</td><td>Нельзя не признать, что эта проблема существует уже много лет.</td></tr></table><div class=\"b2g-warn\"><p><b>Eng muhim ogohlantirish.</b> Bu konstruksiyalar <b>kuchli ritorik vosita</b>, lekin ular <b>o‘zi dalil emas</b>.</p><p>«Нельзя отрицать, что…» deyish bilan fikr <b>isbotlanmaydi</b>. Dalil baribir kerak: <b>факт</b>, <b>причина</b>, <b>пример</b>, <b>данные</b> yoki <b>аргумент</b>.</p><p>❌ <b>Нельзя отрицать о том, что…</b> · ❌ <b>Нельзя не признать о том, что…</b> · ✅ <b>Нельзя отрицать, что…</b> · ✅ <b>Нельзя не признать, что…</b></p></div><h4>5. Контраст и другая сторона</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>С одной стороны, … с другой стороны, …</td><td>С одной стороны, социальные сети помогают людям общаться, с другой стороны, они могут вызывать зависимость.</td></tr><tr><td>С одной стороны, … с другой стороны, …</td><td>С одной стороны, технологии экономят время, с другой стороны, человек становится от них зависимым.</td></tr><tr><td>Однако …</td><td>Технологии делают жизнь удобнее. Однако они создают новые проблемы.</td></tr><tr><td>Тем не менее …</td><td>Проблема кажется сложной. Тем не менее её можно решить.</td></tr></table><div class=\"b2g-warn\"><p><b>Tinish belgisi.</b> Gap boshidagi <b>Однако</b> va <b>Тем не менее</b> bog‘lovchi vazifasida <b>vergul olmaydi</b>.</p><p>✅ <b>Однако они создают новые проблемы.</b> · ✅ <b>Тем не менее её можно решить.</b> · ❌ <b>Однако, они создают…</b> · ❌ <b>Тем не менее, её можно…</b></p></div><h4>6. Обоснование и проблема</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Дело в том, что…</td><td>Дело в том, что многие люди не умеют правильно использовать социальные сети.</td></tr><tr><td>Дело в том, что…</td><td>Дело в том, что проблема намного сложнее, чем кажется на первый взгляд.</td></tr><tr><td>Основная проблема заключается <b>в том</b>, что…</td><td>Основная проблема заключается в том, что молодые люди проводят слишком много времени в интернете.</td></tr><tr><td>Основная проблема заключается <b>в том</b>, что…</td><td>Основная проблема заключается в том, что общество пока не готово к таким изменениям.</td></tr></table><div class=\"b2g-warn\"><p><b>Boshqaruv.</b> Fe’l <b>заключаться</b> <b>в чём?</b> savoliga javob beradi:</p><p>✅ заключается <b>в том</b>, что… · ❌ заключается <b>о том</b>, что…</p></div><h4>7. Причина и следствие</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Это приводит <b>к тому</b>, что…</td><td>Чрезмерное использование телефона приводит к тому, что люди меньше общаются в реальной жизни.</td></tr><tr><td>Это приводит <b>к тому</b>, что…</td><td>Отсутствие контроля приводит к тому, что проблема становится серьёзнее.</td></tr><tr><td>В результате + <b>родительный падеж</b></td><td>В результате экономического кризиса многие семьи столкнулись с финансовыми трудностями.</td></tr><tr><td>В результате <b>того, что</b> + gap</td><td>В результате того, что люди постоянно пользуются социальными сетями, они становятся менее внимательными.</td></tr></table><div class=\"b2g-warn\"><p><b>Ikkita boshqaruv, ikkita shakl:</b></p><p>✅ <b>приводит к тому, что…</b> — <b>дательный</b> «к тому» · ✅ <b>в результате кризиса</b>, <b>в результате изменений</b> — <b>родительный</b> · ❌ <b>в результате кризис</b></p><p>Agar sabab butun gap bo‘lsa — <b>в результате того, что</b> ishlating.</p></div><h4>8. Условие</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Если …, (то) …</td><td>Если люди будут ответственнее относиться к природе, экологическая ситуация улучшится.</td></tr><tr><td>Если …, то …</td><td>Если государство не будет решать эту проблему, то ситуация может ухудшиться.</td></tr><tr><td>При условии, что…</td><td>Проблему можно решить при условии, что общество будет действовать вместе.</td></tr><tr><td>При условии, что…</td><td>Технологии принесут пользу при условии, что люди будут использовать их разумно.</td></tr></table><div class=\"b2g-tip\"><p><b>то</b> ko‘pincha <b>ixtiyoriy</b>: «Если люди будут ответственнее относиться к природе, экологическая ситуация улучшится.» — <b>то</b>siz ham mutlaqo to‘g‘ri.</p><p><b>При условии</b> dan keyin <b>что</b> tushib qolmaydi: ✅ <b>при условии, что</b> общество будет действовать вместе.</p></div><h4>9. Вывод</h4><table class=\"b2g-t\"><tr><th>Konstruksiya</th><th>Namuna</th></tr><tr><td>Таким образом<b>,</b> …</td><td>Таким образом, проблема требует комплексного решения.</td></tr><tr><td>Таким образом<b>,</b> …</td><td>Таким образом, нельзя рассматривать эту ситуацию только с одной стороны.</td></tr><tr><td>В конечном счёте …</td><td>В конечном счёте каждый человек должен самостоятельно принимать решения.</td></tr><tr><td>В конечном счёте …</td><td>В конечном счёте развитие общества зависит от самих людей.</td></tr></table><div class=\"b2g-warn\"><p><b>Ikki xulosa vositasi — ikki xil tinish belgisi.</b></p><p>✅ <b>Таким образом,</b> проблема требует комплексного решения. — kirish birikmasi, <b>vergul bilan</b>.</p><p>✅ <b>В конечном счёте</b> каждый человек должен сам принимать решение. — <b>vergulsiz</b>. ❌ <b>В конечном счёте, каждый человек…</b></p></div><h4>10. Полная модель ответа B2</h4><table class=\"b2g-t\"><tr><th>Bosqich</th><th>Namuna</th></tr><tr><td><b>1. Позиция</b></td><td>По моему мнению, социальные сети играют важную роль в современном обществе.</td></tr><tr><td><b>2. Обоснование</b></td><td>Дело в том, что они позволяют людям быстро получать информацию и общаться.</td></tr><tr><td><b>3. Другая сторона</b></td><td>С одной стороны, это удобно, с другой стороны, чрезмерное использование может привести к зависимости.</td></tr><tr><td><b>4. Следствие / условие</b></td><td>Это приводит к тому, что человек меньше общается лично. Проблему можно решить при условии, что человек контролирует своё время.</td></tr><tr><td><b>5. Вывод</b></td><td>Таким образом, социальные сети необходимо использовать разумно.</td></tr></table><div class=\"b2g-warn\"><p><b>Jinsga oid shakl.</b> Rozilik bildirmaslik formulasi o‘tgan zamon shakli emas, lekin <b>согласен / согласна</b> so‘zlovchining jinsiga mos keladi:</p><p><b>Я не совсем согласен с тем, что…</b> — erkak kishi · <b>Я не совсем согласна с тем, что…</b> — ayol kishi · <b>Мне трудно полностью согласиться с тем, что…</b> — jinsdan qat’i nazar.</p></div><div class=\"b2g-tip\">Topic 15 bilan bog‘lanish: to‘g‘ri konstruksiyani tanlash yetarli emas — u <b>vaziyat va nutq registriga</b> ham mos bo‘lishi kerak. Debatda rasmiyroq, do‘st bilan suhbatda soddaroq shakl tabiiyroq.</div><div class=\"b2g-check\"><h4>Itogiy o‘z-o‘zini tekshirish</h4><ul class=\"b2g-list\"><li>Men pozitsiyamni aniq bildirdimmi?</li><li>Kuchli iborani dalilning o‘zi deb qabul qilmadimmi?</li><li>Sabab va natijani to‘g‘ri bog‘ladimmi?</li><li><b>С точки зрения</b> / <b>В результате</b> dan keyin to‘g‘ri kelishik ishlatildimi?</li><li>Qarama-qarshi nuqtayi nazarni ko‘rsatdimmi?</li><li>Shart konstruksiyasi mantiqan to‘g‘rimi?</li><li><b>Таким образом</b> va <b>В конечном счёте</b> punktuatsiyasini adashtirmadimmi?</li><li>Xulosa oldingi argumentlardan haqiqatan kelib chiqadimi?</li><li>Gap vaziyat va nutq registriga mosmi?</li></ul></div></div>";
+
+    var LESSON_16_EXERCISES = [
+        {
+            id: "ex1",
+            type: "choice",
+            icon: "fa-list-check",
+            showTask: true,
+            title: "1-mashq. Kerakli konstruksiyani tanlang",
+            intro: "Gapning vazifasi qavs oldida ko‘rsatilgan. Shu vazifaga mos konstruksiyani tanlang. Tinish belgisiga e’tibor bering: ba’zi konstruksiyalardan keyin vergul qo‘yilmaydi.",
+            namuna: "Shaxsiy fikr: «______, социальные сети оказывают большое влияние на молодёжь.» → По моему мнению",
+            items: [
+                { q: "Shaxsiy fikr: «______, современное образование должно учитывать новые технологии.»", options: ["По моему мнению", "В результате"], answer: "По моему мнению" },
+                { q: "So‘zlovchi o‘z tushunchasini ehtiyotkorlik bilan bildiradi: «______, главная проблема заключается в отсутствии контроля.»", options: ["Насколько я понимаю", "Таким образом"], answer: "Насколько я понимаю" },
+                { q: "Aniq ta’sirni kuchli tan olish: «______ интернет значительно изменил нашу жизнь.»", options: ["Нельзя отрицать, что", "С одной стороны"], answer: "Нельзя отрицать, что" },
+                { q: "Oldingi dalillardan chiqarilgan xulosa: «______, эта проблема требует комплексного решения.»", options: ["Таким образом", "Дело в том, что"], answer: "Таким образом" },
+                { q: "So‘zlovchi o‘z talqinini ehtiyotkorlik bilan aytadi: «______, многие молодые люди слишком много времени проводят в интернете.»", options: ["Насколько я понимаю", "В конечном счёте"], answer: "Насколько я понимаю" },
+                { q: "Shaxsiy baho: «______, технологии имеют как преимущества, так и недостатки.»", options: ["По моему мнению", "В результате"], answer: "По моему мнению" },
+                { q: "Kuchli tan olish: «______ чрезмерное использование телефона может привести к зависимости.»", options: ["Нельзя не признать, что", "С одной стороны"], answer: "Нельзя не признать, что" },
+                { q: "Yakuniy umumiy natija (vergulsiz): «______ общество должно принимать активное участие в решении этой проблемы.»", options: ["В конечном счёте", "Дело в том, что"], answer: "В конечном счёте" },
+                { q: "So‘zlovchi suhbatdoshning pozitsiyasini tekshiradi: «______, государство уже принимает определённые меры?»", options: ["Если я правильно понимаю", "Таким образом"], answer: "Если я правильно понимаю" },
+                { q: "Shaxsiy fikr: «______, проблему невозможно решить за один день.»", options: ["По моему мнению", "В результате"], answer: "По моему мнению" }
+            ]
+        },
+        {
+            id: "ex2",
+            type: "input",
+            icon: "fa-pen",
+            showTask: true,
+            title: "2-mashq. Gapni davom ettiring",
+            intro: "Berilgan konstruksiyadan foydalanib, gapni mantiqan va to‘liq davom ettiring.",
+            namuna: "По моему мнению, современные технологии… → По моему мнению, современные технологии значительно упрощают нашу жизнь.",
+            items: [
+                { q: "По моему мнению, социальные сети…", free: true, answer: null },
+                { q: "Насколько я понимаю, главная проблема современного общества…", free: true, answer: null },
+                { q: "Нельзя отрицать, что интернет…", free: true, answer: null },
+                { q: "Дело в том, что многие молодые люди…", free: true, answer: null },
+                { q: "С одной стороны, технологии…", free: true, answer: null },
+                { q: "С другой стороны, чрезмерное использование интернета…", free: true, answer: null },
+                { q: "Нельзя не признать, что современное образование…", free: true, answer: null },
+                { q: "Таким образом, общество…", free: true, answer: null },
+                { q: "В конечном счёте каждый человек…", free: true, answer: null },
+                { q: "Если я правильно понимаю, главная причина этой проблемы…", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex3",
+            type: "input",
+            icon: "fa-code-merge",
+            showTask: true,
+            title: "3-mashq. Ikki qismni birlashtiring",
+            intro: "Ikki gapni «Нельзя отрицать, что», «Дело в том, что» yoki «Таким образом» kabi konstruksiyalar yordamida bitta izchil gapga birlashtiring.",
+            namuna: "Технологии развиваются очень быстро. Они меняют рынок труда. → Нельзя отрицать, что технологии развиваются очень быстро и меняют рынок труда.",
+            items: [
+                { q: "Люди всё чаще используют интернет. Это влияет на их образ жизни.", free: true, answer: null },
+                { q: "Молодёжь много времени проводит в социальных сетях. Это может привести к зависимости.", free: true, answer: null },
+                { q: "Образование становится более цифровым. Ученики получают доступ к большему количеству информации.", free: true, answer: null },
+                { q: "Многие люди работают удалённо. Им не нужно каждый день ездить в офис.", free: true, answer: null },
+                { q: "В городе становится больше автомобилей. Загрязнение воздуха увеличивается.", free: true, answer: null },
+                { q: "Люди покупают слишком много ненужных вещей. Количество отходов растёт.", free: true, answer: null },
+                { q: "Государство принимает новые законы. Оно пытается решить социальные проблемы.", free: true, answer: null },
+                { q: "Многие люди получают информацию из социальных сетей. Не вся эта информация достоверна.", free: true, answer: null },
+                { q: "Технологии развиваются. Некоторые профессии постепенно исчезают.", free: true, answer: null },
+                { q: "Люди стали меньше общаться лично. Они чаще используют мессенджеры.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex4",
+            type: "input",
+            icon: "fa-scale-balanced",
+            showTask: true,
+            title: "4-mashq. Qarama-qarshi fikrni tuzing",
+            intro: "«С одной стороны, … с другой стороны, …» konstruksiyasidan foydalanib, ikki tomonni bitta gapda ko‘rsating.",
+            namuna: "Социальные сети помогают общаться. Они отнимают много времени. → С одной стороны, социальные сети помогают людям общаться, с другой стороны, они отнимают много времени.",
+            items: [
+                { q: "Интернет даёт много информации. В интернете встречается недостоверная информация.", free: true, answer: null },
+                { q: "Онлайн-образование удобно. Не всем хватает самодисциплины.", free: true, answer: null },
+                { q: "Современные технологии экономят время. Люди становятся зависимыми от технологий.", free: true, answer: null },
+                { q: "Социальные сети помогают бизнесу. Они могут негативно влиять на психологическое состояние людей.", free: true, answer: null },
+                { q: "Удалённая работа удобна. Она уменьшает живое общение между коллегами.", free: true, answer: null },
+                { q: "Большие города предлагают много возможностей. В них высокий уровень стресса.", free: true, answer: null },
+                { q: "Искусственный интеллект помогает человеку. Некоторые профессии могут исчезнуть.", free: true, answer: null },
+                { q: "Интернет объединяет людей. Он может уменьшать количество личных встреч.", free: true, answer: null },
+                { q: "Современная медицина развивается. Медицинские услуги остаются дорогими.", free: true, answer: null },
+                { q: "Молодые люди хорошо владеют технологиями. Им иногда не хватает реального опыта.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex5",
+            type: "input",
+            icon: "fa-arrow-right-arrow-left",
+            showTask: true,
+            title: "5-mashq. Sabab va natijani ifodalang",
+            intro: "«Это приводит к тому, что…» konstruksiyasidan foydalanib, sabab va natijani bitta gapga bog‘lang.",
+            namuna: "Люди постоянно пользуются телефонами. Они меньше общаются лично. → Люди постоянно пользуются телефонами, и это приводит к тому, что они меньше общаются лично.",
+            items: [
+                { q: "Люди мало двигаются. У них возникают проблемы со здоровьем.", free: true, answer: null },
+                { q: "Молодёжь проводит много времени в интернете. Она меньше общается с семьёй.", free: true, answer: null },
+                { q: "В городе становится больше машин. Воздух загрязняется.", free: true, answer: null },
+                { q: "Люди распространяют непроверенную информацию. Возникает недоверие в обществе.", free: true, answer: null },
+                { q: "Студенты используют только готовые ответы. Они хуже развивают самостоятельное мышление.", free: true, answer: null },
+                { q: "Люди много работают. У них остаётся мало времени на отдых.", free: true, answer: null },
+                { q: "Компании используют современные технологии. Производительность труда повышается.", free: true, answer: null },
+                { q: "Люди покупают слишком много товаров. Количество отходов увеличивается.", free: true, answer: null },
+                { q: "Молодые специалисты уезжают за границу. В стране уменьшается количество квалифицированных кадров.", free: true, answer: null },
+                { q: "Люди не интересуются общественными проблемами. Важные вопросы остаются без внимания.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex6",
+            type: "input",
+            icon: "fa-triangle-exclamation",
+            showTask: true,
+            title: "6-mashq. Xatoni toping va tuzating",
+            intro: "Har bir gapda konstruksiya, boshqaruv yoki tinish belgisi xatosi bor. To‘g‘rilangan gapni to‘liq yozing.",
+            namuna: "По моему мнению что, эта проблема очень важна. → По моему мнению, эта проблема очень важна.",
+            items: [
+                { q: "Насколько я понимаю что, ситуация постепенно меняется.", free: true, answer: null },
+                { q: "Нельзя отрицать о том, что технологии играют важную роль.", free: true, answer: null },
+                { q: "По моему мнению что, государство должно принять меры.", free: true, answer: null },
+                { q: "С одной стороны технологии удобны, с другой стороны они создают новые проблемы.", free: true, answer: null },
+                { q: "Основная проблема заключается о том, что многие люди не понимают эту проблему.", free: true, answer: null },
+                { q: "Нельзя не признать о том, что интернет стал частью нашей жизни.", free: true, answer: null },
+                { q: "Таким образом что, необходимо искать новое решение.", free: true, answer: null },
+                { q: "Если я правильно понимаю что, вы предлагаете изменить систему образования?", free: true, answer: null },
+                { q: "По моему мнению социальные сети имеют как преимущества так и недостатки.", free: true, answer: null },
+                { q: "В конечном счёте, каждый человек должен сам принимать решение.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex7",
+            type: "input",
+            icon: "fa-wand-magic-sparkles",
+            showTask: true,
+            title: "7-mashq. B2 darajasidagi konstruksiya bilan qayta yozing",
+            intro: "Oddiy gapni B2 darajadagi murakkabroq konstruksiya bilan qayta yozing. Fikrning ma’nosi o‘zgarmasin — faqat ifoda vositasi rivojlansin.",
+            namuna: "Я думаю, что технологии полезны. → По моему мнению, технологии полезны.",
+            items: [
+                { q: "Я думаю, что интернет очень важен.", free: true, answer: null },
+                { q: "Я думаю, что эта проблема серьёзная.", free: true, answer: null },
+                { q: "Я понимаю ситуацию так: проблема связана с образованием.", free: true, answer: null },
+                { q: "Все знают, что технологии изменили общество.", free: true, answer: null },
+                { q: "Я думаю, что социальные сети имеют недостатки.", free: true, answer: null },
+                { q: "Я согласен, что государство должно вмешаться.", free: true, answer: null },
+                { q: "Я не согласен с этим мнением.", free: true, answer: null },
+                { q: "Есть хорошая сторона и плохая сторона.", free: true, answer: null },
+                { q: "Из-за этого возникает много проблем.", free: true, answer: null },
+                { q: "В итоге проблему нужно решать вместе.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex8",
+            type: "input",
+            icon: "fa-comments",
+            showTask: true,
+            title: "8-mashq. Debat uchun javob tuzing",
+            intro: "Har bir savolga kamida 2–3 gap bilan javob bering va takrorlangan konstruksiyalardan kamida bittasini ishlating: «По моему мнению…», «Насколько я понимаю…», «Нельзя отрицать, что…», «С одной стороны, … с другой стороны, …», «Таким образом, …».",
+            namuna: "Нужны ли социальные сети современному человеку? → По моему мнению, социальные сети необходимы современному человеку. С одной стороны, они позволяют быстро получать информацию, с другой стороны, они могут вызывать зависимость.",
+            items: [
+                { q: "Нужно ли ограничивать использование социальных сетей?", free: true, answer: null },
+                { q: "Может ли искусственный интеллект заменить человека?", free: true, answer: null },
+                { q: "Должно ли образование быть полностью бесплатным?", free: true, answer: null },
+                { q: "Почему молодёжь уезжает из маленьких городов?", free: true, answer: null },
+                { q: "Нужно ли запрещать телефоны в школах?", free: true, answer: null },
+                { q: "Может ли интернет сделать людей более одинокими?", free: true, answer: null },
+                { q: "Должно ли государство больше заботиться об экологии?", free: true, answer: null },
+                { q: "Нужно ли сокращать рабочую неделю?", free: true, answer: null },
+                { q: "Почему современные люди испытывают больше стресса?", free: true, answer: null },
+                { q: "Может ли современное общество существовать без технологий?", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex9",
+            type: "input",
+            icon: "fa-lightbulb",
+            showTask: true,
+            title: "9-mashq. Fikrni dalil bilan asoslang",
+            intro: "Har bir fikrga «Дело в том, что…» yoki «Нельзя отрицать, что…» bilan haqiqiy dalil qo‘shing — fikrni shunchaki takrorlamang.",
+            namuna: "Современные люди слишком много используют телефоны. → Современные люди слишком много используют телефоны. Дело в том, что телефон стал основным средством общения, работы и получения информации.",
+            items: [
+                { q: "Молодёжь слишком много времени проводит в социальных сетях.", free: true, answer: null },
+                { q: "Современное образование быстро меняется.", free: true, answer: null },
+                { q: "Экологические проблемы становятся серьёзнее.", free: true, answer: null },
+                { q: "Искусственный интеллект влияет на рынок труда.", free: true, answer: null },
+                { q: "Люди стали меньше читать книги.", free: true, answer: null },
+                { q: "Большие города становятся всё более привлекательными для молодёжи.", free: true, answer: null },
+                { q: "Интернет изменил способы общения.", free: true, answer: null },
+                { q: "Современная работа стала более гибкой.", free: true, answer: null },
+                { q: "Информация в интернете не всегда достоверна.", free: true, answer: null },
+                { q: "Современным людям необходимо уделять больше внимания полноценному отдыху и восстановлению.", free: true, answer: null }
+            ]
+        },
+        {
+            id: "ex10",
+            type: "choice",
+            icon: "fa-diagram-project",
+            showTask: true,
+            title: "10-mashq. Konstruksiyaning vazifasini aniqlang",
+            intro: "Ajratilgan konstruksiya gapda qanday vazifani bajaryapti?",
+            namuna: "Дело в том, что проблема сложнее, чем кажется. → Обоснование",
+            items: [
+                { q: "По моему мнению, эта проблема требует серьёзного внимания.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Позиция" },
+                { q: "Если я правильно понимаю, вы предлагаете изменить систему?", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Проверка понимания" },
+                { q: "Нельзя отрицать, что технологии изменили рынок труда.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Сильное признание" },
+                { q: "С одной стороны, онлайн-обучение удобно, с другой стороны, оно требует самодисциплины.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Контраст" },
+                { q: "Дело в том, что проблема значительно сложнее, чем кажется.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Обоснование" },
+                { q: "Это приводит к тому, что люди меньше общаются лично.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Следствие" },
+                { q: "Проблему можно решить при условии, что стороны будут сотрудничать.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Условие" },
+                { q: "Таким образом, необходимо искать комплексное решение.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Вывод" },
+                { q: "В конечном счёте решение зависит от самого человека.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Вывод" },
+                { q: "Насколько я понимаю, основная причина связана с отсутствием контроля.", options: ["Позиция", "Проверка понимания", "Сильное признание", "Контраст", "Обоснование", "Следствие", "Условие", "Вывод"], answer: "Проверка понимания" }
+            ]
+        },
+        {
+            id: "audio1",
+            type: "choice",
+            style: "tf",
+            icon: "fa-headphones",
+            showTask: true,
+            title: "Современное общество и его проблемы",
+            intro: "Прослушайте аудио и определите, являются ли утверждения правдой или ложью.",
+            audioSrc: "audios/%D0%912%2016%20%D1%83%D1%80%D0%BE%D0%BA.mp3",
+            items: [
+                { q: "Современное общество сталкивается с большим количеством проблем.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "По мнению автора, технологии не оказывают никакого влияния на жизнь людей.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Интернет позволяет людям быстро получать информацию и общаться.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Чрезмерное использование социальных сетей может привести к зависимости.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Автор считает, что проблема технологий особенно сильно влияет на пожилых людей.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "В интернете всегда публикуется только достоверная информация.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Экологические проблемы требуют серьёзного внимания.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Решение общественных проблем зависит только от государства.", options: ["Правда", "Ложь"], answer: "Ложь" },
+                { q: "Автор считает, что для решения проблем необходимо сотрудничество государства, организаций и граждан.", options: ["Правда", "Ложь"], answer: "Правда" },
+                { q: "Автор считает, что современные проблемы можно решить только усилиями отдельных людей.", options: ["Правда", "Ложь"], answer: "Ложь" }
+            ]
+        }
+    ];
+
     global.B2_LESSON_DATA = {
         course: 'b2',
         topics: [
@@ -3118,6 +4542,60 @@
                 isSubscriptionLocked: false,
                 grammar: LESSON_10_GRAMMAR,
                 exercises: LESSON_10_EXERCISES
+            },
+            {
+                id: 11,
+                title: 'Отглагольные существительные',
+                description: "Grammatika: Fe'ldan yasalgan otlar — jarayon, boshqaruv va rasmiy uslub",
+                isLocked: false,
+                isSubscriptionLocked: false,
+                grammar: LESSON_11_GRAMMAR,
+                exercises: LESSON_11_EXERCISES
+            },
+            {
+                id: 12,
+                title: 'Пассивные конструкции',
+                description: "Grammatika: Passiv konstruksiyalar — jarayon, natija va rasmiy uslub",
+                isLocked: false,
+                isSubscriptionLocked: false,
+                grammar: LESSON_12_GRAMMAR,
+                exercises: LESSON_12_EXERCISES
+            },
+            {
+                id: 13,
+                title: "Предлоги и управление",
+                description: "Grammatika: Predlog boshqaruvi — благодаря, несмотря на, в связи с, согласно",
+                isLocked: false,
+                isSubscriptionLocked: false,
+                grammar: LESSON_13_GRAMMAR,
+                exercises: LESSON_13_EXERCISES
+            },
+            {
+                id: 14,
+                title: "Средства аргументации",
+                description: "Grammatika: Argumentatsiya vositalari — tezis, sabab, misol, kontrargument, xulosa",
+                isLocked: false,
+                isSubscriptionLocked: false,
+                grammar: LESSON_14_GRAMMAR,
+                exercises: LESSON_14_EXERCISES
+            },
+            {
+                id: 15,
+                title: "Стилистика речи",
+                description: "Grammatika: Nutq registri — rasmiy, neytral va norasmiy muloqot",
+                isLocked: false,
+                isSubscriptionLocked: false,
+                grammar: LESSON_15_GRAMMAR,
+                exercises: LESSON_15_EXERCISES
+            },
+            {
+                id: 16,
+                title: "Повторение сложных конструкций B2",
+                description: "Grammatika: B2 murakkab konstruksiyalarini yakuniy takrorlash va birga ishlatish",
+                isLocked: false,
+                isSubscriptionLocked: false,
+                grammar: LESSON_16_GRAMMAR,
+                exercises: LESSON_16_EXERCISES
             }
         ]
     };

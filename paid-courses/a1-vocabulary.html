@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="pro-ui.css">
     <script defer src="pro-toast.js"></script>
     <script type="module" src="paid-platform.js"></script>
+    <script src="../vocabulary-component.js"></script>
     <script defer src="../scroll-top.js"></script>
     <style>
         * {
@@ -585,6 +586,69 @@
         .completion-message {
             font-size: 1.5rem;
             margin-bottom: 40px;
+        }
+
+        /* ==================== SYNC / RETRY STATE ====================
+           These three classes are created by a1ApplyVocabOutcome() and its
+           siblings and, until now, had no rule anywhere in any of the four
+           decks. On a real 360px phone that meant the ONLY control a learner
+           has for recovering unsynced work — "Qayta urinish" — rendered as an
+           82x20 user-agent default button, and the failure message was
+           indistinguishable from a success note.
+
+           The panel carries its own background and text colour rather than
+           inheriting: A1/A2/B1 put white text on a coloured completion screen
+           while B2 puts grey text on a light one, and a note that is legible
+           on one must not vanish on the other. */
+        .uz-vocab-note {
+            max-width: 32rem;
+            margin: 24px auto 0;
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.97);
+            color: #2B3350;
+            font-size: 1rem;
+            line-height: 1.6;
+            text-align: center;
+            overflow-wrap: break-word;
+            word-break: normal;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+        }
+
+        .uz-vocab-note.uz-vocab-error {
+            background: #FFF5F5;
+            border: 1px solid #EFB3B3;
+            color: #8E2B2B;
+        }
+
+        /* SAVE_FAILED is two lines on purpose; honour the newline. */
+        .uz-vocab-note p {
+            margin: 0 0 14px;
+            white-space: pre-line;
+        }
+
+        .uz-vocab-retry {
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            min-height: 48px;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #C63B4E, #A32B3C);
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.18s ease, filter 0.18s ease;
+        }
+
+        .uz-vocab-retry:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.06);
+        }
+
+        @media (max-width: 480px) {
+            .uz-vocab-note { margin-top: 18px; padding: 14px 14px; }
+            .uz-vocab-retry { width: 100%; }
         }
 
         .completion-buttons {
@@ -1996,6 +2060,69 @@
         };
 
         // ==================== COMPLETION (ISSUE #2 — "Topic completed" + replay) ====================
+        /* THE VOCABULARY HALF, REPORTED AUTHORITATIVELY.
+
+           Reached only from the deck's completion screen — the learner has
+           walked every word of the topic. Never on load, never on a card
+           view, never on a timer. A failure keeps the local "finished but
+           unsynced" note so a reload can retry the component ALONE instead of
+           marching the learner through the deck again. */
+        async function a1ReportVocabulary(topicId) {
+            var V = window.UzVocabularyComponent;
+            if (!V) return null;
+            var outcome = await V.reportVocabulary({
+                course: 'A1',
+                topicId: topicId,
+                courseState: window.__vocabCourseState,
+                api: { completeCourseComponent: window.completeCourseComponent }
+            });
+            a1ApplyVocabOutcome(topicId, outcome);
+            return outcome;
+        }
+
+        function a1ApplyVocabOutcome(topicId, outcome) {
+            var V = window.UzVocabularyComponent;
+            if (!V || !outcome) return;
+            var host = document.getElementById('completionScreen') || document.body;
+            var old = host.querySelector('.uz-vocab-note');
+            if (old) old.remove();
+
+            if (!outcome.ok) {
+                var box = document.createElement('div');
+                box.className = 'uz-vocab-note uz-vocab-error';
+                var msg = document.createElement('p');
+                msg.textContent = outcome.message || V.MESSAGES.SAVE_FAILED;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'uz-vocab-retry';
+                btn.textContent = 'Qayta urinish';
+                btn.onclick = function () { return a1ReportVocabulary(topicId); };
+                box.appendChild(msg); box.appendChild(btn);
+                host.appendChild(box);
+                return;
+            }
+
+            /* the acknowledgement, recorded locally so this page stops asking */
+            if (outcome.vocabularyCompleted) {
+                window.__vocabCourseState = window.__vocabCourseState || {};
+                window.__vocabCourseState.topicComponents =
+                    window.__vocabCourseState.topicComponents || {};
+                window.__vocabCourseState.topicComponents[topicId] =
+                    Object.assign({}, window.__vocabCourseState.topicComponents[topicId],
+                                  { vocabularyCompleted: true });
+            }
+            if (Array.isArray(outcome.completedTopics)) {
+                window.__vocabCourseState = window.__vocabCourseState || {};
+                window.__vocabCourseState.completedTopics = outcome.completedTopics.slice();
+            }
+            if (outcome.message) {
+                var note = document.createElement('div');
+                note.className = 'uz-vocab-note';
+                note.textContent = outcome.message;
+                host.appendChild(note);
+            }
+        }
+
         function showCompletion() {
             document.getElementById('flashcardScreen').classList.remove('active');
             document.getElementById('completionScreen').classList.add('active');
@@ -2010,6 +2137,7 @@
 
             // Save progress
             saveProgress();
+            a1ReportVocabulary(currentTopicId);
         }
 
         // Replay: clear this topic's progress and start over from word 1.
@@ -2072,6 +2200,9 @@
                 if (window.getUserProgress) {
                     console.log('📚 VOCAB: Calling Firebase getUserProgress for course A1...');
                     const progress = await window.getUserProgress(user.id, 'A1');
+                    /* courses.A1 carries topicComponents — the only authority on
+                       whether this topic's vocabulary half was acknowledged. */
+                    window.__vocabCourseState = progress || null;
                     console.log('📚 VOCAB: Received progress from Firebase:', progress);
                     
                     if (progress && progress.vocabulary && progress.vocabulary.learnedWords) {

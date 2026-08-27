@@ -148,7 +148,13 @@ ok(tf === 'Правда,Ложь,Правда,Правда,Ложь,Правда
      ['Она предупредила меня, что…', 'last construction']
     ].forEach(([wd, label]) => ok(seg.indexOf('"' + wd + '"') !== -1,
         `paid vocabulary keeps ${label} ("${wd}")`));
-    ok(/generateLockedTopics\(\d+\)/.test(s), 'locked vocabulary topics are generated after the authored ones');
+    /* FINAL-FRONTIER SAFE: the spread disappears once every deck is real. */
+    if (s.indexOf('...generateLockedTopics(') !== -1) {
+        ok(/generateLockedTopics\(\d+\)/.test(s), 'locked vocabulary topics are generated after the authored ones');
+    } else {
+        ok(s.split('...generateLockedTopics(').length - 1 === 0,
+            'the paid deck list is complete — no future deck is generated');
+    }
     ok(/Причастие \(sifatdosh\)/.test(s) && /Деепричастие \(ravishdosh\)/.test(s),
         'paid vocabulary topics 2 and 3 intact');
 

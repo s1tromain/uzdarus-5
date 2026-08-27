@@ -43,10 +43,20 @@ function boot(rel) {
               time through /api/progress; the stub answers as the server would,
               returning the resulting array. saveUserProgress survives for the
               SAFE fields only and must never see a completion. */
-           'window.completeCourseTopic=async function(course,topicId){' +
-           ' window.__fb.progress.push({course:course,topicId:topicId});' +
+           /* A2 reports the EXERCISES HALF now, not the whole topic:
+              complete-topic finalises only what the component record earns, so
+              a topic claim could never append and A2 topics never completed.
+              The stub answers in the shape complete-component really sends. */
+           'window.completeCourseComponent=async function(course,topicId,component){' +
+           ' window.__fb.progress.push({course:course,topicId:topicId,component:component});' +
            ' window.__server=Array.from(new Set([...(window.__server||[]),topicId])).sort((a,b)=>a-b);' +
-           ' return window.__server.slice();};' +
+           ' return {ok:true,course:course,topicId:topicId,component:component,' +
+           '  components:{vocabularyCompleted:true,exercisesCompleted:true},' +
+           '  topicCompleted:true,completedTopics:window.__server.slice(),nextTopic:topicId+1};};' +
+           'window.completeCourseTopic=async function(course,topicId){' +
+           ' window.__fb.legacyTopicClaims=(window.__fb.legacyTopicClaims||[]);' +
+           ' window.__fb.legacyTopicClaims.push({course:course,topicId:topicId});' +
+           ' return window.__server ? window.__server.slice() : [];};' +
            'window.saveUserProgress=async function(uid,course,payload){' +
            ' window.__fb.safe=(window.__fb.safe||[]); window.__fb.safe.push({uid:uid,course:course,payload:payload});' +
            ' return 1;};' +
@@ -147,18 +157,38 @@ function answersFor(w, topicId) {
         await new Promise(r => setTimeout(r, 120));
 
         ok(w.__api.getCompleted().indexOf(TOPIC) !== -1, `${rel}: completedTopics contains the topic after`);
-        ok(w.__fb.progress.length === progressBefore + 1, `${rel}: exactly one progress write`);
-        ok(w.__fb.progress[w.__fb.progress.length - 1].topicId === TOPIC,
+        if (rel.indexOf('paid-courses/') === 0) {
+            ok(w.__fb.progress.length === progressBefore + 1, `${rel}: exactly one progress write`);
+        } else {
+            ok((w.__fb.legacyTopicClaims || []).length === 1, `${rel}: exactly one progress write`);
+        }
+        /* THE PAID COURSE AND THE DEMO CLAIM DIFFERENT THINGS.
+           paid-courses/a2-course.html reports the EXERCISES HALF through
+           complete-component, because complete-topic finalises only what the
+           component record earns. a2-demo.html has no server behind it and
+           keeps its legacy whole-topic call, so the two are asserted apart
+           rather than one being bent to fit the other. */
+        const PAID = rel.indexOf('paid-courses/') === 0;
+        const claims = PAID ? w.__fb.progress : (w.__fb.legacyTopicClaims || []);
+        ok(claims.length > 0, `${rel}: a completion claim was sent`);
+        ok(claims[claims.length - 1].topicId === TOPIC,
             `${rel}: the completion claims exactly the topic that was finished`);
         ok((w.__fb.safe || []).every(c => !('completedTopics' in (c.payload || {}))),
             `${rel}: no completion field went through the generic saver`);
-        const pg = w.__fb.progress[w.__fb.progress.length - 1];
+        const pg = claims[claims.length - 1];
         if (pg) {
             /* The client no longer sends a uid or an array: the server derives
                the user from the session and owns the array. What it sends is a
                claim about ONE topic of ONE course. */
             ok(pg.course === 'A2', `${rel}: the claim names course A2`);
             ok(pg.topicId === TOPIC, `${rel}: the claim names the finished topic`);
+            if (PAID) {
+                ok(pg.component === 'exercises',
+                    `${rel}: and it claims the EXERCISES half, not the whole topic`);
+                /* the legacy whole-topic route must not be the learner's path */
+                ok((w.__fb.legacyTopicClaims || []).length === 0,
+                    `${rel}: finishing the exercises never claims the whole topic`);
+            }
             ok(!('uid' in pg) && !('completedTopics' in pg),
                 `${rel}: the client sends neither a uid nor a progress array`);
             ok(w.__api.getCompleted().indexOf(TOPIC) !== -1,
@@ -170,7 +200,8 @@ function answersFor(w, topicId) {
         await new Promise(r => setTimeout(r, 120));
         const occurrences = w.__api.getCompleted().filter(x => x === TOPIC).length;
         ok(occurrences === 1, `${rel}: repeat completion does not duplicate the topic (${occurrences})`);
-        ok(w.__fb.progress.length === progressBefore + 1,
+        ok((PAID ? w.__fb.progress.length : (w.__fb.legacyTopicClaims || []).length)
+            === progressBefore + 1,
             `${rel}: repeat completion writes no second progress record`);
 
         /* unlock: topic 2 must no longer be sequence-locked */

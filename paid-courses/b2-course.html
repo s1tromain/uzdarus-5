@@ -23,6 +23,7 @@
     <script defer src="../exercise-session.js"></script>
     <script defer src="../course-exercise-ui.js"></script>
     <script defer src="../sentence-builder.js"></script>
+    <script defer src="../exercise-lifecycle.js"></script>
     <script defer src="../b2-host.js"></script>
     <script defer src="../b2-lesson-data.js"></script>
     <script defer src="../course-global-fixes.js"></script>
@@ -1271,6 +1272,149 @@
                 padding: 10px;
             }
         }
+        /* ====== FINAL EXAM ENTRY + CERTIFICATE ====== */
+        .final-exam-entry {
+            max-width: 720px;
+            margin: 50px auto 30px;
+            background: linear-gradient(135deg, #FFF8E1 0%, #FFE0B2 50%, #FFD54F 100%);
+            border: 3px solid var(--primary, #FF9800);
+            border-radius: 24px;
+            padding: 40px 32px;
+            text-align: center;
+            box-shadow: 0 12px 40px rgba(255, 152, 0, 0.25), 0 0 0 4px rgba(255, 152, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .final-exam-entry.locked {
+            background: linear-gradient(135deg, #eceff1 0%, #cfd8dc 100%);
+            border-color: #b0bec5;
+            box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+        }
+        .final-exam-entry.completed {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 60%, #A5D6A7 100%);
+            border-color: #4CAF50;
+            box-shadow: 0 12px 40px rgba(76, 175, 80, 0.25), 0 0 0 4px rgba(76, 175, 80, 0.08);
+        }
+        .final-exam-trophy { font-size: 3.5rem; margin-bottom: 12px; display: block; }
+        .final-exam-entry-title { font-size: 1.8rem; font-weight: 800; color: var(--primary-dark, #F57C00); margin-bottom: 6px; }
+        .final-exam-entry.locked .final-exam-entry-title { color: #607d8b; }
+        .final-exam-entry.completed .final-exam-entry-title { color: #2e7d32; }
+        .final-exam-entry-subtitle { font-size: 1.05rem; color: var(--gray, #666); font-weight: 600; margin-bottom: 16px; }
+        .final-exam-entry-desc { font-size: 0.97rem; color: var(--dark, #333); line-height: 1.7; margin-bottom: 18px; }
+        .final-exam-info-list { list-style: none; padding: 0; margin: 0 auto 22px; display: inline-block; text-align: left; }
+        .final-exam-info-list li { font-size: 0.97rem; color: var(--dark, #333); padding: 4px 0; font-weight: 600; }
+        .final-exam-progress-line { font-size: 0.95rem; font-weight: 700; color: #607d8b; margin-bottom: 18px; }
+        .final-exam-start-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary, #FF9800), var(--primary-dark, #F57C00));
+            color: white; padding: 16px 48px; border: none; border-radius: 50px;
+            font-size: 1.2rem; font-weight: 700; cursor: pointer;
+            box-shadow: 0 8px 28px rgba(255, 152, 0, 0.4); transition: all 0.3s ease; letter-spacing: 0.3px;
+        }
+        .final-exam-start-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(255, 152, 0, 0.55); }
+        .final-exam-start-btn.locked { background: #b0bec5; cursor: not-allowed; box-shadow: none; }
+        .final-exam-start-btn.locked:hover { transform: none; box-shadow: none; }
+        .final-exam-cert-btn {
+            display: inline-block; background: linear-gradient(135deg, #4CAF50, #2E7D32);
+            color: white; padding: 16px 48px; border: none; border-radius: 50px;
+            font-size: 1.15rem; font-weight: 700; cursor: pointer; margin-top: 6px;
+            box-shadow: 0 8px 28px rgba(76, 175, 80, 0.4); transition: all 0.3s ease;
+        }
+        .final-exam-cert-btn:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(76, 175, 80, 0.55); }
+        .final-exam-badge {
+            display: inline-block; background: linear-gradient(135deg, #FFD54F, #FF9800);
+            color: #333; padding: 4px 14px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+            margin-bottom: 14px; letter-spacing: 0.5px; text-transform: uppercase;
+        }
+        .final-exam-entry.completed .final-exam-badge { background: linear-gradient(135deg, #A5D6A7, #4CAF50); color: #fff; }
+
+        /* Certificate modal */
+        .b2-cert-overlay {
+            display: none; position: fixed; inset: 0; z-index: 100000;
+            background: rgba(10, 15, 35, 0.8); backdrop-filter: blur(3px);
+            justify-content: center; align-items: center; padding: 20px; overflow-y: auto;
+        }
+        .b2-cert-overlay.show { display: flex; }
+        .b2-cert {
+            background: #fffdf5; width: 100%; max-width: 720px; border-radius: 16px;
+            padding: 48px 44px; position: relative;
+            border: 10px double #C9A227; box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            text-align: center; font-family: 'Georgia', 'Segoe UI', serif;
+        }
+        .b2-cert-logo { font-size: 1.4rem; font-weight: 800; color: #0f3460; letter-spacing: 1px; }
+        .b2-cert-logo span { color: #08617f; }
+        .b2-cert-kicker { margin-top: 8px; font-size: 0.85rem; letter-spacing: 3px; color: #C9A227; text-transform: uppercase; font-weight: 700; }
+        .b2-cert-title { font-size: 2.1rem; font-weight: 800; color: #1a1a2e; margin: 18px 0 6px; }
+        .b2-cert-sub { font-size: 0.95rem; color: #666; margin-bottom: 22px; }
+        .b2-cert-name { font-size: 1.7rem; font-weight: 800; color: #0f3460; border-bottom: 2px solid #C9A227; display: inline-block; padding: 0 18px 6px; margin-bottom: 18px; }
+        .b2-cert-body { font-size: 1rem; color: #333; line-height: 1.7; margin-bottom: 16px; }
+        .b2-cert-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: 26px; font-size: 0.9rem; color: #444; }
+        .b2-cert-meta b { display: block; color: #0f3460; }
+        .b2-cert-seal { position: absolute; bottom: 26px; right: 34px; font-size: 3rem; opacity: 0.9; }
+        .b2-cert-actions { margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .b2-cert-actions button {
+            border: none; border-radius: 50px; padding: 12px 28px; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .b2-cert-print { background: linear-gradient(135deg, #FF9800, #F57C00); color: #fff; }
+        .b2-cert-close { background: #eceff1; color: #455a64; }
+
+        @media (max-width: 768px) {
+            .final-exam-entry { margin: 30px 12px 20px; padding: 28px 18px; }
+            .final-exam-entry-title { font-size: 1.4rem; }
+            .final-exam-trophy { font-size: 2.8rem; }
+            .final-exam-start-btn, .final-exam-cert-btn { padding: 14px 34px; font-size: 1.05rem; }
+            .b2-cert { padding: 30px 20px; }
+            .b2-cert-title { font-size: 1.5rem; }
+            .b2-cert-name { font-size: 1.3rem; }
+            .b2-cert-seal { font-size: 2.2rem; bottom: 16px; right: 18px; }
+        }
+        @media (max-width: 480px) {
+            .final-exam-entry { margin: 20px 6px 16px; padding: 22px 12px; }
+            .final-exam-entry-title { font-size: 1.2rem; }
+            .b2-cert-meta { flex-direction: column; }
+        }
+        @media print {
+            body * { visibility: hidden !important; }
+            .b2-cert-overlay, .b2-cert-overlay * { visibility: visible !important; }
+            .b2-cert-overlay { position: absolute; inset: 0; background: #fff; display: block; }
+            .b2-cert { box-shadow: none; max-width: 100%; }
+            .b2-cert-actions { display: none !important; }
+        }
+
+        /* ------------------------------------------- FINISHED EXERCISES
+           Three non-solving faces: the finished topic, the finished-but-
+           unacknowledged topic, and the read-only review. All must survive a
+           360px phone, so nothing has a fixed width and every learner-authored
+           string may wrap mid-token. */
+        .b2-done-panel { max-width:100%; background:#f1f8f4; border:1px solid #bfe3cc;
+            border-radius:14px; padding:20px 18px; text-align:center; }
+        .b2-done-title { margin:0 0 6px; font-size:clamp(1rem,3.6vw,1.25rem); overflow-wrap:anywhere; }
+        .b2-done-score { margin:0 0 16px; font-weight:700; color:#1f7a45; overflow-wrap:anywhere; }
+        .b2-cta, .b2-retry-save, .b2-review-close {
+            max-width:100%; border:none; background:var(--primary,#4a6cf7); color:#fff;
+            border-radius:999px; padding:11px 20px; font-weight:700; font-size:.95rem;
+            cursor:pointer; overflow-wrap:anywhere; }
+        .b2-sync-warn, .b2-notice, .b2-save-error {
+            max-width:100%; margin:0 0 14px; background:#fff3e0; border:1px solid #ffcc80;
+            border-radius:12px; padding:14px; color:#8a5300; white-space:pre-line;
+            overflow-wrap:anywhere; text-align:center; }
+        .b2-notice, .b2-save-error { margin:14px 0 0; }
+        .b2-review { max-width:100%; overflow-wrap:anywhere; }
+        .b2-review-head { display:flex; flex-wrap:wrap; gap:10px; align-items:center;
+            justify-content:space-between; margin-bottom:16px; }
+        .b2-review-title { margin:0; font-size:clamp(1rem,3.6vw,1.2rem); min-width:0; }
+        .b2-review-total { font-weight:700; color:#1f7a45; }
+        .b2-review-group { max-width:100%; border:1px solid #e0e0e0; border-radius:12px;
+            padding:14px; margin-bottom:14px; background:#fff; }
+        .b2-review-gtitle { margin:0 0 4px; font-weight:700; }
+        .b2-review-gscore { margin:0 0 12px; font-size:.9rem; color:#555; }
+        .b2-review-item { display:grid; gap:4px; padding:10px 0; border-top:1px solid #f0f0f0; }
+        .b2-review-q { font-weight:600; }
+        .b2-review-given, .b2-review-correct { font-size:.9rem; color:#555; }
+        .b2-review-item.is-correct .b2-review-given { color:#1f7a45; }
+        .b2-review-item.is-wrong .b2-review-given { color:#b3261e; }
+
     </style>
 </head>
 
@@ -1341,6 +1485,8 @@
     <script>
         let currentUser = null;
         let currentUserId = null;
+        let b2CourseState = null;
+        let b2PendingRetry = null;
         let userProgress = {};
         let hasSubscription = true;
 
@@ -1404,6 +1550,7 @@
                     const local = JSON.parse(localStorage.getItem(b2LocalKey()) || '[]');
                     b2ApplyCompletedArray(local);
                 } catch (e) { /* ignore */ }
+                mergeB2Completion(readLocalB2Completion(), false);
                 return;
             }
 
@@ -1418,11 +1565,17 @@
             try {
                 if (window.getUserProgress) {
                     const rp = await window.getUserProgress(currentUserId, B2_COURSE);
+                    /* courses.B2 carries topicComponents — the only authority on
+                       whether the exercises half of a topic was acknowledged. */
+                    b2CourseState = rp || null;
                     if (rp && Array.isArray(rp.completedTopics)) {
                         b2ApplyCompletedArray(rp.completedTopics);
                         try { localStorage.setItem(b2LocalKey(), JSON.stringify(rp.completedTopics)); } catch (e) {}
                         loaded = true;
                     }
+                    /* The SAME record carries the exam verdict the server wrote.
+                       Only this Firebase-sourced copy may confirm a pass. */
+                    mergeB2Completion(rp, true);
                 }
             } catch (error) {
                 console.error('B2: Firestore load error, falling back to localStorage:', error);
@@ -1430,6 +1583,10 @@
             if (!loaded) {
                 try { b2ApplyCompletedArray(JSON.parse(localStorage.getItem(b2LocalKey()) || '[]')); } catch (e) {}
             }
+            /* localStorage completion flags are a fast display CACHE only — they
+               can fill in a score/date but never set fbConfirmed, so no
+               certificate is ever opened by a cached value. */
+            mergeB2Completion(readLocalB2Completion(), false);
         }
 
         // ISSUE #3 / #5 — persist completion to Firestore (monotonic union) so the
@@ -1446,10 +1603,20 @@
                 return false;
             }
             try {
-                const authoritative = await window.completeCourseTopic(B2_COURSE, topicId);
-                if (!Array.isArray(authoritative)) {
+                /* THE EXERCISES HALF, NOT THE WHOLE TOPIC — see the same change
+                   in a2-course.html. completeCourseTopic finalises only what the
+                   component record earns, so claiming the topic here could never
+                   append anything and B2 topics never completed. */
+                const ack = await window.completeCourseComponent(B2_COURSE, topicId, 'exercises');
+                if (!ack || ack.ok !== true
+                    || String(ack.course).toUpperCase() !== String(B2_COURSE).toUpperCase()
+                    || Number(ack.topicId) !== Number(topicId)
+                    || !ack.components || ack.components.exercisesCompleted !== true
+                    || typeof ack.topicCompleted !== 'boolean'
+                    || !Array.isArray(ack.completedTopics)) {
                     return false;
                 }
+                const authoritative = ack.completedTopics;
                 b2ApplyCompletedArray(authoritative);
                 try { localStorage.setItem(b2LocalKey(), JSON.stringify(authoritative)); } catch (e) {}
                 return true;
@@ -1627,8 +1794,26 @@
                     !!(userProgress[topic.id - 1] && userProgress[topic.id - 1].completed);
                 const isLocked = !b2IsPrivileged() && !isCompleted && !prevCompleted;
                 
-                const topicBtn = document.createElement('button');
+                const topicBtn = document.createElement('div');
                 topicBtn.className = `topic-btn ${isCompleted ? 'completed' : ''} ${isLocked ? 'locked' : ''}`;
+
+                /* A CARD, NOT A BUTTON. This element used to be a <button>, and
+                   the "Lug'atni o'rganish" control inside it is also a <button>
+                   — a button nested in a button, which is invalid HTML the
+                   parser is entitled to split apart, and which leaves the inner
+                   control ambiguous to assistive technology. Making the card a
+                   div keeps its full tap area and every one of its class-based
+                   styles, and the keydown below restores the keyboard
+                   activation the <button> was providing for free. */
+                topicBtn.setAttribute('role', 'button');
+                topicBtn.setAttribute('tabindex', '0');
+                topicBtn.addEventListener('keydown', (event) => {
+                    if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') return;
+                    /* the inner vocabulary button speaks for itself */
+                    if (event.target !== topicBtn) return;
+                    event.preventDefault();
+                    topicBtn.click();
+                });
                 topicBtn.innerHTML = `
                     <i class="topic-icon fas fa-${getTopicIcon(topic.id)}"></i>
                     <div class="topic-info">
@@ -1659,7 +1844,188 @@
 
                 topicsGrid.appendChild(topicBtn);
             });
+            renderFinalExamEntry();
         }
+
+
+        /* ==================================================================
+         * B2 GRADUATION — final exam entry + certificate.
+         *
+         * Deliberately the SAME shape as B1: the exam and the certificate are
+         * server-authoritative, and this page only renders what the server
+         * already decided. `fbConfirmed` is true ONLY when the Firestore
+         * progress record itself carries the pass, so a hand-written
+         * localStorage flag can populate a score for display but can never
+         * open the certificate.
+         * ================================================================== */
+        let b2Completion = { finalExamPassed: false, courseCompleted: false, certificateUnlocked: false, finalExamScore: null, finalExamCompletedAt: null, certificateNumber: null, fbConfirmed: false };
+        let b2CertIssueRequested = false;
+
+        function readLocalB2Completion() {
+            try {
+                const uid = window.currentUserId || (JSON.parse(localStorage.getItem('currentUser') || 'null') || {}).id || 'guest';
+                const raw = localStorage.getItem('b2_completion_' + uid);
+                return raw ? JSON.parse(raw) : null;
+            } catch (e) { return null; }
+        }
+        function mergeB2Completion(src, fromFirebase) {
+            if (!src) return;
+            if (src.finalExamPassed) b2Completion.finalExamPassed = true;
+            if (src.courseCompleted) b2Completion.courseCompleted = true;
+            if (src.certificateUnlocked) b2Completion.certificateUnlocked = true;
+            if (src.finalExamScore != null) b2Completion.finalExamScore = src.finalExamScore;
+            if (src.finalExamCompletedAt) b2Completion.finalExamCompletedAt = src.finalExamCompletedAt;
+            if (src.certificateNumber) b2Completion.certificateNumber = src.certificateNumber;
+            // Certificate trust: only a Firebase-sourced pass counts as confirmed.
+            if (fromFirebase && src.finalExamPassed) b2Completion.fbConfirmed = true;
+        }
+        function updateB2CertIdField() {
+            const idEl = document.getElementById('b2CertId');
+            if (idEl && b2Completion.certificateNumber) idEl.textContent = b2Completion.certificateNumber;
+        }
+        // Issue (or fetch the already-issued) B2 certificate server-side. Idempotent.
+        async function ensureB2CertificateIssued() {
+            if (b2Completion.certificateNumber) { updateB2CertIdField(); return; }
+            if (b2CertIssueRequested) return;
+            b2CertIssueRequested = true;
+            try {
+                if (typeof window.issueCertificate === 'function') {
+                    const cert = await window.issueCertificate('B2');
+                    if (cert && cert.certificateNumber) {
+                        b2Completion.certificateNumber = cert.certificateNumber;
+                        if (!b2Completion.finalExamCompletedAt && cert.certificateData && cert.certificateData.date) {
+                            b2Completion.finalExamCompletedAt = cert.certificateData.date;
+                        }
+                        updateB2CertIdField();
+                    }
+                }
+            } catch (e) {
+                // fail soft — the button simply shows "Tayyorlanmoqda..."
+            } finally {
+                if (!b2Completion.certificateNumber) b2CertIssueRequested = false;
+            }
+        }
+        // True only when every syllabus topic is completed.
+        function b2AllTopicsCompleted() {
+            if (b2IsPrivileged()) return true;
+            const ids = (courseData.topics || []).map(t => t.id);
+            return ids.length > 0 && ids.every(id => !!(userProgress[id] && userProgress[id].completed));
+        }
+        // Certificate state — requires BOTH a Firebase-confirmed pass AND every topic.
+        function b2CertificateUnlocked() {
+            if (b2IsPrivileged()) return true;
+            return b2AllTopicsCompleted() && b2Completion.finalExamPassed && b2Completion.fbConfirmed;
+        }
+
+        function renderFinalExamEntry() {
+            const section = document.getElementById('finalExamEntry');
+            const card = document.getElementById('finalExamEntryCard');
+            if (!section || !card) return;
+
+            const allTopicIds = (courseData.topics || []).map(t => t.id);
+            const doneCount = allTopicIds.filter(id => !!(userProgress[id] && userProgress[id].completed)).length;
+            const totalCount = allTopicIds.length;
+            const allCompleted = b2IsPrivileged() || (totalCount > 0 && doneCount === totalCount);
+            const certUnlocked = b2CertificateUnlocked();
+
+            // The final-exam block is always present at the bottom of the course.
+            section.style.display = '';
+
+            // LOCKED — not all topics completed yet (and certificate not legitimately unlocked).
+            if (!allCompleted && !certUnlocked) {
+                card.className = 'final-exam-entry locked';
+                card.innerHTML =
+                    '<span class="final-exam-badge"><i class="fas fa-lock"></i> QULFLANGAN</span>' +
+                    '<span class="final-exam-trophy">🔒</span>' +
+                    '<div class="final-exam-entry-title">B2 Yakuniy Imtihoni</div>' +
+                    '<div class="final-exam-entry-subtitle">Imtihon hali ochilmagan</div>' +
+                    '<div class="final-exam-entry-desc">Yakuniy imtihonni boshlash uchun avval B2 kursidagi barcha ' + totalCount + ' ta mavzuni tugatishingiz kerak.</div>' +
+                    '<div class="final-exam-progress-line"><i class="fas fa-tasks"></i> ' + doneCount + ' / ' + totalCount + ' mavzu tugatilgan</div>' +
+                    '<button class="final-exam-start-btn locked" type="button" disabled><i class="fas fa-lock"></i> Yakuniy Imtihon (qulflangan)</button>';
+                return;
+            }
+
+            if (certUnlocked) {
+                ensureB2CertificateIssued();
+                card.className = 'final-exam-entry completed';
+                const scoreTxt = (b2Completion.finalExamScore != null) ? (b2Completion.finalExamScore + ' ball') : '';
+                card.innerHTML =
+                    '<span class="final-exam-badge"><i class="fas fa-check-circle"></i> KURS TUGATILDI</span>' +
+                    '<span class="final-exam-trophy">🎓</span>' +
+                    '<div class="final-exam-entry-title">B2 kursi muvaffaqiyatli tugatildi</div>' +
+                    '<div class="final-exam-entry-subtitle">Tabriklaymiz! Yakuniy imtihondan o\'tdingiz' + (scoreTxt ? ' — ' + scoreTxt : '') + '</div>' +
+                    '<div class="final-exam-entry-desc">B2 sertifikatingiz ochildi. Uni ko\'rishingiz mumkin.</div>' +
+                    '<button class="final-exam-cert-btn" id="b2ShowCertBtn" type="button"><i class="fas fa-certificate"></i> Sertifikatni ko\'rish</button>' +
+                    '<div style="margin-top:14px;"><button class="final-exam-start-btn" id="b2RetakeExamBtn" type="button" style="background:linear-gradient(135deg,#607d8b,#455a64);font-size:0.95rem;padding:12px 30px;"><i class="fas fa-redo"></i> Imtihonni qayta topshirish</button></div>';
+                const certBtn = document.getElementById('b2ShowCertBtn');
+                if (certBtn) certBtn.onclick = showB2Certificate;
+                const retakeBtn = document.getElementById('b2RetakeExamBtn');
+                if (retakeBtn) retakeBtn.onclick = () => { window.location.href = 'b2-final-exam.html'; };
+                return;
+            }
+
+            // All topics completed but exam not yet passed → exam available.
+            card.className = 'final-exam-entry';
+            card.innerHTML =
+                '<span class="final-exam-badge"><i class="fas fa-crown"></i> YAKUNIY IMTIHON</span>' +
+                '<span class="final-exam-trophy">🎓</span>' +
+                '<div class="final-exam-entry-title">B2 Yakuniy Imtihoni</div>' +
+                '<div class="final-exam-entry-subtitle">' + totalCount + ' ta mavzu bo\'yicha yakuniy sinov</div>' +
+                '<div class="final-exam-entry-desc">Ushbu imtihon B2 kursidagi barcha mavzular bo\'yicha bilimlaringizni tekshiradi. ' +
+                'Imtihon 100 ta baholanadigan javobdan iborat. O\'tish balli — 80%.</div>' +
+                '<ul class="final-exam-info-list">' +
+                '<li>• Konstruksiya tanlovi — 10 ball</li>' +
+                '<li>• Grammatik to\'g\'rilik — 10 ball</li>' +
+                '<li>• So\'z shakli — 10 ball</li>' +
+                '<li>• Transformatsiya — 10 ball</li>' +
+                '<li>• Predlog va boshqaruv — 10 ball</li>' +
+                '<li>• Murakkab konstruksiyalar — 10 ball</li>' +
+                '<li>• Nisbat va shaxssizlik — 10 ball</li>' +
+                '<li>• Bog\'lanish va argumentatsiya — 10 ball</li>' +
+                '<li>• Xatoni topish — 10 ball</li>' +
+                '<li>• Yakuniy takrorlash — 10 ball</li>' +
+                '<li>• ⏱ Imtihon vaqti: 120 daqiqa · 💾 Avtosaqlash yoqilgan</li>' +
+                '</ul>' +
+                '<button class="final-exam-start-btn" id="b2StartExamBtn" type="button"><i class="fas fa-play-circle"></i> 🎓 Yakuniy Imtihonni Boshlash</button>';
+            const startBtn = document.getElementById('b2StartExamBtn');
+            if (startBtn) startBtn.onclick = () => { window.location.href = 'b2-final-exam.html'; };
+        }
+
+        function showB2Certificate() {
+            // Defense-in-depth: never open the certificate unless it is legitimately
+            // unlocked (Firebase-confirmed pass + all topics completed).
+            if (!b2CertificateUnlocked()) return;
+            const overlay = document.getElementById('b2CertOverlay');
+            if (!overlay) return;
+            const nameEl = document.getElementById('b2CertName');
+            const scoreEl = document.getElementById('b2CertScore');
+            const dateEl = document.getElementById('b2CertDate');
+            const idEl = document.getElementById('b2CertId');
+            const user = currentUser || (function () { try { return JSON.parse(localStorage.getItem('currentUser')); } catch (e) { return null; } })();
+            if (nameEl) nameEl.textContent = (user && (user.name || user.username)) || 'Foydalanuvchi';
+            if (scoreEl) scoreEl.textContent = (b2Completion.finalExamScore != null) ? (b2Completion.finalExamScore + ' / 100') : '—';
+            let dateStr = '—';
+            if (b2Completion.finalExamCompletedAt) {
+                const d = new Date(b2Completion.finalExamCompletedAt);
+                if (!isNaN(d.getTime())) dateStr = d.toLocaleDateString('ru-RU');
+            }
+            if (dateEl) dateEl.textContent = dateStr;
+            if (idEl) idEl.textContent = b2Completion.certificateNumber || 'Tayyorlanmoqda...';
+            overlay.classList.add('show');
+            ensureB2CertificateIssued();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const closeBtn = document.getElementById('b2CertCloseBtn');
+            if (closeBtn) closeBtn.onclick = () => {
+                const o = document.getElementById('b2CertOverlay');
+                if (o) o.classList.remove('show');
+            };
+            const overlay = document.getElementById('b2CertOverlay');
+            if (overlay) overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('show');
+            });
+        });
 
         function getTopicIcon(id) {
             const icons = ['brain', 'graduation-cap', 'briefcase', 'trophy', 'users', 'laptop', 'newspaper', 
@@ -1733,6 +2099,149 @@
         }
 
         /** The topic's exercise data, or null when the topic is legacy-shaped. */
+        /* ============================ B2 EXERCISE LIFECYCLE
+
+           Same shared rules as A1, A2 and B1 — see exercise-lifecycle.js. B2
+           already gated each exercise at 80%; what it lacked was a durable
+           attempt the page recognises after a reload, an exercises report
+           gated on that attempt landing, and a read-only way back into a
+           finished topic. */
+        function b2Lifecycle() {
+            var L = window.UzExerciseLifecycle;
+            return L ? L.create({ course: B2_COURSE, resultField: 'b2ExerciseResult' }) : null;
+        }
+        function b2GroupsOf(topicId) {
+            var d = b2ExerciseData(topicId);
+            return (d && d.exercises) || [];
+        }
+        function b2Uid() {
+            return (typeof currentUserId !== 'undefined' && currentUserId) ? currentUserId
+                : (function () { try { return JSON.parse(localStorage.getItem('currentUser')).id; }
+                                 catch (e) { return null; } })();
+        }
+        function b2ResultsStore() {
+            if (typeof userQuizResults !== 'undefined' && userQuizResults) return userQuizResults;
+            window.__b2Results = window.__b2Results || {};
+            return window.__b2Results;
+        }
+
+        async function b2FinishExercises(topicId, result) {
+            var L = b2Lifecycle();
+            if (!L) return null;
+            var uid = b2Uid();
+            var groups = b2GroupsOf(topicId);
+            var outcome = await L.completeExercises({
+                topicId: topicId, uid: uid, groups: groups, result: result,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                },
+                clearDraft: function () {
+                    try { localStorage.removeItem(L.draftKey(uid, topicId)); } catch (e) {}
+                }
+            });
+            b2ApplyOutcome(topicId, uid, groups, result, outcome);
+            return outcome;
+        }
+
+        function b2ApplyOutcome(topicId, uid, groups, result, outcome) {
+            var L = b2Lifecycle();
+            if (!L || !outcome || outcome.stage === 'gate') return;
+
+            if (!outcome.ok) {
+                b2PendingRetry = outcome.retryComponent
+                    ? { topicId: topicId, uid: uid, groups: groups, result: result, snapshot: outcome.snapshot }
+                    : { topicId: topicId, uid: uid, groups: groups, result: result };
+                b2ShowSaveError(outcome.message, outcome.retryComponent);
+                return;
+            }
+
+            b2PendingRetry = null;
+            var store = b2ResultsStore();
+            store['topic_' + topicId] = store['topic_' + topicId] || {};
+            store['topic_' + topicId][L.RESULT_FIELD] = outcome.snapshot;
+
+            b2CourseState = b2CourseState || {};
+            b2CourseState.topicComponents = b2CourseState.topicComponents || {};
+            b2CourseState.topicComponents[topicId] =
+                Object.assign({}, b2CourseState.topicComponents[topicId], { exercisesCompleted: true });
+
+            if (outcome.topicCompleted) {
+                /* THE SERVER'S ARRAY, NEVER A LOCAL PUSH. */
+                if (typeof b2ApplyCompletedArray === 'function') {
+                    b2ApplyCompletedArray(outcome.completedTopics.slice());
+                }
+                if (typeof renderTopics === 'function') renderTopics();
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            } else if (outcome.message) {
+                b2ShowNotice(outcome.message);
+            }
+        }
+
+        async function b2RetrySave() {
+            var L = b2Lifecycle();
+            if (!b2PendingRetry || !L) return null;
+            var p = b2PendingRetry;
+            var api = {
+                saveQuizResult: window.saveQuizResult,
+                completeCourseComponent: window.completeCourseComponent
+            };
+            var outcome = p.snapshot
+                ? await L.retryComponent({ topicId: p.topicId, uid: p.uid, groups: p.groups,
+                                           result: p.result, snapshot: p.snapshot, api: api })
+                : await L.completeExercises({ topicId: p.topicId, uid: p.uid, groups: p.groups,
+                                              result: p.result, api: api });
+            b2ApplyOutcome(p.topicId, p.uid, p.groups, p.result, outcome);
+            return outcome;
+        }
+
+        function b2Host_() { return document.getElementById('b2PracticeMount')
+            || document.getElementById('quizSection'); }
+
+        function b2ShowNotice(text) {
+            var host = b2Host_();
+            if (!host) return;
+            var box = document.createElement('div');
+            box.className = 'b2-notice';
+            box.textContent = text;
+            host.appendChild(box);
+        }
+
+        function b2ShowSaveError(text, componentOnly) {
+            var host = b2Host_();
+            if (!host) return;
+            var old = host.querySelector('.b2-save-error');
+            if (old) old.remove();
+            var box = document.createElement('div');
+            box.className = 'b2-save-error';
+            var msg = document.createElement('p');
+            msg.textContent = text || 'Natijani saqlab bo\u2018lmadi.';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'b2-retry-save';
+            btn.textContent = 'Qayta urinish';
+            btn.onclick = b2RetrySave;
+            box.appendChild(msg); box.appendChild(btn);
+            host.appendChild(box);
+        }
+
+        function b2ExerciseCtaLabel(topicId) {
+            var L = b2Lifecycle();
+            return L ? L.ctaLabel(b2ResultsStore(), topicId) : 'Mashqlarni bajarish';
+        }
+
+        function b2OpenReview(topicId) {
+            var L = b2Lifecycle();
+            if (!L) return null;
+            var durable = L.durableResult(b2ResultsStore(), topicId);
+            if (!durable) return null;
+            return L.buildReview(durable, b2GroupsOf(topicId));
+        }
+        window.b2ExerciseCtaLabel = b2ExerciseCtaLabel;
+        window.b2OpenReview = b2OpenReview;
+        window.b2RetrySave = b2RetrySave;
+        window.b2FinishExercises = b2FinishExercises;
+
         function b2ExerciseData(topicId) {
             if (!window.B2_LESSON_DATA || !Array.isArray(window.B2_LESSON_DATA.topics)) return null;
             var t = window.B2_LESSON_DATA.topics.filter(function (x) {
@@ -1743,10 +2252,215 @@
 
         /** Mount the practice card. Reuses the page's EXISTING result screen,
          *  progress bar and Firebase sync — nothing here is a second copy. */
+        function b2TopicTitle(topicId) {
+            var t = (courseData.topics || []).find(function (x) { return x.id === topicId; });
+            return (t && (t.title || t.name)) ? (t.title || t.name) : ('Mavzu ' + topicId);
+        }
+
+        /* ------------------------------------------------ THE FINISHED FACE
+
+           One panel serves both finished states. What separates them is the
+           SERVER: with an acknowledgement this is simply a completed topic;
+           without one the learning is done but the progression is not, and the
+           only thing offered is the component call — never the exercises
+           again. */
+        function b2RenderDone(topicId, mount, state) {
+            var topic = b2TopicTitle(topicId);
+            mount.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'b2-done-panel';
+
+            var h = document.createElement('h3');
+            h.className = 'b2-done-title';
+            h.textContent = topic;
+            panel.appendChild(h);
+
+            var d = state.durable;
+            var sc = document.createElement('p');
+            sc.className = 'b2-done-score';
+            sc.textContent = 'Natija: ' + d.score + '/' + d.total + ' (' + d.percentage + '%)';
+            panel.appendChild(sc);
+
+            if (state.mode === 'sync') {
+                var warn = document.createElement('p');
+                warn.className = 'b2-sync-warn';
+                warn.textContent = b2Lifecycle().MESSAGES.SYNC_PENDING;
+                panel.appendChild(warn);
+                var sync = document.createElement('button');
+                sync.type = 'button';
+                sync.className = 'b2-retry-save';
+                sync.textContent = 'Qayta urinish';
+                sync.onclick = function () { return b2SyncComponent(topicId, mount); };
+                panel.appendChild(sync);
+            }
+
+            var cta = document.createElement('button');
+            cta.type = 'button';
+            cta.className = 'b2-cta';
+            cta.textContent = b2ExerciseCtaLabel(topicId);
+            cta.onclick = function () { b2RenderReview(topicId, mount, state); };
+            panel.appendChild(cta);
+
+            mount.appendChild(panel);
+            return true;
+        }
+
+        /* Finished before components existed: completedTopics is the record and
+           it stands; there is simply no attempt to show. */
+        function b2RenderLegacy(topicId, mount) {
+            mount.innerHTML = '';
+            var panel = document.createElement('div');
+            panel.className = 'b2-done-panel';
+            var el = document.createElement('p');
+            el.className = 'b2-done-score';
+            el.textContent = b2Lifecycle().MESSAGES.LEGACY_DONE;
+            panel.appendChild(el);
+            mount.appendChild(panel);
+            return true;
+        }
+
+        /* Report the missing half ALONE, against the already-durable snapshot. */
+        async function b2SyncComponent(topicId, mount) {
+            var L = b2Lifecycle();
+            if (!L) return;
+            var uid = b2Uid();
+            var groups = b2GroupsOf(topicId);
+            var durable = L.durableResult(b2ResultsStore(), topicId);
+            if (!durable) return;
+            var outcome = await L.retryComponent({
+                topicId: topicId, uid: uid, groups: groups, result: null, snapshot: durable,
+                api: {
+                    saveQuizResult: window.saveQuizResult,
+                    completeCourseComponent: window.completeCourseComponent
+                }
+            });
+            if (outcome && outcome.ok) {
+                b2CourseState = b2CourseState || {};
+                b2CourseState.topicComponents = b2CourseState.topicComponents || {};
+                b2CourseState.topicComponents[topicId] =
+                    Object.assign({}, b2CourseState.topicComponents[topicId], { exercisesCompleted: true });
+                try { localStorage.removeItem(L.draftKey(uid, topicId)); } catch (e) {}
+                b2ApplyOutcome(topicId, uid, groups, null, outcome);
+                b2RenderState(topicId, mount);
+                /* AFTER the re-render, or it is drawn and immediately wiped. */
+                if (outcome.message) b2ShowNotice(outcome.message);
+            } else {
+                /* re-render, never append: stacking a second error box under the
+                   panel gave the learner two identical buttons */
+                b2RenderState(topicId, mount);
+                b2ShowNotice(b2Lifecycle().MESSAGES.SYNC_PENDING);
+            }
+        }
+
+        /* ------------------------------------------------------- THE REVIEW
+
+           Read-only by construction: every node below is a heading, a
+           paragraph or a span. No input, no radio, no select, no check or
+           retry control — nothing to change and nothing that could rescore the
+           attempt. It writes NOTHING. */
+        function b2RenderReview(topicId, mount, state) {
+            var review = b2OpenReview(topicId);
+            if (!review) return false;
+            mount.innerHTML = '';
+            var wrap = document.createElement('div');
+            wrap.className = 'b2-review';
+
+            var head = document.createElement('div');
+            head.className = 'b2-review-head';
+            var h = document.createElement('h3');
+            h.className = 'b2-review-title';
+            h.textContent = b2TopicTitle(topicId);
+            var tot = document.createElement('span');
+            tot.className = 'b2-review-total';
+            tot.textContent = review.score + '/' + review.total + ' (' + review.percentage + '%)';
+            head.appendChild(h); head.appendChild(tot);
+            wrap.appendChild(head);
+
+            (review.groups || []).forEach(function (g) {
+                var box = document.createElement('div');
+                box.className = 'b2-review-group';
+                var gt = document.createElement('p');
+                gt.className = 'b2-review-gtitle';
+                gt.textContent = g.title || g.groupId;
+                var gs = document.createElement('p');
+                gs.className = 'b2-review-gscore';
+                gs.textContent = g.correct + '/' + g.total + ' \u2014 ' + g.percentage + '% \u2014 ' +
+                    (g.passed ? 'o\u2018tdi' : 'o\u2018tmadi');
+                box.appendChild(gt); box.appendChild(gs);
+
+                (g.items || []).forEach(function (it, i) {
+                    var row = document.createElement('div');
+                    row.className = 'b2-review-item' +
+                        (it.correct === true ? ' is-correct' : (it.correct === false ? ' is-wrong' : ''));
+                    var q = document.createElement('p');
+                    q.className = 'b2-review-q';
+                    q.textContent = (i + 1) + '. ' + (it.q == null ? '' : it.q);
+                    var given = document.createElement('p');
+                    given.className = 'b2-review-given';
+                    given.textContent = 'Sizning javobingiz: ' +
+                        (it.given == null || it.given === '' ? '\u2014' : it.given) +
+                        (it.correct === true ? ' \u2713' : (it.correct === false ? ' \u2717' : ''));
+                    row.appendChild(q); row.appendChild(given);
+                    if (it.deterministic) {
+                        var corr = document.createElement('p');
+                        corr.className = 'b2-review-correct';
+                        corr.textContent = 'To\u2018g\u2018ri javob: ' + it.correctAnswer;
+                        row.appendChild(corr);
+                    } else if (it.sample) {
+                        /* An OPEN prompt has no single right answer, so the
+                           authored sentence is offered as an example. */
+                        var ex = document.createElement('p');
+                        ex.className = 'b2-review-correct';
+                        ex.textContent = 'Namuna javob: ' + it.sample;
+                        row.appendChild(ex);
+                    }
+                    box.appendChild(row);
+                });
+                wrap.appendChild(box);
+            });
+
+            var close = document.createElement('button');
+            close.type = 'button';
+            close.className = 'b2-review-close';
+            close.textContent = 'Yopish';
+            close.onclick = function () { b2RenderDone(topicId, mount, state); };
+            wrap.appendChild(close);
+
+            mount.appendChild(wrap);
+            return true;
+        }
+
+        /**
+         * WHAT THE LEARNER SEES WHEN THE EXERCISE SECTION OPENS, decided from
+         * DURABLE state — the saved attempt and the server's component record —
+         * never from anything this session happened to remember. Returns true
+         * when it rendered a non-solving face, so the caller knows not to mount
+         * a session over it.
+         */
+        function b2RenderState(topicId, mount) {
+            var L = b2Lifecycle();
+            if (!L || !mount) return false;
+            var state = L.pageState({
+                userQuizResults: b2ResultsStore(),
+                topicId: topicId,
+                completedTopics: b2CompletedArray(),
+                courseState: b2CourseState
+            });
+            if (state.mode === 'legacy') return b2RenderLegacy(topicId, mount);
+            if (state.mode === 'review' || state.mode === 'sync') {
+                return b2RenderDone(topicId, mount, state);
+            }
+            return false;
+        }
+        window.b2RenderState = b2RenderState;
+
         function mountB2Practice(topicId) {
             var data = b2ExerciseData(topicId);
             var mountEl = document.getElementById('b2PracticeMount');
             if (!data || !mountEl || !window.B2Host || !window.UzExerciseSession) return;
+
+            /* A finished topic opens as its result, not as a fresh attempt. */
+            if (b2RenderState(topicId, mountEl)) return;
 
             var sessionTopic = { id: topicId, exercises: data.exercises };
 
@@ -1775,10 +2489,15 @@
                        "Завершить тему" button, which the host renders only at or
                        above the pass threshold. saveProgress() is the page's own
                        function and already syncs completedTopics to Firebase. */
+                    /* COMPLETION IS THE LIFECYCLE'S. b2SaveTopicResult keeps the
+                       local archive B2's own result screen reads; the shared
+                       lifecycle then saves the durable attempt, AWAITS it, and
+                       only then reports the exercises half. saveProgress() used
+                       to be called without checking that the attempt had landed
+                       at all. */
                     completeTopic: function (id, r) {
                         b2SaveTopicResult(id, r);
-                        var done = (typeof saveProgress === 'function') ? saveProgress(id) : null;
-                        return Promise.resolve(done).then(function () {
+                        return Promise.resolve(b2FinishExercises(id, r)).then(function () {
                             renderTopics();
                             updateProgressBar();
                             loadTopic(id);          // reopens as the archived result
@@ -1905,6 +2624,16 @@
                 showB2CompletionBlocked(firstIncomplete);
                 return; // DO NOT save progress while incomplete
             }
+            /* THE OLDER WHOLE-LESSON BUTTON. It is reached only after the
+               check above proves every exercise is finished, and saveProgress()
+               now reports the EXERCISES HALF with full ACK validation rather
+               than claiming the whole topic — so this path can no longer
+               unlock anything the server has not agreed to. It deliberately
+               does NOT re-save the attempt: the session already saved it when
+               it was graded, and saving it again here would be a duplicate
+               write of data that has not changed. The save-then-report order
+               belongs to the path that PRODUCES an attempt, which is the
+               session's finish. */
             await saveProgress(topicId);
             clearB2QuizDraft(topicId); // ISSUE #4 — topic done, drop the draft
             alert('Tabriklaymiz! Mavzu muvaffaqiyatli tugallandi!');
@@ -2656,6 +3385,40 @@
         ]
     };
     </script>
+
+    <!-- ====== FINAL EXAM ENTRY (rendered by JS; locked until all 16 topics are done) ====== -->
+    <section class="content-section" id="finalExamEntry" style="display:none;">
+        <div class="container">
+            <div class="final-exam-entry" id="finalExamEntryCard">
+                <!-- Filled by renderFinalExamEntry() -->
+            </div>
+        </div>
+    </section>
+
+    <!-- ====== B2 CERTIFICATE MODAL ====== -->
+    <div class="b2-cert-overlay" id="b2CertOverlay">
+        <div class="b2-cert" id="b2CertCard">
+            <div class="b2-cert-logo"><span style="color:#0f3460;">Uzda</span><span>Rus</span> PRO</div>
+            <div class="b2-cert-kicker">Sertifikat / Сертификат</div>
+            <div class="b2-cert-title">B2 Daraja — Rus tili</div>
+            <div class="b2-cert-sub">Ushbu sertifikat quyidagi shaxsga berildi:</div>
+            <div class="b2-cert-name" id="b2CertName">Foydalanuvchi</div>
+            <div class="b2-cert-body">
+                B2 «Yuqori o'rta daraja» rus tili kursini muvaffaqiyatli yakunlab,
+                16 ta mavzu va yakuniy imtihonni topshirgani uchun taqdirlanadi.
+            </div>
+            <div class="b2-cert-meta">
+                <div>Yakuniy ball<b id="b2CertScore">—</b></div>
+                <div>Sana<b id="b2CertDate">—</b></div>
+                <div>Sertifikat ID<b id="b2CertId">—</b></div>
+            </div>
+            <div class="b2-cert-seal">🏅</div>
+            <div class="b2-cert-actions">
+                <button class="b2-cert-close" id="b2CertCloseBtn" type="button">Yopish</button>
+            </div>
+        </div>
+    </div>
+
     <script defer src="../global-nav.js"></script>
 </body>
 

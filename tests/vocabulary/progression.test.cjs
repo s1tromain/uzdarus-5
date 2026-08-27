@@ -17,8 +17,10 @@
  *   1. Where the mic is DISABLED (paid A1, paid B1, all 4 demos) pronunciation
  *      must NEVER gate progression — the learner can always reach the last card
  *      and complete the lesson.
- *   2. Where the mic is ENABLED (paid A2, paid B2) the pronunciation gate must
- *      STILL hold — a learner who has not passed the word cannot skip ahead.
+ *   2. Where the mic is ENABLED (paid A2, paid B2) pronunciation must ALSO
+ *      never gate progression. It is optional practice: a learner with no
+ *      microphone, no speech API or a failing provider must still be able to
+ *      walk the deck and complete the lesson.
  *
  * Run: node tests/vocabulary/progression.test.cjs
  * ================================================================== */
@@ -213,22 +215,57 @@ for (const s of SURFACES.filter(x => !x.mic)) {
 }
 
 /* ================================================================== */
-section('NO REGRESSION — A2/B2 pronunciation gate must still hold');
+section('A2/B2 — pronunciation is PRACTICE and must never gate progression');
+/* THIS SECTION USED TO ASSERT THE OPPOSITE, and that was a real defect.
+ *
+ * The mic is offered on paid A2 and paid B2, and the gate held the learner on
+ * a card until checkPronunciation() reported a pass. That made the ONLY writer
+ * of the word frontier a third-party speech scorer reached through a
+ * microphone: deny permission, use a browser with no speech API, or hit a
+ * provider outage, and the learner was pinned to word 0 — unable to reach the
+ * end of the deck, unable to reach showCompletion(), and therefore unable to
+ * finish the vocabulary half of the topic. Under the two-component completion
+ * model that means the TOPIC could never be completed either.
+ *
+ * Vocabulary completion may not depend on hardware. Pronunciation, its
+ * scoring and its feedback are all still here and unchanged — they simply
+ * gate nothing. */
 for (const s of SURFACES.filter(x => x.mic)) {
     const app = boot({ ...s, words: WORDS });
     app.startTopic(1);
 
-    ok(app.w._isWordLocked(1, 1) === true, `${s.name}: word 1 IS locked until pronounced`);
-    app.listen();
-    ok(app.w._isWordLocked(1, 1) === true, `${s.name}: listening alone does NOT unlock (gate intact)`);
-    ok(app.pressNext() === false, `${s.name}: Keyingi blocked without a passing pronunciation`);
-    ok(app.idx() === 0, `${s.name}: learner held on card 1`);
-    ok(app.w._isLessonComplete(1) === false, `${s.name}: lesson not complete`);
+    ok(app.w._isWordLocked(1, 1) === false, `${s.name}: word 1 is NOT locked behind the mic`);
+    ok(app.pressNext() === true, `${s.name}: Keyingi advances with no pronunciation at all`);
+    ok(app.idx() === 1, `${s.name}: the learner actually moved`);
 
-    /* a passing pronunciation (what checkPronunciation does on didPass) unlocks */
-    app.w._completeWord(1, 0);
-    ok(app.w._isWordLocked(1, 1) === false, `${s.name}: passing pronunciation unlocks word 2`);
-    ok(app.pressNext() === true, `${s.name}: Keyingi advances after a pass`);
+    /* the whole deck is walkable, and completable, with the microphone never
+       touched. Tinglash is TTS PLAYBACK — output, not input — so pressing it
+       needs no microphone and no permission; it is exactly the flow the
+       listen-only courses already prove above. */
+    const app2 = boot({ ...s, words: WORDS });
+    app2.startTopic(1);
+    let blocked = false;
+    while (app2.idx() < WORDS.length - 1) {
+        app2.listen();
+        if (!app2.pressNext()) { blocked = true; break; }
+    }
+    ok(!blocked, `${s.name}: full deck walkable without a microphone`);
+    ok(app2.idx() === WORDS.length - 1, `${s.name}: reached the final card`);
+    app2.listen();
+    app2.pressNext();
+    ok(app2.w._isLessonComplete(1) === true, `${s.name}: lesson completes without a microphone`);
+    ok(app2.w.isWordCompleted(1, 0) === true, `${s.name}: word progress persisted without a microphone`);
+
+    /* and a passing pronunciation still records progress, as it always did */
+    const app3 = boot({ ...s, words: WORDS });
+    app3.startTopic(1);
+    app3.w._completeWord(1, 0);
+    ok(app3.w.isWordCompleted(1, 0) === true, `${s.name}: a passing pronunciation still records the word`);
+    ok(app3.pressNext() === true, `${s.name}: and still advances`);
+
+    /* the pronunciation nag toast must be unreachable now */
+    ok(app.w.document.getElementById('_nextWarnToast') === null,
+        `${s.name}: no "Avval so‘zni to‘g‘ri ayting" toast`);
 }
 
 /* ================================================================== */

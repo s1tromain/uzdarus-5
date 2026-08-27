@@ -325,8 +325,20 @@ ok(/Два разных образа жизни/.test(ag[0].intro || ''), 'audio
     const frontier = Math.max.apply(null, authored);
     ok(authored.indexOf(6) !== -1 && frontier >= 6,
         'topic 6 is an authored (unlocked) vocabulary deck');
-    ok(new RegExp('generateLockedTopics\\(' + (frontier + 1) + '\\)').test(s),
-        `locked vocabulary topics start right after the last authored topic (${frontier + 1})`);
+    /* FINAL-FRONTIER SAFE. While canonical decks remain unauthored they are
+       generated from the next id. Once every canonical deck is real the spread
+       is removed entirely — demanding generateLockedTopics(N+1) then would
+       assert a phantom Topic 17. */
+    const _genSpread = s.indexOf('...generateLockedTopics(') !== -1;
+    if (_genSpread) {
+        ok(new RegExp('generateLockedTopics\\(' + (frontier + 1) + '\\)').test(s),
+            `locked vocabulary topics start right after the last authored topic (${frontier + 1})`);
+    } else {
+        ok(!new RegExp('generateLockedTopics\\(' + (frontier + 1) + '\\)').test(s),
+            'the paid deck list is complete — no future deck is generated');
+        ok(s.split('...generateLockedTopics(').length - 1 === 0,
+            'no generated future deck remains in the paid deck list');
+    }
     ok(!new RegExp('generateLockedTopics\\(6\\)').test(s),
         'topic 6 is no longer generated as locked');
     ok(/Условные предложения/.test(s) && /Прямая и косвенная речь/.test(s)

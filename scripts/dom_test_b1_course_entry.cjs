@@ -29,6 +29,12 @@ const fnMerge = extractFn(src, 'function mergeB1Completion(');
 const fnIsPriv = extractFn(src, 'function b1IsPrivileged()');
 const fnAllDone = extractFn(src, 'function b1AllTopicsCompleted()');
 const fnCertUnlocked = extractFn(src, 'function b1CertificateUnlocked()');
+/* renderFinalExamEntry() and showB1Certificate() both call into server-side
+   issuance now; lifting only the seven originals left this test crashing on an
+   undefined reference, which is why it stopped being able to see anything at
+   all past STATE 2. */
+const fnEnsure = extractFn(src, 'async function ensureB1CertificateIssued()');
+const fnUpdateId = extractFn(src, 'function updateB1CertIdField()');
 
 // Minimal page: only the elements the functions touch.
 const pageHtml = `<!DOCTYPE html><html><body>
@@ -43,6 +49,12 @@ const pageHtml = `<!DOCTYPE html><html><body>
 const dom = new JSDOM(pageHtml, { runScripts: 'outside-only' });
 const w = dom.window;
 w.print = () => {};
+w.__issued = [];
+w.issueCertificate = async (course) => {
+    w.__issued.push(course);
+    return { certificateNumber: 'UZD-B1-2026-000042',
+             certificateData: { date: '2026-06-15T10:00:00.000Z' } };
+};
 
 // stubs the functions close over
 const topics = []; for (let i = 1; i <= 20; i++) topics.push({ id: i });
@@ -51,12 +63,18 @@ w.eval(`
   var completedTopics = [];
   var currentUser = { id: 'u_abcdef123', name: 'Test Talaba' };
   var b1Completion = { finalExamPassed:false, courseCompleted:false, certificateUnlocked:false, finalExamScore:null, finalExamCompletedAt:null, fbConfirmed:false };
+  /* declared by the page; without it ensureB1CertificateIssued() throws a
+     ReferenceError inside an async function and rejects silently, so issuance
+     simply never happens and nothing reports why. */
+  var b1CertIssueRequested = false;
   ${fnReadLocal}
   ${fnMerge}
   ${fnIsPriv}
   ${fnAllDone}
   ${fnCertUnlocked}
   ${fnRender}
+  ${fnUpdateId}
+  ${fnEnsure}
   ${fnCert}
 `);
 
@@ -91,7 +109,12 @@ w.eval('showB1Certificate();');
 check('cert overlay shown', w.document.getElementById('b1CertOverlay').classList.contains('show'));
 check('cert name filled', w.document.getElementById('b1CertName').textContent === 'Test Talaba');
 check('cert score 92 / 100', w.document.getElementById('b1CertScore').textContent === '92 / 100');
-check('cert id derived', /^B1-/.test(w.document.getElementById('b1CertId').textContent));
+/* The number comes from the server through issueCertificate(); the page must
+   never mint a B1-… string of its own. */
+check('cert id is the server number, not a client-derived one',
+    /^UZD-B1-\d{4}-\d{6}$/.test(w.document.getElementById('b1CertId').textContent)
+    || w.document.getElementById('b1CertId').textContent === 'Tayyorlanmoqda...');
+check('issuance was requested for B1', w.__issued.length >= 1 && w.__issued.every((c) => c === 'B1'));
 
 console.log('SECURITY — localStorage-only pass (NOT Firebase-confirmed) must NOT unlock cert');
 w.eval("document.getElementById('b1CertOverlay').classList.remove('show'); completedTopics = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; b1Completion = { finalExamPassed:true, courseCompleted:true, certificateUnlocked:true, finalExamScore:99, finalExamCompletedAt:'x', fbConfirmed:false }; renderFinalExamEntry();");

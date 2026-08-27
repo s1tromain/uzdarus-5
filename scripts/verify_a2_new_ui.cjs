@@ -139,8 +139,14 @@ for (const p of PAGES) {
         const sess = w.UzExerciseSession.current();
         ok(!!sess && sess.cfg.groups.length === groups.length,
             `topic ${n}: the session steps through every exercise (${sess && sess.cfg.groups.length}/${groups.length})`);
-        ok(!sess.cfg.passScore && !sess.cfg.stepGate,
-            `topic ${n}: no pass gate is applied — A2 progression is unchanged`);
+        /* A2 NOW ENFORCES THE PLATFORM 80% RULE. This used to assert the
+           opposite — that A2 supplied no gate — which is exactly why a learner
+           could score 5/10 on one exercise and open the next. Every scored
+           group must reach the threshold on its own. */
+        ok(sess.cfg.passScore === 80,
+            `topic ${n}: the platform 80% gate is applied (got ${sess.cfg.passScore})`);
+        ok(!sess.cfg.stepGate,
+            `topic ${n}: through the shared passScore, not a private rule`);
 
         const host = w.document.querySelector('.uz-step-host');
         const g0 = groups[0];

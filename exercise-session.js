@@ -79,7 +79,7 @@
         check: 'Проверить',
         next: 'Следующее упражнение',
         finish: 'Завершить и посмотреть результат',
-        retry: 'Пройти упражнение заново',
+        retry: 'Qayta topshirish',
         reveal: 'Посмотреть ответы',
         restart: 'Mashqni qayta boshlash'
     };
@@ -386,9 +386,12 @@
         }
         var min = Number(cfg.passScore);
         if (!isFinite(min) || min <= 0 || !result || !result.total) return { pass: true };
-        var p = Math.round((result.correct || 0) / result.total * 100);
-        if (p >= min) return { pass: true };
-        return { pass: false, min: min, percent: p };
+        var correct = result.correct || 0;
+        /* EXACT RATIO. A rounded percent puts the boundary in the wrong place:
+           39/49 rounds to 80 but is 79.6%. Compared as integers, the rule is
+           exactly what it says — correct/total >= min%. */
+        if (correct * 100 >= result.total * min) return { pass: true };
+        return { pass: false, min: min, percent: Math.round(correct / result.total * 100) };
     };
 
     /* -------------------------------------------------------------- footer */
@@ -548,12 +551,16 @@
             v.classList.add('uz-locked');
             var need = gate.min || (this.cfg.passScore ? Number(this.cfg.passScore) : null);
             var needLine = need
-                ? '<div class="uz-need">Проходной балл: <b>' + need + '%</b></div>'
+                ? '<div class="uz-need">O‘tish balli: <b>' + need + '%</b></div>'
                 : '';
-            var msg = gate.message ||
-                'Упражнение нужно пройти ещё раз — правильные ответы пока скрыты.';
+            /* The exact product copy. `Natija: X/Y` is already rendered above
+               by `score`; these two lines are the rule and the instruction. */
+            var msg = gate.message || (need
+                ? 'Mashqdan o‘tish uchun kamida ' + need + '% natija kerak. ' +
+                  'Ushbu mashqni qayta bajaring.'
+                : 'Mashqni qayta bajaring — to‘g‘ri javoblar hozircha yashirin.');
             v.innerHTML =
-                '<h4>&#10060; Упражнение не пройдено</h4>' + score + needLine +
+                '<h4>&#10060; Mashq topshirilmadi</h4>' + score + needLine +
                 '<div class="uz-gate">' + esc(msg) + '</div>';
 
         } else {
@@ -776,13 +783,16 @@
         injectStyles();
         var ask = el('div', 'uz-ask');
         var card = el('div', 'uz-ask-card');
+        /* The learner-facing copy is Uzbek, like every other string in this
+           flow. The exercise numbers still say where they stopped. */
         card.innerHTML =
-            '<h3>Вы не закончили прохождение</h3>' +
-            '<p>Вы остановились на упражнении <b>' + (session.cursor + 1) +
-            '</b> из <b>' + session.total() + '</b>. Продолжить с этого места или начать заново?</p>';
+            '<h3>Tugallanmagan mashqlar topildi.</h3>' +
+            '<p>Siz <b>' + (session.cursor + 1) + '</b>-mashqda (jami <b>' +
+            session.total() + '</b>) to‘xtagansiz.<br>' +
+            'Davom ettirasizmi yoki boshidan boshlaysizmi?</p>';
         var acts = el('div', 'uz-ask-actions');
-        var cont = el('button', 'uz-btn uz-btn-primary', 'Продолжить');
-        var again = el('button', 'uz-btn uz-btn-ghost', 'Начать заново');
+        var cont = el('button', 'uz-btn uz-btn-primary', 'Davom ettirish');
+        var again = el('button', 'uz-btn uz-btn-ghost', 'Qaytadan boshlash');
         cont.type = again.type = 'button';
         acts.appendChild(cont); acts.appendChild(again);
         card.appendChild(acts); ask.appendChild(card);

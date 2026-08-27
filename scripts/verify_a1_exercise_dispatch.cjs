@@ -63,6 +63,12 @@ const table = html.slice(tableStart, html.indexOf('};', tableStart) + 2);
 const TOPICS = [6, 7, 8, 9, 10, 11, 12];
 TOPICS.forEach(id => ok(new RegExp('\\b' + id + ':\\s*\\(\\)').test(table),
     `topic ${id} is in the loader table`));
+/* EVERY EXERCISE TOPIC GOES THROUGH THE SHARED SESSION FIRST. The bespoke
+   loader is the fallback, not the primary path: A1's per-exercise 80% gate
+   lives in the session, and a topic that skipped it would be graded on a
+   topic-wide aggregate again. */
+TOPICS.forEach(id => ok(new RegExp('mountA1Practice\\(' + id + '\\)').test(table),
+    `topic ${id} tries the shared session before the legacy loader`));
 
 /* loadLesson must branch on the table, not on a chain of id comparisons */
 ok(/if \(EXERCISE_TOPIC_LOADERS\[topicId\]\)/.test(html),
@@ -78,6 +84,13 @@ w.eval(`${table}
     var currentTopicId = null;
     var quizSection = document.getElementById('quizSection');
     window.__calls = []; window.__throwOn = null;
+    /* A1 now routes every exercise topic through the shared session and
+       falls back to the bespoke loader when that stack is absent. This
+       sandbox loads neither the engine nor the host, so the fallback is
+       what runs — which is exactly the path these dispatch/scheduling
+       assertions are about. __mounted records that the table asked. */
+    window.__mounted = [];
+    window.mountA1Practice = function (id) { window.__mounted.push(id); return false; };
     [6,7,8,9,10,11,12].forEach(function (n) {
         window['loadTopic' + n + 'Exercises'] = function (id) {
             /* the real loaders all guard on this and return silently */

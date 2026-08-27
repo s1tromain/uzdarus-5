@@ -137,7 +137,10 @@ console.log('\n=== ANSWER-REVIEW FLOW (generic, synthetic course) ===\n');
     ok(!v.querySelector('.uz-answers'), '2.5 NO answer list rendered');
     ok(!/ans0/.test(v.textContent), '2.6 correct answers NOT shown');
     ok(!/because g1/.test(v.textContent), '2.7 explanations NOT shown');
-    ok(/ещё раз|заново/i.test(v.textContent), '2.8 tells the learner to try again');
+    /* The failed-exercise card is product copy and is Uzbek, like every other
+       learner-facing string in this flow. */
+    ok(/qayta bajaring|qayta boshlang/i.test(v.textContent),
+        '2.8 tells the learner to try again');
 
     ok(!!act(w, 'retry'), '2.9 "retry" button present');
     ok(!!act(w, 'reveal'), '2.10 "see answers" button present');

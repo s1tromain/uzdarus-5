@@ -748,12 +748,14 @@ console.log('\n[L21] COMPLETION — idempotent, never duplicated, never implicit
     const a1 = fs.readFileSync(path.join(ROOT, 'paid-courses/a1-course.html'), 'utf8');
     const completeSrc = a1.match(/window\.__uzCompleteTopic = async function[\s\S]*?\n        \};/)[0];
     /* The union moved OFF the client entirely. Firestore rules refuse
-       completedTopics from the owner, so the array is now assembled inside
-       api/_progress/complete-topic.js, from the server's own record plus the one
-       topic being claimed. The merge is still tested — against the code that
-       actually performs it. */
-    const endpoint = fs.readFileSync(path.join(ROOT, 'api/_progress/complete-topic.js'), 'utf8');
-    const mergeSrc = endpoint.match(/const next = Array\.from\(new Set\(\[\.\.\.current, topicId\]\)\)\.sort\(\(a, b\) => a - b\);/)[0];
+       completedTopics from the owner, so the array is assembled on the server.
+       It then moved AGAIN, out of complete-topic.js and into the shared
+       finalizer in api/_lib/topic-components.js, because a paid topic now needs
+       BOTH of its halves and two endpoints had to agree on that rule. The merge
+       is still tested against the code that actually performs it — which is why
+       this reads the finalizer rather than the endpoint. */
+    const lib = fs.readFileSync(path.join(ROOT, 'api/_lib/topic-components.js'), 'utf8');
+    const mergeSrc = lib.match(/return Array\.from\(new Set\(\[\.\.\.current, id\]\)\)\.sort\(\(a, b\) => a - b\);/)[0];
 
     const dom = makeDom('<div id="topics"></div><div id="resultsSection"></div>',
                         'https://uzdarus.uz/paid-courses/a1-course.html');
@@ -804,7 +806,9 @@ console.log('\n[L21] COMPLETION — idempotent, never duplicated, never implicit
 
     // The server's union must dedupe, stay ordered, and never regress the
     // record it was read from.
-    const merge = new Function('current', 'topicId', mergeSrc + ' return next;');
+    /* The finalizer names its argument `id`; the expression is lifted verbatim
+       and driven with the same two inputs it has always had. */
+    const merge = new Function('current', 'id', mergeSrc);
     eq('duplicates collapsed', JSON.stringify(merge([1, 2, 2, 3], 3)), '[1,2,3]');
     eq('the claimed topic is added', JSON.stringify(merge([1, 2, 3], 4)), '[1,2,3,4]');
     eq('the server record is never shortened', JSON.stringify(merge([1, 2, 3, 4, 5], 6)), '[1,2,3,4,5,6]');

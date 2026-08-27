@@ -152,8 +152,13 @@ Module._resolveFilename = realResolve;
     eq('A2 is certifiable', mod.isCertifiableCourse('A2'), true);
     eq('A1 is certifiable', mod.isCertifiableCourse('A1'), true);
     eq('B1 is certifiable', mod.isCertifiableCourse('B1'), true);
-    eq('B2 is still excluded', mod.isCertifiableCourse('B2'), false);
-    eq('the three certifiable courses', Object.keys(mod.CERT_COURSES).join(','), 'A1,A2,B1');
+    eq('B2 is certifiable', mod.isCertifiableCourse('B2'), true);
+    eq('the four certifiable courses', Object.keys(mod.CERT_COURSES).join(','), 'A1,A2,B1,B2');
+    eq('B2 declares its level', mod.CERT_COURSES.B2.level, 'B2');
+    eq('B2 declares its course title', mod.CERT_COURSES.B2.courseTitle, "B2 Daraja — Rus tili");
+    ok(/^B2 «/.test(mod.CERT_COURSES.B2.levelLabel),
+        'B2 declares a level label (' + mod.CERT_COURSES.B2.levelLabel + ')');
+    ok(!mod.isCertifiableCourse('B3'), 'a course that does not exist is not certifiable');
 
     /* ---- 2. THE LEGACY CASE: pass flag, unfinished course ---- */
     {
@@ -251,6 +256,54 @@ Module._resolveFilename = realResolve;
                      courses: { A1: { finalExamPassed: true, completedTopics: ids(12) } } };
         const { error } = await run(a1, { course: 'A1' });
         ok(!error, 'A1 pass + 12/12: allowed');
+    }
+    /* ---- 7b. B2 GRADUATES THROUGH THE SAME GATE ----
+       B2 was excluded from CERT_COURSES while its course was unfinished. It is
+       finished now, so the whole path is exercised here rather than assumed: the
+       canon's 16 topics are enforced, a pass is still required, the number has
+       the shared shape, it is stamped on the user, it verifies publicly, and a
+       second issue never allocates a second number. */
+    {
+        const b2 = { displayName: 'X', role: 'user',
+                     courses: { B2: { finalExamPassed: true, completedTopics: ids(15) } } };
+        const { error } = await run(b2, { course: 'B2' });
+        ok(!!error, 'B2 pass flag + 15/16 topics: REFUSED (canon says 16)');
+    }
+    {
+        const b2 = { displayName: 'X', role: 'user',
+                     courses: { B2: { finalExamPassed: false, completedTopics: ids(16) } } };
+        const { error } = await run(b2, { course: 'B2' });
+        ok(!!error, 'B2 16/16 topics but exam not passed: REFUSED');
+    }
+    {
+        const b2 = { displayName: 'X', role: 'user',
+                     courses: { B2: { finalExamPassed: true, finalExamScore: 84,
+                                      completedTopics: ids(16) } } };
+        const { r, error, store } = await run(b2, { course: 'B2' });
+        ok(!error, 'B2 pass + 16/16: allowed' + (error ? ' — ' + error.message : ''));
+        ok(r && /^UZD-B2-\d{4}-\d{6}$/.test(r.number || ''),
+            'the B2 number follows the shared format (' + (r && r.number) + ')');
+        eq('the B2 certificate names the course', r.certificate.course, 'B2');
+        eq('and the level', r.certificate.level, 'B2');
+        eq('and carries the server score', r.certificate.score, 84);
+        eq('the user document was stamped', store.user.courses.B2.certificateNumber, r.number);
+        const found = await mod.getRegistryCertificate(r.number);
+        ok(!!found, 'a legitimately issued B2 certificate resolves through the registry');
+        eq('verification reports the course', found.course, 'B2');
+        eq('verification reports it active', found.status, 'active');
+    }
+    {
+        const data = { displayName: 'X', role: 'user',
+                       courses: { B2: { finalExamPassed: true, finalExamScore: 84,
+                                        completedTopics: ids(16) } } };
+        const { adminDb, store } = makeDb(data);
+        globalThis.__CERT_ADMIN = { adminDb, FieldValue, Timestamp };
+        const first = await mod.issueCertificate({ uid: 'u1', course: 'B2', profile: data });
+        const second = await mod.issueCertificate({ uid: 'u1', course: 'B2', profile: data });
+        eq('the second B2 issue returns the same number', second.number, first.number);
+        eq('and reports it was already issued', second.alreadyIssued, true);
+        eq('only one B2 certificate document exists', Object.keys(store.certificates).length, 1);
+        eq('only one B2 registry record exists', Object.keys(store.registry).length, 1);
     }
     {
         /* duplicates must not be counted as coverage */

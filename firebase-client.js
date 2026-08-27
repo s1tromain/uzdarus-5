@@ -142,7 +142,7 @@ const profileCache = new Map();
 
 const packToCourses = {
     A1A2: ['a1-course.html', 'a1-vocabulary.html', 'a1-final-exam.html', 'a2-course.html', 'a2-vocabulary.html', 'a2-final-exam.html'],
-    B1B2: ['b1-course.html', 'b1-vocabulary.html', 'b1-final-exam.html', 'b2-course.html', 'b2-vocabulary.html']
+    B1B2: ['b1-course.html', 'b1-vocabulary.html', 'b1-final-exam.html', 'b2-course.html', 'b2-vocabulary.html', 'b2-final-exam.html']
 };
 
 const PRIVILEGED_ROLES = new Set(['developer', 'admin']);
@@ -324,6 +324,135 @@ export function canAccessPaid(profile, requiredPack) {
 
 export function isSubscriptionActive(profile) {
     return hasActiveSubscription(profile, { allowPrivileged: true });
+}
+
+/* ==================================================================
+ * COURSE PREREQUISITES
+ * ------------------------------------------------------------------
+ * ENTITLEMENT AND PROGRESSION ARE DIFFERENT THINGS, and the platform
+ * used to conflate them: buying the A1A2 pack opened A1 *and* A2 at
+ * once, so a learner could start A2 without having done a single A1
+ * lesson. The pack says what a learner has PAID FOR; the prerequisite
+ * says what they have EARNED.
+ *
+ * Only within-pack progression is declared here. A2 -> B1 is NOT a
+ * prerequisite: someone may buy B1B2 on its own and must be able to
+ * begin B1 immediately.
+ * ================================================================== */
+export const COURSE_PREREQUISITE = Object.freeze({
+    A2: 'A1',
+    B2: 'B1'
+});
+
+/* The canonical size of each course. This is the same declaration that
+   my.cabinet/cabinet.js makes and that scripts/build_server_canon.cjs bakes
+   into api/_lib/course-canon.js; verify_course_prerequisites.cjs fails if the
+   three ever disagree, so this copy cannot quietly drift. */
+export const COURSE_TOPIC_TOTALS = Object.freeze({
+    A1: 12,
+    A2: 16,
+    B1: 20,
+    B2: 16
+});
+
+/**
+ * Has this learner genuinely FINISHED a course?
+ *
+ * Server-authoritative by construction: every field read here lives on the
+ * Firestore user document and is written only by the progress and final-exam
+ * endpoints. Nothing in localStorage, no rendered card state and no
+ * certificate modal can reach this function.
+ *
+ * A course is finished when every canonical topic is completed AND the final
+ * exam has been passed. The exam half matters: completedTopics alone would
+ * let a learner who skipped the exam walk into the next course.
+ */
+export function isCourseCompleted(profile, courseCode) {
+    const code = String(courseCode || '').trim().toUpperCase();
+    const total = COURSE_TOPIC_TOTALS[code];
+    if (!total) return false;
+    const course = profile?.courses?.[code];
+    if (!course) return false;
+
+    const ids = Array.isArray(course.completedTopics) ? course.completedTopics : [];
+    const done = new Set(
+        ids.map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= total)
+    );
+    if (done.size < total) return false;
+
+    return course.finalExamPassed === true;
+}
+
+/**
+ * May this learner OPEN a course, progression-wise?
+ *
+ * Returns one of:
+ *   { required: null,  satisfied: true  }                 no prerequisite
+ *   { required: 'A1', satisfied: true  }                  earned it
+ *   { required: 'A1', satisfied: false, message: '…' }    not yet
+ *
+ * `message` is the exact Uzbek string the cabinet and the paid pages show,
+ * so the wording cannot drift between the two surfaces.
+ *
+ * Developer/admin keep the platform-wide testing bypass they have everywhere
+ * else; passing allowPrivileged:false asks the raw question regardless.
+ */
+export function getCoursePrerequisiteState(profile, courseCode, options = {}) {
+    const { allowPrivileged = true } = options;
+    const code = String(courseCode || '').trim().toUpperCase();
+    const required = COURSE_PREREQUISITE[code] || null;
+
+    if (!required) return { required: null, satisfied: true };
+    if (allowPrivileged && isPrivilegedRole(profile)) {
+        return { required, satisfied: true, reason: 'privileged' };
+    }
+    if (isCourseCompleted(profile, required)) {
+        return { required, satisfied: true };
+    }
+    return {
+        required,
+        satisfied: false,
+        reason: 'prerequisite',
+        message: `Avval ${required} kursini yakunlang`
+    };
+}
+
+/**
+ * The page-level question: may this learner open THIS paid page?
+ *
+ * Layers the prerequisite on top of the existing pack/subscription gate
+ * rather than replacing it, so a page is opened only when the learner both
+ * OWNS the pack and has EARNED the course. Order matters: entitlement is
+ * answered first, because a learner with no pack should be told they have no
+ * access, not that they should finish A1.
+ */
+export function canOpenCoursePage(profile, pageName) {
+    const pack = getPackByPageName(pageName);
+    if (!pack) return { allowed: true, reason: 'ungated' };
+
+    const access = canAccessPaid(profile, pack);
+    if (!access.allowed) return { ...access, pack };
+
+    const course = getCourseByPageName(pageName);
+    const prereq = getCoursePrerequisiteState(profile, course);
+    if (!prereq.satisfied) {
+        return {
+            allowed: false,
+            reason: 'prerequisite',
+            pack,
+            course,
+            requiredCourse: prereq.required,
+            message: prereq.message
+        };
+    }
+    return { ...access, pack, course };
+}
+
+/** Which course does a paid page belong to? Mirrors getPackByPageName(). */
+export function getCourseByPageName(pageName) {
+    const file = String(pageName || '').toLowerCase().split('?')[0].split('#')[0].split('/').pop();
+    const match = file.match(/^([ab][12])-/);
+    return match ? match[1].toUpperCase() : null;
 }
 
 export function getPackByPageName(pageName) {

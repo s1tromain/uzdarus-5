@@ -258,12 +258,24 @@ for (const p of PAGES) {
     ok(/cfg\.renderSummary/.test(eng), 'renderSummary still present');
     ok(/DEFAULT_CONFIRM/.test(eng), 'answer-review flow still present');
     ok(/function stepGate/.test(HOST), 'host gate still present');
-    ok(/PASS_PERCENT = 85/.test(HOST), 'threshold unchanged');
+    /* 80 is the platform-wide LESSON threshold, shared by A1, A2, B1 and B2.
+       It was 85 while B2 was the only course with a per-exercise gate at all. */
+    ok(/PASS_PERCENT = 80;/.test(HOST), 'lesson threshold is the platform 80%');
     ok(/function buildResultsHtml/.test(HOST), 'results builder unchanged');
     for (const p of PAGES) {
         const s = fs.readFileSync(path.join(ROOT, p.file), 'utf8');
         ok(/completeTopic: function/.test(s), `${p.label} completion path intact`);
-        ok(/saveProgress\(id\)/.test(s), `${p.label} progress path intact`);
+        /* The PAID page reports the exercises HALF through the shared
+           lifecycle: complete-topic finalises only what the component record
+           earns, so its old saveProgress(id) topic claim could never append
+           and B2 topics never completed. The demo has no server and keeps its
+           own path, so the two are asserted apart. */
+        if (/paid-courses\//.test(p.file)) {
+            ok(/b2FinishExercises\(id, r\)/.test(s), `${p.label} reports through the lifecycle`);
+            ok(/function b2FinishExercises/.test(s), `${p.label} defines the lifecycle completion`);
+        } else {
+            ok(/saveProgress\(id\)/.test(s), `${p.label} progress path intact`);
+        }
         ok(/mountB2Practice\(topicId\)/.test(s), `${p.label} session mount intact`);
     }
 }

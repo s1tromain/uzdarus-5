@@ -417,12 +417,21 @@ console.log('\n=== SENTENCE BUILDER (exercise type) ===\n');
         .find(b => /Проверить/.test(b.textContent)));
     ok(/8 \/ 10/.test(w.document.querySelector('.uz-verdict').textContent),
         '8.1 a partly solved builder scores 8/10');
-    ok(!!w.document.querySelector('.uz-foot [data-uz-act="retry"]'),
-        '8.2 the 85% gate still blocks the builder exercise');
-    ok(!w.document.querySelector('.uz-foot [data-uz-act="next"]'), '8.3 no way forward');
-    ok(session.checked['ex2'].passed === false, '8.4 the step is recorded as failed');
-    ok(!w.document.querySelector('.uz-verdict .uz-answers'),
-        '8.5 answers are withheld, exactly as for every other exercise type');
+    /* Under the platform's 80% rule 8/10 PASSES. This block used to assert the
+       opposite because B2 alone required 85%; the builder exercise type is not
+       special and must clear the same bar as every other type. */
+    ok(!w.document.querySelector('.uz-foot [data-uz-act="retry"]'),
+        '8.2 at 8/10 the builder exercise PASSES the 80% gate');
+    /* A passed exercise always offers a way ONWARD. Which control that is
+       depends on position: the last group finishes the topic instead of
+       advancing, so the assertion is about progress being possible, not about
+       one particular button existing. */
+    ok(!!w.document.querySelector('.uz-foot [data-uz-act="next"]')
+        || !!w.document.querySelector('.uz-foot [data-uz-act="finish"]'),
+        '8.3 the learner may move on');
+    ok(session.checked['ex2'].passed === true, '8.4 the step is recorded as passed');
+    ok(!!w.document.querySelector('.uz-verdict .uz-answers'),
+        '8.5 answers are shown, exactly as for every other passed exercise type');
 }
 
 /* ------------------------------------------------ 9. nothing hardcoded */

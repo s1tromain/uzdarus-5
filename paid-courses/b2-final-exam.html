@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>B2 Yakuniy Imtihoni — UzdaRus PRO</title>
+    <link rel="icon" href="../images/shared/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="../images/shared/logo.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="pro-toast.css">
+    <script defer src="pro-toast.js"></script>
+    <script type="module" src="paid-platform.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary: #FF9800;
+            --primary-dark: #F57C00;
+            --secondary: #FFD54F;
+            --light: #FFF8E1;
+            --dark: #333;
+            --gray: #666;
+            --light-gray: #f5f5f5;
+            --success: #4CAF50;
+            --error: #F44336;
+            --blue: #2196F3;
+            --exam-bg: #f8f9fb;
+            --exam-header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            background: var(--exam-bg);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* ====== EXAM HEADER ====== */
+        .exam-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: var(--exam-header-bg);
+            color: #fff;
+            padding: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+        }
+
+        .exam-header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .exam-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .exam-header-trophy {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .exam-header-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .exam-header-sub {
+            font-size: 0.82rem;
+            opacity: 0.8;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .exam-header-center {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .exam-timer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 8px 18px;
+            font-size: 1.4rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .exam-timer i {
+            font-size: 1rem;
+            opacity: 0.85;
+        }
+
+        .exam-timer.warning {
+            background: rgba(255, 152, 0, 0.25);
+            border-color: rgba(255, 152, 0, 0.5);
+            color: #FFD54F;
+            animation: timerPulse 2s ease-in-out infinite;
+        }
+
+        .exam-timer.danger {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.6);
+            color: #ff8a80;
+            animation: timerPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+        }
+
+        .exam-progress-badge {
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .exam-autosave-note {
+            font-size: 0.72rem;
+            opacity: 0.7;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        .exam-header-right {
+            flex-shrink: 0;
+        }
+
+        .exam-exit-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .exam-exit-btn:hover {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.5);
+        }
+
+        /* ====== EXAM BODY ====== */
+        .exam-body {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 24px 140px;
+        }
+
+        .exam-intro {
+            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+            border: 2px solid var(--primary);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--dark);
+            font-weight: 600;
+        }
+
+        .exam-section-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 34px 0 16px;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #1a1a2e, #0f3460);
+            color: #fff;
+            border-radius: 14px;
+        }
+        .exam-section-head .esh-icon { font-size: 1.6rem; }
+        .exam-section-head .esh-title { font-size: 1.15rem; font-weight: 800; }
+        .exam-section-head .esh-sub { font-size: 0.8rem; opacity: 0.82; font-weight: 600; }
+
+        .exam-passage {
+            background: #fffdf7;
+            border: 2px dashed var(--primary);
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 18px;
+        }
+        .exam-passage-title {
+            font-weight: 800;
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+            font-size: 1.02rem;
+        }
+        .exam-passage p { margin: 0 0 8px; font-size: 0.96rem; color: #444; }
+        .exam-passage p:last-child { margin-bottom: 0; }
+
+        .exam-exercise-block {
+            background: #fff;
+            border-left: 4px solid var(--primary);
+            border-radius: 14px;
+            padding: 22px 20px;
+            margin-bottom: 28px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+        }
+
+        .exam-q-row {
+            background: var(--light-gray);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--secondary);
+            transition: border-color 0.3s;
+        }
+
+        .exam-q-row.correct {
+            border-left-color: var(--success);
+            background: #f1f8e9;
+        }
+
+        .exam-q-row.incorrect {
+            border-left-color: var(--error);
+            background: #fce4ec;
+        }
+
+        .exam-q-text {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-size: 0.97rem;
+        }
+
+        .exam-q-text .exam-blank {
+            display: inline-block;
+            min-width: 60px;
+            border-bottom: 2px solid var(--primary);
+            text-align: center;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .exam-q-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .exam-q-chip {
+            display: inline-block;
+            padding: 9px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 30px;
+            background: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .exam-q-chip:hover {
+            border-color: var(--primary);
+            background: var(--light);
+        }
+
+        .exam-q-chip.selected {
+            border-color: var(--primary);
+            background: var(--secondary);
+            color: var(--dark);
+        }
+
+        .exam-q-chip.correct {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .exam-q-chip.incorrect {
+            border-color: var(--error);
+            background: #fce4ec;
+        }
+
+        .exam-q-input {
+            width: 100%;
+            max-width: 480px;
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease;
+        }
+
+        .exam-q-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .exam-q-input.correct {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .exam-q-input.incorrect {
+            border-color: var(--error);
+            background: #fce4ec;
+        }
+
+        /* ====== RESULT BOX ====== */
+        .exam-result-box {
+            max-width: 640px;
+            margin: 32px auto;
+            background: linear-gradient(135deg, #FFF8E1, #FFE0B2);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 36px 28px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(255,152,0,0.18);
+        }
+        .exam-result-box.passed { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); border-color: var(--success); }
+        .exam-result-box.failed { background: linear-gradient(135deg, #FFEBEE, #FFCDD2); border-color: var(--error); }
+
+        .exam-result-score {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--primary-dark);
+        }
+        .exam-result-box.passed .exam-result-score { color: #2e7d32; }
+        .exam-result-box.failed .exam-result-score { color: #c62828; }
+
+        .exam-result-details {
+            font-size: 1.05rem;
+            color: var(--gray);
+            margin: 10px 0;
+        }
+
+        .exam-result-status {
+            display: inline-block;
+            padding: 8px 24px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+        .exam-result-status.pass { background: #c8e6c9; color: #2e7d32; }
+        .exam-result-status.fail { background: #ffcdd2; color: #c62828; }
+
+        .exam-result-headline {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin: 16px 0 4px;
+        }
+        .exam-result-box.passed .exam-result-headline { color: #2e7d32; }
+        .exam-result-box.failed .exam-result-headline { color: #c62828; }
+
+        .exam-result-cert-note {
+            margin-top: 14px;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #2e7d32;
+        }
+
+        .exam-result-time-info {
+            margin-top: 12px;
+            font-size: 0.92rem;
+            color: var(--gray);
+        }
+
+        .exam-detail-toggle {
+            display: inline-block;
+            margin-top: 18px;
+            background: none;
+            border: 2px solid var(--primary);
+            color: var(--primary-dark);
+            padding: 10px 28px;
+            border-radius: 30px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .exam-detail-toggle:hover {
+            background: var(--light);
+        }
+
+        .exam-detail-section {
+            display: none;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .exam-detail-section.visible {
+            display: block;
+        }
+
+        .exam-detail-exercise {
+            margin-bottom: 16px;
+        }
+
+        .exam-detail-exercise-title {
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-bottom: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 8px 12px;
+            background: var(--light-gray);
+            border-radius: 8px;
+        }
+
+        .exam-detail-exercise-title:hover {
+            background: #eee;
+        }
+
+        .exam-detail-items {
+            display: none;
+            padding: 8px 0 0 12px;
+        }
+
+        .exam-detail-items.visible {
+            display: block;
+        }
+
+        .exam-detail-item {
+            padding: 6px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .exam-detail-item:last-child { border-bottom: none; }
+        .exam-detail-item .edi-status { font-weight: 700; }
+        .exam-detail-item .edi-ok { color: var(--success); }
+        .exam-detail-item .edi-bad { color: var(--error); }
+
+        .exam-back-btn, .exam-retake-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 12px 8px 0;
+            color: #fff;
+            border: none;
+            padding: 14px 36px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .exam-back-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            box-shadow: 0 6px 20px rgba(255,152,0,0.35);
+        }
+        .exam-retake-btn {
+            background: linear-gradient(135deg, #607d8b, #455a64);
+            box-shadow: 0 6px 20px rgba(96,125,139,0.35);
+        }
+        .exam-back-btn:hover, .exam-retake-btn:hover { transform: translateY(-2px); }
+
+        /* ====== FOOTER ACTION BAR ====== */
+        .exam-footer-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: #fff;
+            border-top: 2px solid #eee;
+            padding: 14px 24px;
+            text-align: center;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+        }
+
+        .exam-footer-bar.hidden {
+            display: none;
+        }
+
+        .exam-submit-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #FF9800, #E65100);
+            color: white;
+            padding: 16px 52px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 28px rgba(255, 152, 0, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .exam-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 36px rgba(255, 152, 0, 0.55);
+        }
+
+        .exam-submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ====== TIME-UP OVERLAY ====== */
+        .time-up-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .time-up-overlay.show {
+            display: flex;
+        }
+
+        .time-up-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 40px 32px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+        }
+
+        .time-up-icon {
+            font-size: 3.5rem;
+            margin-bottom: 12px;
+        }
+
+        .time-up-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--error);
+            margin-bottom: 8px;
+        }
+
+        .time-up-text {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 20px;
+        }
+
+        .time-up-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            border: none;
+            padding: 12px 36px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ====== RESPONSIVE ====== */
+        @media (max-width: 768px) {
+            .exam-header-inner {
+                padding: 10px 14px;
+                gap: 10px;
+            }
+            .exam-header-trophy { font-size: 1.5rem; }
+            .exam-header-title { font-size: 1rem; }
+            .exam-header-sub { font-size: 0.72rem; }
+            .exam-timer {
+                font-size: 1.1rem;
+                padding: 6px 12px;
+            }
+            .exam-progress-badge {
+                font-size: 0.78rem;
+                padding: 4px 10px;
+            }
+            .exam-autosave-note { display: none; }
+            .exam-exit-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            .exam-exit-btn span { display: none; }
+            .exam-body {
+                padding: 90px 14px 130px;
+            }
+            .exam-exercise-block {
+                padding: 16px 12px;
+            }
+            .exam-q-row {
+                padding: 12px;
+            }
+            .exam-q-chip {
+                padding: 8px 14px;
+                font-size: 0.9rem;
+            }
+            .exam-q-input { max-width: 100%; }
+            .exam-submit-btn {
+                padding: 14px 30px;
+                font-size: 1.05rem;
+                width: 100%;
+                max-width: 400px;
+            }
+            .exam-result-score { font-size: 2rem; }
+            .exam-section-head .esh-title { font-size: 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            .exam-header-inner {
+                padding: 8px 10px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .exam-header-left { gap: 8px; }
+            .exam-header-trophy { font-size: 1.3rem; }
+            .exam-header-title { font-size: 0.92rem; }
+            .exam-header-sub { display: none; }
+            .exam-header-center {
+                gap: 8px;
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+            .exam-timer {
+                font-size: 1rem;
+                padding: 5px 10px;
+            }
+            .exam-body {
+                padding: 120px 10px 130px;
+            }
+            .exam-q-chip {
+                width: 100%;
+                text-align: center;
+            }
+            .exam-submit-btn {
+                width: 100%;
+            }
+            .exam-back-btn, .exam-retake-btn { width: 100%; margin: 8px 0 0; justify-content: center; }
+        }
+        /* ====== EXIT CONFIRMATION MODAL + INTRO NAV (navigation only) ====== */
+        .exam-intro-nav { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .exam-intro-link {
+            display: inline-flex; align-items: center; gap: 7px; text-decoration: none;
+            background: rgba(245, 124, 0, 0.12); color: #E65100;
+            border: 1px solid rgba(245, 124, 0, 0.35); border-radius: 50px;
+            padding: 9px 16px; font-size: 0.95rem; font-weight: 700; transition: all 0.2s ease;
+        }
+        .exam-intro-link:hover { background: rgba(245, 124, 0, 0.22); transform: translateY(-1px); }
+        .exam-exit-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px);
+            z-index: 100000; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .exam-exit-overlay.show { display: flex; }
+        .exam-exit-card {
+            background: #fff; border-radius: 18px; max-width: 420px; width: 100%;
+            padding: 28px 24px; text-align: center; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        }
+        .exam-exit-icon { font-size: 46px; line-height: 1; margin-bottom: 10px; }
+        .exam-exit-title { font-size: 1.3rem; font-weight: 800; color: #c62828; margin-bottom: 8px; }
+        .exam-exit-text { color: #555; font-size: 1rem; line-height: 1.5; margin-bottom: 22px; }
+        .exam-exit-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+        .exam-exit-actions button {
+            border: none; border-radius: 50px; padding: 13px 26px; font-size: 1rem;
+            font-weight: 700; cursor: pointer; min-width: 130px; font-family: inherit;
+        }
+        .exam-exit-cancel { background: #eee; color: #333; }
+        .exam-exit-cancel:hover { background: #e0e0e0; }
+        .exam-exit-confirm { background: linear-gradient(135deg, #F44336, #c62828); color: #fff; }
+        .exam-exit-confirm:hover { filter: brightness(1.06); }
+        @media (max-width: 600px) { .exam-exit-actions button { flex: 1; min-width: 0; } }
+    </style>
+</head>
+<body>
+
+    <!-- EXAM HEADER -->
+    <header class="exam-header">
+        <div class="exam-header-inner">
+            <div class="exam-header-left">
+                <span class="exam-header-trophy">🎓</span>
+                <div>
+                    <div class="exam-header-title">B2 Yakuniy Imtihoni</div>
+                    <div class="exam-header-sub">100 ball · 80% o'tish · 10 bo'lim</div>
+                </div>
+            </div>
+            <div class="exam-header-center">
+                <div>
+                    <div class="exam-timer" id="examTimer">
+                        <i class="fas fa-clock"></i>
+                        <span id="examTimerDisplay">02:00:00</span>
+                    </div>
+                    <div class="exam-autosave-note" id="examAutosaveNote"><i class="fas fa-cloud"></i> Avtosaqlash yoqilgan</div>
+                </div>
+                <div class="exam-progress-badge" id="examProgress">0 / 100</div>
+            </div>
+            <div class="exam-header-right">
+                <button class="exam-exit-btn" id="examExitBtn" type="button">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Chiqish</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- EXAM BODY -->
+    <main class="exam-body" id="examBody">
+        <div class="exam-intro">
+            Bu yakuniy imtihon B2 kursidagi barcha 16 ta mavzuni qamrab oladi. Jami 100 ta baholanadigan javob.
+            O'tish balli — 80%. Imtihon vaqti — 120 daqiqa. Javoblaringiz har 30 soniyada avtomatik saqlanadi.
+            <div class="exam-intro-nav">
+                <a class="exam-intro-link" href="b2-course.html#finalExamEntry" data-exam-exit><i class="fas fa-arrow-left"></i> Kursga qaytish</a>
+                <a class="exam-intro-link" href="../my.cabinet/dashboard.html" data-exam-exit><i class="fas fa-home"></i> Shaxsiy kabinet</a>
+            </div>
+        </div>
+        <div id="examExercises"></div>
+        <div id="examFeedback"></div>
+    </main>
+
+    <!-- FOOTER ACTION BAR -->
+    <div class="exam-footer-bar" id="examFooterBar">
+        <button class="exam-submit-btn" id="examSubmitBtn" type="button">
+            <i class="fas fa-check-circle"></i> Imtihonni yakunlash va tekshirish
+        </button>
+    </div>
+
+    <!-- EXIT CONFIRMATION MODAL (navigation safety — back button / exit) -->
+    <div class="exam-exit-overlay" id="examExitOverlay" role="dialog" aria-modal="true" aria-labelledby="examExitTitle">
+        <div class="exam-exit-card">
+            <div class="exam-exit-icon">⚠️</div>
+            <div class="exam-exit-title" id="examExitTitle">Imtihondan chiqmoqchimisiz?</div>
+            <div class="exam-exit-text">Imtihon hali yakunlanmagan. Javoblaringiz saqlanadi va keyin davom ettirishingiz mumkin.</div>
+            <div class="exam-exit-actions">
+                <button class="exam-exit-cancel" id="examExitCancel" type="button">Bekor qilish</button>
+                <button class="exam-exit-confirm" id="examExitConfirm" type="button">Chiqish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TIME-UP OVERLAY -->
+    <div class="time-up-overlay" id="timeUpOverlay">
+        <div class="time-up-card">
+            <div class="time-up-icon">⏰</div>
+            <div class="time-up-title">Vaqt tugadi!</div>
+            <div class="time-up-text">Imtihon vaqti tugadi. Sizning javoblaringiz avtomatik tekshirilmoqda.</div>
+            <button class="time-up-btn" id="timeUpOkBtn" type="button">Natijalarni ko'rish</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ========== USER / PERSISTENCE KEYS ==========
+        function getUid() {
+            try {
+                var u = JSON.parse(localStorage.getItem('currentUser'));
+                if (u && u.id) { window.currentUser = u; window.currentUserId = u.id; return u.id; }
+            } catch (e) {}
+            return 'guest';
+        }
+        var USER_ID = getUid();
+        var STATE_KEY = 'b2_finalexam_state_' + USER_ID;       // in-progress draft + deadline (survives refresh/close)
+        var COMPLETION_KEY = 'b2_completion_' + USER_ID;        // pass / certificate flags (read by b2-course.html)
+        var EXAM_TOPIC_ID = 'final_exam';                       // Firestore quizResults doc id (cross-device sync)
+        var COURSE = 'B2';
+
+        // ========== TEXT NORMALIZATION (identical to B2 course normalisation) ==========
+        function normalizeExamText(value) {
+            return String(value == null ? '' : value)
+                .toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[.,!?;:()"'«»—–\-]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+        function examIsCorrect(userValue, expected) {
+            var nu = normalizeExamText(userValue);
+            if (!nu) return false;
+            if (Array.isArray(expected)) {
+                return expected.some(function (e) { return normalizeExamText(e) === nu; });
+            }
+            return normalizeExamText(expected) === nu;
+        }
+        function escHtml(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+        function escAttr(s) { return escHtml(s).replace(/'/g, '&#39;'); }
+        function renderQ(q) {
+            var s = escHtml(q);
+            s = s.replace(/\n/g, '<br>');
+            s = s.replace(/_{3,}/g, '<span class="exam-blank">______</span>');
+            return s;
+        }
+
+        // ========== EXAM DATA — built entirely from real B2 course material (16 topics) ==========
+        var FINAL_EXAM_DATA = [{"section":"A","icon":"🧩","title":"A bo‘lim — Выберите правильную конструкцию","subtitle":"Ma’no, bog‘lovchi va konstruksiya tanlovi · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Я не пришёл на встречу, ______ был очень занят.","opts":["потому что","чтобы","если"],"answer":"потому что","sourceTopic":1,"sourceConcept":"СПП · причина"},{"mode":"chip","q":"Мы приехали раньше, ______ успеть подготовить зал.","opts":["чтобы","потому что","хотя"],"answer":"чтобы","sourceTopic":1,"sourceConcept":"СПП · цель"},{"mode":"chip","q":"______ документы, сотрудник отправил их руководителю.","opts":["Проверив","Проверенный","Проверять"],"answer":"Проверив","sourceTopic":3,"sourceConcept":"деепричастие СВ"},{"mode":"chip","q":"______ у меня было больше времени, я бы прочитал эту книгу.","opts":["Если бы","Если","Когда"],"answer":"Если бы","sourceTopic":5,"sourceConcept":"нереальное условие"},{"mode":"chip","q":"Если завтра будет хорошая погода, мы ______ за город.","opts":["поедем","поехали бы","ехали"],"answer":"поедем","sourceTopic":5,"sourceConcept":"реальное условие"},{"mode":"chip","q":"Этот вариант ______ предыдущего.","opts":["лучше","самый лучший","хорошо"],"answer":"лучше","sourceTopic":6,"sourceConcept":"сравнительная степень"},{"mode":"chip","q":"Вчера я два часа ______ отчёт, но так и не закончил его.","opts":["писал","написал","напишу"],"answer":"писал","sourceTopic":7,"sourceConcept":"НСВ · процесс"},{"mode":"chip","q":"В библиотеке ______ громко разговаривать.","opts":["нельзя","не надо было","ненужно"],"answer":"нельзя","sourceTopic":9,"sourceConcept":"модальность · запрет"},{"mode":"chip","q":"Чтобы получить визу, вам ______ собрать все документы.","opts":["необходимо","необходимый","необходимость"],"answer":"необходимо","sourceTopic":9,"sourceConcept":"модальный предикатив"},{"mode":"chip","q":"Вы разговариваете с руководителем. Выберите уместный вариант:","opts":["Разрешите уточнить сроки проекта.","Слушай, когда там сроки?","Эй, скажи про сроки."],"answer":"Разрешите уточнить сроки проекта.","sourceTopic":15,"sourceConcept":"официальный регистр"}]},{"section":"B","icon":"✅","title":"B bo‘lim — Выберите грамматически правильный вариант","subtitle":"Boshqaruv, moslashuv, vid va nisbat · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Выберите вариант с правильным согласованием причастия:","opts":["Студенты, сдавшие экзамен, получили сертификаты.","Студенты, сдавшую экзамен, получили сертификаты.","Студенты, сдавших экзамен, получили сертификаты."],"answer":"Студенты, сдавшие экзамен, получили сертификаты.","sourceTopic":2,"sourceConcept":"причастие · согласование"},{"mode":"chip","q":"Выберите вариант с правильным употреблением деепричастия:","opts":["Читая договор, я нашёл ошибку.","Читая договор, ошибка была найдена мной.","Читая договор, мне нашлась ошибка."],"answer":"Читая договор, я нашёл ошибку.","sourceTopic":3,"sourceConcept":"деепричастие · один субъект"},{"mode":"chip","q":"Он сказал: «Я приду завтра». Выберите правильную косвенную речь:","opts":["Он сказал, что придёт на следующий день.","Он сказал, что я приду завтра.","Он сказал, что он придёт завтра ли."],"answer":"Он сказал, что придёт на следующий день.","sourceTopic":4,"sourceConcept":"косвенная речь · сдвиг"},{"mode":"chip","q":"Выберите вариант с правильным сослагательным наклонением:","opts":["Если бы он знал об этом, он бы предупредил нас.","Если бы он знал об этом, он предупредит нас.","Если он знал бы об этом, он бы предупредит нас."],"answer":"Если бы он знал об этом, он бы предупредил нас.","sourceTopic":5,"sourceConcept":"сослагательное наклонение"},{"mode":"chip","q":"Выберите вариант с правильным сравнением:","opts":["Этот проект сложнее, чем предыдущий.","Этот проект более сложнее, чем предыдущий.","Этот проект сложнее, как предыдущий."],"answer":"Этот проект сложнее, чем предыдущий.","sourceTopic":6,"sourceConcept":"сравнение · чем"},{"mode":"chip","q":"Выберите вариант с правильной конструкцией «один из самых»:","opts":["Москва — один из самых больших городов Европы.","Москва — один из самый большой город Европы.","Москва — одна из самых больших городов Европы."],"answer":"Москва — один из самых больших городов Европы.","sourceTopic":6,"sourceConcept":"один из самых"},{"mode":"chip","q":"Выберите вариант, где вид глагола выражает завершённый результат:","opts":["Он уже прочитал эту статью.","Он уже читал эту статью до конца вчера в три часа ровно.","Он уже прочитывал эту статью."],"answer":"Он уже прочитал эту статью.","sourceTopic":7,"sourceConcept":"СВ · результат"},{"mode":"chip","q":"Каждое утро он ______ кофе, а сегодня уже ______ две чашки.","opts":["пьёт … выпил","выпивает … пьёт","выпьет … пил"],"answer":"пьёт … выпил","sourceTopic":7,"sourceConcept":"НСВ повтор vs СВ результат"},{"mode":"chip","q":"Автобус ______ от остановки и поехал в центр.","opts":["отъехал","подъехал","переехал"],"answer":"отъехал","sourceTopic":8,"sourceConcept":"приставка от- · удаление"},{"mode":"chip","q":"Выберите вариант с правильной модальной конструкцией:","opts":["Мне нужно закончить работу сегодня.","Я нужно закончить работу сегодня.","Мне нужен закончить работу сегодня."],"answer":"Мне нужно закончить работу сегодня.","sourceTopic":9,"sourceConcept":"нужно + инфинитив"}]},{"section":"C","icon":"✏️","title":"C bo‘lim — Поставьте слово в правильную форму","subtitle":"Nazorat ostidagi shakl hosil qilish · 10 ball","type":"mixed","items":[{"mode":"input","q":"Поставьте причастие в правильную форму: Мы обсудили вопросы, (рассмотренный) на совещании.","answer":["рассмотренные"],"sourceTopic":2,"sourceConcept":"причастие · мн. ч."},{"mode":"input","q":"Поставьте причастие в правильную форму: Это статья, (написанный) известным учёным.","answer":["написанная"],"sourceTopic":2,"sourceConcept":"причастие · ж. р."},{"mode":"input","q":"Поставьте деепричастие в правильную форму: (Закончить) работу, он вышел из офиса.","answer":["Закончив","закончив"],"sourceTopic":3,"sourceConcept":"деепричастие СВ"},{"mode":"input","q":"Поставьте прилагательное в сравнительную степень: Эта задача (трудный), чем предыдущая.","answer":["труднее"],"sourceTopic":6,"sourceConcept":"сравнительная степень"},{"mode":"input","q":"Поставьте глагол в нужный вид: Я долго (решать) эту задачу и наконец (решить) её. Напишите вторую форму.","answer":["решил"],"sourceTopic":7,"sourceConcept":"СВ · результат"},{"mode":"input","q":"Поставьте глагол с приставкой: Он (входить, СВ) в кабинет и поздоровался.","answer":["вошёл","вошел"],"sourceTopic":8,"sourceConcept":"приставка в- · СВ"},{"mode":"input","q":"Поставьте глагол с приставкой: Мы (приходить, СВ) на вокзал за час до отправления.","answer":["пришли"],"sourceTopic":8,"sourceConcept":"приставка при- · СВ"},{"mode":"input","q":"Поставьте слово в нужную форму: Ему (нужный) помощь коллег.","answer":["нужна"],"sourceTopic":9,"sourceConcept":"нужен / нужна / нужно"},{"mode":"input","q":"Образуйте отглагольное существительное: принимать решение → (принимать) решения.","answer":["принятие"],"sourceTopic":11,"sourceConcept":"отглагольное существительное"},{"mode":"input","q":"Поставьте слово в нужную форму: Согласно (новый закон), компания изменила правила.","answer":["новому закону"],"sourceTopic":13,"sourceConcept":"согласно + дательный"}]},{"section":"D","icon":"🔄","title":"D bo‘lim — Преобразуйте предложение","subtitle":"O‘rgatilgan transformatsiyalar · 10 ball","type":"mixed","items":[{"mode":"input","q":"Преобразуйте в косвенную речь: Она сказала: «Я работаю в банке». Она сказала, что ______ .","answer":["работает в банке"],"sourceTopic":4,"sourceConcept":"косвенная речь · утверждение"},{"mode":"input","q":"Преобразуйте в косвенную речь: Он спросил: «Ты придёшь?» Он спросил, ______ .","answer":["приду ли я"],"sourceTopic":4,"sourceConcept":"косвенный вопрос · ли"},{"mode":"input","q":"Преобразуйте в нереальное условие: У меня нет времени, поэтому я не читаю. Если бы у меня ______ время, я бы читал.","answer":["было"],"sourceTopic":5,"sourceConcept":"если бы + прошедшее"},{"mode":"input","q":"Замените глагол приставочным: Он ушёл из дома в восемь. Он ______ из дома в восемь. (выйти)","answer":["вышел"],"sourceTopic":8,"sourceConcept":"приставка вы- · СВ"},{"mode":"input","q":"Преобразуйте в безличное: Я не смог решить эту задачу. Мне не ______ решить эту задачу.","answer":["удалось"],"sourceTopic":10,"sourceConcept":"безличное · удалось"},{"mode":"input","q":"Преобразуйте в безличное: Я хочу спать. Мне ______ спать.","answer":["хочется"],"sourceTopic":10,"sourceConcept":"безличное · хочется"},{"mode":"input","q":"Замените глагол отглагольным существительным: Мы обсуждаем вопрос. → ______ вопроса продолжается.","answer":["Обсуждение","обсуждение"],"sourceTopic":11,"sourceConcept":"номинализация"},{"mode":"input","q":"Замените глагол отглагольным существительным: Компания развивает проект. → ______ проекта требует ресурсов.","answer":["Развитие","развитие"],"sourceTopic":11,"sourceConcept":"номинализация · родительный"},{"mode":"input","q":"Преобразуйте в пассив: Компания разработала новый проект. Новый проект ______ компанией.","answer":["был разработан"],"sourceTopic":12,"sourceConcept":"пассив · прошедшее"},{"mode":"input","q":"Преобразуйте в пассив на -ся: Специалисты проверяют документы. Документы ______ специалистами.","answer":["проверяются"],"sourceTopic":12,"sourceConcept":"пассив · -ся"}]},{"section":"E","icon":"🔗","title":"E bo‘lim — Предлоги, управление и падеж","subtitle":"Predlog boshqaruvi va kelishik · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Поезд ______ мост и продолжил движение.","opts":["переехал","отъехал","въехал"],"answer":"переехал","sourceTopic":8,"sourceConcept":"приставка пере-"},{"mode":"input","q":"Поставьте в нужную форму: Принятие (решение) заняло несколько дней.","answer":["решения"],"sourceTopic":11,"sourceConcept":"отглагольное сущ. + родительный"},{"mode":"chip","q":"______ поддержке коллег проект был завершён вовремя.","opts":["Благодаря","Из-за","Несмотря на"],"answer":"Благодаря","sourceTopic":13,"sourceConcept":"благодаря + дательный"},{"mode":"input","q":"Поставьте в нужную форму: Несмотря на (высокая стоимость), услуга пользуется спросом.","answer":["высокую стоимость"],"sourceTopic":13,"sourceConcept":"несмотря на + винительный"},{"mode":"input","q":"Поставьте в нужную форму: В связи с (изменение графика) встреча переносится.","answer":["изменением графика"],"sourceTopic":13,"sourceConcept":"в связи с + творительный"},{"mode":"chip","q":"______ требованиями документы необходимо обновить.","opts":["В соответствии с","В соответствии","В соответствие"],"answer":"В соответствии с","sourceTopic":13,"sourceConcept":"в соответствии с + творительный"},{"mode":"input","q":"Поставьте в нужную форму: С точки зрения (общество), эта проблема требует решения.","answer":["общества"],"sourceTopic":14,"sourceConcept":"с точки зрения + родительный"},{"mode":"input","q":"Поставьте в нужную форму: В результате (экономический кризис) многие компании изменили планы.","answer":["экономического кризиса"],"sourceTopic":16,"sourceConcept":"в результате + родительный"},{"mode":"chip","q":"Проблему можно решить ______ , что стороны будут сотрудничать.","opts":["при условии","в условии","на условии"],"answer":"при условии","sourceTopic":16,"sourceConcept":"при условии, что"},{"mode":"chip","q":"Основная проблема заключается ______ , что не хватает ресурсов.","opts":["в том","о том","на том"],"answer":"в том","sourceTopic":16,"sourceConcept":"заключаться в том, что"}]},{"section":"F","icon":"🏗️","title":"F bo‘lim — Сложные грамматические конструкции","subtitle":"SPP, sifatdosh, ravishdosh, ko‘chirma gap · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Я знаю город, ______ вы говорили вчера.","opts":["о котором","который","о который"],"answer":"о котором","sourceTopic":1,"sourceConcept":"СПП · определительное"},{"mode":"chip","q":"Он не сказал, ______ вернётся из командировки.","opts":["когда","что","чтобы"],"answer":"когда","sourceTopic":1,"sourceConcept":"СПП · изъяснительное"},{"mode":"chip","q":"______ шёл сильный дождь, мы всё равно поехали за город.","opts":["Хотя","Потому что","Чтобы"],"answer":"Хотя","sourceTopic":1,"sourceConcept":"СПП · уступка"},{"mode":"chip","q":"Выберите вариант с действительным причастием:","opts":["студент, читающий книгу","книга, читаемая студентом","прочитанная книга"],"answer":"студент, читающий книгу","sourceTopic":2,"sourceConcept":"действительное причастие"},{"mode":"chip","q":"Выберите вариант со страдательным причастием:","opts":["документы, подготовленные секретарём","секретарь, подготовивший документы","секретарь, готовящий документы"],"answer":"документы, подготовленные секретарём","sourceTopic":2,"sourceConcept":"страдательное причастие"},{"mode":"chip","q":"Выберите предложение с деепричастием несовершенного вида:","opts":["Возвращаясь домой, я встретил друга.","Вернувшись домой, я позвонил другу.","Возвратившийся домой человек устал."],"answer":"Возвращаясь домой, я встретил друга.","sourceTopic":3,"sourceConcept":"деепричастие НСВ"},{"mode":"chip","q":"В каком предложении деепричастный оборот употреблён правильно?","opts":["Открыв окно, я почувствовал свежий воздух.","Открыв окно, мне стало холодно.","Открыв окно, в комнате стало свежо."],"answer":"Открыв окно, я почувствовал свежий воздух.","sourceTopic":3,"sourceConcept":"деепричастие · субъект"},{"mode":"chip","q":"Он попросил: «Принесите документы». Косвенная речь:","opts":["Он попросил принести документы.","Он попросил, что принесите документы.","Он попросил, ли принести документы."],"answer":"Он попросил принести документы.","sourceTopic":4,"sourceConcept":"косвенная речь · просьба"},{"mode":"chip","q":"Он спросил: «Директор уже подписал документы?» Косвенная речь:","opts":["Он спросил, подписал ли директор документы.","Он спросил, что директор уже подписал документы.","Он спросил, где директор уже подписал документы."],"answer":"Он спросил, подписал ли директор документы.","sourceTopic":4,"sourceConcept":"косвенный вопрос · ли"},{"mode":"chip","q":"Выберите предложение с реальным условием:","opts":["Если ты позвонишь, я всё объясню.","Если бы ты позвонил, я бы всё объяснил.","Позвонил бы ты, я бы объяснил."],"answer":"Если ты позвонишь, я всё объясню.","sourceTopic":5,"sourceConcept":"реальное условие"}]},{"section":"G","icon":"⚙️","title":"G bo‘lim — Залог, безличность и номинализация","subtitle":"Passiv, shaxssizlik va otlashtirish · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Выберите предложение, где вид глагола указывает на результат:","opts":["Он построил дом.","Он строил дом.","Он строит дом."],"answer":"Он построил дом.","sourceTopic":7,"sourceConcept":"СВ · результат"},{"mode":"chip","q":"Выберите безличное предложение:","opts":["Мне не спится.","Я не сплю.","Он не спит."],"answer":"Мне не спится.","sourceTopic":10,"sourceConcept":"безличное · -ся"},{"mode":"chip","q":"Выберите правильный безличный вариант:","opts":["Сегодня холодно.","Сегодня холодный.","Сегодня холод есть."],"answer":"Сегодня холодно.","sourceTopic":10,"sourceConcept":"безличное · состояние"},{"mode":"chip","q":"Выберите предложение без подлежащего в именительном падеже:","opts":["Мне нужно уехать завтра.","Я должен уехать завтра.","Он уедет завтра."],"answer":"Мне нужно уехать завтра.","sourceTopic":10,"sourceConcept":"безличная конструкция"},{"mode":"chip","q":"Выберите правильную номинализацию: Мы решили проблему.","opts":["решение проблемы","решение проблема","решать проблемы"],"answer":"решение проблемы","sourceTopic":11,"sourceConcept":"номинализация + родительный"},{"mode":"chip","q":"Выберите предложение в пассивном залоге:","opts":["Договор был подписан директором.","Директор подписал договор.","Директор подписывает договор."],"answer":"Договор был подписан директором.","sourceTopic":12,"sourceConcept":"пассив"},{"mode":"chip","q":"Выберите правильную форму настоящего результата:","opts":["Документ подписан.","Документ есть подписан.","Документ подписался."],"answer":"Документ подписан.","sourceTopic":12,"sourceConcept":"нулевая связка"},{"mode":"chip","q":"Выберите правильный пассив будущего времени:","opts":["Документы будут подписаны завтра.","Документы будет подписаны завтра.","Документы будут подписан завтра."],"answer":"Документы будут подписаны завтра.","sourceTopic":12,"sourceConcept":"пассив · будущее"},{"mode":"chip","q":"Выберите правильную конструкцию следствия:","opts":["Это приводит к тому, что люди меньше общаются.","Это приводит в том, что люди меньше общаются.","Это приводит о том, что люди меньше общаются."],"answer":"Это приводит к тому, что люди меньше общаются.","sourceTopic":16,"sourceConcept":"приводит к тому, что"},{"mode":"chip","q":"Выберите правильную форму отглагольного существительного: ______ решения вопроса заняло много времени.","opts":["Принятие","Принять","Принимая"],"answer":"Принятие","sourceTopic":16,"sourceConcept":"номинализация · подлежащее"}]},{"section":"H","icon":"💬","title":"H bo‘lim — Связность, аргументация и речевой регистр","subtitle":"Bog‘lanish, dalil va nutq registri · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Какую функцию выполняет выделенная конструкция: «По моему мнению, эта проблема очень серьёзная»?","opts":["Позиция","Пример","Вывод"],"answer":"Позиция","sourceTopic":14,"sourceConcept":"функция · позиция"},{"mode":"chip","q":"Какую функцию выполняет конструкция: «Дело в том, что ресурсов не хватает»?","opts":["Обоснование","Вывод","Контраргумент"],"answer":"Обоснование","sourceTopic":14,"sourceConcept":"функция · обоснование"},{"mode":"chip","q":"Какую функцию выполняет конструкция: «Например, многие компании перешли на удалённую работу»?","opts":["Пример","Позиция","Условие"],"answer":"Пример","sourceTopic":14,"sourceConcept":"функция · пример"},{"mode":"chip","q":"Какую функцию выполняет конструкция: «С другой стороны, это требует дисциплины»?","opts":["Контраргумент","Вывод","Обоснование"],"answer":"Контраргумент","sourceTopic":14,"sourceConcept":"функция · контраргумент"},{"mode":"chip","q":"Какую функцию выполняет конструкция: «Из этого следует, что решение нужно искать вместе»?","opts":["Вывод","Пример","Позиция"],"answer":"Вывод","sourceTopic":14,"sourceConcept":"функция · вывод"},{"mode":"chip","q":"Разговор с директором. Выберите уместный вариант:","opts":["Не могли бы Вы уточнить время встречи?","Слушай, во сколько встреча?","Эй, когда встреча?"],"answer":"Не могли бы Вы уточнить время встречи?","sourceTopic":15,"sourceConcept":"регистр · официальный"},{"mode":"chip","q":"Разговор с близким другом. Выберите уместный вариант:","opts":["Что скажешь насчёт этого плана?","Позвольте узнать Ваше мнение о плане.","Прошу Вас высказать мнение о плане."],"answer":"Что скажешь насчёт этого плана?","sourceTopic":15,"sourceConcept":"регистр · неофициальный"},{"mode":"chip","q":"Обычный разговор с коллегой. Выберите нейтральный вариант:","opts":["Можно уточнить один момент?","Разрешите уточнить, уважаемый коллега.","Эй, объясни-ка мне это."],"answer":"Можно уточнить один момент?","sourceTopic":15,"sourceConcept":"регистр · нейтральный"},{"mode":"chip","q":"Какой вариант звучит наиболее вежливо при несогласии?","opts":["Я не совсем согласен с этим мнением.","Это неправда.","Вы ошибаетесь."],"answer":"Я не совсем согласен с этим мнением.","sourceTopic":15,"sourceConcept":"вежливое несогласие"},{"mode":"chip","q":"Какое обращение уместно с незнакомым человеком?","opts":["Не могли бы вы подсказать дорогу?","Слушай, подскажи дорогу.","Давай подскажи дорогу."],"answer":"Не могли бы вы подсказать дорогу?","sourceTopic":15,"sourceConcept":"регистр · вы"}]},{"section":"I","icon":"🔍","title":"I bo‘lim — Найдите и исправьте ошибку","subtitle":"Xatoni topish va tuzatish · 10 ball","type":"mixed","items":[{"mode":"input","q":"Найдите и исправьте ошибку. Запишите правильный вариант: Студенты, сдавшую экзамен, получили сертификаты.","answer":["Студенты, сдавшие экзамен, получили сертификаты."],"sourceTopic":2,"sourceConcept":"причастие · согласование"},{"mode":"input","q":"Найдите и исправьте ошибку: Читая письмо, мне стало грустно.","answer":["Читая письмо, я загрустил.","Читая письмо, я загрустила.","Когда я читал письмо, мне стало грустно.","Когда я читала письмо, мне стало грустно."],"sourceTopic":3,"sourceConcept":"деепричастие · субъект"},{"mode":"input","q":"Найдите и исправьте ошибку: Он сказал, что я приду завтра.","answer":["Он сказал, что придёт завтра."],"sourceTopic":4,"sourceConcept":"косвенная речь · лицо"},{"mode":"input","q":"Найдите и исправьте ошибку: Этот вариант более лучше предыдущего.","answer":["Этот вариант лучше предыдущего."],"sourceTopic":6,"sourceConcept":"двойная сравнительная степень"},{"mode":"input","q":"Найдите и исправьте ошибку: Вчера я написал письмо два часа.","answer":["Вчера я писал письмо два часа."],"sourceTopic":7,"sourceConcept":"НСВ · длительность"},{"mode":"input","q":"Найдите и исправьте ошибку: Он пришёл из кабинета и закрыл дверь.","answer":["Он вышел из кабинета и закрыл дверь."],"sourceTopic":8,"sourceConcept":"приставка · направление"},{"mode":"input","q":"Найдите и исправьте ошибку: Мне нужен закончить работу сегодня.","answer":["Мне нужно закончить работу сегодня."],"sourceTopic":9,"sourceConcept":"нужно + инфинитив"},{"mode":"input","q":"Найдите и исправьте ошибку: Я не удалось решить эту задачу.","answer":["Мне не удалось решить эту задачу."],"sourceTopic":10,"sourceConcept":"безличное · дательный"},{"mode":"input","q":"Найдите и исправьте ошибку: Документ есть подписан директором.","answer":["Документ подписан директором."],"sourceTopic":12,"sourceConcept":"нулевая связка"},{"mode":"input","q":"Найдите и исправьте ошибку: Согласно договора клиент должен оплатить услугу.","answer":["Согласно договору клиент должен оплатить услугу."],"sourceTopic":13,"sourceConcept":"согласно + дательный"}]},{"section":"J","icon":"🎓","title":"J bo‘lim — Итоговое B2-повторение","subtitle":"Yakuniy takrorlash va integrativ savollar · 10 ball","type":"mixed","items":[{"mode":"chip","q":"Выберите правильный союз: Я остался дома, ______ на улице был сильный мороз.","opts":["так как","чтобы","если бы"],"answer":"так как","sourceTopic":1,"sourceConcept":"СПП · причина"},{"mode":"chip","q":"Выберите правильный вариант: ______ ты предупредил заранее, мы бы всё подготовили.","opts":["Если бы","Если","Когда"],"answer":"Если бы","sourceTopic":5,"sourceConcept":"нереальное условие"},{"mode":"input","q":"Поставьте в сравнительную степень: Этот способ (эффективный), чем прежний.","answer":["эффективнее","более эффективный"],"sourceTopic":6,"sourceConcept":"сравнительная степень"},{"mode":"chip","q":"Выберите правильный вариант: В музее ______ фотографировать со вспышкой.","opts":["нельзя","не нужно быть","ненужно"],"answer":"нельзя","sourceTopic":9,"sourceConcept":"модальность · запрет"},{"mode":"input","q":"Образуйте отглагольное существительное: подготовить отчёт → ______ отчёта заняла неделю.","answer":["Подготовка","подготовка"],"sourceTopic":11,"sourceConcept":"номинализация"},{"mode":"chip","q":"Выберите правильный вариант: ______ , что люди чаще работают удалённо, изменился рынок труда.","opts":["В результате того","В результате","В результат"],"answer":"В результате того","sourceTopic":16,"sourceConcept":"в результате того, что"},{"mode":"chip","q":"Выберите вариант, где пассив и отглагольное существительное употреблены правильно:","opts":["Решение проблемы было принято руководством.","Решение проблема было принято руководством.","Решение проблемы было принят руководством."],"answer":"Решение проблемы было принято руководством.","sourceTopics":[11,12],"sourceConcept":"номинализация + пассив","integrative":true},{"mode":"chip","q":"Выберите вариант, где условие и модальность сочетаются правильно:","opts":["Если бы у нас было больше времени, нам не пришлось бы спешить.","Если бы у нас было больше времени, нам не придётся спешить.","Если у нас было бы больше времени, нам не пришлось спешить."],"answer":"Если бы у нас было больше времени, нам не пришлось бы спешить.","sourceTopics":[5,9],"sourceConcept":"условие + модальность","integrative":true},{"mode":"chip","q":"Выберите вариант, где предлог и аргументативная связка употреблены правильно:","opts":["Благодаря поддержке партнёров проект продолжается, и, таким образом, сроки будут соблюдены.","Благодаря поддержку партнёров проект продолжается, и, таким образом, сроки будут соблюдены.","Благодаря поддержки партнёров проект продолжается, и, таким образом, сроки будут соблюдены."],"answer":"Благодаря поддержке партнёров проект продолжается, и, таким образом, сроки будут соблюдены.","sourceTopics":[13,14],"sourceConcept":"управление + связка","integrative":true},{"mode":"chip","q":"Выберите вариант, где косвенная речь и регистр соответствуют деловой ситуации:","opts":["Руководитель попросил уточнить сроки выполнения проекта.","Руководитель попросил, что уточните сроки проекта.","Руководитель сказал: слушай, уточни сроки."],"answer":"Руководитель попросил уточнить сроки выполнения проекта.","sourceTopics":[4,15],"sourceConcept":"косвенная речь + регистр","integrative":true}]}];
+
+        var TOTAL_QUESTIONS = 0;
+        FINAL_EXAM_DATA.forEach(function (s) { TOTAL_QUESTIONS += (s.items || []).length; });
+
+        // ========== TIMER (deadline-based, survives refresh / reload / browser close) ==========
+        var TOTAL_SECONDS = 120 * 60; // 120 minutes
+        var deadline = 0;             // epoch ms when the exam must end
+        var startedAt = 0;
+        var secondsLeft = TOTAL_SECONDS;
+        var timerInterval = null;
+        var examFinished = false;
+
+        function formatTime(seconds) {
+            seconds = Math.max(0, seconds);
+            var h = Math.floor(seconds / 3600);
+            var m = Math.floor((seconds % 3600) / 60);
+            var s = seconds % 60;
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+        function recomputeSecondsLeft() {
+            secondsLeft = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+            return secondsLeft;
+        }
+        function updateTimerDisplay() {
+            var display = document.getElementById('examTimerDisplay');
+            var timerEl = document.getElementById('examTimer');
+            if (display) display.textContent = formatTime(secondsLeft);
+            if (timerEl) {
+                timerEl.classList.remove('warning', 'danger');
+                if (secondsLeft <= 300) timerEl.classList.add('danger');
+                else if (secondsLeft <= 900) timerEl.classList.add('warning');
+            }
+        }
+        function startTimer() {
+            recomputeSecondsLeft();
+            updateTimerDisplay();
+            if (secondsLeft <= 0) { timeUp(); return; }
+            timerInterval = setInterval(function () {
+                if (examFinished) { clearInterval(timerInterval); return; }
+                recomputeSecondsLeft();
+                updateTimerDisplay();
+                if (secondsLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timeUp();
+                }
+            }, 1000);
+        }
+        function timeUp() {
+            if (examFinished) return;
+            var overlay = document.getElementById('timeUpOverlay');
+            if (overlay) overlay.classList.add('show');
+            finishExam(true);
+            var okBtn = document.getElementById('timeUpOkBtn');
+            if (okBtn) {
+                okBtn.addEventListener('click', function () {
+                    overlay.classList.remove('show');
+                    var resultBox = document.querySelector('.exam-result-box');
+                    if (resultBox) resultBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            }
+        }
+
+        // ========== RENDER EXAM ==========
+        function renderExam() {
+            var container = document.getElementById('examExercises');
+            if (!container) return;
+            var html = '';
+            var globalQ = 0;
+
+            FINAL_EXAM_DATA.forEach(function (section, sIdx) {
+                html += '<div class="exam-section-head">'
+                      + '<span class="esh-icon">' + (section.icon || '📝') + '</span>'
+                      + '<div><div class="esh-title">' + escHtml(section.title) + '</div>'
+                      + (section.subtitle ? '<div class="esh-sub">' + escHtml(section.subtitle) + '</div>' : '')
+                      + '</div></div>';
+
+                if (section.passage && section.passage.length) {
+                    html += '<div class="exam-passage">';
+                    if (section.passageTitle) html += '<div class="exam-passage-title">📄 ' + escHtml(section.passageTitle) + '</div>';
+                    section.passage.forEach(function (p) { html += '<p>' + escHtml(p) + '</p>'; });
+                    html += '</div>';
+                }
+
+                html += '<div class="exam-exercise-block">';
+                (section.items || []).forEach(function (item, qIdx) {
+                    var mode = item.mode || section.type;
+                    var key = sIdx + '-' + qIdx;
+                    globalQ++;
+                    html += '<div class="exam-q-row" data-exam-row="' + key + '">';
+                    html += '<div class="exam-q-text">' + globalQ + '. ' + renderQ(item.q) + '</div>';
+                    if (mode === 'chip') {
+                        html += '<div class="exam-q-options">';
+                        item.opts.forEach(function (opt) {
+                            html += '<button type="button" class="exam-q-chip" data-exam-chip="' + key + '" data-value="' + escAttr(opt) + '">' + escHtml(opt) + '</button>';
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<input type="text" class="exam-q-input" data-exam-input="' + key + '" placeholder="Javobni yozing" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />';
+                    }
+                    html += '</div>';
+                });
+                html += '</div>';
+            });
+
+            container.innerHTML = html;
+
+            container.querySelectorAll('.exam-q-chip').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    if (examFinished) return;
+                    var key = this.dataset.examChip;
+                    container.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]').forEach(function (c) {
+                        c.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    updateProgressCount();
+                    scheduleSave();
+                });
+            });
+            container.querySelectorAll('.exam-q-input').forEach(function (input) {
+                input.addEventListener('input', function () {
+                    updateProgressCount();
+                    scheduleSave();
+                });
+            });
+        }
+
+        // ========== PROGRESS COUNTER ==========
+        function updateProgressCount() {
+            var chipGroups = new Set();
+            document.querySelectorAll('.exam-q-chip.selected').forEach(function (c) {
+                chipGroups.add(c.dataset.examChip);
+            });
+            var answered = chipGroups.size;
+            document.querySelectorAll('.exam-q-input').forEach(function (input) {
+                if (input.value.trim()) answered++;
+            });
+            var badge = document.getElementById('examProgress');
+            if (badge) badge.textContent = answered + ' / ' + TOTAL_QUESTIONS;
+        }
+
+        // ========== AUTOSAVE / RESTORE ==========
+        function collectAnswers() {
+            var answers = {};
+            document.querySelectorAll('.exam-q-chip.selected').forEach(function (c) {
+                answers[c.dataset.examChip] = c.dataset.value;
+            });
+            document.querySelectorAll('.exam-q-input').forEach(function (input) {
+                var v = input.value.trim();
+                if (v) answers[input.dataset.examInput] = v;
+            });
+            return answers;
+        }
+        function buildState() {
+            return { deadline: deadline, startedAt: startedAt, answers: collectAnswers(), savedAt: Date.now() };
+        }
+        function persistLocal() {
+            if (examFinished) return; // never resurrect a draft once the exam is finished
+            try { localStorage.setItem(STATE_KEY, JSON.stringify(buildState())); } catch (e) {}
+        }
+        var _fsTimer = 0;
+        function persistRemote() {
+            if (examFinished || USER_ID === 'guest' || !window.saveQuizResult) return;
+            clearTimeout(_fsTimer);
+            _fsTimer = setTimeout(function () {
+                if (examFinished) return;
+                try {
+                    window.saveQuizResult(USER_ID, EXAM_TOPIC_ID, { examDraft: buildState() }, COURSE).catch(function () {});
+                } catch (e) {}
+            }, 1200);
+        }
+        var _localTimer = 0;
+        var _autosaveInterval = 0;
+        function scheduleSave() {
+            if (examFinished) return;
+            clearTimeout(_localTimer);
+            _localTimer = setTimeout(function () { if (examFinished) return; persistLocal(); persistRemote(); flashAutosave(); }, 700);
+        }
+        function stopAutosave() {
+            clearTimeout(_localTimer);
+            clearTimeout(_fsTimer);
+            if (_autosaveInterval) { clearInterval(_autosaveInterval); _autosaveInterval = 0; }
+        }
+        function flashAutosave() {
+            var note = document.getElementById('examAutosaveNote');
+            if (!note) return;
+            note.innerHTML = '<i class="fas fa-check"></i> Saqlandi ' + new Date().toLocaleTimeString('ru-RU').slice(0, 5);
+        }
+        function applyAnswers(answers) {
+            if (!answers) return;
+            Object.keys(answers).forEach(function (key) {
+                var val = answers[key];
+                var chips = document.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]');
+                if (chips.length) {
+                    chips.forEach(function (c) {
+                        c.classList.toggle('selected', c.dataset.value === val);
+                    });
+                    return;
+                }
+                var input = document.querySelector('[data-exam-input="' + key + '"]');
+                if (input) input.value = val;
+            });
+            updateProgressCount();
+        }
+
+        // Poll for the Firestore-backed sync helpers (loaded by paid-platform.js).
+        function waitForSync(maxMs) {
+            return new Promise(function (resolve) {
+                if (window.getUserQuizResults) return resolve(true);
+                var waited = 0;
+                var iv = setInterval(function () {
+                    waited += 100;
+                    if (window.getUserQuizResults || waited >= maxMs) { clearInterval(iv); resolve(!!window.getUserQuizResults); }
+                }, 100);
+            });
+        }
+
+        async function loadSavedState() {
+            var local = null;
+            try { local = JSON.parse(localStorage.getItem(STATE_KEY) || 'null'); } catch (e) {}
+
+            var remote = null;
+            if (USER_ID !== 'guest') {
+                await waitForSync(3000);
+                if (window.getUserQuizResults) {
+                    try {
+                        var all = await window.getUserQuizResults(USER_ID, COURSE);
+                        var doc = all && all['topic_' + EXAM_TOPIC_ID];
+                        if (doc && doc.examDraft) remote = doc.examDraft;
+                    } catch (e) {}
+                }
+            }
+            // Prefer whichever copy was saved most recently (cross-device safe).
+            var chosen = local;
+            if (remote && (!local || (remote.savedAt || 0) > (local.savedAt || 0))) chosen = remote;
+            return chosen;
+        }
+
+        // ========== COMPLETION GATE — exam refuses to start unless the whole course is done ==========
+        var REQUIRED_TOPICS = 16;
+        var COURSE_PAGE = 'b2-course.html';
+        // Developer/Admin accounts bypass ALL completion gates (customers unaffected).
+        function isPrivilegedUser() {
+            try {
+                var r = String(((window.currentUser) || JSON.parse(localStorage.getItem('currentUser') || 'null') || {}).role || '').toLowerCase();
+                return r === 'developer' || r === 'admin';
+            } catch (e) { return false; }
+        }
+        /**
+         * EXAM ELIGIBILITY IS AUTHORITATIVE OR IT IS NOTHING.
+         *
+         * This used to fall back to localStorage whenever the remote read came
+         * back empty — which meant a learner could open the final exam by
+         * typing their own progress into DevTools, and it also meant a network
+         * blip was indistinguishable from a finished course. localStorage is
+         * still a fine cache for DRAFT ANSWERS and for RENDERING, and it is
+         * still used for both. It is never again allowed to decide whether the
+         * exam opens.
+         *
+         * Returns one of:
+         *   { ok: true,  count: <n> }        a real answer from the server
+         *   { ok: false, reason: 'sync' }    the read did not succeed
+         * Both non-passing cases fail closed; only the message differs.
+         */
+        async function readAuthoritativeCompletion() {
+            if (USER_ID === 'guest') return { ok: false, reason: 'sync' };
+            await waitForSync(3500);
+            if (!window.getAuthoritativeCourseProgress) {
+                /* The authoritative helper is part of paid-platform.js. If it
+                   is not there the page cannot authorise anything, so it says
+                   so rather than reaching for a local value. */
+                return { ok: false, reason: 'sync' };
+            }
+            try {
+                var p = await window.getAuthoritativeCourseProgress(USER_ID, COURSE);
+                var ids = (p && Array.isArray(p.completedTopics)) ? p.completedTopics : [];
+                return { ok: true, count: new Set(ids.filter(function (n) {
+                    return typeof n === 'number' && isFinite(n);
+                })).size };
+            } catch (e) {
+                return { ok: false, reason: 'sync' };
+            }
+        }
+
+        /* Distinct from showExamLocked(): the learner may well have finished
+           the course — we simply could not confirm it. Saying "you have not
+           completed the course" here would be a lie. */
+        function showExamSyncError() {
+            examFinished = true;
+            stopAutosave();
+            if (timerInterval) clearInterval(timerInterval);
+            var footer = document.getElementById('examFooterBar'); if (footer) footer.classList.add('hidden');
+            var timer = document.getElementById('examTimer'); if (timer) timer.style.visibility = 'hidden';
+            var note = document.getElementById('examAutosaveNote'); if (note) note.style.display = 'none';
+            var body = document.getElementById('examExercises');
+            if (body) {
+                body.innerHTML = '<div class="exam-intro" style="border-color:#FF9800;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);">'
+                    + '<div style="font-size:2.4rem;margin-bottom:8px;">\u26A0\uFE0F</div>'
+                    + '<div style="font-size:1.12rem;font-weight:800;margin-bottom:6px;">Kurs holatini tekshirib bo\'lmadi.</div>'
+                    + '<div style="font-size:0.95rem;font-weight:600;">Internet aloqasini tekshirib, qayta urinib ko\'ring.</div>'
+                    + '<div style="margin-top:16px;">'
+                    + '<button type="button" onclick="window.location.reload()" style="background:linear-gradient(135deg,#FF9800,#E65100);color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Qayta urinish</button> '
+                    + '<button type="button" onclick="window.location.href=\'' + COURSE_PAGE + '\'" style="background:#607d8b;color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Kursga qaytish</button>'
+                    + '</div></div>';
+            }
+            var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
+        }
+        function showExamLocked() {
+            examFinished = true;     // stop timer / autosave / beforeunload prompt
+            stopAutosave();
+            if (timerInterval) clearInterval(timerInterval);
+            var footer = document.getElementById('examFooterBar'); if (footer) footer.classList.add('hidden');
+            var timer = document.getElementById('examTimer'); if (timer) timer.style.visibility = 'hidden';
+            var note = document.getElementById('examAutosaveNote'); if (note) note.style.display = 'none';
+            var body = document.getElementById('examExercises');
+            if (body) {
+                body.innerHTML = '<div class="exam-intro" style="border-color:#F44336;background:linear-gradient(135deg,#FFEBEE,#FFCDD2);">'
+                    + '<div style="font-size:2.4rem;margin-bottom:8px;">🔒</div>'
+                    + '<div style="font-size:1.12rem;font-weight:800;margin-bottom:6px;">Kursni to\'liq tugatgandan so\'ng yakuniy imtihon ochiladi.</div>'
+                    + '<div style="font-size:0.95rem;font-weight:600;">B2 kursidagi barcha 16 ta mavzuni tugating. Kurs sahifasiga yo\'naltirilmoqda…</div>'
+                    + '<div style="margin-top:16px;"><button type="button" onclick="window.location.href=\'' + COURSE_PAGE + '\'" style="background:linear-gradient(135deg,#FF9800,#E65100);color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Kursga qaytish</button></div>'
+                    + '</div>';
+            }
+            var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
+            setTimeout(function () { window.location.href = COURSE_PAGE; }, 3500);
+        }
+
+        // ========== FINISH EXAM ==========
+        async function finishExam(isAutoFinish) {
+            if (examFinished) return;
+            examFinished = true;
+            clearInterval(timerInterval);
+            stopAutosave();
+
+            var elapsedSeconds = Math.round((Date.now() - startedAt) / 1000);
+            var timeUsed = formatTime(Math.min(Math.max(elapsedSeconds, 0), TOTAL_SECONDS));
+
+            var results = [];
+            var examAnswers = [];   /* per-group answers, sent to the server for grading */
+            var totalCorrect = 0;
+
+            FINAL_EXAM_DATA.forEach(function (section, sIdx) {
+                (section.items || []).forEach(function (item, qIdx) {
+                    var key = sIdx + '-' + qIdx;
+                    var mode = item.mode || section.type;
+                    var expected = item.answer;
+                    var userValue = '';
+                    var row = document.querySelector('[data-exam-row="' + key + '"]');
+
+                    if (mode === 'chip') {
+                        var selected = document.querySelector('.exam-q-chip[data-exam-chip="' + key + '"].selected');
+                        userValue = selected ? selected.dataset.value : '';
+                        document.querySelectorAll('.exam-q-chip[data-exam-chip="' + key + '"]').forEach(function (c) {
+                            c.classList.remove('correct', 'incorrect');
+                            if (c.classList.contains('selected')) {
+                                c.classList.add(examIsCorrect(userValue, expected) ? 'correct' : 'incorrect');
+                            }
+                            c.style.pointerEvents = 'none';
+                        });
+                    } else {
+                        var input = document.querySelector('[data-exam-input="' + key + '"]');
+                        userValue = input ? input.value.trim() : '';
+                        if (input) {
+                            input.classList.remove('correct', 'incorrect');
+                            input.readOnly = true;
+                            if (userValue) input.classList.add(examIsCorrect(userValue, expected) ? 'correct' : 'incorrect');
+                        }
+                    }
+
+                    var correct = examIsCorrect(userValue, expected);
+                    if (correct) totalCorrect++;
+                    if (row) {
+                        row.classList.remove('correct', 'incorrect');
+                        if (userValue) row.classList.add(correct ? 'correct' : 'incorrect');
+                    }
+                    /* Positional copy of what the learner typed/picked, aligned
+                       with FINAL_EXAM_DATA. This is ALL that goes to the server:
+                       it grades the exam itself and decides `passed`. */
+                    if (!examAnswers[sIdx]) examAnswers[sIdx] = [];
+                    examAnswers[sIdx][qIdx] = userValue;
+                    results.push({
+                        sIdx: sIdx, qIdx: qIdx, sectionTitle: section.title,
+                        question: item.q, userAnswer: userValue,
+                        correctAnswer: Array.isArray(expected) ? expected[0] : expected,
+                        isCorrect: correct
+                    });
+                });
+            });
+
+            var pct = Math.round((totalCorrect / TOTAL_QUESTIONS) * 100);
+            var finalScore = pct; // 100 questions -> score == percentage
+            var passed = pct >= 80;
+
+            /* The numbers above are a PREVIEW: they drive per-row highlighting
+               and nothing else. What the learner is told they scored comes back
+               from the server below. */
+            var preview = { finalScore: finalScore, pct: pct, totalCorrect: totalCorrect, passed: passed };
+            lastAttempt = { preview: preview, results: results, examAnswers: examAnswers,
+                            isAutoFinish: isAutoFinish, timeUsed: timeUsed };
+
+            var outcome = await persistResult(preview, isAutoFinish, timeUsed, examAnswers);
+            if (!outcome.ok) { renderSubmitError(outcome); return; }
+            renderResult(results, outcome.score, outcome.score, outcome.correct,
+                         outcome.passed, isAutoFinish, timeUsed);
+        }
+
+        /**
+         * THE SERVER'S VERDICT IS THE ONLY VERDICT.
+         *
+         * Everything below used to happen in the wrong order. The completion
+         * cache, the analytics event, the activity log, the stored quiz result
+         * and the draft deletion all ran from the CLIENT's own tally, before
+         * the server had been asked — and the server was only asked at all if
+         * the client had already decided the learner passed. A client that
+         * mis-scored, or a server that refused, still produced a page that said
+         * "passed", a cached completion flag and an exam_pass event.
+         *
+         * Now there is one order and it starts with the server:
+         *   submit -> verdict -> mirror it -> cache it -> announce it -> clear
+         *   the draft -> render it.
+         * If the verdict never arrives NOTHING in that list happens, the draft
+         * survives, and the learner is offered a retry of the same answers.
+         *
+         * Returns { ok: true, correct, total, score, passed, certificateUnlocked }
+         * or { ok: false, reason, status } — never a client-side guess.
+         */
+        async function persistResult(preview, isAutoFinish, timeUsed, examAnswers) {
+            /* GUEST/demo has no server to be authoritative. Unchanged behaviour:
+               a local preview, no completion cache, no certificate. */
+            if (USER_ID === 'guest') {
+                try { localStorage.removeItem(STATE_KEY); } catch (e) {}
+                return {
+                    ok: true, authoritative: false,
+                    correct: preview.totalCorrect, total: TOTAL_QUESTIONS,
+                    score: preview.pct, passed: preview.passed, certificateUnlocked: false
+                };
+            }
+
+            await waitForSync(3000);
+
+            /* ---- 1. AUTHORITATIVE SUBMISSION, BEFORE ANY SIDE EFFECT ---- */
+            var server = null, submitError = null;
+            try {
+                if (!window.submitFinalExam) throw new Error('submitFinalExam unavailable');
+                server = await window.submitFinalExam('B2', examAnswers);
+            } catch (e) {
+                submitError = e;
+            }
+            if (!server || typeof server.score !== 'number') {
+                /* NO VERDICT. The attempt is intact: the draft is untouched, no
+                   completion is cached, no analytics claim anything happened. */
+                console.error('Yakuniy imtihon natijasini tasdiqlab bo\'lmadi:', submitError);
+                return {
+                    ok: false,
+                    reason: submitError ? 'submit' : 'shape',
+                    status: (submitError && (submitError.status || submitError.statusCode)) || null
+                };
+            }
+
+            var correct = typeof server.correct === 'number' ? server.correct : preview.totalCorrect;
+            var total = typeof server.total === 'number' ? server.total : TOTAL_QUESTIONS;
+            var score = server.score;
+            var passed = server.passed === true;
+            if (score !== preview.pct) {
+                /* Diagnostics only — the learner is shown the server's numbers. */
+                console.warn('Exam preview ' + preview.pct + '% differs from recorded ' + score + '%');
+            }
+
+            /* ---- 2. THE STORED RESULT MIRRORS THE SERVER ---- */
+            var resultData = {
+                score: correct, total: total, finalScore: score,
+                percentage: score, passed: passed, autoFinished: !!isAutoFinish,
+                timeUsed: timeUsed, timestamp: new Date().toISOString()
+            };
+            try {
+                if (window.saveQuizResult) {
+                    await window.saveQuizResult(USER_ID, EXAM_TOPIC_ID, { examResult: resultData, examDraft: null }, COURSE);
+                }
+            } catch (e) {}
+
+            /* ---- 3. COMPLETION CACHE ONLY ON A SERVER PASS ----
+               Non-authoritative by design: the course page reads it as a hint,
+               and the certificate is issued off the server's own flag. */
+            try {
+                if (passed) {
+                    localStorage.setItem(COMPLETION_KEY, JSON.stringify({
+                        finalExamPassed: true, courseCompleted: true,
+                        certificateUnlocked: server.certificateUnlocked !== false,
+                        finalExamScore: score, finalExamCompletedAt: resultData.timestamp
+                    }));
+                }
+            } catch (e) {}
+
+            /* ---- 4. ANALYTICS AND ACTIVITY FOLLOW THE VERDICT ---- */
+            try {
+                if (typeof window.uzTrack === 'function') {
+                    window.uzTrack(passed ? 'exam_pass' : 'exam_fail', {
+                        course: 'B2', level: 'B2', score: score
+                    });
+                }
+            } catch (e) {}
+            try {
+                if (passed && window.currentUser && window.logActivity) {
+                    window.logActivity(window.currentUser.email,
+                        (window.currentUser.name || 'Foydalanuvchi') + ' B2 yakuniy imtihonidan o\'tdi (' + score + '%)',
+                        'course_visit').catch(function () {});
+                }
+            } catch (e) {}
+
+            /* ---- 5. THE ATTEMPT IS BANKED — THE DRAFT MAY GO ---- */
+            try { localStorage.removeItem(STATE_KEY); } catch (e) {}
+
+            return {
+                ok: true, authoritative: true,
+                correct: correct, total: total, score: score, passed: passed,
+                certificateUnlocked: server.certificateUnlocked === true
+            };
+        }
+
+        /* The captured attempt, kept so a failed submission can be retried
+           without re-answering anything and without touching the clock. */
+        var lastAttempt = null;
+
+        /* No verdict was obtained. Say exactly that — never "passed", never
+           "failed" — and offer to send the SAME answers again. */
+        function renderSubmitError(outcome) {
+            var fb = document.getElementById('examFeedback');
+            if (!fb) return;
+            var incomplete = outcome && outcome.status === 409;
+            var msg = incomplete
+                ? 'Kurs to\'liq tugatilmagan. Yakuniy imtihon natijasi qabul qilinmadi.'
+                : 'Natijani serverda tasdiqlab bo\'lmadi. Javoblaringiz saqlandi. Qayta urinib ko\'ring.';
+            fb.innerHTML = '<div class="exam-result-box" style="border-color:#FF9800;">'
+                + '<div class="exam-result-headline">' + msg + '</div>'
+                + (incomplete ? '' : '<div style="margin-top:16px;"><button type="button" class="exam-detail-toggle" id="examRetrySubmitBtn">Qayta yuborish</button></div>')
+                + '</div>';
+            var retry = document.getElementById('examRetrySubmitBtn');
+            if (retry) retry.onclick = retrySubmit;
+        }
+
+        /* Resubmit the captured attempt. The timer is NOT restarted and the
+           paper is NOT rebuilt — this is the same attempt, sent again. */
+        async function retrySubmit() {
+            if (!lastAttempt) return;
+            var btn = document.getElementById('examRetrySubmitBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Yuborilmoqda…'; }
+            var outcome = await persistResult(lastAttempt.preview, lastAttempt.isAutoFinish,
+                lastAttempt.timeUsed, lastAttempt.examAnswers);
+            if (!outcome.ok) { renderSubmitError(outcome); return; }
+            renderResult(lastAttempt.results, outcome.score, outcome.score,
+                outcome.correct, outcome.passed, lastAttempt.isAutoFinish, lastAttempt.timeUsed);
+        }
+        function renderResult(results, finalScore, pct, totalCorrect, passed, isAutoFinish, timeUsed) {
+            var fbHtml = '<div class="exam-result-box ' + (passed ? 'passed' : 'failed') + '">';
+            fbHtml += '<div class="exam-result-score">' + finalScore + ' / 100</div>';
+            fbHtml += '<div class="exam-result-details">' + totalCorrect + ' / ' + TOTAL_QUESTIONS + " to'g'ri javob (" + pct + '%)</div>';
+            fbHtml += '<div class="exam-result-status ' + (passed ? 'pass' : 'fail') + '">' + (passed ? "O'tdingiz ✓" : "O'tmadingiz ✗") + '</div>';
+            if (passed) {
+                fbHtml += '<div class="exam-result-headline">🎉 B2 kursi muvaffaqiyatli tugatildi</div>';
+                fbHtml += '<div class="exam-result-cert-note"><i class="fas fa-certificate"></i> Tabriklaymiz! B2 sertifikatingiz ochildi. Uni kurs sahifasidan ko\'rishingiz mumkin.</div>';
+            } else {
+                fbHtml += '<div class="exam-result-headline">Imtihondan o\'tmadingiz. Qayta urinib ko\'ring.</div>';
+                fbHtml += '<div class="exam-result-details">O\'tish uchun kamida 80 ball (80%) kerak.</div>';
+            }
+            if (isAutoFinish) fbHtml += '<div class="exam-result-time-info">⏰ Imtihon vaqti tugagani uchun avtomatik yakunlandi</div>';
+            else fbHtml += '<div class="exam-result-time-info">⏱ Sarflangan vaqt: ' + timeUsed + '</div>';
+            fbHtml += '<br><button type="button" class="exam-detail-toggle" id="examDetailToggleBtn">Batafsil natijalarni ko\'rish</button>';
+            fbHtml += '</div>';
+
+            fbHtml += '<div class="exam-detail-section" id="examDetailSection">';
+            var groups = {};
+            results.forEach(function (r) {
+                if (!groups[r.sIdx]) groups[r.sIdx] = { title: r.sectionTitle, items: [] };
+                groups[r.sIdx].items.push(r);
+            });
+            Object.keys(groups).forEach(function (k) {
+                var group = groups[k];
+                var c = group.items.filter(function (r) { return r.isCorrect; }).length;
+                fbHtml += '<div class="exam-detail-exercise">';
+                fbHtml += '<div class="exam-detail-exercise-title" data-exam-detail-toggle="' + k + '">';
+                fbHtml += escHtml(group.title) + ' — ' + c + '/' + group.items.length;
+                fbHtml += '</div>';
+                fbHtml += '<div class="exam-detail-items" id="examDetailItems' + k + '">';
+                group.items.forEach(function (r, i) {
+                    var cls = r.isCorrect ? 'edi-ok' : 'edi-bad';
+                    var icon = r.isCorrect ? '✓' : '✗';
+                    fbHtml += '<div class="exam-detail-item">';
+                    fbHtml += '<span class="edi-status ' + cls + '">' + icon + '</span> ';
+                    fbHtml += '<strong>' + (i + 1) + '.</strong> ' + renderQ(r.question) + ' ';
+                    fbHtml += 'Javob: <em>' + escHtml(r.userAnswer || '(kiritilmagan)') + '</em>';
+                    if (!r.isCorrect) fbHtml += ' → To\'g\'ri: <strong>' + escHtml(r.correctAnswer) + '</strong>';
+                    fbHtml += '</div>';
+                });
+                fbHtml += '</div></div>';
+            });
+            fbHtml += '</div>';
+
+            fbHtml += '<div style="text-align:center; margin-top: 24px;">';
+            fbHtml += '<button class="exam-back-btn" id="examBackBtn" type="button"><i class="fas fa-arrow-left"></i> B2 kursga qaytish</button>';
+            if (!passed) fbHtml += '<button class="exam-retake-btn" id="examRetakeBtn" type="button"><i class="fas fa-redo"></i> Qayta urinib ko\'rish</button>';
+            fbHtml += '</div>';
+
+            var feedbackDiv = document.getElementById('examFeedback');
+            if (feedbackDiv) {
+                feedbackDiv.innerHTML = fbHtml;
+                feedbackDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                var toggleBtn = document.getElementById('examDetailToggleBtn');
+                var detailSection = document.getElementById('examDetailSection');
+                if (toggleBtn && detailSection) {
+                    toggleBtn.addEventListener('click', function () {
+                        detailSection.classList.toggle('visible');
+                        this.textContent = detailSection.classList.contains('visible')
+                            ? 'Batafsil natijalarni yashirish' : "Batafsil natijalarni ko'rish";
+                    });
+                }
+                feedbackDiv.querySelectorAll('[data-exam-detail-toggle]').forEach(function (title) {
+                    title.addEventListener('click', function () {
+                        var items = document.getElementById('examDetailItems' + this.dataset.examDetailToggle);
+                        if (items) items.classList.toggle('visible');
+                    });
+                });
+                var backBtn = document.getElementById('examBackBtn');
+                if (backBtn) backBtn.addEventListener('click', function () { window.location.href = 'b2-course.html#finalExamEntry'; });
+                var retakeBtn = document.getElementById('examRetakeBtn');
+                if (retakeBtn) retakeBtn.addEventListener('click', function () {
+                    try { localStorage.removeItem(STATE_KEY); } catch (e) {}
+                    window.location.reload();
+                });
+            }
+
+            var footerBar = document.getElementById('examFooterBar');
+            if (footerBar) footerBar.classList.add('hidden');
+        }
+
+        // ========== BEFOREUNLOAD WARNING ==========
+        window.addEventListener('beforeunload', function (e) {
+            if (!examFinished) {
+                // Make sure the latest answers + deadline are flushed before leaving.
+                persistLocal();
+                e.preventDefault();
+                e.returnValue = 'Imtihonni tark etmoqchimisiz? Javoblaringiz saqlanadi va keyin davom ettirishingiz mumkin.';
+                return e.returnValue;
+            }
+        });
+
+        // ========== EXIT / BACK CONFIRMATION (styled modal) ==========
+        var COURSE_RETURN_URL = 'b2-course.html#finalExamEntry';
+        var pendingExitUrl = COURSE_RETURN_URL;
+        var examExitOverlay = document.getElementById('examExitOverlay');
+
+        function requestExit(url) {
+            pendingExitUrl = url || COURSE_RETURN_URL;
+            if (examFinished) { window.location.href = pendingExitUrl; return; }
+            if (examExitOverlay) examExitOverlay.classList.add('show');
+        }
+
+        document.getElementById('examExitCancel').addEventListener('click', function () {
+            if (examExitOverlay) examExitOverlay.classList.remove('show');
+        });
+        document.getElementById('examExitConfirm').addEventListener('click', function () {
+            try { persistLocal(); } catch (e) {}  // autosave answers before leaving
+            examFinished = true; // intentional exit — suppress the beforeunload prompt
+            window.location.href = pendingExitUrl;
+        });
+
+        // Header "Chiqish" button -> styled confirmation modal.
+        document.getElementById('examExitBtn').addEventListener('click', function () {
+            requestExit(COURSE_RETURN_URL);
+        });
+
+        // Intro navigation links ("Kursga qaytish" / "Shaxsiy kabinet").
+        Array.prototype.forEach.call(document.querySelectorAll('[data-exam-exit]'), function (el) {
+            el.addEventListener('click', function (ev) {
+                ev.preventDefault();
+                requestExit(el.getAttribute('href'));
+            });
+        });
+
+        // Browser BACK button -> intercept while the exam is active and confirm first.
+        function armBackGuard() {
+            try { history.pushState({ uznExamGuard: true }, ''); } catch (e) { return; }
+            window.addEventListener('popstate', function () {
+                if (examFinished) return; // exam done — allow normal navigation
+                try { history.pushState({ uznExamGuard: true }, ''); } catch (e) {}
+                requestExit(COURSE_RETURN_URL);
+            });
+        }
+
+        // ========== SUBMIT BUTTON ==========
+        document.getElementById('examSubmitBtn').addEventListener('click', function () {
+            if (confirm('Imtihonni yakunlash va javoblarni tekshirishni xohlaysizmi? Yakunlangandan keyin javoblarni o\'zgartirib bo\'lmaydi.')) {
+                finishExam(false);
+            }
+        });
+
+        // ========== PERIODIC AUTOSAVE (every 30s) ==========
+        _autosaveInterval = setInterval(function () { if (!examFinished) { persistLocal(); persistRemote(); flashAutosave(); } }, 30000);
+
+        // ========== INIT ==========
+        (async function init() {
+            // Gate: refuse to render / start the exam unless ALL 16 topics are completed.
+            // Developer/Admin bypass the gate entirely; customers are unaffected.
+            if (!isPrivilegedUser()) {
+                /* Fail closed on BOTH branches: an unconfirmed course state
+                   never opens the exam, it only changes what we tell them. */
+                var progress = await readAuthoritativeCompletion();
+                if (!progress.ok) { showExamSyncError(); return; }
+                if (progress.count < REQUIRED_TOPICS) { showExamLocked(); return; }
+            }
+
+            renderExam();
+
+            var saved = await loadSavedState();
+            if (saved && saved.deadline && saved.deadline > Date.now()) {
+                // Resume an in-progress exam.
+                deadline = saved.deadline;
+                startedAt = saved.startedAt || Date.now();
+                applyAnswers(saved.answers);
+            } else if (saved && saved.deadline && saved.deadline <= Date.now()) {
+                // The clock already ran out while away — restore answers and auto-submit.
+                deadline = saved.deadline;
+                startedAt = saved.startedAt || (saved.deadline - TOTAL_SECONDS * 1000);
+                applyAnswers(saved.answers);
+                updateProgressCount();
+                startTimer(); // will detect <=0 and call timeUp()
+                return;
+            } else {
+                // Fresh exam.
+                startedAt = Date.now();
+                deadline = startedAt + TOTAL_SECONDS * 1000;
+                persistLocal();
+            }
+
+            updateProgressCount();
+            startTimer();
+            armBackGuard();
+        })();
+
+    })();
+    </script>
+</body>
+</html>

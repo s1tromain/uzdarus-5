@@ -15,5 +15,8 @@
       "Bash(sed -n '1145,1162p' b2-demo-vocabulary.html)",
       "Bash(python -)"
     ]
-  }
+  },
+  "disabledMcpjsonServers": [
+    "claude-flow"
+  ]
 }

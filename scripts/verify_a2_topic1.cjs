@@ -140,7 +140,39 @@ eq('re-render does not duplicate cards', w.document.getElementById('quizSection'
 
 // ============================ GRADING + COMPLETION ============================
 console.log('\n[G] Grading, feedback and completion');
-w.eval("window.__saved = null; window.saveQuizResultToFirebase = async function(id, d){ window.__saved = { id: id, d: d }; }; window.saveProgressToFirebase = async function(){ window.__progressSaved = true; };");
+/* STUB THE NETWORK, NOT THE PAGE'S OWN FUNCTION.
+   saveProgressToFirebase used to be replaced wholesale, which meant the thing
+   under test never ran: the page pushed the topic id locally anyway, so the
+   stub's silence did not show. Completion now comes from the SERVER's array,
+   so replacing the function removes the only thing that could set it. The
+   component call is stubbed instead and the real saveProgressToFirebase runs,
+   which is what the learner's browser does. */
+w.eval("window.__saved = null;" +
+  " window.saveQuizResultToFirebase = async function(id, d){ window.__saved = { id: id, d: d }; };");
+if (IS_DEMO) {
+    /* THE DEMO HAS NO SERVER. It keeps the legacy whole-topic flow on purpose,
+       so it is stubbed the way it has always been rather than bent into the
+       paid component contract. */
+    w.eval("window.saveProgressToFirebase = async function(){ window.__progressSaved = true; return true; };");
+} else {
+    /* THE PAID PAGE: stub the NETWORK, not the page's own function.
+       saveProgressToFirebase used to be replaced wholesale, which meant the
+       thing under test never ran — the page pushed the topic id locally anyway,
+       so the stub's silence did not show. Completion now comes from the
+       SERVER's array, so replacing the function removes the only thing that
+       could set it. The component call is stubbed instead and the real
+       saveProgressToFirebase runs, which is what the learner's browser does. */
+    w.eval("window.currentUserId = 'uid-smoke';" +
+      " window.completeCourseTopic = async function(){ return []; };" +
+      " window.completeCourseComponent = async function(course, topicId, component){" +
+      "   window.__progressSaved = true;" +
+      "   window.__componentCalls = (window.__componentCalls || []);" +
+      "   window.__componentCalls.push({ course: course, topicId: topicId, component: component });" +
+      "   return { ok: true, course: course, topicId: topicId, component: component," +
+      "     components: { vocabularyCompleted: true, exercisesCompleted: true }," +
+      "     topicCompleted: true, completedTopics: [topicId], nextTopic: topicId + 1 };" +
+      " };");
+}
 
 function fillAll(correct) {
   groups.forEach(g => g.items.forEach((item, i) => {
@@ -186,8 +218,22 @@ eq('correct options marked ok', qs.querySelectorAll('.t1-opt.t1-ok').length, 20)
 w.__api.resetCompleted();
 btn.onclick();
 await new Promise(r => setTimeout(r, 20));
+/* THE SAVE'S ANSWER IS NOW LOAD-BEARING. The page used to push the topic id
+   locally and then save, ignoring the result, so a refused save still showed the
+   topic finished. It now completes only on a save that reported success — which
+   is what the shipped saveProgressToFirebase returns — so the stub above has to
+   answer like the real one. */
 ok('topic 1 recorded as completed', w.__api.isDone(1));
 ok('progress persisted', !!w.__progressSaved);
+/* and it was reported as the EXERCISES HALF of this topic, under A2 — the
+   whole-topic claim no longer completes anything server-side. */
+if (!IS_DEMO) {
+    const c = (w.__componentCalls || [])[0];
+    ok('the completion reported a component', !!c);
+    eq('under course A2', c && c.course, 'A2');
+    eq('for topic 1', c && c.topicId, 1);
+    eq('and it is the exercises half', c && c.component, 'exercises');
+}
 
 // --- failing run must NOT complete ---
 w.__api.resetCompleted();

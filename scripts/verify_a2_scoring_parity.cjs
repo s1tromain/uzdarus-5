@@ -131,6 +131,47 @@ function itemParity(w) {
 }
 
 /* ------------------------------------------------------------------ 2. SCORE-LEVEL PARITY */
+/**
+ * A deterministic latch on the legacy publish.
+ *
+ * The legacy path finishes by assigning `userQuizResults["topic_<id>"]`. An
+ * accessor property on that exact key turns the assignment into a resolved
+ * promise, so the test resumes in the same tick the record is published —
+ * no polling, no timing budget, no sensitivity to machine load.
+ *
+ * `settled()` still races a bounded safety timeout so that a record which is
+ * genuinely never published FAILS the suite instead of hanging it.
+ */
+const PUBLISH_SAFETY_MS = Number(process.env.A2_PARITY_SAFETY_MS || 20000);
+
+function publishLatch(w, topicId) {
+    const store = w.__api.uqr();
+    const key = 'topic_' + topicId;
+    delete store[key];                       // observe only THIS run's write
+    let value, resolve;
+    const published = new Promise(r => { resolve = r; });
+    Object.defineProperty(store, key, {
+        configurable: true, enumerable: true,
+        get() { return value; },
+        set(v) { value = v; resolve(v); }
+    });
+    const latch = {
+        timedOut: false,
+        async settled() {
+            let timer;
+            const safety = new Promise(r => { timer = setTimeout(() => r(null), PUBLISH_SAFETY_MS); });
+            const rec = await Promise.race([published, safety]);
+            clearTimeout(timer);
+            latch.timedOut = rec === null || rec === undefined;
+            /* hand the key back as a plain data property */
+            delete store[key];
+            if (value !== undefined) store[key] = value;
+            return rec;
+        }
+    };
+    return latch;
+}
+
 async function scoreParity(w, topicId, targets) {
     const topic = w.__api.courseData.topics.find(t => t.id === topicId);
     const ex = w.__api.exData(topic);
@@ -149,29 +190,27 @@ async function scoreParity(w, topicId, targets) {
         const answers = {};
         keys.forEach((k, i) => { answers[k.key] = i < want ? correctValue(k.item) : WRONG; });
         s.answers = answers;
-        delete w.__api.uqr()['topic_' + topicId];   // so we observe THIS run's write
+        /* publishLatch clears the slot itself, so THIS run's write is observed */
+        /* DETERMINISTIC SYNCHRONISATION.
+           a2PersistAttempt() publishes by a direct assignment:
+
+               userQuizResults["topic_" + topicId] = data;
+
+           …after its awaited Firebase write. The old code POLLED that slot on a
+           fixed budget, which made the test load-sensitive: under a full
+           `npm test` (Chrome viewport suites running alongside) the budget
+           expired and the run reported `undefined` as a score mismatch — an
+           impatient test masquerading as a scoring regression.
+
+           publishLatch() installs an accessor on exactly that key, so the wait
+           ends on the assignment ITSELF, in the same tick it happens. There is
+           no budget to outrun and nothing to tune. The bounded race below is a
+           safety net only: it exists so a record that genuinely never arrives
+           FAILS instead of hanging the suite for ever. */
+        const latch = publishLatch(w, topicId);
         s._finish();
-        /* The legacy check is async (it awaits the Firebase write before
-           publishing the record). Wait for the write rather than guessing. */
-        /* The legacy path publishes its record after an awaited Firebase
-           write, so this polls rather than guesses. The old budget was 100 x
-           20ms = 2s, which is ample on an idle machine and NOT ample during a
-           full `npm test`, where the Chrome viewport suites are running beside
-           it — the poll would give up and the run reported `undefined` as a
-           score mismatch, which looked like a scoring regression and was really
-           an impatient test. Waiting longer does not weaken the comparison: the
-           record either appears and is compared, or it genuinely never came and
-           is reported as exactly that. */
-        let timedOut = false;
-        const rec = await (async () => {
-            for (let i = 0; i < 600; i++) {          // up to 12s
-                const v = w.__api.uqr()['topic_' + topicId];
-                if (v) return v;
-                await new Promise(r => setTimeout(r, 20));
-            }
-            timedOut = true;
-            return {};
-        })();
+        const rec = (await latch.settled()) || {};
+        const timedOut = latch.timedOut;
         ok(!timedOut, `topic ${topicId}@${want}: the legacy record was published`);
 
         const eng = spy.engine || {};

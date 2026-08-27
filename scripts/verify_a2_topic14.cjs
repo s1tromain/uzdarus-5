@@ -557,9 +557,18 @@ const EXPECTED = [
         w.alert = () => {}; w.confirm = () => true;
         w.eval('window.__claims=[];window.__safe=[];window.currentUserId="u1";' +
             'window.saveQuizResult=async()=>1;' +
-            'window.completeCourseTopic=async function(c,t){window.__claims.push({c:c,t:t});' +
+            /* A2 reports the EXERCISES HALF now: complete-topic finalises only
+               what the component record earns, so a whole-topic claim could never
+               append and A2 topics never completed. The legacy route is stubbed
+               too, so a regression back to it shows up as a claim carrying no
+               component. */
+            'window.completeCourseComponent=async function(c,t,cm){window.__claims.push({c:c,t:t,cm:cm});' +
             ' window.__srv=Array.from(new Set([...(window.__srv||[]),t])).sort((a,b)=>a-b);' +
-            ' return window.__srv.slice();};' +
+            ' return {ok:true,course:c,topicId:t,component:cm,' +
+            '  components:{vocabularyCompleted:true,exercisesCompleted:true},' +
+            '  topicCompleted:true,completedTopics:window.__srv.slice(),nextTopic:t+1};};' +
+            'window.completeCourseTopic=async function(c,t){window.__claims.push({c:c,t:t});' +
+            ' return window.__srv ? window.__srv.slice() : [];};' +
             'window.saveUserProgress=async function(u,c,p){window.__safe.push(p);return 1;};' +
             'window.getUserProgress=async()=>({completedTopics:[1,2,3,4,5,6,7]});' +
             'window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};');
@@ -622,6 +631,8 @@ const EXPECTED = [
         await new Promise((r) => setTimeout(r, 150));
         eq('exactly one completion claim', w.__claims.length, 1);
         eq('the claim names course A2', w.__claims[0].c, 'A2');
+        eq('and it claims the EXERCISES half, not the whole topic',
+            w.__claims[0].cm, 'exercises');
         eq('the claim names topic 14', w.__claims[0].t, 14);
         ok(w.__api.getCompleted().includes(14), 'the server answer is adopted');
         ok(w.__safe.every((p) => !('completedTopics' in p)),
@@ -632,7 +643,8 @@ const EXPECTED = [
         /* A REFUSED server save must not unlock anything. */
         {
             const wf = boot();
-            wf.eval('window.completeCourseTopic=async function(){throw new Error("offline");};');
+            wf.eval('window.completeCourseComponent=async function(){throw new Error("offline");};' +
+                    'window.completeCourseTopic=async function(){throw new Error("offline");};');
             wf.__api.setCompleted(DONE.slice());
             wf.eval('currentTopicId=14;');
             wf.__api.loadLesson(14);
@@ -684,19 +696,34 @@ const EXPECTED = [
             if (titlesOnScreen() > 1) multiOnScreen++;
             const g = groups[i];
             (g.items || []).forEach((it, k) => {
+                /* ANSWER EACH STEP, PROPERLY. These fills looked only for the
+                   topic-1 markup, so on a topic rendered by the shared
+                   course-exercise-ui (data-b2h-*) nothing was answered: every
+                   step scored zero and the walkthrough advanced anyway, because
+                   A2 had no pass gate. A2 now enforces the platform 80% rule.
+                   `answerFor` stays the source of truth for the value — this
+                   only widens WHERE it is written. */
                 const key = g.id + '-' + k;
-                const row = host().querySelector(`[data-t1-row="${key}"]`);
-                if (row) {
-                    const want = Array.isArray(it.answer) ? it.answer[0] : it.answer;
-                    const b = [...row.querySelectorAll('.t1-opt')]
-                        .find((x) => x.getAttribute('data-value') === want);
-                    if (b) b.dispatchEvent(new w2.MouseEvent('click', { bubbles: true }));
-                }
-                const inp = host().querySelector(`[data-t1-input="${key}"]`);
-                if (inp) {
-                    inp.value = answerFor(g, it, k);
-                    inp.dispatchEvent(new w2.Event('input', { bubbles: true }));
-                }
+                const want = answerFor(g, it, k);
+                ['t1', 'b2h'].forEach((ns) => {
+                    const row = host().querySelector(`[data-${ns}-row="${key}"]`);
+                    if (row) {
+                        const b = [...row.querySelectorAll('.t1-opt, .b2h-opt')]
+                            .find((x) => x.getAttribute('data-value') === want);
+                        if (b) b.dispatchEvent(new w2.MouseEvent('click', { bubbles: true }));
+                    }
+                    const inp = host().querySelector(`[data-${ns}-input="${key}"]`);
+                    if (inp) {
+                        inp.value = want;
+                        inp.dispatchEvent(new w2.Event('input', { bubbles: true }));
+                    }
+                });
+                try {
+                    const UI = w2.UzExerciseUI;
+                    if (UI && typeof UI.writeAnswer === 'function') {
+                        UI.writeAnswer(host(), key, want, g, it);
+                    }
+                } catch (e) { /* a type that cannot be written is left to the clicks */ }
             });
             if (g.id === 'ex8') {
                 ok(/Что лучше: чай или кофе\?/.test(host().textContent),

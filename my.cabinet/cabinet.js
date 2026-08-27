@@ -22,7 +22,8 @@ import {
     collection,
     getDocs,
     isAccountFrozen,
-    getFreezeState
+    getFreezeState,
+    getCoursePrerequisiteState
 } from '../firebase-client.js';
 import { getTariffDisplayName } from '../tariff-display.js';
 
@@ -591,7 +592,12 @@ function createPackCard({ title, description, href, enabled }) {
     return card;
 }
 
-function createCourseCard({ courseCode, title, description, href, progress, comingSoon = false, hasAccess = true, vocabLearned = 0 }) {
+/* A course card has FOUR states, not two. Before this the card knew only
+   "open" and "Ruxsat yo‘q", so a learner who had paid for the A1A2 pack but
+   not yet finished A1 was shown a no-access button — which reads as a
+   billing failure for something they already own. `prerequisite` is the
+   state that says: you have paid, you have simply not earned it yet. */
+function createCourseCard({ courseCode, title, description, href, progress, comingSoon = false, hasAccess = true, vocabLearned = 0, prerequisite = null }) {
     const card = document.createElement('article');
     card.className = 'pack-card course-card';
     if (comingSoon) {
@@ -647,6 +653,15 @@ function createCourseCard({ courseCode, title, description, href, progress, comi
         lockedBtn.type = 'button';
         lockedBtn.disabled = true;
         lockedBtn.textContent = COMING_SOON_LABEL;
+        card.appendChild(lockedBtn);
+    } else if (hasAccess && prerequisite && prerequisite.satisfied === false) {
+        card.classList.add('course-card-locked');
+        const lockedBtn = document.createElement('button');
+        lockedBtn.className = 'btn btn-secondary';
+        lockedBtn.type = 'button';
+        lockedBtn.disabled = true;
+        lockedBtn.textContent = prerequisite.message;
+        lockedBtn.setAttribute('data-prerequisite', prerequisite.required || '');
         card.appendChild(lockedBtn);
     } else if (hasAccess) {
         const actionLink = document.createElement('a');
@@ -742,6 +757,9 @@ function renderDashboardCourses(container, profile, privilegedRole) {
             progress,
             comingSoon: isCourseComingSoon(courseCode, privilegedRole),
             hasAccess: canAccessPaid(profile, packCode).allowed,
+            /* Same helper the paid pages use, so the cabinet and the page
+               gate can never disagree about who may open a course. */
+            prerequisite: getCoursePrerequisiteState(profile, courseCode),
             vocabLearned: getVocabLearnedCount(profile?.courses?.[courseCode])
         });
 

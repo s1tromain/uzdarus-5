@@ -33,7 +33,12 @@ function boot(rel){
   /* The demo build redirects a signed-OUT visitor to auth.html — that guard is
      the access system working, so give the harness a real session. */
   w.eval("window.localStorage.setItem('currentUser',JSON.stringify({id:'dev',uid:'dev',role:'developer',name:'Dev',email:'dev@uzdarus.local'}));window.currentUser={id:'dev',uid:'dev',role:'developer',name:'Dev',email:'dev@uzdarus.local'};");
-  w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};window.__saves=[];window.saveQuizResultToFirebase=async function(i,dd){window.__saves.push({id:i,score:dd.score,total:dd.total});};window.saveProgressToFirebase=async function(){window.__ps=(window.__ps||0)+1;};");
+  /* STUB THE NETWORK, NOT THE PAGE'S OWN FUNCTION. Replacing
+     saveProgressToFirebase wholesale used to be harmless because the page
+     pushed the topic id locally before saving and ignored the answer.
+     Completion now comes from the SERVER's array, so the real function has
+     to run — the component call underneath it is what gets stubbed. */
+  w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};window.__saves=[];window.saveQuizResultToFirebase=async function(i,dd){window.__saves.push({id:i,score:dd.score,total:dd.total});};window.currentUserId='uid-audit';window.completeCourseTopic=async function(){return window.__srv?window.__srv.slice():[];};window.completeCourseComponent=async function(c,t,cm){window.__ps=(window.__ps||0)+1;window.__srv=Array.from(new Set([...(window.__srv||[]),t])).sort(function(a,b){return a-b;});return {ok:true,course:c,topicId:t,component:cm,components:{vocabularyCompleted:true,exercisesCompleted:true},topicCompleted:true,completedTopics:window.__srv.slice(),nextTopic:t+1};};");
   if(pre)w.eval(pre);
   w.eval(main+'\n;window.__api={cd:courseData,loadLesson:loadLesson,loadQuiz:loadQuiz,getT1ExData:getT1ExData,'+
    'reset:function(){completedTopics.length=0;},done:function(i){return completedTopics.includes(i);},'+
@@ -44,7 +49,7 @@ function boot(rel){
      and would otherwise clobber a stub installed earlier. */
   w.eval("window.__saves=[];window.__ps=0;"+
          "window.saveQuizResultToFirebase=async function(i,dd){window.__saves.push({id:i,score:dd.score,total:dd.total});};"+
-         "window.saveProgressToFirebase=async function(){window.__ps=(window.__ps||0)+1;};"+
+         "window.currentUserId='uid-audit';window.completeCourseTopic=async function(){return window.__srv?window.__srv.slice():[];};window.completeCourseComponent=async function(c,t,cm){window.__ps=(window.__ps||0)+1;window.__srv=Array.from(new Set([...(window.__srv||[]),t])).sort(function(a,b){return a-b;});return {ok:true,course:c,topicId:t,component:cm,components:{vocabularyCompleted:true,exercisesCompleted:true},topicCompleted:true,completedTopics:window.__srv.slice(),nextTopic:t+1};};"+
          "window.loadTopics=window.loadTopics||function(){};");
   return {w,SRC,errs,warns,d};
 }

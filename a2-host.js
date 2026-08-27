@@ -30,7 +30,7 @@
  *   sentence-builder.js     word-card exercises                    (with B2)
  *   exercise-session.js     the stepping modal, autosave, resume   (with B2)
  *
- * A2 supplies no passScore and no completion gate: progression rules are
+ * A2 supplies the platform passScore (80). Topic COMPLETION rules are
  * exactly what they were before this file existed.
  * ==========================================================================*/
 (function (global) {
@@ -39,6 +39,11 @@
     if (global.A2Host) return;
 
     function ui() { return global.UzExerciseUI; }
+    /* THE PLATFORM LESSON THRESHOLD. Every scored exercise group must reach
+       it on its own before the next one opens — the same rule and the same
+       number A1, B1 and B2 use. Final exams are a separate contract. */
+    var PASS_PERCENT = 80;
+
     function session() { return global.UzExerciseSession; }
 
     /* ------------------------------------------------- the legacy substrate */
@@ -198,7 +203,10 @@
                 groups: [g],
                 mountEl: holder,
                 title: g.title || 'Mashq',
-                /* No passScore and no stepGate: A2 progression is untouched. */
+                /* The per-exercise gate. The engine owns the comparison; this
+                   only says where the bar is. Topic completion is still decided
+                   by the page, not here. */
+                passScore: PASS_PERCENT,
                 renderGroup: ui().renderGroup,
                 bindGroup: function (root) {
                     ui().bindGroup(root);
@@ -402,22 +410,58 @@
             writeAnswer: ui().writeAnswer,
             matchItem: ui().matchItem,
             afterCheck: ui().afterCheck,
-            /* No passScore and no stepGate: A2 progression is untouched. */
-            draft: {
-                load: function () {
-                    var answers = {}, any = false;
-                    groups.forEach(function (g) {
-                        (g.items || []).forEach(function (item, i) {
-                            var v = api.readLegacy(g, i);
-                            answers[g.id + '-' + i] = v;
-                            if (v) any = true;
+            /* The per-exercise gate — same threshold as the single-group mount
+               above, read from the one constant so they cannot drift. */
+            passScore: PASS_PERCENT,
+            /* THE DRAFT IS SCOPED, FINGERPRINTED, AND CARRIES THE WHOLE ATTEMPT.
+            
+               A2 used to reconstruct a draft from its legacy per-answer fields.
+               That restored what the learner had TYPED and nothing else — not
+               where they were, not which exercises they had already cleared, not
+               those exercises' scores — so "resume" dropped them back at
+               exercise one with their answers pre-filled and every gate reset.
+               It also had no user, course or lesson-shape scoping of its own.
+               The shared lifecycle owns all four checks, and the legacy mirror
+               is still written so A2's own autosave and its saved-answer views
+               keep working exactly as before. */
+            draft: (function () {
+                var L = global.UzExerciseLifecycle;
+                var uid = opts.uid || global.currentUserId
+                    || (function () { try { return JSON.parse(global.localStorage.getItem('currentUser')).id; }
+                                      catch (e) { return null; } })();
+                var scoped = L ? L.create({ course: 'A2' }).draftFor(uid, topic.id, groups) : null;
+                return {
+                    load: function () {
+                        if (scoped) {
+                            var got = scoped.load();
+                            if (got) return got;
+                        }
+                        /* No scoped draft: fall back to the legacy answer mirror
+                           so a learner who was mid-topic before this existed is
+                           not thrown away. Answers only — there is no cursor or
+                           per-exercise result in the old fields to recover. */
+                        var answers = {}, any = false;
+                        groups.forEach(function (g) {
+                            (g.items || []).forEach(function (item, i) {
+                                var v = api.readLegacy(g, i);
+                                answers[g.id + '-' + i] = v;
+                                if (v) any = true;
+                            });
                         });
-                    });
-                    return any ? { v: 1, cursor: 0, answers: answers, checked: {} } : null;
-                },
-                save: function (state) { mirrorAll((state && state.answers) || {}); },
-                clear: function () { /* draft lifetime belongs to the page */ }
-            },
+                        return any ? { v: 1, cursor: 0, answers: answers, checked: {} } : null;
+                    },
+                    save: function (state) {
+                        if (scoped) scoped.save(state);
+                        mirrorAll((state && state.answers) || {});
+                    },
+                    clear: function () {
+                        /* Clears THIS topic's unfinished attempt only. The
+                           legacy mirror, the durable result, vocabulary
+                           progress and server progression are untouched. */
+                        if (scoped) scoped.clear();
+                    }
+                };
+            })(),
             finish: function (answers) {
                 /* SCORE FIRST, from the engine's own answers. The mirror below
                    is a compatibility side effect and no longer feeds scoring,
@@ -465,5 +509,5 @@
         });
     }
 
-    global.A2Host = { create: create, mountPractice: mountPractice };
+    global.A2Host = { create: create, mountPractice: mountPractice, PASS_PERCENT: PASS_PERCENT };
 })(typeof window !== 'undefined' ? window : this);

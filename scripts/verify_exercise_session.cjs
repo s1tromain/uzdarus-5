@@ -151,7 +151,14 @@ setTimeout(function () {
   ok('card shows how far the learner got', /вы на упражнении 2/.test(D2.querySelector('.uz-practice-meta').textContent));
   D2.querySelector('.uz-practice-btn').click();
   ok('resume dialogue appears', !!D2.querySelector('.uz-ask'));
-  ok('dialogue names the stopping point', /упражнении <b>2<\/b>/.test(D2.querySelector('.uz-ask-card').innerHTML));
+  /* The dialogue is learner-facing copy and is now Uzbek, as the product
+     requires. What must not change is that it says WHERE the learner stopped. */
+  ok('dialogue names the stopping point', /<b>2<\/b>-mashqda/.test(D2.querySelector('.uz-ask-card').innerHTML));
+  ok('dialogue asks the required question',
+    /Tugallanmagan mashqlar topildi/.test(D2.querySelector('.uz-ask-card').textContent)
+    && /Davom ettirasizmi yoki boshidan boshlaysizmi/.test(D2.querySelector('.uz-ask-card').textContent));
+  ok('dialogue offers the two required actions',
+    [...D2.querySelectorAll('.uz-ask .uz-btn')].map(b => b.textContent).join('|') === 'Davom ettirish|Qaytadan boshlash');
 
   console.log('[I] Continue restores position AND partial input');
   D2.querySelectorAll('.uz-ask .uz-btn')[0].click();       // Продолжить

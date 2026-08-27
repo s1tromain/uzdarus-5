@@ -822,6 +822,17 @@
     }
 
     function renderVocabCard(opts) {
+        /* THE CARD BRINGS ITS OWN STYLESHEET.
+           Everything below depends on the .b2-vocab-card rules in
+           injectStyles(), and those were only ever injected by the exercise
+           HOSTS. A2 and B2 render this card straight from the lesson view,
+           which does not go through a host — so on a real phone the card
+           arrived with no gradient, no white heading, and a "Lug'atni ochish"
+           button that was a 111x20 user-agent default chip: under any tap
+           target guideline, and the only route from the lesson to the deck.
+           A component that emits markup for a stylesheet has to guarantee the
+           stylesheet; injectStyles() is idempotent, so this is free. */
+        injectStyles();
         opts = opts || {};
         var count = Number(opts.count);
         var lead = opts.lead || (count > 0

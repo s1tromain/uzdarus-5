@@ -163,8 +163,20 @@ ok(ag[0].items.map(i => i.answer).join(',') ===
     const authored = [...s.matchAll(/\n                    id: (\d+),/g)].map((m) => Number(m[1]));
     const frontier = Math.max.apply(null, authored);
     ok(frontier >= 5, 'topic 5 is still an authored (unlocked) vocabulary topic');
-    ok(new RegExp('generateLockedTopics\\(' + (frontier + 1) + '\\)').test(s),
-        `locked vocabulary topics start right after the last authored topic (${frontier + 1})`);
+    /* FINAL-FRONTIER SAFE. While canonical decks remain unauthored they are
+       generated from the next id. Once every canonical deck is real the spread
+       is removed entirely — demanding generateLockedTopics(N+1) then would
+       assert a phantom Topic 17. */
+    const _genSpread = s.indexOf('...generateLockedTopics(') !== -1;
+    if (_genSpread) {
+        ok(new RegExp('generateLockedTopics\\(' + (frontier + 1) + '\\)').test(s),
+            `locked vocabulary topics start right after the last authored topic (${frontier + 1})`);
+    } else {
+        ok(!new RegExp('generateLockedTopics\\(' + (frontier + 1) + '\\)').test(s),
+            'the paid deck list is complete — no future deck is generated');
+        ok(s.split('...generateLockedTopics(').length - 1 === 0,
+            'no generated future deck remains in the paid deck list');
+    }
     ok(/Прямая и косвенная речь/.test(s) && /Деепричастие \(ravishdosh\)/.test(s)
        && /Причастие \(sifatdosh\)/.test(s), 'paid vocabulary topics 2-4 intact');
 

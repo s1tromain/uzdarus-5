@@ -1615,11 +1615,11 @@ function _clampRange(value, min, max) {
  *        else RED
  *
  *  5-STAR SCORE -> VERDICT
- *    >= 95  ⭐⭐⭐⭐⭐  excellent (Ajoyib)
- *    >= 85  ⭐⭐⭐⭐   great     (Juda yaxshi)
- *    >= 70  ⭐⭐⭐    good      (Yaxshi)   <- pass / advance
- *    >= 50  ⭐⭐     fair      (Qoniqarli)
- *    >=  1  ⭐      poor      (Qayta urinib ko'ring)
+ *    >= 90  ⭐⭐⭐⭐⭐  excellent (A'lo)
+ *    >= 75  ⭐⭐⭐⭐   great     (Juda yaxshi)
+ *    >= 60  ⭐⭐⭐    good      (Yaxshi)   <- accepted attempt
+ *    >= 40  ⭐⭐     fair      (Yaxshi boshlanish)
+ *    >=  0  ⭐      poor      (Yana bir bor urinib ko'ring)
  *      0            empty     (Hech narsa eshitilmadi)
  *    confidence < 0.35 -> low_confidence (Ovoz aniq eshitilmadi)
  * ================================================================== */
@@ -1829,11 +1829,34 @@ function _classifyWords(recognized, reference) {
  * ================================================================== */
 
 /* 5-star thresholds (inclusive lower bound). */
-var SPEECH_STAR5_MIN = 95;   /* ⭐⭐⭐⭐⭐ Ajoyib          */
-var SPEECH_STAR4_MIN = 85;   /* ⭐⭐⭐⭐  Juda yaxshi      */
-var SPEECH_STAR3_MIN = 70;   /* ⭐⭐⭐   Yaxshi (pass)     */
-var SPEECH_STAR2_MIN = 50;   /* ⭐⭐    Qoniqarli         */
-var SPEECH_PASS_SCORE = 70;  /* >= this advances the word */
+/* THE FIVE BANDS.
+ *
+ * These were 95 / 85 / 70 / 50, and that is why pronunciation feedback read as
+ * "Yaxshi + 3 stars" almost every time: a real Azure attempt from a learner
+ * reading a short Russian word lands in the seventies far more often than
+ * anywhere else, and the old third band was 15 points wide starting at 70 —
+ * so the common case and the good case collapsed into one verdict. Widening
+ * the top two bands downward (90 / 75) and dropping the lower boundaries
+ * (60 / 40) spreads the same provider scores across all five, which is what
+ * makes the stars informative rather than decorative.
+ *
+ *   90-100  ⭐⭐⭐⭐⭐  A'lo
+ *   75-89   ⭐⭐⭐⭐   Juda yaxshi
+ *   60-74   ⭐⭐⭐    Yaxshi
+ *   40-59   ⭐⭐     Yaxshi boshlanish
+ *    0-39   ⭐      Yana bir bor urinib ko'ring
+ */
+var SPEECH_STAR5_MIN = 90;   /* ⭐⭐⭐⭐⭐ A'lo                        */
+var SPEECH_STAR4_MIN = 75;   /* ⭐⭐⭐⭐  Juda yaxshi                 */
+var SPEECH_STAR3_MIN = 60;   /* ⭐⭐⭐   Yaxshi (pass)                */
+var SPEECH_STAR2_MIN = 40;   /* ⭐⭐    Yaxshi boshlanish            */
+/* The pass mark is the three-star boundary, so "Yaxshi" always means the
+   attempt was accepted. It used to sit at 70 while three stars began at 70
+   too; now that three stars begin at 60 they must move together, or a 65
+   would show "Yaxshi" and be treated as a failure in the same breath.
+   Progression does not depend on this — pronunciation gates nothing — but the
+   message the learner reads does. */
+var SPEECH_PASS_SCORE = 70;  /* >= this counts as an accepted attempt */
 var SPEECH_CONF_MIN = 0.35;  /* below this ASR confidence -> ask to repeat */
 
 var _VERDICT_SCORE  = { excellent: 97, great: 90, good: 77, fair: 60, poor: 30, empty: 0, low_confidence: 0 };
@@ -1880,7 +1903,13 @@ function _azureBlend(azure) {
 function _accuracyCeiling(acc) {
     if (acc === null) return 100;
     if (acc >= 90) return 100;
-    if (acc >= 80) return 94;
+    /* 89, NOT 94. This table caps the blended score by what Azure actually
+       heard, and its rungs are anchored to the star bands. While five stars
+       began at 95 a ceiling of 94 was exactly right — it kept an 80-89
+       accuracy out of the top band. The bands now start the top tier at 90,
+       so 94 let an accuracy of 82 be presented as "A‘lo", breaking the
+       rule that five stars means genuinely accurate pronunciation. */
+    if (acc >= 80) return 89;
     if (acc >= 70) return 88;
     if (acc >= 60) return 80;
     if (acc >= 50) return 62;
@@ -1913,8 +1942,10 @@ function _scoreToVerdict(score) {
     if (s >= SPEECH_STAR4_MIN) return 'great';
     if (s >= SPEECH_STAR3_MIN) return 'good';
     if (s >= SPEECH_STAR2_MIN) return 'fair';
-    if (s >= 1) return 'poor';
-    return 'empty';
+    /* Anything below the two-star mark is one star — including 0 — WHEN the
+       learner actually said something. A silent attempt is a different case
+       and is classified 'empty' before this function is ever reached. */
+    return 'poor';
 }
 
 /* reference-word feedback list (consumed by hint builders). */
@@ -2275,15 +2306,15 @@ function _getCategory(score) {
 
 /* verdict -> result-screen presentation (5-star scheme, 2026). */
 var _PRON_CATEGORY = {
-    excellent:      { stars: 5, text: 'Ajoyib!',              emoji: '🌟', advice: 'Talaffuzingiz juda aniq.',
+    excellent:      { stars: 5, text: "A'lo",                 emoji: '🌟', advice: 'Talaffuzingiz juda aniq.',
                       verdictClass: 'good', animClass: 'anim-success' },
     great:          { stars: 4, text: 'Juda yaxshi!',         emoji: '✨', advice: 'Mayda xatolar bor.',
                       verdictClass: 'good', animClass: 'anim-success' },
     good:           { stars: 3, text: 'Yaxshi',               emoji: '👍', advice: 'Yana biroz mashq qiling.',
                       verdictClass: 'good', animClass: 'anim-success' },
-    fair:           { stars: 2, text: 'Qoniqarli',            emoji: '💪', advice: "Ba'zi tovushlarni noto‘g‘ri aytdingiz.",
+    fair:           { stars: 2, text: 'Yaxshi boshlanish',    emoji: '💪', advice: "Ba'zi tovushlarni noto‘g‘ri aytdingiz.",
                       verdictClass: 'ok',   animClass: 'anim-almost' },
-    poor:           { stars: 1, text: 'Qayta urinib ko‘ring', emoji: '🔁', advice: "So‘z to‘g‘ri talaffuz qilinmadi.",
+    poor:           { stars: 1, text: 'Yana bir bor urinib ko‘ring', emoji: '🔁', advice: "So‘z to‘g‘ri talaffuz qilinmadi.",
                       verdictClass: 'bad',  animClass: 'anim-fail' },
     low_confidence: { stars: 0, text: 'Ovoz aniq eshitilmadi', emoji: '🎧', advice: "Iltimos, yana urinib ko‘ring.",
                       verdictClass: 'ok',   animClass: 'anim-almost' },
@@ -3297,14 +3328,33 @@ function _completeWord(topicId, wordIndex) {
 /*  ever arrive, so the array stays [true,false,false,…] forever and   */
 /*  every consumer below would pin the learner to word 0 permanently.  */
 /*                                                                     */
-/*  On those pages progression is listen-only and must never be gated. */
+/*  Progression is listen-only on EVERY page now — see                */
+/*  _pronGatesProgression(), which returns false unconditionally.      */
 /*  Keeping this decision in ONE predicate (instead of per-page flags) */
 /*  is what guarantees the gate and the mic can never drift apart      */
 /*  again: enable pronunciation for a level and its gate comes back;   */
 /*  disable it and the gate disappears with it.                        */
 /* ================================================================== */
 function _pronGatesProgression() {
-    try { return _pronEnabled(); } catch (e) { return false; }
+    /* PRONUNCIATION IS PRACTICE, NEVER A TOLLGATE.
+     *
+     * This used to return _pronEnabled(), so on paid A2 and paid B2 — the two
+     * courses where the mic is offered — the ONLY writer that advanced the
+     * word frontier was the didPass branch of checkPronunciation(). A learner
+     * who denied microphone permission, used a browser with no speech API, or
+     * simply hit a provider outage could not leave word 0. They could not
+     * reach the end of the deck, could not reach showCompletion(), and so
+     * could never finish the vocabulary half of a topic — which, under the
+     * two-component completion model, means they could never finish the topic
+     * at all. A speech outage became a progression outage.
+     *
+     * Vocabulary completion must not depend on hardware or on a third-party
+     * scorer. Pronunciation stays exactly where it was — the button, the
+     * scoring and the feedback are untouched — but it is optional practice
+     * and gates nothing. Returning false here is what makes that true
+     * everywhere at once, which is why this decision lives in one predicate
+     * instead of a flag per page. */
+    return false;
 }
 
 /**

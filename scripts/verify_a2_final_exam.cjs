@@ -358,7 +358,7 @@ const matches = (given, expected) => {
             ok(/A2:\s*\{/.test(certs), 'A2 is a certifiable course');
             ok(/A1:\s*\{/.test(certs) && /B1:\s*\{/.test(certs),
                 'A1 and B1 remain certifiable');
-            ok(!/B2:\s*\{/.test(certs), 'B2 is still excluded, as before');
+            ok(/B2:\s*\{/.test(certs), 'B2 has since joined them — A2 issuance is unaffected');
             ok(/courseData\.finalExamPassed === true/.test(certs),
                 'certificate eligibility rests on the server-written flag');
             ok(/courseData\.certificateNumber/.test(certs),

@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="pro-ui.css">
     <script defer src="pro-toast.js"></script>
     <script type="module" src="paid-platform.js"></script>
+    <script src="../vocabulary-component.js"></script>
     <script defer src="../scroll-top.js"></script>
     <style>
         * {
@@ -562,6 +563,13 @@
             display: none;
             justify-content: center;
             align-items: center;
+            /* COLUMN, like A1/A2/B1. B2 was the only deck without this, and it
+               did not matter while .completion-content was the screen's only
+               child. The sync-failure note is a SECOND child: in a row the two
+               sat side by side and the note was pushed off the right edge of a
+               360px phone — exactly where a learner needs to find "Qayta
+               urinish". Stacking costs nothing when there is one child. */
+            flex-direction: column;
             background: linear-gradient(135deg, #2c3e50, #4a6491);
             padding: 20px;
         }
@@ -595,6 +603,69 @@
             font-size: 1.3rem;
             color: var(--gray);
             margin-bottom: 40px;
+        }
+
+        /* ==================== SYNC / RETRY STATE ====================
+           These three classes are created by a1ApplyVocabOutcome() and its
+           siblings and, until now, had no rule anywhere in any of the four
+           decks. On a real 360px phone that meant the ONLY control a learner
+           has for recovering unsynced work — "Qayta urinish" — rendered as an
+           82x20 user-agent default button, and the failure message was
+           indistinguishable from a success note.
+
+           The panel carries its own background and text colour rather than
+           inheriting: A1/A2/B1 put white text on a coloured completion screen
+           while B2 puts grey text on a light one, and a note that is legible
+           on one must not vanish on the other. */
+        .uz-vocab-note {
+            max-width: 32rem;
+            margin: 24px auto 0;
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.97);
+            color: #2B3350;
+            font-size: 1rem;
+            line-height: 1.6;
+            text-align: center;
+            overflow-wrap: break-word;
+            word-break: normal;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+        }
+
+        .uz-vocab-note.uz-vocab-error {
+            background: #FFF5F5;
+            border: 1px solid #EFB3B3;
+            color: #8E2B2B;
+        }
+
+        /* SAVE_FAILED is two lines on purpose; honour the newline. */
+        .uz-vocab-note p {
+            margin: 0 0 14px;
+            white-space: pre-line;
+        }
+
+        .uz-vocab-retry {
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            min-height: 48px;
+            padding: 12px 28px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #C63B4E, #A32B3C);
+            color: #fff;
+            cursor: pointer;
+            transition: transform 0.18s ease, filter 0.18s ease;
+        }
+
+        .uz-vocab-retry:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.06);
+        }
+
+        @media (max-width: 480px) {
+            .uz-vocab-note { margin-top: 18px; padding: 14px 14px; }
+            .uz-vocab-retry { width: 100%; }
         }
 
         .completion-buttons {
@@ -1752,7 +1823,463 @@
                         { ru: "зона комфорта", uz: "qulaylik hududi" }
                     ]
                 },
-                ...generateLockedTopics(11).filter(t => t.id <= 16)
+                {
+                    id: 11,
+                    name: "Отглагольные существительные",
+                    description: "Fe'ldan yasalgan otlar va rasmiy uslub",
+                    icon: "📝",
+                    isLocked: false,
+                    words: [
+                        { ru: "принятие решения", uz: "qaror qabul qilish" },
+                        { ru: "решение проблемы", uz: "muammoni hal qilish" },
+                        { ru: "развитие проекта", uz: "loyihani rivojlantirish" },
+                        { ru: "обсуждение вопроса", uz: "masalani muhokama qilish" },
+                        { ru: "создание продукта", uz: "mahsulot yaratish" },
+                        { ru: "анализ ситуации", uz: "vaziyatni tahlil qilish" },
+                        { ru: "изменение системы", uz: "tizimni o‘zgartirish" },
+                        { ru: "использование технологий", uz: "texnologiyalardan foydalanish" },
+                        { ru: "подготовка к экзамену", uz: "imtihonga tayyorgarlik" },
+                        { ru: "исследование рынка", uz: "bozorni tadqiq qilish" },
+                        { ru: "организация мероприятия", uz: "tadbir tashkil qilish" },
+                        { ru: "планирование работы", uz: "ishni rejalashtirish" },
+                        { ru: "обсуждение проекта", uz: "loyihani muhokama qilish" },
+                        { ru: "изучение материала", uz: "materialni o‘rganish" },
+                        { ru: "получение информации", uz: "ma’lumot olish" },
+                        { ru: "проведение исследования", uz: "tadqiqot o‘tkazish" },
+                        { ru: "разработка стратегии", uz: "strategiya ishlab chiqish" },
+                        { ru: "достижение цели", uz: "maqsadga erishish" },
+                        { ru: "улучшение качества", uz: "sifatni yaxshilash" },
+                        { ru: "повышение эффективности", uz: "samaradorlikni oshirish" },
+                        { ru: "снижение расходов", uz: "xarajatlarni kamaytirish" },
+                        { ru: "увеличение доходов", uz: "daromadlarni oshirish" },
+                        { ru: "расширение возможностей", uz: "imkoniyatlarni kengaytirish" },
+                        { ru: "выбор подхода", uz: "yondashuvni tanlash" },
+                        { ru: "определение цели", uz: "maqsadni aniqlash" },
+                        { ru: "достижение результата", uz: "natijaga erishish" },
+                        { ru: "получение опыта", uz: "tajriba orttirish" },
+                        { ru: "приобретение навыков", uz: "ko‘nikmalarni egallash" },
+                        { ru: "применение знаний", uz: "bilimlarni qo‘llash" },
+                        { ru: "оценка результатов", uz: "natijalarni baholash" },
+                        { ru: "принимать → принятие", uz: "qabul qilmoq → qabul qilish" },
+                        { ru: "решать → решение", uz: "hal qilmoq → hal qilish" },
+                        { ru: "развивать → развитие", uz: "rivojlantirmoq → rivojlantirish" },
+                        { ru: "обсуждать → обсуждение", uz: "muhokama qilmoq → muhokama qilish" },
+                        { ru: "создавать → создание", uz: "yaratmoq → yaratish" },
+                        { ru: "анализировать → анализ", uz: "tahlil qilmoq → tahlil" },
+                        { ru: "изменять → изменение", uz: "o‘zgartirmoq → o‘zgartirish" },
+                        { ru: "использовать → использование", uz: "foydalanmoq → foydalanish" },
+                        { ru: "планировать → планирование", uz: "rejalashtirmoq → rejalashtirish" },
+                        { ru: "исследовать → исследование", uz: "tadqiq qilmoq → tadqiq qilish" },
+                        { ru: "организовать → организация", uz: "tashkil qilmoq → tashkil qilish" },
+                        { ru: "готовить / подготовить → подготовка", uz: "tayyorlamoq → tayyorgarlik" },
+                        { ru: "разрабатывать → разработка", uz: "ishlab chiqmoq → ishlab chiqish" },
+                        { ru: "улучшать → улучшение", uz: "yaxshilamoq → yaxshilash" },
+                        { ru: "повышать → повышение", uz: "oshirmoq → oshirish" }
+                    ]
+                },
+                {
+                    id: 12,
+                    name: "Пассивные конструкции",
+                    description: "Passiv konstruksiyalar, ish jarayonlari va texnologiya",
+                    icon: "⚙️",
+                    isLocked: false,
+                    words: [
+                        { ru: "разрабатывать", uz: "ishlab chiqmoq" },
+                        { ru: "разработать", uz: "ishlab chiqib bo‘lmoq" },
+                        { ru: "создавать", uz: "yaratmoq" },
+                        { ru: "создать", uz: "yaratib bo‘lmoq" },
+                        { ru: "внедрять", uz: "joriy qilmoq" },
+                        { ru: "внедрить", uz: "joriy qilib bo‘lmoq" },
+                        { ru: "тестировать", uz: "sinovdan o‘tkazmoq" },
+                        { ru: "проверять", uz: "tekshirmoq" },
+                        { ru: "обновлять", uz: "yangilamoq" },
+                        { ru: "обновить", uz: "yangilab bo‘lmoq" },
+                        { ru: "обрабатывать", uz: "qayta ishlamoq" },
+                        { ru: "обработать", uz: "qayta ishlab bo‘lmoq" },
+                        { ru: "запускать", uz: "ishga tushirmoq" },
+                        { ru: "запустить", uz: "ishga tushirib bo‘lmoq" },
+                        { ru: "устанавливать", uz: "o‘rnatmoq" },
+                        { ru: "установить", uz: "o‘rnatib bo‘lmoq" },
+                        { ru: "подготавливать", uz: "tayyorlamoq" },
+                        { ru: "подготовить", uz: "tayyorlab bo‘lmoq" },
+                        { ru: "публиковать", uz: "e’lon qilmoq, chop etmoq" },
+                        { ru: "решение", uz: "qaror" },
+                        { ru: "проект", uz: "loyiha" },
+                        { ru: "система", uz: "tizim" },
+                        { ru: "технология", uz: "texnologiya" },
+                        { ru: "программа", uz: "dastur" },
+                        { ru: "оборудование", uz: "jihoz, uskuna" },
+                        { ru: "документ", uz: "hujjat" },
+                        { ru: "договор", uz: "shartnoma" },
+                        { ru: "правила", uz: "qoidalar" },
+                        { ru: "информация", uz: "ma’lumot, axborot" },
+                        { ru: "данные", uz: "ma’lumotlar" },
+                        { ru: "результаты", uz: "natijalar" },
+                        { ru: "исследование", uz: "tadqiqot" },
+                        { ru: "разработка", uz: "ishlab chiqish" },
+                        { ru: "обновление", uz: "yangilash" },
+                        { ru: "внедрение", uz: "joriy qilish" },
+                        { ru: "создание", uz: "yaratish" },
+                        { ru: "проверка", uz: "tekshiruv" },
+                        { ru: "обработка", uz: "qayta ishlash" },
+                        { ru: "тестирование", uz: "sinovdan o‘tkazish" },
+                        { ru: "рабочий процесс", uz: "ish jarayoni" },
+                        { ru: "этап работы", uz: "ish bosqichi" },
+                        { ru: "задача", uz: "vazifa" },
+                        { ru: "цель", uz: "maqsad" },
+                        { ru: "план", uz: "reja" },
+                        { ru: "срок", uz: "muddat" },
+                        { ru: "результат", uz: "natija" },
+                        { ru: "сотрудник", uz: "xodim" },
+                        { ru: "специалист", uz: "mutaxassis" },
+                        { ru: "руководство", uz: "rahbariyat" },
+                        { ru: "нововведение", uz: "yangilik, innovatsiya" },
+                        { ru: "инновация", uz: "innovatsiya" },
+                        { ru: "современная технология", uz: "zamonaviy texnologiya" },
+                        { ru: "цифровая система", uz: "raqamli tizim" },
+                        { ru: "автоматизация", uz: "avtomatlashtirish" },
+                        { ru: "искусственный интеллект", uz: "sun’iy intellekt" },
+                        { ru: "программное обеспечение", uz: "dasturiy ta’minot" },
+                        { ru: "приложение", uz: "ilova" },
+                        { ru: "платформа", uz: "platforma" },
+                        { ru: "обновление системы", uz: "tizimni yangilash" },
+                        { ru: "Было принято решение…", uz: "Qaror qabul qilindi…" },
+                        { ru: "Был разработан новый проект.", uz: "Yangi loyiha ishlab chiqildi." },
+                        { ru: "Была создана новая система.", uz: "Yangi tizim yaratildi." },
+                        { ru: "Были подготовлены документы.", uz: "Hujjatlar tayyorlandi." },
+                        { ru: "Проект разрабатывается специалистами.", uz: "Loyiha mutaxassislar tomonidan ishlab chiqilmoqda." },
+                        { ru: "Система тестируется пользователями.", uz: "Tizim foydalanuvchilar tomonidan sinovdan o‘tkazilmoqda." },
+                        { ru: "Данные обрабатываются автоматически.", uz: "Ma’lumotlar avtomatik tarzda qayta ishlanadi." },
+                        { ru: "Новая технология внедряется на предприятии.", uz: "Yangi texnologiya korxonada joriy qilinmoqda." },
+                        { ru: "Результаты были опубликованы вчера.", uz: "Natijalar kecha e’lon qilindi." },
+                        { ru: "Документы были подписаны руководством.", uz: "Hujjatlar rahbariyat tomonidan imzolandi." }
+                    ]
+                },
+                {
+                    id: 13,
+                    name: "Предлоги и управление",
+                    description: "Predlog boshqaruvi, rasmiy uslub va ish yozishmalari",
+                    icon: "🔗",
+                    isLocked: false,
+                    words: [
+                        { ru: "благодаря", uz: "tufayli, sharofati bilan" },
+                        { ru: "несмотря на", uz: "…ga qaramay" },
+                        { ru: "в связи с", uz: "…munosabati bilan, sababli" },
+                        { ru: "согласно", uz: "…ga muvofiq, …ga ko‘ra" },
+                        { ru: "поддержка", uz: "qo‘llab-quvvatlash" },
+                        { ru: "сотрудничество", uz: "hamkorlik" },
+                        { ru: "руководство", uz: "rahbariyat" },
+                        { ru: "сотрудник", uz: "xodim" },
+                        { ru: "работодатель", uz: "ish beruvchi" },
+                        { ru: "коллега", uz: "hamkasb" },
+                        { ru: "проект", uz: "loyiha" },
+                        { ru: "договор", uz: "shartnoma" },
+                        { ru: "условие", uz: "shart" },
+                        { ru: "обязанность", uz: "majburiyat" },
+                        { ru: "правило", uz: "qoida" },
+                        { ru: "закон", uz: "qonun" },
+                        { ru: "решение", uz: "qaror" },
+                        { ru: "план", uz: "reja" },
+                        { ru: "график", uz: "jadval, grafik" },
+                        { ru: "встреча", uz: "uchrashuv" },
+                        { ru: "причина", uz: "sabab" },
+                        { ru: "обстоятельство", uz: "holat, sharoit" },
+                        { ru: "необходимость", uz: "zarurat" },
+                        { ru: "изменение", uz: "o‘zgarish" },
+                        { ru: "трудность", uz: "qiyinchilik" },
+                        { ru: "проблема", uz: "muammo" },
+                        { ru: "ситуация", uz: "vaziyat" },
+                        { ru: "условия", uz: "sharoitlar, shartlar" },
+                        { ru: "экономические трудности", uz: "iqtisodiy qiyinchiliklar" },
+                        { ru: "финансовые проблемы", uz: "moliyaviy muammolar" },
+                        { ru: "продолжать", uz: "davom ettirmoq" },
+                        { ru: "завершить", uz: "yakunlamoq" },
+                        { ru: "перенести", uz: "boshqa vaqtga ko‘chirmoq" },
+                        { ru: "отменить", uz: "bekor qilmoq" },
+                        { ru: "изменить", uz: "o‘zgartirmoq" },
+                        { ru: "соблюдать", uz: "rioya qilmoq" },
+                        { ru: "утвердить", uz: "tasdiqlamoq" },
+                        { ru: "подписать", uz: "imzolamoq" },
+                        { ru: "сократить", uz: "qisqartirmoq" },
+                        { ru: "увеличить", uz: "oshirmoq, ko‘paytirmoq" },
+                        { ru: "благодаря поддержке", uz: "qo‘llab-quvvatlash tufayli" },
+                        { ru: "благодаря опыту", uz: "tajriba tufayli" },
+                        { ru: "благодаря сотрудничеству", uz: "hamkorlik tufayli" },
+                        { ru: "несмотря на трудности", uz: "qiyinchiliklarga qaramay" },
+                        { ru: "несмотря на обстоятельства", uz: "holatlarga qaramay" },
+                        { ru: "несмотря на высокую стоимость", uz: "yuqori narxga qaramay" },
+                        { ru: "в связи с изменением", uz: "o‘zgarish munosabati bilan" },
+                        { ru: "в связи с необходимостью", uz: "zarurat sababli" },
+                        { ru: "в связи с ремонтом", uz: "ta’mirlash ishlari munosabati bilan" },
+                        { ru: "согласно договору", uz: "shartnomaga muvofiq" },
+                        { ru: "согласно закону", uz: "qonunga muvofiq" },
+                        { ru: "согласно правилам", uz: "qoidalarga muvofiq" },
+                        { ru: "согласно плану", uz: "rejaga muvofiq" },
+                        { ru: "согласно графику", uz: "jadvalga muvofiq" },
+                        { ru: "в соответствии с законом", uz: "qonunga muvofiq" },
+                        { ru: "в соответствии с требованиями", uz: "talablarga muvofiq" },
+                        { ru: "принимать решение", uz: "qaror qabul qilmoq" },
+                        { ru: "решать проблему", uz: "muammoni hal qilmoq" },
+                        { ru: "соблюдать правила", uz: "qoidalarga rioya qilmoq" },
+                        { ru: "достичь результата", uz: "natijaga erishmoq" }
+                    ]
+                },
+                {
+                    id: 14,
+                    name: "Средства аргументации",
+                    description: "Dalil keltirish vositalari, munozara va o‘z fikrini himoya qilish",
+                    icon: "💬",
+                    isLocked: false,
+                    words: [
+                        { ru: "аргумент", uz: "dalil, asos" },
+                        { ru: "аргументация", uz: "dalillash, fikrni asoslash" },
+                        { ru: "мнение", uz: "fikr" },
+                        { ru: "точка зрения", uz: "nuqtai nazar" },
+                        { ru: "позиция", uz: "pozitsiya, qarash" },
+                        { ru: "утверждение", uz: "fikr, tasdiq" },
+                        { ru: "доказательство", uz: "isbot, dalil" },
+                        { ru: "довод", uz: "dalil, asos" },
+                        { ru: "причина", uz: "sabab" },
+                        { ru: "следствие", uz: "oqibat, natija" },
+                        { ru: "преимущество", uz: "afzallik" },
+                        { ru: "недостаток", uz: "kamchilik" },
+                        { ru: "польза", uz: "foyda" },
+                        { ru: "вред", uz: "zarar" },
+                        { ru: "возможность", uz: "imkoniyat" },
+                        { ru: "необходимость", uz: "zarurat" },
+                        { ru: "вывод", uz: "xulosa" },
+                        { ru: "обсуждение", uz: "muhokama" },
+                        { ru: "дискуссия", uz: "munozara" },
+                        { ru: "спор", uz: "bahs" },
+                        { ru: "собеседник", uz: "suhbatdosh" },
+                        { ru: "оппонент", uz: "qarshi fikrdagi suhbatdosh" },
+                        { ru: "возражение", uz: "e’tiroz" },
+                        { ru: "контраргумент", uz: "qarshi dalil" },
+                        { ru: "пример", uz: "misol" },
+                        { ru: "факт", uz: "fakt" },
+                        { ru: "решение", uz: "qaror" },
+                        { ru: "заключение", uz: "xulosa" },
+                        { ru: "согласие", uz: "rozilik" },
+                        { ru: "несогласие", uz: "norozilik" },
+                        { ru: "Я считаю, что…", uz: "Menimcha…" },
+                        { ru: "Я думаю, что…", uz: "Men o‘ylaymanki…" },
+                        { ru: "На мой взгляд,…", uz: "Mening fikrimcha…" },
+                        { ru: "По моему мнению,…", uz: "Mening fikrimga ko‘ra…" },
+                        { ru: "Я убеждён, что…", uz: "Men aminmanki…" },
+                        { ru: "Мне кажется, что…", uz: "Menga shunday tuyuladiki…" },
+                        { ru: "Я бы сказал, что…", uz: "Men aytgan bo‘lardimki…" },
+                        { ru: "Насколько я понимаю,…", uz: "Men tushunganimcha…" },
+                        { ru: "Я придерживаюсь мнения, что…", uz: "Men … degan fikrdaman." },
+                        { ru: "С моей точки зрения,…", uz: "Mening nuqtai nazarimdan…" },
+                        { ru: "Во-первых,…", uz: "Birinchidan…" },
+                        { ru: "Во-вторых,…", uz: "Ikkinchidan…" },
+                        { ru: "Кроме того,…", uz: "Bundan tashqari…" },
+                        { ru: "Более того,…", uz: "Bundan tashqari, hatto…" },
+                        { ru: "Например,…", uz: "Masalan…" },
+                        { ru: "К примеру,…", uz: "Misol uchun…" },
+                        { ru: "Дело в том, что…", uz: "Gap shundaki…" },
+                        { ru: "Это связано с тем, что…", uz: "Bu … bilan bog‘liq." },
+                        { ru: "Основная причина заключается в том, что…", uz: "Asosiy sabab shundaki…" },
+                        { ru: "Это можно объяснить тем, что…", uz: "Buni … bilan tushuntirish mumkin." },
+                        { ru: "С одной стороны,…", uz: "Bir tomondan…" },
+                        { ru: "С другой стороны,…", uz: "Boshqa tomondan…" },
+                        { ru: "Однако…", uz: "Biroq…" },
+                        { ru: "Но…", uz: "Lekin…" },
+                        { ru: "Тем не менее…", uz: "Shunga qaramay…" },
+                        { ru: "Несмотря на это,…", uz: "Bunga qaramay…" },
+                        { ru: "В то же время,…", uz: "Shu bilan birga…" },
+                        { ru: "Всё же…", uz: "Shunga qaramay / baribir…" },
+                        { ru: "С другой точки зрения,…", uz: "Boshqa nuqtai nazardan…" },
+                        { ru: "В отличие от этого,…", uz: "Bundan farqli ravishda…" },
+                        { ru: "Я не совсем согласен…", uz: "Men to‘liq qo‘shilmayman… (erkak kishi haqida)" },
+                        { ru: "Я не совсем согласна…", uz: "Men to‘liq qo‘shilmayman… (ayol kishi haqida)" },
+                        { ru: "Я понимаю вашу точку зрения, но…", uz: "Sizning nuqtai nazaringizni tushunaman, lekin…" },
+                        { ru: "Я согласен с вами в какой-то степени, однако…", uz: "Qaysidir ma’noda sizga qo‘shilaman, biroq…" },
+                        { ru: "Я бы не стал утверждать, что…", uz: "Men … deb qat’iy aytmagan bo‘lardim…" },
+                        { ru: "Я не уверен, что…", uz: "…ga ishonchim komil emas…" },
+                        { ru: "Позвольте не согласиться…", uz: "Qarshi fikr bildirishga ijozat bering…" },
+                        { ru: "Не думаю, что…", uz: "Menimcha, … emas." },
+                        { ru: "С этим утверждением трудно согласиться.", uz: "Bu fikrga qo‘shilish qiyin." },
+                        { ru: "У меня немного другая точка зрения.", uz: "Mening nuqtai nazarim biroz boshqacha." },
+                        { ru: "потому что", uz: "chunki" },
+                        { ru: "так как", uz: "chunki, sababli" },
+                        { ru: "поскольку", uz: "sababli, chunki" },
+                        { ru: "из-за этого", uz: "shu sababli" },
+                        { ru: "благодаря этому", uz: "buning sharofati bilan" },
+                        { ru: "поэтому", uz: "shuning uchun" },
+                        { ru: "следовательно", uz: "demak, binobarin" },
+                        { ru: "в результате", uz: "natijada" },
+                        { ru: "вследствие этого", uz: "buning oqibatida" },
+                        { ru: "это приводит к тому, что…", uz: "bu …ga olib keladi" },
+                        { ru: "Таким образом,…", uz: "Shunday qilib…" },
+                        { ru: "В итоге,…", uz: "Natijada…" },
+                        { ru: "В заключение,…", uz: "Xulosa qilib…" },
+                        { ru: "Из этого следует, что…", uz: "Bundan … kelib chiqadi…" },
+                        { ru: "Можно сделать вывод, что…", uz: "Shunday xulosa qilish mumkinki…" },
+                        { ru: "В конечном счёте,…", uz: "Oxir-oqibat…" },
+                        { ru: "Итак,…", uz: "Demak…" },
+                        { ru: "Подводя итог,…", uz: "Yakun yasab…" },
+                        { ru: "В целом,…", uz: "Umuman olganda…" }
+                    ]
+                },
+                {
+                    id: 15,
+                    name: "Стилистика речи",
+                    description: "Nutq registri: rasmiy, neytral va norasmiy muloqot",
+                    icon: "🗣️",
+                    isLocked: false,
+                    words: [
+                        { ru: "официальный стиль", uz: "rasmiy uslub" },
+                        { ru: "нейтральный стиль", uz: "neytral uslub" },
+                        { ru: "неофициальный стиль", uz: "norasmiy uslub" },
+                        { ru: "стилистика речи", uz: "nutq stilistikasi" },
+                        { ru: "официальное общение", uz: "rasmiy muloqot" },
+                        { ru: "неформальное общение", uz: "norasmiy muloqot" },
+                        { ru: "собеседник", uz: "suhbatdosh" },
+                        { ru: "обращение", uz: "murojaat" },
+                        { ru: "уважительное обращение", uz: "hurmat bilan murojaat qilish" },
+                        { ru: "деловой разговор", uz: "ishbilarmonlik suhbati" },
+                        { ru: "уточнить", uz: "aniqlashtirmoq" },
+                        { ru: "уточнение", uz: "aniqlashtirish" },
+                        { ru: "отметить", uz: "ta’kidlamoq" },
+                        { ru: "обсудить", uz: "muhokama qilmoq" },
+                        { ru: "обсуждение", uz: "muhokama" },
+                        { ru: "предложить", uz: "taklif qilmoq" },
+                        { ru: "предложение", uz: "taklif" },
+                        { ru: "обратить внимание", uz: "e’tibor qaratmoq" },
+                        { ru: "сообщить", uz: "ma’lum qilmoq" },
+                        { ru: "рассмотреть", uz: "ko‘rib chiqmoq" },
+                        { ru: "разрешите уточнить", uz: "aniqlashtirishga ruxsat bering" },
+                        { ru: "я хотел бы отметить", uz: "men ta’kidlamoqchi edim" },
+                        { ru: "позвольте уточнить", uz: "aniqlashtirishga ijozat bering" },
+                        { ru: "не могли бы Вы…?", uz: "…qila olasizmi?" },
+                        { ru: "будьте добры", uz: "iltimos / marhamat qilib" },
+                        { ru: "прошу Вас", uz: "Sizdan iltimos qilaman" },
+                        { ru: "давайте обсудим", uz: "keling, muhokama qilamiz" },
+                        { ru: "давай обсудим", uz: "keling, muhokama qilaylik" },
+                        { ru: "можно уточнить…?", uz: "aniqlashtirsam bo‘ladimi?" },
+                        { ru: "как Вы думаете?", uz: "Siz nima deb o‘ylaysiz?" },
+                        { ru: "как ты думаешь?", uz: "sen nima deb o‘ylaysan?" },
+                        { ru: "что скажешь насчёт…?", uz: "…haqida nima deysan?" },
+                        { ru: "слушай", uz: "eshit / qara" },
+                        { ru: "я хотел спросить", uz: "men so‘ramoqchi edim" },
+                        { ru: "я хотел бы узнать", uz: "men bilmoqchi edim" },
+                        { ru: "мне хотелось бы узнать", uz: "men bilishni istardim" },
+                        { ru: "можешь помочь?", uz: "yordam bera olasanmi?" },
+                        { ru: "не могли бы Вы помочь?", uz: "yordam bera olasizmi?" },
+                        { ru: "давай поговорим", uz: "keling, gaplashamiz" },
+                        { ru: "поговорить по поводу", uz: "…masalasida gaplashmoq" },
+                        { ru: "вежливость", uz: "xushmuomalalik" },
+                        { ru: "уважение", uz: "hurmat" },
+                        { ru: "тон общения", uz: "muloqot ohangi" },
+                        { ru: "деловой тон", uz: "ishbilarmonlik ohangi" },
+                        { ru: "дружеский тон", uz: "do‘stona ohang" },
+                        { ru: "официальная ситуация", uz: "rasmiy vaziyat" },
+                        { ru: "неофициальная ситуация", uz: "norasmiy vaziyat" },
+                        { ru: "деловая переписка", uz: "ish yozishmalari" },
+                        { ru: "деловая встреча", uz: "ish uchrashuvi" },
+                        { ru: "рабочая ситуация", uz: "ish vaziyati" },
+                        { ru: "уточнить информацию", uz: "ma’lumotni aniqlashtirmoq" },
+                        { ru: "уточнить детали", uz: "tafsilotlarni aniqlashtirmoq" },
+                        { ru: "уточнить сроки", uz: "muddatlarni aniqlashtirmoq" },
+                        { ru: "обсудить вопрос", uz: "masalani muhokama qilmoq" },
+                        { ru: "обсудить проблему", uz: "muammoni muhokama qilmoq" },
+                        { ru: "отметить важный момент", uz: "muhim jihatni ta’kidlamoq" },
+                        { ru: "обратить внимание на проблему", uz: "muammoga e’tibor qaratmoq" },
+                        { ru: "предложить решение", uz: "yechim taklif qilmoq" },
+                        { ru: "рассмотреть вариант", uz: "variantni ko‘rib chiqmoq" },
+                        { ru: "выразить мнение", uz: "fikr bildirmoq" }
+                    ]
+                },
+                {
+                    id: 16,
+                    name: "Повторение сложных конструкций B2",
+                    description: "Yakuniy takrorlash: jamiyat, debat va murakkab konstruksiyalar",
+                    icon: "🎓",
+                    isLocked: false,
+                    words: [
+                        { ru: "современное общество", uz: "zamonaviy jamiyat" },
+                        { ru: "общественная проблема", uz: "ijtimoiy muammo" },
+                        { ru: "социальная проблема", uz: "ijtimoiy muammo" },
+                        { ru: "общество", uz: "jamiyat" },
+                        { ru: "граждане", uz: "fuqarolar" },
+                        { ru: "молодёжь", uz: "yoshlar" },
+                        { ru: "поколение", uz: "avlod" },
+                        { ru: "уровень жизни", uz: "turmush darajasi" },
+                        { ru: "качество жизни", uz: "hayot sifati" },
+                        { ru: "общественное мнение", uz: "jamoatchilik fikri" },
+                        { ru: "проблема", uz: "muammo" },
+                        { ru: "причина", uz: "sabab" },
+                        { ru: "последствие", uz: "oqibat" },
+                        { ru: "решение проблемы", uz: "muammoning yechimi" },
+                        { ru: "возникновение проблемы", uz: "muammoning yuzaga kelishi" },
+                        { ru: "серьёзная проблема", uz: "jiddiy muammo" },
+                        { ru: "актуальная проблема", uz: "dolzarb muammo" },
+                        { ru: "основная причина", uz: "asosiy sabab" },
+                        { ru: "негативные последствия", uz: "salbiy oqibatlar" },
+                        { ru: "положительные последствия", uz: "ijobiy oqibatlar" },
+                        { ru: "мнение", uz: "fikr" },
+                        { ru: "точка зрения", uz: "nuqtayi nazar" },
+                        { ru: "позиция", uz: "pozitsiya, qarash" },
+                        { ru: "аргумент", uz: "dalil" },
+                        { ru: "доказательство", uz: "isbot, dalil" },
+                        { ru: "согласие", uz: "rozilik" },
+                        { ru: "несогласие", uz: "norozilik" },
+                        { ru: "собственное мнение", uz: "shaxsiy fikr" },
+                        { ru: "обоснованное мнение", uz: "asoslangan fikr" },
+                        { ru: "личная позиция", uz: "shaxsiy pozitsiya" },
+                        { ru: "дебаты", uz: "debat, bahs" },
+                        { ru: "дискуссия", uz: "munozara" },
+                        { ru: "обсуждение", uz: "muhokama" },
+                        { ru: "спор", uz: "bahs" },
+                        { ru: "участник дискуссии", uz: "munozara ishtirokchisi" },
+                        { ru: "выразить мнение", uz: "fikr bildirmoq" },
+                        { ru: "высказать точку зрения", uz: "nuqtayi nazarni bildirmoq" },
+                        { ru: "привести аргумент", uz: "dalil keltirmoq" },
+                        { ru: "поддержать мнение", uz: "fikrni qo‘llab-quvvatlamoq" },
+                        { ru: "опровергнуть мнение", uz: "fikrni rad etmoq" },
+                        { ru: "современные технологии", uz: "zamonaviy texnologiyalar" },
+                        { ru: "цифровизация", uz: "raqamlashtirish" },
+                        { ru: "искусственный интеллект", uz: "sun’iy intellekt" },
+                        { ru: "социальные сети", uz: "ijtimoiy tarmoqlar" },
+                        { ru: "интернет-зависимость", uz: "internetga qaramlik" },
+                        { ru: "доступ к информации", uz: "ma’lumotga kirish imkoniyati" },
+                        { ru: "достоверная информация", uz: "ishonchli ma’lumot" },
+                        { ru: "ложная информация", uz: "yolg‘on ma’lumot" },
+                        { ru: "виртуальное общение", uz: "virtual muloqot" },
+                        { ru: "влияние технологий", uz: "texnologiyalarning ta’siri" },
+                        { ru: "влиять на", uz: "ta’sir qilmoq" },
+                        { ru: "приводить к", uz: "olib kelmoq" },
+                        { ru: "решать проблему", uz: "muammoni hal qilmoq" },
+                        { ru: "предотвращать", uz: "oldini olmoq" },
+                        { ru: "изменять", uz: "o‘zgartirmoq" },
+                        { ru: "развивать", uz: "rivojlantirmoq" },
+                        { ru: "поддерживать", uz: "qo‘llab-quvvatlamoq" },
+                        { ru: "отрицать", uz: "inkor etmoq" },
+                        { ru: "признавать", uz: "tan olmoq" },
+                        { ru: "доказывать", uz: "isbotlamoq" },
+                        { ru: "По моему мнению", uz: "mening fikrimcha" },
+                        { ru: "Насколько я понимаю", uz: "men tushunganimcha" },
+                        { ru: "Если я правильно понимаю", uz: "agar men to‘g‘ri tushungan bo‘lsam" },
+                        { ru: "Нельзя отрицать, что…", uz: "…ni inkor etib bo‘lmaydi" },
+                        { ru: "Нельзя не признать, что…", uz: "…ni tan olmaslik mumkin emas" },
+                        { ru: "С одной стороны…", uz: "bir tomondan…" },
+                        { ru: "С другой стороны…", uz: "boshqa tomondan…" },
+                        { ru: "Дело в том, что…", uz: "gap shundaki…" },
+                        { ru: "Я не совсем согласен с тем, что…", uz: "men … fikriga to‘liq qo‘shilmayman" },
+                        { ru: "Таким образом…", uz: "shunday qilib…" },
+                        { ru: "существенный", uz: "muhim, sezilarli" },
+                        { ru: "значительный", uz: "katta, sezilarli" },
+                        { ru: "актуальный", uz: "dolzarb" },
+                        { ru: "необходимый", uz: "zarur" },
+                        { ru: "эффективный", uz: "samarali" },
+                        { ru: "доступный", uz: "qulay, hamma uchun ochiq" },
+                        { ru: "ответственный", uz: "mas’uliyatli" },
+                        { ru: "противоречивый", uz: "qarama-qarshi, ziddiyatli" },
+                        { ru: "неизбежный", uz: "muqarrar" },
+                        { ru: "долгосрочный", uz: "uzoq muddatli" }
+                    ]
+                }
             ]
         };
 
@@ -1884,6 +2411,9 @@
             try {
                 if (window.getUserProgress) {
                     const rp = await window.getUserProgress(user.id, 'B2');
+                    /* courses.B2 carries topicComponents — the only authority on
+                       whether this topic's vocabulary half was acknowledged. */
+                    window.__vocabCourseState = rp || null;
                     if (rp && rp.vocabulary && rp.vocabulary.learnedWords && typeof rp.vocabulary.learnedWords === 'object') {
                         learnedWords = rp.vocabulary.learnedWords;
                         try { localStorage.setItem(getProgressStorageKey(), JSON.stringify(learnedWords)); } catch (e) {}
@@ -2099,11 +2629,75 @@
             renderTopics();
         }
 
+        /* THE VOCABULARY HALF, REPORTED AUTHORITATIVELY.
+
+           Reached only from the deck's completion screen — the learner has
+           walked every word of the topic. Never on load, never on a card
+           view, never on a timer. A failure keeps the local "finished but
+           unsynced" note so a reload can retry the component ALONE instead of
+           marching the learner through the deck again. */
+        async function b2ReportVocabulary(topicId) {
+            var V = window.UzVocabularyComponent;
+            if (!V) return null;
+            var outcome = await V.reportVocabulary({
+                course: 'B2',
+                topicId: topicId,
+                courseState: window.__vocabCourseState,
+                api: { completeCourseComponent: window.completeCourseComponent }
+            });
+            b2ApplyVocabOutcome(topicId, outcome);
+            return outcome;
+        }
+
+        function b2ApplyVocabOutcome(topicId, outcome) {
+            var V = window.UzVocabularyComponent;
+            if (!V || !outcome) return;
+            var host = document.getElementById('completionScreen') || document.body;
+            var old = host.querySelector('.uz-vocab-note');
+            if (old) old.remove();
+
+            if (!outcome.ok) {
+                var box = document.createElement('div');
+                box.className = 'uz-vocab-note uz-vocab-error';
+                var msg = document.createElement('p');
+                msg.textContent = outcome.message || V.MESSAGES.SAVE_FAILED;
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'uz-vocab-retry';
+                btn.textContent = 'Qayta urinish';
+                btn.onclick = function () { return b2ReportVocabulary(topicId); };
+                box.appendChild(msg); box.appendChild(btn);
+                host.appendChild(box);
+                return;
+            }
+
+            /* the acknowledgement, recorded locally so this page stops asking */
+            if (outcome.vocabularyCompleted) {
+                window.__vocabCourseState = window.__vocabCourseState || {};
+                window.__vocabCourseState.topicComponents =
+                    window.__vocabCourseState.topicComponents || {};
+                window.__vocabCourseState.topicComponents[topicId] =
+                    Object.assign({}, window.__vocabCourseState.topicComponents[topicId],
+                                  { vocabularyCompleted: true });
+            }
+            if (Array.isArray(outcome.completedTopics)) {
+                window.__vocabCourseState = window.__vocabCourseState || {};
+                window.__vocabCourseState.completedTopics = outcome.completedTopics.slice();
+            }
+            if (outcome.message) {
+                var note = document.createElement('div');
+                note.className = 'uz-vocab-note';
+                note.textContent = outcome.message;
+                host.appendChild(note);
+            }
+        }
+
         function showCompletionScreen() {
             const topic = vocabularyData.topics.find(t => t.id === currentTopicId);
             // Mark complete so reopening offers replay/review (ISSUE #2).
             if (topic) learnedWords[`topic_${currentTopicId}`] = topic.words.length;
             saveProgress();
+            b2ReportVocabulary(currentTopicId);
             document.getElementById('flashcardScreen').classList.remove('active');
             document.getElementById('completionScreen').classList.add('active');
 

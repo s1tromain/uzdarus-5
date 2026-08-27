@@ -115,6 +115,30 @@ COURSE_CODES.forEach((code) => {
         `owner cannot smuggle finalExamPassed by replacing courses.${code}`);
 });
 
+/* ---- THE RULE MUST ACTUALLY CALL THE GUARD ----
+   FOUND BY NEGATIVE CONTROL. Everything above reimplements
+   ownerUpdateAllowed() in JS from the key lists in firestore.rules and
+   attacks that. It never read the `allow update:` line itself — so deleting
+   `&& ownerUpdateAllowed()` from the rule, which opens the whole document,
+   left every assertion above passing. The key lists are worth nothing if
+   nothing consults them. */
+{
+    const userRule = RULES.match(/allow update:[^;]*;/g) || [];
+    ok(userRule.some((r) => /ownerUpdateAllowed\(\)/.test(r)),
+        'the user document update rule actually calls ownerUpdateAllowed()');
+    ok(userRule.every((r) => /isOwner\(|isAdmin\(|if false/.test(r)),
+        'every update rule is gated on an identity, never left open');
+    ok(!/allow\s+(read|write|create|update|delete)[^:]*:\s*if\s+true\s*;/.test(RULES),
+        'no rule is unconditionally open (allow ...: if true)');
+
+    const guardBody = RULES.slice(RULES.indexOf('function ownerUpdateAllowed'),
+                                  RULES.indexOf('function ownerUpdateAllowed') + 600);
+    ok(/affectedKeys\(\)\s*\.hasOnly\(\s*ownerMutableKeys\(\)\s*\)/.test(guardBody),
+        'ownerUpdateAllowed() still restricts the affected keys to ownerMutableKeys()');
+    ok(!/return\s+true\s*\|\|/.test(guardBody),
+        'ownerUpdateAllowed() has not been short-circuited to true');
+}
+
 /* ---- the exact attacks the audit proved ---- */
 ok(ownerUpdateAllowed({ 'courses.A1.completedTopics': [1,2,3,4,5,6,7,8,9,10,11,12], lastActivity: 'ts' }) === false,
     'ATTACK A: courses.A1.completedTopics = [1..12] is DENIED');

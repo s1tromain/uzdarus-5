@@ -19,10 +19,10 @@
  * ---------------------------------------------------------------------------
  * THE B2 RULES THIS FILE OWNS
  * ---------------------------------------------------------------------------
- *   PASS_PERCENT (85)  one constant drives BOTH gates, so they cannot drift
- *   per-exercise gate  below 85% the next exercise does not open; the learner
+ *   PASS_PERCENT (80)  one constant drives BOTH gates, so they cannot drift
+ *   per-exercise gate  below 80% the next exercise does not open; the learner
  *                      repeats THAT exercise (engine cfg.stepGate)
- *   topic gate         below 85% overall the topic is not completed and
+ *   topic gate         below 80% overall the topic is not completed and
  *                      nothing is written to progress or Firebase
  *   summary screen     one builder, mounted in the modal AND written into the
  *                      page's existing #quizResults, so a finished topic can
@@ -41,7 +41,10 @@
     if (global.B2Host) return;
 
     /** The single threshold. Both gates read this, so they can never differ. */
-    var PASS_PERCENT = 85;
+    /* The platform-wide lesson threshold. 80 is the product rule for every
+       course; it was 85 here while B2 was the only course with a gate at all.
+       Final exams are a different contract and are NOT affected. */
+    var PASS_PERCENT = 80;
 
     /* The shared presentation layer and the sentence-builder component, both
        resolved lazily so load order is free. B2 owns policy — thresholds,
@@ -82,20 +85,51 @@
          */
         function stepGate(result) {
             if (!result || !result.total) return { pass: true };
-            var p = pct(result.correct || 0, result.total);
-            if (p >= passPercent) return { pass: true };
+            var correct = result.correct || 0;
+            /* EXACT RATIO, NOT A ROUNDED PERCENT. pct() rounds for display, and
+               39/49 rounds to 80 while really being 79.6% — which would let a
+               learner past a threshold they did not reach. The comparison is
+               done in integers so the boundary is exactly where it is written:
+               8/10 passes, 7/10 does not, 4/5 passes, 3/5 does not. */
+            if (correct * 100 >= result.total * passPercent) return { pass: true };
             return {
                 pass: false,
                 min: passPercent,
-                message: 'Для перехода необходимо набрать минимум ' + passPercent + '%. ' +
-                         'Ваш результат — ' + p + '%. Пройдите это упражнение заново.'
+                percent: pct(correct, result.total),
+                message: 'Mashqdan o‘tish uchun kamida ' + passPercent + '% natija kerak. ' +
+                         'Ushbu mashqni qayta bajaring.'
             };
         }
 
         /* ----------------------------------------------------------- draft */
 
+        /* THE DRAFT IS SCOPED, AND ITS SHAPE IS CHECKED.
+        
+           B2's own store is keyed by user and topic only. That is not enough
+           on its own: without the COURSE, B2 topic 3 and A2 topic 3 write the
+           same entry, and without a structural FINGERPRINT a lesson that gains
+           or loses an exercise replays the learner's old answers into
+           questions that are no longer the ones they answered. The shared
+           lifecycle owns both checks, so all four courses agree on what a
+           draft is; B2's existing store is still written alongside, so a
+           learner mid-way through the old flow keeps everything they had. */
+        function scopedDraft() {
+            var L = global.UzExerciseLifecycle;
+            var id = topicIdOf();
+            if (!L || id == null) return null;
+            var t = (typeof deps.getTopic === 'function') ? deps.getTopic() : null;
+            var groups = (t && t.exercises) || [];
+            var uid = (typeof deps.uid === 'function' ? deps.uid() : null)
+                || global.currentUserId
+                || (function () { try { return JSON.parse(global.localStorage.getItem('currentUser')).id; }
+                                  catch (e) { return null; } })();
+            return L.create({ course: 'B2' }).draftFor(uid, id, groups);
+        }
+
         var draft = {
             save: function (state) {
+                var sc = scopedDraft();
+                if (sc) sc.save(state);
                 var id = topicIdOf();
                 if (id == null || typeof deps.saveDraft !== 'function') return;
                 var existing = (typeof deps.loadDraft === 'function' ? deps.loadDraft(id) : null) || {};
@@ -104,12 +138,25 @@
                 deps.saveDraft(id, existing);
             },
             load: function () {
+                /* the scoped, fingerprinted copy is the authority */
+                var sc = scopedDraft();
+                if (sc) {
+                    var got = sc.load();
+                    if (got) return got;
+                    /* nothing valid under the new scope: a legacy draft is only
+                       usable if the lesson still has the shape it was written
+                       against, which is exactly what the fingerprint decides —
+                       so an absent scoped draft means start clean. */
+                    return null;
+                }
                 var id = topicIdOf();
                 if (id == null || typeof deps.loadDraft !== 'function') return null;
                 var d = deps.loadDraft(id);
                 return (d && d.session) ? d.session : null;
             },
             clear: function () {
+                var sc = scopedDraft();
+                if (sc) sc.clear();
                 var id = topicIdOf();
                 if (id == null) return;
                 /* Clear ONLY this topic's draft. completedTopics, other topics,
@@ -153,7 +200,9 @@
             return {
                 topicId: topic ? topic.id : null,
                 score: correct, total: total, errors: total - correct,
-                percent: percent, passed: percent >= passPercent,
+                /* Same exact-ratio rule as the per-exercise gate, so the topic
+                   verdict and the step verdicts can never disagree at the boundary. */
+                percent: percent, passed: correct * 100 >= total * passPercent,
                 passPercent: passPercent, breakdown: breakdown, wrong: wrong,
                 timestamp: new Date().toISOString()
             };

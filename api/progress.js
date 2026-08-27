@@ -13,8 +13,9 @@ import { handleCors, sendJson } from './_lib/request.js';
  * same pattern api/admin.js already uses.
  */
 const ACTIONS = {
-    'complete-topic': () => import('./_progress/complete-topic.js'),
-    'final-exam':     () => import('./_progress/final-exam.js')
+    'complete-topic':     () => import('./_progress/complete-topic.js'),
+    'complete-component': () => import('./_progress/complete-component.js'),
+    'final-exam':         () => import('./_progress/final-exam.js')
 };
 
 export default async function handler(req, res) {
