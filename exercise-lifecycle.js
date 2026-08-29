@@ -91,11 +91,32 @@
             };
         }
 
+        /**
+         * A group with nothing to answer is not a requirement.
+         *
+         * A2 topics 6-16 carry an `audio` briefing — a listening screen with
+         * zero items, sitting between the last exercise and the Rost/Yolg'on
+         * questions. The gate demanded a passing score from EVERY group, and a
+         * screen with no questions can never produce one, so those eleven
+         * topics could not be completed however perfectly they were answered.
+         * The defect was invisible until the checked map was fixed, because
+         * before that no group passed the gate at all.
+         *
+         * The judgement is made from the GROUP's own items, never from the
+         * absence of a checked entry — a group that HAS questions and was
+         * never attempted must still fail.
+         */
+        function answerable(g) {
+            return !!(g && g.items && g.items.length);
+        }
+
         /** Is every required group passed? The gate for the whole pipeline. */
         function allGroupsPassed(groups, result) {
             var checked = (result && result.checked) || {};
             if (!groups || !groups.length) return false;
-            return groups.every(function (g) {
+            var required = groups.filter(answerable);
+            if (!required.length) return false;
+            return required.every(function (g) {
                 var c = checked[g.id];
                 if (!c || !c.total) return false;
                 if (c.passed === false) return false;
@@ -121,7 +142,10 @@
             if (!groups || !groups.length) return false;
             var byId = {};
             (snapshot.groups || []).forEach(function (g) { byId[g.groupId] = g; });
-            return groups.every(function (g) {
+            /* the same rule, read off a stored attempt instead of a live one */
+            var required = groups.filter(answerable);
+            if (!required.length) return false;
+            return required.every(function (g) {
                 var sg = byId[g.id];
                 if (!sg || !sg.total) return false;
                 if (sg.passed === false) return false;

@@ -2381,7 +2381,11 @@
             // Load user progress, then signal readiness (resume waits on this).
             loadUserProgress()
                 .catch(err => console.log('Progress load failed:', err))
-                .finally(() => { try { _vocabProgressReadyResolve(); } catch (e) {} });
+                .finally(() => {
+                    try { _vocabProgressReadyResolve(); } catch (e) {}
+                    /* decks finished before the component model existed */
+                    a2ReconcileVocabulary().catch(function () {});
+                });
 
             // Always show topic selection (rendered synchronously)
             loadTopics();
@@ -2732,6 +2736,28 @@
         }
 
         // ==================== PROGRESS MANAGEMENT ====================
+        /* THE HALF THEY ALREADY EARNED. A deck finished before the component
+           model shipped left its proof only in learnedWords; without this the
+           learner is asked to walk a hundred words again for a signal their
+           own progress already carries. Idempotent — a second load sends
+           nothing, because everything is acknowledged by then. */
+        async function a2ReconcileVocabulary() {
+            var V = window.UzVocabularyComponent;
+            if (!V || typeof V.reconcileLearned !== 'function') return null;
+            var topics = (vocabularyData.topics || []).map(function (t) {
+                return { id: t.id, total: (t.words || []).length };
+            });
+            var res = await V.reconcileLearned({
+                course: 'A2', topics: topics, learned: learnedWords,
+                courseState: window.__vocabCourseState,
+                api: { completeCourseComponent: window.completeCourseComponent }
+            });
+            if (res && res.reported && res.reported.length
+                && typeof loadTopics === 'function') loadTopics();
+            return res;
+        }
+        window.a2ReconcileVocabulary = a2ReconcileVocabulary;
+
         async function loadUserProgress() {
             try {
                 const userSession = localStorage.getItem('currentUser');

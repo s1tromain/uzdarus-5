@@ -7346,6 +7346,12 @@
                     completeTopic: function (id, payload) {
                         return a2FinishExercises(id == null ? topicId : id, payload);
                     },
+
+                    /* The summary's vocabulary button must go somewhere. */
+                    openVocabulary: function (id) {
+                        window.location.href = 'a2-vocabulary.html?topic=' +
+                            (id == null ? topicId : id);
+                    },
                     showResults: function (html) {
                         var box = document.getElementById('a2QuizResults');
                         if (!box) return;

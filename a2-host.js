@@ -467,6 +467,23 @@
                    is a compatibility side effect and no longer feeds scoring,
                    so nothing that happens to the hidden DOM can alter `r`. */
                 var r = scoreFromAnswers(answers);
+                /* THE GATE GRADES THROUGH result.checked, AND THE SCORE OBJECT
+                   HAD NONE. completeExercises() calls allGroupsPassed(groups,
+                   result), which reads result.checked[groupId]; this object
+                   carries its per-group figures in `breakdown`. Without the
+                   map the gate saw nothing, returned stage:'gate', and the
+                   page dropped it silently — 100%, "Завершить тему", modal
+                   closes, nothing saved, topic never completes. Derive the map
+                   from the SAME breakdown the summary shows, so the displayed
+                   verdict and the gate can never disagree. */
+                r.answers = answers || {};
+                r.checked = {};
+                (r.breakdown || []).forEach(function (b) {
+                    r.checked[b.id] = {
+                        correct: b.correct, total: b.total,
+                        passed: (b.correct || 0) * 100 >= (b.total || 0) * 80
+                    };
+                });
                 mirrorAll(answers || {});
                 /* keep the attempt so a completed topic can be reviewed later */
                 if (typeof deps.saveResult === 'function') {
@@ -494,14 +511,48 @@
                     var b = e.target && e.target.closest ? e.target.closest('[data-b2h-act]') : null;
                     if (!b) return;
                     var act = b.getAttribute('data-b2h-act');
-                    if (act === 'complete' && typeof deps.completeTopic === 'function') {
-                        /* presses the page's own completion button: one path to
-                           progress, Firebase and statistics */
-                        try { deps.completeTopic(topic.id, payload); } catch (err) {}
-                    }
                     if (act === 'restart') {
                         if (sess && typeof sess.reset === 'function') sess.reset();
                         if (sess && typeof sess.open === 'function') { sess.open(); return; }
+                        if (sess && typeof sess.close === 'function') sess.close();
+                        return;
+                    }
+                    if (act === 'vocab') {
+                        if (sess && typeof sess.close === 'function') sess.close();
+                        if (typeof deps.openVocabulary === 'function') deps.openVocabulary(topic.id);
+                        return;
+                    }
+                    if (act === 'complete' || act === 'retry') {
+                        b.disabled = true;
+                        b.textContent = 'Сохранение...';
+                        Promise.resolve()
+                            .then(function () {
+                                return typeof deps.completeTopic === 'function'
+                                    ? deps.completeTopic(topic.id, payload) : null;
+                            })
+                            .then(function (outcome) {
+                                /* CLOSE ONLY ON A REAL COMPLETION. The old handler
+                                   ran completeTopic inside a try/catch that dropped
+                                   the error, ignored the returned promise entirely,
+                                   and then closed the modal for every act — so a
+                                   failed save and a topic still missing its
+                                   vocabulary half both looked like success. */
+                                var U = ui();
+                                if (outcome && outcome.ok === true && outcome.topicCompleted !== false) {
+                                    if (U && typeof U.clearSummaryStatus === 'function') U.clearSummaryStatus(root);
+                                    if (sess && typeof sess.close === 'function') sess.close();
+                                    return;
+                                }
+                                if (U && typeof U.applySummaryStatus === 'function') {
+                                    U.applySummaryStatus(root, outcome);
+                                }
+                            }, function () {
+                                var U = ui();
+                                if (U && typeof U.applySummaryStatus === 'function') {
+                                    U.applySummaryStatus(root, null);
+                                }
+                            });
+                        return;
                     }
                     if (sess && typeof sess.close === 'function') sess.close();
                 });

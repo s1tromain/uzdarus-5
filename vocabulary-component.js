@@ -96,6 +96,73 @@
         return true;
     }
 
+    /** Does the learner's own stored progress prove this deck is finished? */
+    function deckFinished(learned, id, total) {
+        var need = Number(total);
+        if (!Number.isFinite(need) || need <= 0) return false;
+        var have = Number((learned || {})['topic_' + id]);
+        return Number.isFinite(have) && have >= need;
+    }
+
+    /**
+     * THE LEARNER ALREADY DID THE WORK; THE SERVER NEVER HEARD ABOUT IT.
+     *
+     * Nobody reported the vocabulary half until this file shipped, so every
+     * deck finished before then is invisible to the component model: the page
+     * shows 100%, the server has no vocabularyCompleted, and the topic can
+     * never close. The only remedy on offer was to walk the whole deck again —
+     * which is precisely what the learner who reported this did, twice, to no
+     * effect.
+     *
+     * So report what their stored progress already proves, through the SAME
+     * authoritative call the completion screen makes. Nothing here decides
+     * progression: the server owns completedTopics and still refuses to
+     * complete a topic whose exercises half is missing. Re-running it costs
+     * nothing — reportVocabulary answers `already` for anything acknowledged,
+     * so the second load of the page sends no calls at all.
+     *
+     * opts: { course, topics:[{id,total}], learned, courseState, api, user }
+     */
+    async function reconcileLearned(opts) {
+        opts = opts || {};
+        var course = String(opts.course || '').toUpperCase();
+        var topics = Array.isArray(opts.topics) ? opts.topics : [];
+        var state = opts.courseState || {};
+        var out = { course: course, reported: [], failed: [], skipped: 0 };
+        if (!course || !topics.length) return out;
+
+        for (var i = 0; i < topics.length; i++) {
+            var id = Number(topics[i] && topics[i].id);
+            if (!Number.isFinite(id) || id < 1) continue;
+            /* ONLY what the learner's own progress proves — never a guess. */
+            if (!deckFinished(opts.learned, id, topics[i].total)) continue;
+            if (vocabularyAcked(state, id) || legacyComplete(state, id)) { out.skipped++; continue; }
+
+            var res = await reportVocabulary({
+                course: course, topicId: id, courseState: state,
+                api: opts.api, user: opts.user
+            });
+            if (res && res.ok === true && res.stage === 'done') {
+                state.topicComponents = state.topicComponents || {};
+                state.topicComponents[id] = Object.assign(
+                    {}, state.topicComponents[id], { vocabularyCompleted: true });
+                if (Array.isArray(res.completedTopics)) {
+                    state.completedTopics = res.completedTopics.slice();
+                }
+                out.reported.push(id);
+                out.completedTopics = state.completedTopics;
+            } else if (!res || res.ok !== true) {
+                /* A network that just refused will refuse the rest too. The
+                   pending note reportVocabulary left survives the reload. */
+                out.failed.push(id);
+                break;
+            } else {
+                out.skipped++;
+            }
+        }
+        return out;
+    }
+
     /**
      * Report the vocabulary half, authoritatively.
      *
@@ -177,6 +244,8 @@
 
     global.UzVocabularyComponent = {
         reportVocabulary: reportVocabulary,
+        reconcileLearned: reconcileLearned,
+        deckFinished: deckFinished,
         pageState: pageState,
         vocabularyAcked: vocabularyAcked,
         legacyComplete: legacyComplete,

@@ -2497,11 +2497,25 @@
                        at all. */
                     completeTopic: function (id, r) {
                         b2SaveTopicResult(id, r);
-                        return Promise.resolve(b2FinishExercises(id, r)).then(function () {
-                            renderTopics();
-                            updateProgressBar();
-                            loadTopic(id);          // reopens as the archived result
+                        /* RETURN THE OUTCOME, and re-render only on a real
+                           completion. The summary has to know whether the two
+                           network calls actually landed: on a failure it stays
+                           open with a retry, and rebuilding the page underneath
+                           a modal that is staying open would tear out the mount
+                           the modal lives in. */
+                        return Promise.resolve(b2FinishExercises(id, r)).then(function (outcome) {
+                            if (outcome && outcome.ok === true && outcome.topicCompleted === true) {
+                                renderTopics();
+                                updateProgressBar();
+                                loadTopic(id);      // reopens as the archived result
+                            }
+                            return outcome;
                         });
+                    },
+
+                    /* The summary's vocabulary button must go somewhere. */
+                    openVocabulary: function (id) {
+                        window.location.href = 'b2-vocabulary.html?topic=' + id;
                     },
 
                     saveResult: b2SaveTopicResult,

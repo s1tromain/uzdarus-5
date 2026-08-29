@@ -222,6 +222,23 @@
          */
         function finish(answers) {
             var r = score(answers);
+            /* THE GATE GRADES THROUGH result.checked, AND THE SCORE OBJECT
+               HAD NONE. completeExercises() calls allGroupsPassed(groups,
+               result), which reads result.checked[groupId]; this object
+               carries its per-group figures in `breakdown`. Without the
+               map the gate saw nothing, returned stage:'gate', and the
+               page dropped it silently — 100%, "Завершить тему", modal
+               closes, nothing saved, topic never completes. Derive the map
+               from the SAME breakdown the summary shows, so the displayed
+               verdict and the gate can never disagree. */
+            r.answers = answers || {};
+            r.checked = {};
+            (r.breakdown || []).forEach(function (b) {
+                r.checked[b.id] = {
+                    correct: b.correct, total: b.total,
+                    passed: (b.correct || 0) * 100 >= (b.total || 0) * passPercent
+                };
+            });
 
             if (typeof deps.saveResult === 'function') {
                 try {
@@ -245,6 +262,12 @@
         }
 
         /** Wire the summary's own buttons. */
+        /** Report a completion that did not finish, inside the open modal. */
+        function showStalled(root, outcome) {
+            var U = ui();
+            if (U && typeof U.applySummaryStatus === 'function') U.applySummaryStatus(root, outcome);
+        }
+
         function bindSummary(root, payload, session) {
             var r = payload || {};
             root.addEventListener('click', function (e) {
@@ -252,7 +275,12 @@
                 if (!btn) return;
                 var act = btn.getAttribute('data-b2h-act');
 
-                if (act === 'complete') {
+                if (act === 'vocab') {
+                    if (session && typeof session.close === 'function') session.close();
+                    if (typeof deps.openVocabulary === 'function') deps.openVocabulary(r.topicId);
+                    return;
+                }
+                if (act === 'complete' || act === 'retry') {
                     if (!r.passed) return;                       // belt and braces
                     btn.disabled = true;
                     btn.textContent = 'Сохранение...';
@@ -261,10 +289,22 @@
                             return typeof deps.completeTopic === 'function'
                                 ? deps.completeTopic(r.topicId, r) : null;
                         })
-                        .catch(function () {})
-                        .then(function () {
-                            if (session && typeof session.close === 'function') session.close();
-                        });
+                        .then(function (outcome) {
+                            /* CLOSE ONLY ON A REAL COMPLETION. This used to close
+                               unconditionally, with the rejection swallowed by an
+                               empty .catch() — so a dropped connection, and a topic
+                               still missing its vocabulary half, looked exactly
+                               like success: the window shut, the next topic stayed
+                               locked, and nothing was said. Say what happened and
+                               leave a button that works. */
+                            if (outcome && outcome.ok === true && outcome.topicCompleted !== false) {
+                                var U = ui();
+                                if (U && typeof U.clearSummaryStatus === 'function') U.clearSummaryStatus(root);
+                                if (session && typeof session.close === 'function') session.close();
+                                return;
+                            }
+                            showStalled(root, outcome);
+                        }, function () { showStalled(root, null); });
                     return;
                 }
                 if (act === 'restart') {

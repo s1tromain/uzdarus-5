@@ -458,6 +458,12 @@
             '.b2h-cta-retry{background:linear-gradient(135deg,var(--b2-accent),var(--b2-primary));color:#fff;',
             'box-shadow:0 6px 20px rgba(108,99,255,.3)}',
             '.b2h-done-note{text-align:center;margin-top:16px;color:var(--b2-ok);font-weight:700}',
+            /* The panel that replaces a silent close. */
+            '.b2h-status{margin-top:18px;border-radius:14px;padding:15px 16px;text-align:center;',
+            'font-size:.98rem;line-height:1.6}',
+            '.b2h-status.need{background:#FFF8E8;border:1px solid #F2DDA8;color:#6B4E12}',
+            '.b2h-status.err{background:#FFF5F5;border:1px solid #EFB3B3;color:#8E2B2B}',
+            '.b2h-status p{margin:0 0 13px}',
             '@media(max-width:640px){.b2h-res-pct{font-size:3.4rem}.b2h-item{padding:18px 16px}',
             '.b2h-row-bar{width:64px}.b2h-cta{width:100%}}'
         ].join('');
@@ -1016,6 +1022,74 @@
                '</button></div>';
     }
 
+    /* --------------------------------------------- a completion that stalled
+
+       PRESSING "Завершить тему" USED TO CLOSE THE WINDOW NO MATTER WHAT.
+       The two network calls behind that button can fail, and the topic can be
+       missing its vocabulary half; both left the learner with a shut modal, a
+       locked next topic and not one word of explanation. A2 and B2 render
+       their summaries through this module, so the panel that says what
+       happened lives here, once, for both.
+
+       The button it offers is a real one: `vocab` opens the vocabulary the
+       topic is waiting on, `retry` runs the same completion again. */
+
+    /** The stalled-completion panel for an outcome that is not a success. */
+    function renderSummaryStatus(outcome) {
+        var o = outcome || {};
+        /* ok:true with topicCompleted:false means the exercises landed and the
+           server is still waiting on the vocabulary — not a failure to retry. */
+        var needVocab = o.ok === true && o.topicCompleted === false;
+        var msg = o.message || (needVocab
+            ? 'Avval ushbu mavzuning lug\u2018at bo\u2018limini yakunlang.'
+            : 'Natijani saqlab bo\u2018lmadi.\nInternet aloqasini tekshirib, qayta urinib ko\u2018ring.');
+        var act = needVocab
+            ? '<button type="button" class="b2h-cta b2h-cta-done" data-b2h-act="vocab">' +
+              'Lug\u2018atga o\u2018tish</button>'
+            : '<button type="button" class="b2h-cta b2h-cta-retry" data-b2h-act="retry">' +
+              'Qayta urinish</button>';
+        return '<div class="b2h-status ' + (needVocab ? 'need' : 'err') + '" data-b2h-status="1">' +
+               '<p>' + escHtml(msg).replace(/\n/g, '<br>') + '</p>' +
+               '<div class="b2h-res-acts">' + act + '</div></div>';
+    }
+
+    /**
+     * Put that panel into an OPEN summary, in place of the button that failed.
+     *
+     * The completion button is removed rather than re-enabled: leaving it
+     * beside a retry would offer the learner two buttons for one action.
+     */
+    function applySummaryStatus(root, outcome) {
+        if (!root || !root.querySelector) return null;
+        var old = root.querySelector('[data-b2h-status]');
+        if (old && old.parentNode) old.parentNode.removeChild(old);
+        var acts = root.querySelector('.b2h-res-acts');
+        if (acts && acts.parentNode) acts.parentNode.removeChild(acts);
+        var holder = root.ownerDocument
+            ? root.ownerDocument.createElement('div')
+            : document.createElement('div');
+        holder.innerHTML = renderSummaryStatus(outcome);
+        var node = holder.firstChild;
+        if (!node) return null;
+        (root.querySelector('.b2h-res') || root).appendChild(node);
+        return node;
+    }
+
+    /**
+     * Take the stalled-completion panel back down.
+     *
+     * The modal is hidden, not destroyed, so a panel left behind survives into
+     * the next open — a learner whose retry SUCCEEDED would reopen their
+     * finished topic and be told the result could not be saved.
+     */
+    function clearSummaryStatus(root) {
+        if (!root || !root.querySelector) return false;
+        var node = root.querySelector('[data-b2h-status]');
+        if (!node || !node.parentNode) return false;
+        node.parentNode.removeChild(node);
+        return true;
+    }
+
     global.UzExerciseUI = {
         VERSION: 1,
         injectStyles: injectStyles,
@@ -1030,6 +1104,9 @@
         renderComingSoon: renderComingSoon,
         renderVocabCard: renderVocabCard,
         renderExerciseSummary: renderExerciseSummary,
+        renderSummaryStatus: renderSummaryStatus,
+        applySummaryStatus: applySummaryStatus,
+        clearSummaryStatus: clearSummaryStatus,
         norm: norm,
         escHtml: escHtml
     };
