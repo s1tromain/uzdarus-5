@@ -432,6 +432,27 @@ try {
         ok(a.summary.length > 20, `${T} — the learner still sees a summary`);
         ok(a.buttons.length > 0, `${T} — with a way forward`);
         ok(/lug|Lug/.test(a.summary), `${T} — the summary says the vocabulary is still needed`);
+
+        /* THE BUTTON MUST GO SOMEWHERE.
+           REPORTED BY A LEARNER: "I worked to the end twice, scored above the
+           mark, it did not accept, and pressing does not finish it." Their
+           exercises WERE saved — the topic simply also needs its vocabulary
+           half. The summary said so and offered "Lug'atga o'tish", but the
+           course pages never passed onOpenVocabulary, so the button only
+           closed the modal and left the learner exactly where they were with
+           no way forward. A CTA that does nothing is worse than no CTA. */
+        const before = await p.evaluate(`return location.pathname;`);
+        await p.evaluate(`
+            var b = Array.prototype.slice.call(document.querySelectorAll('.uz-body button'))
+                .filter(function (x) { return /Lug/.test(x.textContent || ''); })[0];
+            if (b) b.click();
+            return 1;`);
+        await sleep(2200);
+        const after = await p.evaluate(`return location.pathname + location.search;`);
+        ok(after !== before, `${T} — the vocabulary button actually navigates (was ${before}, now ${after})`);
+        ok(after.indexOf(course.toLowerCase() + '-vocabulary') >= 0,
+            `${T} — it goes to this course's vocabulary (${after})`);
+        ok(after.indexOf('topic=1') >= 0, `${T} — carrying the right topic (${after})`);
     }
 } finally {
     try { await browser.close(); } catch (e) {}

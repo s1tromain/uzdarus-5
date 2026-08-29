@@ -5583,7 +5583,17 @@
                 /* RETURN the promise. The completion is two awaited network
                    calls, and a caller that cannot see the promise cannot see
                    whether they were awaited — including the tests. */
-                onFinish: function (result) { return a1FinishExercises(topicId, uid, result); }
+                onFinish: function (result) { return a1FinishExercises(topicId, uid, result); },
+                /* THE SUMMARY'S BUTTONS MUST DO SOMETHING.
+                   The host renders "Lug'atga o'tish" and "Qayta urinish" and
+                   calls back for both, but nothing was ever passed here — so a
+                   learner whose exercises were saved was told to finish the
+                   vocabulary and then given a button that only closed the
+                   modal. */
+                onOpenVocabulary: function (id) {
+                    window.location.href = 'a1-vocabulary.html?topic=' + id;
+                },
+                onRetry: function () { return a1RetrySave(); }
             });
         }
 

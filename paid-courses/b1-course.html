@@ -9203,7 +9203,17 @@
 
             var ok = !!window.B1Host.mountPractice({
                 topic: topic, mountEl: host, uid: uid,
-                onFinish: function (result) { return b1FinishExercises(topicId, uid, result); }
+                onFinish: function (result) { return b1FinishExercises(topicId, uid, result); },
+                /* THE SUMMARY'S BUTTONS MUST DO SOMETHING.
+                   The host renders "Lug'atga o'tish" and "Qayta urinish" and
+                   calls back for both, but nothing was ever passed here — so a
+                   learner whose exercises were saved was told to finish the
+                   vocabulary and then given a button that only closed the
+                   modal. */
+                onOpenVocabulary: function (id) {
+                    window.location.href = 'b1-vocabulary.html?topic=' + id;
+                },
+                onRetry: function () { return b1RetrySave(); }
             });
             if (!ok) { quizSection.innerHTML = ''; return false; }
             b1RenderMatching(topicId);
