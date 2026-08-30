@@ -23,6 +23,8 @@ const ENGINE = fs.readFileSync(path.join(ROOT, 'exercise-session.js'), 'utf8');
 const HOST = fs.readFileSync(path.join(ROOT, 'b2-host.js'), 'utf8');
 const BUILDER = fs.readFileSync(path.join(ROOT, 'sentence-builder.js'), 'utf8');
 const UI = fs.readFileSync(path.join(ROOT, 'course-exercise-ui.js'), 'utf8');
+/* the shared completion contract — the summary's only action area */
+const TCJS = fs.readFileSync(path.join(ROOT, 'topic-completion.js'), 'utf8');
 const DATA = fs.readFileSync(path.join(ROOT, 'b2-lesson-data.js'), 'utf8');
 
 /* ------------------------------------------------------------------ page */
@@ -52,12 +54,15 @@ function boot(opts) {
     w.eval(ENGINE);
     w.eval(BUILDER);
     w.eval(UI);
+    w.eval(TCJS);
     w.eval(HOST);
     w.eval(DATA);
 
     const spy = {
         results: [], resultSaves: [], completions: [], firebaseProgress: [],
-        draftWrites: 0, draftClears: 0, resultHtml: []
+        draftWrites: 0, draftClears: 0, resultHtml: [],
+        /* where the shared contract sent the learner, in order */
+        navigated: []
     };
     const store = opts.store || {};
     const userProgress = opts.userProgress || {};
@@ -79,7 +84,21 @@ function boot(opts) {
                 .filter(k => userProgress[k] && userProgress[k].completed)
                 .map(k => parseInt(k, 10)).filter(Number.isFinite).sort((a, b) => a - b);
             spy.firebaseProgress.push({ course: 'B2', completedTopics: completed });
+            /* THE PAGE HANDS BACK THE LIFECYCLE'S VERDICT, and the host now
+               closes the window only on a real completion. A stub that
+               returned nothing used to be indistinguishable from a dropped
+               connection — which is precisely the confusion that let
+               "Завершить тему" close in silence on a failure. */
+            return spy.completeOutcome !== undefined
+                ? spy.completeOutcome
+                : { ok: true, stage: 'done', exercisesCompleted: true,
+                    topicCompleted: true, completedTopics: completed,
+                    nextTopic: Number(id) + 1 };
         },
+        /* the only per-course part of the contract: where to go next */
+        isLastTopic: (id) => Number(id) >= 16,
+        navigate: (next) => { spy.navigated.push(next); },
+        openVocabulary: () => {},
         saveResult: (id, r) => { spy.resultSaves.push({ id, r }); resultStore[id] = r; },
         loadResult: (id) => resultStore[id] || null,
         saveDraft: (id, d) => { spy.draftWrites++; store['b2_quiz_draft_' + id] = JSON.stringify(d); },
@@ -201,6 +220,7 @@ function playTopic(ctx, wrongPerStep) {
     return 'ended';
 }
 
+const settle = () => new Promise((r) => setTimeout(r, 40));
 const flush = () => new Promise(r => setTimeout(r, 0));
 
 (async () => {
@@ -358,16 +378,27 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     ok(r80.percent === 80, '5.6 80 correct answers give exactly 80%');
     ok(r80.passed === true, '5.7 80% DOES pass — the threshold is inclusive');
 
+    /* THE SCORE SCREEN AND THE ACTION AREA ARE NOW TWO PIECES. The screen
+       reports the marks; topic-completion.js renders what can be pressed, and
+       it is the same area in all four courses. Assert each where it lives. */
     const h79 = api.buildResultsHtml(r79);
     ok(h79.includes('Тема не пройдена'), '5.8 79% screen says the topic was not passed');
-    ok(h79.includes('data-b2h-act="restart"'), '5.9 79% offers a retry');
-    ok(!h79.includes('data-b2h-act="complete"'), '5.10 79% offers NO complete button');
-    ok(h79.includes('не засчитана'), '5.11 79% states the topic is not credited');
+    ok(!h79.includes('data-uztc="finish"'), '5.9 the score screen draws no buttons of its own');
+    ok(/Проходной балл/.test(h79), '5.10 79% states the threshold it missed');
 
     const h80 = api.buildResultsHtml(r80);
-    ok(h80.includes('Тема пройдена'), '5.12 80% screen says the topic was passed');
-    ok(h80.includes('data-b2h-act="complete"'), '5.13 80% offers "Завершить тему"');
-    ok(!h80.includes('data-b2h-act="restart"'), '5.14 80% does not push a retry');
+    ok(h80.includes('Тема пройдена'), '5.11 80% screen says the topic was passed');
+    ok(/Порог 80% пройден/.test(h80) || !/lug‘at bo‘limini yakunlang/i.test(h80),
+        '5.12 and never tells the learner to finish the deck first');
+
+    const TC = ctx.w.UzTopicCompletion;
+    const a79 = TC.renderAction({ snapshot: r79 });
+    ok(!/data-uztc="finish"/.test(a79), '5.13 79% offers NO completion button');
+    ok(/data-uztc="retry-exercises"/.test(a79), '5.14 79% offers another attempt');
+    const a80 = TC.renderAction({ snapshot: r80 });
+    ok(/data-uztc="finish"/.test(a80), '5.15 exactly 80% offers the completion button');
+    ok(/Завершить тему и перейти/.test(a80), '5.16 with the shared label');
+    ok(!/data-uztc="retry-exercises"/.test(a80), '5.17 and does not push a retry');
 }
 
 /* ------------------------------------------- 6. FULL RESULTS SCREEN */
@@ -395,7 +426,7 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     ok(res && !!res.querySelector('.b2h-res-ring i'), '6.9 progress bar shown');
     ok(res && !!res.querySelector('.b2h-tips'), '6.10 recommendations shown');
     ok(res && res.querySelectorAll('.b2h-tips li').length > 0, '6.11 recommendations are not empty');
-    ok(res && !!res.querySelector('[data-b2h-act="complete"]'), '6.12 "Завершить тему" offered at 100%');
+    ok(res && !!res.querySelector('[data-uztc="finish"]'), '6.12 the completion button is offered at 100%');
     ok(ctx.spy.completions.length === 0, '6.13 nothing completed before the button is pressed');
     ok(ctx.spy.resultHtml.length === 1, '6.14 the page mirror was written once');
     ok(w.document.getElementById('quizResults').classList.contains('show'),
@@ -412,10 +443,14 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     click(ctx.w, btnOf(ctx.w));
     playTopic(ctx, 0);
     const w = ctx.w;
-    const btn = w.document.querySelector('.uz-summary-host [data-b2h-act="complete"]');
-    ok(!!btn, '7.1 complete button present');
+    /* ONE BUTTON, drawn by topic-completion.js and shared with A1, A2 and B1.
+       The old per-course action row is gone; so are its selectors. */
+    const btn = w.document.querySelector('.uz-summary-host [data-uztc="finish"]');
+    ok(!!btn, '7.1 the shared completion button is present');
+    ok(!!btn && /Завершить тему и перейти/.test(btn.textContent || ''),
+        `7.1b labelled for the learner (${btn && btn.textContent})`);
     if (btn) click(w, btn);
-    await flush(); await flush();
+    await flush(); await flush(); await settle();
 
     ok(ctx.spy.completions.length === 1, '7.2 completeTopic called exactly once');
     ok(ctx.spy.completions[0] && ctx.spy.completions[0].id === 1, '7.3 completed the right topic');
@@ -425,6 +460,61 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     ok(!!fb && JSON.stringify(fb.completedTopics) === '[1]', '7.6 completedTopics synced as [1]');
     ok(!!ctx.resultStore[1], '7.7 the attempt result is stored for later');
     ok(w.document.querySelector('.uz-modal').hidden === true, '7.8 modal closes after completing');
+    ok(ctx.spy.navigated.length === 1, '7.9 and the learner is taken onward exactly once');
+    ok(ctx.spy.navigated[0] === 2, `7.10 to the NEXT topic (${ctx.spy.navigated[0]})`);
+}
+
+/* --------------------------- 7b. A COMPLETION THAT DID NOT COMPLETE
+
+   The learner pressed the button and the network refused, or the topic is
+   still missing its vocabulary half. Neither may look like success: the
+   window stays, the reason is on screen, and the button offered does the
+   right thing. */
+{
+    const ctx = boot({ paid: true });
+    ctx.spy.completeOutcome = null;              // a rejected / absent verdict
+    mount(ctx);
+    click(ctx.w, btnOf(ctx.w));
+    playTopic(ctx, 0);
+    const w = ctx.w;
+    const btn = w.document.querySelector('.uz-summary-host [data-uztc="finish"]');
+    if (btn) click(w, btn);
+    await flush(); await flush(); await settle();
+
+    ok(w.document.querySelector('.uz-modal').hidden === false,
+        '7b.1 a failed completion does NOT close the window');
+    const panel = w.document.querySelector('[data-uztc-area]');
+    ok(!!panel, '7b.2 the action area is still there');
+    const note = panel && panel.querySelector('.uztc-note');
+    ok(!!note && /uztc-err/.test(note.className), '7b.3 marked as an error');
+    ok(!!note && (note.textContent || '').length > 10, '7b.4 with a readable message');
+    ok(!!panel && !!panel.querySelector('[data-uztc="finish"]'), '7b.5 and a button that retries');
+    ok(ctx.spy.navigated.length === 0, '7b.6 and the learner is NOT taken anywhere');
+}
+
+/* The server refuses even though the exercises landed: an anomaly, and it
+   must read as one — never as "go and finish the vocabulary first". */
+{
+    const ctx = boot({ paid: true });
+    ctx.spy.completeOutcome = { ok: true, stage: 'done', exercisesCompleted: true,
+        topicCompleted: false, completedTopics: [], message: null };
+    mount(ctx);
+    click(ctx.w, btnOf(ctx.w));
+    playTopic(ctx, 0);
+    const w = ctx.w;
+    const btn = w.document.querySelector('.uz-summary-host [data-uztc="finish"]');
+    if (btn) click(w, btn);
+    await flush(); await flush(); await settle();
+
+    ok(w.document.querySelector('.uz-modal').hidden === false,
+        '7c.1 a server that refuses does NOT close the window either');
+    const panel = w.document.querySelector('[data-uztc-area]');
+    const note = panel && panel.querySelector('.uztc-note');
+    ok(!!note && /uztc-err/.test(note.className), '7c.2 it is reported as a failure');
+    ok(!/lug‘at bo‘limini yakunlang/i.test(String(note && note.textContent)),
+        '7c.3 and NEVER as an errand to the vocabulary deck');
+    ok(ctx.spy.completions.length === 1, '7c.4 the exercises were still reported once');
+    ok(ctx.spy.navigated.length === 0, '7c.5 and nothing unlocked');
     ok(!ctx.store['b2_quiz_draft_1'], '7.9 the draft is cleared once the topic is graded');
 }
 
@@ -441,8 +531,10 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     holder.innerHTML = api.buildResultsHtml(r);
     w.document.body.appendChild(holder);
     api.bindSummary(holder, r, { close() {}, reset() {}, open() {} });
-    ok(!holder.querySelector('[data-b2h-act="complete"]'), '8.3 no complete button below threshold');
-    click(w, holder.querySelector('[data-b2h-act="restart"]'));
+    ok(!holder.querySelector('[data-uztc="finish"]'), '8.3 no completion button below the threshold');
+    const again = holder.querySelector('[data-uztc="retry-exercises"]');
+    ok(!!again, '8.3b but another attempt is offered');
+    if (again) click(w, again);
     await flush();
     ok(ctx.spy.completions.length === 0, '8.4 a failing topic never reaches completeTopic');
     ok(!ctx.userProgress[1], '8.5 progress untouched by a failed attempt');
@@ -470,8 +562,8 @@ console.log('\n=== B2 HOST LAYER — INTEGRATION ===\n');
     ok(mountEl.querySelector('.b2h-res-pct').textContent === '96%', '9.4 the stored percent is shown');
     ok(mountEl.textContent.includes('96/100'), '9.5 the stored score is shown');
     ok(mountEl.textContent.includes('Тема завершена'), '9.6 it reads as a finished topic');
-    ok(!mountEl.querySelector('[data-b2h-act="complete"]'), '9.7 no second completion is possible');
-    ok(!mountEl.querySelector('[data-b2h-act="restart"]'), '9.8 no retake is offered yet (by design)');
+    ok(!mountEl.querySelector('[data-uztc="finish"]'), '9.7 no second completion is possible');
+    ok(!mountEl.querySelector('[data-uztc="retry-exercises"]'), '9.8 no retake is offered yet (by design)');
     ok(!w.document.querySelector('.uz-modal'), '9.9 nothing opens automatically');
 
     const ctx2 = boot({ paid: true, userProgress: { 1: { completed: true } } });

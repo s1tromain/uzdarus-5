@@ -1,26 +1,33 @@
 /**
  * topic-components.js — what it takes to finish a paid topic.
  *
- * A paid lesson has TWO halves, and a topic is finished only when both are:
+ * THE RULE, AND THE ONLY RULE:
  *
- *   vocabulary   the topic's deck, worked through
- *   exercises    every exercise group passed at its own threshold
+ *   a topic is finished  <=>  its EXERCISES are finished
  *
- * Before this existed, `completedTopics` was appended by whoever asked first,
- * so finishing the exercises alone unlocked the next topic and the vocabulary
- * could be skipped entirely (or the reverse). The component record is the
- * server's memory of which halves are done; `completedTopics` becomes a
- * CONCLUSION drawn from it rather than a claim the client makes.
+ * and the exercises are finished when the learner's authoritative score
+ * reaches the 80% threshold. The vocabulary deck is a study aid. Its progress
+ * is recorded, it is reported here like any other component, and it changes
+ * NOTHING about whether the next topic opens.
  *
- * LEGACY IS NEVER REVOKED. Learners finished topics under the old one-step
- * rule, and their ids are already in `completedTopics` with no component
- * record at all. Those topics stay complete: `isTopicComplete()` answers yes
- * for anything already in the array, and nothing here ever removes an id.
- * Only topics NOT yet completed are held to the two-component rule.
+ * WHY THIS CHANGED. The previous rule required BOTH halves, and it stranded
+ * learners in a way nothing in the client could repair. Two were reported on
+ * the same day: one had finished a B2 topic three times over, and a brand-new
+ * A1 account finished the exercises and the whole deck and still faced a
+ * locked topic 2. Anything that leaves the vocabulary half unrecorded — a deck
+ * finished before the component model shipped, a completion screen closed one
+ * tap early, a single dropped network call — locked the learner out of the
+ * rest of the course with no way back, because the only remedy on offer was to
+ * walk a hundred words again and hope the call landed the second time. A
+ * mandatory half that the learner cannot reliably report is not a gate, it is
+ * a trap. The exercises are the assessment; they decide.
  *
- * Shared by the complete-component and complete-topic endpoints so the two
- * cannot drift — which matters, because complete-topic is the older route and
- * must not remain a way around the rule.
+ * LEGACY IS NEVER REVOKED. Ids already in `completedTopics` stay there, with
+ * or without a component record, and nothing here ever removes one.
+ *
+ * `completedTopics` is still a CONCLUSION the server draws, never a claim the
+ * client makes. Shared by the complete-component and complete-topic endpoints
+ * so the two cannot drift.
  */
 
 export const TOPIC_COMPONENTS = Object.freeze(['vocabulary', 'exercises']);
@@ -55,9 +62,9 @@ export function completedIds(courseState, totalTopics) {
 /**
  * Are BOTH halves of this topic done?
  *
- * Note this asks about the components only. A legacy topic has no component
- * record and answers false here — which is correct, and why callers ask
- * isTopicComplete() instead when they mean "is this topic finished".
+ * REPORTING ONLY. This is what the client shows about the deck; it is not a
+ * gate and no progression decision may be taken from it. `isTopicComplete()`
+ * is the question that decides anything.
  */
 export function bothComponentsComplete(courseState, topicId) {
     const c = componentsOf(courseState, topicId);
@@ -65,14 +72,27 @@ export function bothComponentsComplete(courseState, topicId) {
 }
 
 /**
- * Is this topic finished, by either route?
+ * Is the assessed half done? THE gate.
  *
- *   already in completedTopics     -> yes (LEGACY, never revoked)
- *   both components complete       -> yes (the new rule)
+ * The exercises component is written only after the client has passed every
+ * required exercise group at the shared 80% threshold, so this is the stored
+ * form of `exerciseScore >= 80`.
+ */
+export function exercisesComplete(courseState, topicId) {
+    return componentsOf(courseState, topicId).exercisesCompleted === true;
+}
+
+/**
+ * Is this topic finished?
+ *
+ *   already in completedTopics  -> yes (LEGACY, never revoked)
+ *   the exercises are complete  -> yes
+ *
+ * The vocabulary deck is deliberately absent from this answer.
  */
 export function isTopicComplete(courseState, topicId, totalTopics) {
     if (completedIds(courseState, totalTopics).includes(Number(topicId))) return true;
-    return bothComponentsComplete(courseState, topicId);
+    return exercisesComplete(courseState, topicId);
 }
 
 /**
@@ -93,12 +113,14 @@ export function previousTopicSatisfied(courseState, topicId, totalTopics) {
  *
  * Returns the array to store, or null when nothing should change. Monotonic
  * and idempotent: an id already present is never duplicated and never removed,
- * and a topic whose components are not both done is never added.
+ * and a topic whose exercises are not done is never added. Reporting the
+ * vocabulary half alone adds nothing — it never did, and now it never blocks
+ * anything either.
  */
 export function finalizeCompletedTopics(courseState, topicId, totalTopics) {
     const id = Number(topicId);
     const current = completedIds(courseState, totalTopics);
     if (current.includes(id)) return null;                 /* already done */
-    if (!bothComponentsComplete(courseState, id)) return null;  /* not yet earned */
+    if (!exercisesComplete(courseState, id)) return null;  /* not yet earned */
     return Array.from(new Set([...current, id])).sort((a, b) => a - b);
 }

@@ -262,56 +262,36 @@
         }
 
         /** Wire the summary's own buttons. */
-        /** Report a completion that did not finish, inside the open modal. */
-        function showStalled(root, outcome) {
-            var U = ui();
-            if (U && typeof U.applySummaryStatus === 'function') U.applySummaryStatus(root, outcome);
-        }
-
         function bindSummary(root, payload, session) {
             var r = payload || {};
-            root.addEventListener('click', function (e) {
-                var btn = e.target && e.target.closest ? e.target.closest('[data-b2h-act]') : null;
-                if (!btn) return;
-                var act = btn.getAttribute('data-b2h-act');
-
-                if (act === 'vocab') {
-                    if (session && typeof session.close === 'function') session.close();
+            /* ONE CONTRACT, FOUR COURSES. The summary no longer draws its own
+               buttons and no longer decides anything: topic-completion.js owns the
+               rule, the wording and the action, so a fix here cannot leave the other
+               three courses behind — which is exactly how the vocabulary gate
+               survived being "fixed" twice. */
+            var TC = global.UzTopicCompletion;
+            if (!TC || typeof TC.attach !== 'function') return;
+            TC.attach(root, {
+                topicId: r.topicId,
+                snapshot: r,
+                outcome: null,
+                isLast: typeof deps.isLastTopic === 'function' ? !!deps.isLastTopic(r.topicId) : false,
+                hasVocabulary: typeof deps.openVocabulary === 'function',
+                finish: function () {
+                    return typeof deps.completeTopic === 'function' ? deps.completeTopic(r.topicId, r) : null;
+                },
+                navigate: function (next, outcome) {
+                    if (typeof deps.navigate === 'function') deps.navigate(next, outcome);
+                },
+                openVocabulary: function () {
                     if (typeof deps.openVocabulary === 'function') deps.openVocabulary(r.topicId);
-                    return;
-                }
-                if (act === 'complete' || act === 'retry') {
-                    if (!r.passed) return;                       // belt and braces
-                    btn.disabled = true;
-                    btn.textContent = 'Сохранение...';
-                    Promise.resolve()
-                        .then(function () {
-                            return typeof deps.completeTopic === 'function'
-                                ? deps.completeTopic(r.topicId, r) : null;
-                        })
-                        .then(function (outcome) {
-                            /* CLOSE ONLY ON A REAL COMPLETION. This used to close
-                               unconditionally, with the rejection swallowed by an
-                               empty .catch() — so a dropped connection, and a topic
-                               still missing its vocabulary half, looked exactly
-                               like success: the window shut, the next topic stayed
-                               locked, and nothing was said. Say what happened and
-                               leave a button that works. */
-                            if (outcome && outcome.ok === true && outcome.topicCompleted !== false) {
-                                var U = ui();
-                                if (U && typeof U.clearSummaryStatus === 'function') U.clearSummaryStatus(root);
-                                if (session && typeof session.close === 'function') session.close();
-                                return;
-                            }
-                            showStalled(root, outcome);
-                        }, function () { showStalled(root, null); });
-                    return;
-                }
-                if (act === 'restart') {
-                    /* A fresh attempt from exercise 1 — the failed attempt's
-                       answers are dropped so nothing carries over. */
+                },
+                retryExercises: function () {
                     if (session && typeof session.reset === 'function') session.reset();
                     if (session && typeof session.open === 'function') session.open();
+                },
+                close: function () {
+                    if (session && typeof session.close === 'function') session.close();
                 }
             });
         }

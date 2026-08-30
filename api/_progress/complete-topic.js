@@ -6,7 +6,7 @@ import { normalizeRole } from '../_lib/roles.js';
 import { isAccountFrozen } from '../../account-freeze.js';
 import { COURSE_CANON } from '../_lib/course-canon.js';
 import {
-    completedIds, previousTopicSatisfied, finalizeCompletedTopics, componentsOf
+    completedIds, previousTopicSatisfied, finalizeCompletedTopics
 } from '../_lib/topic-components.js';
 
 /**
@@ -106,15 +106,16 @@ export default async function handler(req, res) {
             }
 
             /* THE GATE. finalizeCompletedTopics() returns an array only when the
-               stored record already earns the id — both halves done — and null
-               otherwise. This endpoint has no way to overrule it. */
+               stored record already earns the id — the EXERCISES reported — and
+               null otherwise. This endpoint has no way to overrule it.
+
+               The refusal names the exercises and nothing else. It used to send
+               a learner whose exercises were done off to the vocabulary deck,
+               which is precisely the errand that stranded them. */
             const next = finalizeCompletedTopics(courseState, topicId, canon.totalTopics);
             if (!next) {
-                const c = componentsOf(courseState, topicId);
                 throw Object.assign(
-                    new Error(c.exercisesCompleted
-                        ? 'Avval ushbu mavzuning lug‘at bo‘limini yakunlang.'
-                        : 'Avval ushbu mavzudagi mashqlarni yakunlang.'),
+                    new Error('Avval ushbu mavzudagi mashqlarni yakunlang.'),
                     { statusCode: 409 }
                 );
             }

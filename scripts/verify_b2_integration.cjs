@@ -220,7 +220,15 @@ for (const p of PAGES) {
     ok(/function stepGate/.test(host), 'host implements the per-exercise gate');
     ok(/function buildResultsHtml/.test(host), 'host owns ONE results builder');
     ok((host.match(/function buildResultsHtml/g) || []).length === 1, 'exactly one results builder');
-    ok(/data-b2h-act="complete"/.test(SHARED_UI), 'the shared results screen offers explicit completion');
+    /* COMPLETION LIVES IN ONE PLACE FOR ALL FOUR COURSES. The results screen
+       reports the marks; topic-completion.js renders the single button that
+       finishes the topic, so B2 cannot drift away from A1, A2 and B1 again. */
+    const TC = fs.readFileSync(path.join(ROOT, 'topic-completion.js'), 'utf8');
+    ok(!/data-b2h-act="complete"/.test(SHARED_UI), 'the results screen draws no completion button of its own');
+    ok(/data-uztc="finish"/.test(TC.replace(/\s+/g, ' ')) || /'finish'/.test(TC),
+        'the shared contract owns the completion button');
+    ok(/Завершить тему и перейти дальше/.test(TC), 'with the label the product specifies');
+    ok(/UzTopicCompletion/.test(host), 'the B2 host presses that shared contract');
     ok(/b2h-slot/.test(SHARED_UI), 'the shared UI renders inline answer slots');
     ok(/@keyframes b2hPop/.test(SHARED_UI), 'the shared UI ships the selection animation');
     ok(/b2g-t|b2g-scheme/.test(SHARED_UI), 'the shared UI styles the grammar lesson');

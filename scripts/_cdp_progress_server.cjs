@@ -9,7 +9,7 @@
  *
  * So this models the real rule instead:
  *
- *   a topic completes  <=>  vocabularyCompleted AND exercisesCompleted
+ *   a topic completes  <=>  exercisesCompleted
  *
  * and nothing else. complete-topic FINALISES what the component records
  * already earn; it cannot complete anything on its own. Every call is
@@ -42,6 +42,9 @@ const OPT = ${s};
    always answer with the seed state and every durability test would be a
    tautology. State lives in localStorage under one key, exactly as a real
    backend outlives the page. */
+/* The canon, mirroring api/_lib/course-canon.js. */
+const TOTAL = { A1: 12, A2: 16, B1: 20, B2: 16 };
+
 const SKEY = '__cdp_server_state__';
 function loadState() {
     try {
@@ -93,7 +96,7 @@ window.getUserQuizResults = async () => { await wait(); return clone(OPT.quizRes
 window.getTopicQuizResult = async (uid, topicId) =>
     clone((OPT.quizResults || []).find((r) => Number(r.topicId) === Number(topicId)) || null);
 
-/* THE RULE. Record the half, then finalise only if BOTH halves are in. */
+/* THE RULE. Record the section; a topic completes when its EXERCISES are in. */
 window.completeCourseComponent = async (code, topicId, component) => {
     const e = rec('completeCourseComponent', { course: code, topicId, component });
     await wait();
@@ -110,21 +113,27 @@ window.completeCourseComponent = async (code, topicId, component) => {
     else row.exercisesCompleted = true;
     c.topicComponents[id] = row;
 
-    const both = row.vocabularyCompleted === true && row.exercisesCompleted === true;
-    if (both && c.completedTopics.indexOf(id) < 0) {
+    /* THE RULE, matching api/_lib/topic-components.js: the EXERCISES decide.
+       The deck is recorded and gates nothing. */
+    const done = row.exercisesCompleted === true;
+    if (done && c.completedTopics.indexOf(id) < 0) {
         c.completedTopics.push(id);
         c.completedTopics.sort((a, b) => a - b);
     }
-    e.both = both;
+    e.both = done;
     persist();
     return {
         ok: true, course: String(code).toUpperCase(), topicId: id, component,
         components: { vocabularyCompleted: row.vocabularyCompleted === true,
                       exercisesCompleted: row.exercisesCompleted === true,
                       vocabularyCompletedAt: null, exercisesCompletedAt: null },
-        topicCompleted: both,
+        topicCompleted: done,
         completedTopics: clone(c.completedTopics),
-        nextTopic: both ? id + 1 : null
+        /* THE REAL SERVER RETURNS NULL PAST THE LAST TOPIC (see
+           api/_progress/complete-component.js: topicId < canon.totalTopics).
+           Returning id+1 for the final topic told the client to open a topic
+           that does not exist instead of ending the course. */
+        nextTopic: (done && id < TOTAL[String(code).toUpperCase()]) ? id + 1 : null
     };
 };
 
@@ -135,14 +144,25 @@ window.completeCourseTopic = async (code, topicId) => {
     const c = course(code);
     const id = Number(topicId);
     const row = c.topicComponents[id] || {};
-    const both = row.vocabularyCompleted === true && row.exercisesCompleted === true;
-    if (both && c.completedTopics.indexOf(id) < 0) { c.completedTopics.push(id); c.completedTopics.sort((a,b)=>a-b); }
+    const done = row.exercisesCompleted === true;
+    if (done && c.completedTopics.indexOf(id) < 0) { c.completedTopics.push(id); c.completedTopics.sort((a,b)=>a-b); }
     persist();
     return clone(c.completedTopics);
 };
 
 window.submitFinalExam = async (code, answers) => { rec('submitFinalExam', { course: code, n: answers && answers.length }); await wait(); return clone(OPT.examResult || { ok: true, passed: false, score: 0 }); };
 window.issueCertificate = async (code) => { rec('issueCertificate', { course: code }); await wait(); return clone(OPT.certificate || { ok: false, reason: 'not-eligible' }); };
+
+/* A RUNTIME SWITCH, so "it failed, then the retry worked" is testable at all.
+   The seed flags are fixed for the life of the page; recovery needs the same
+   page to see a refusal and then an acceptance. */
+window.__setFail = (kind, on) => {
+    if (kind === 'save') OPT.failSave = !!on;
+    else if (kind === 'component') OPT.failComponent = !!on;
+    else if (kind === 'malformed') OPT.malformedAck = !!on;
+    return { failSave: !!OPT.failSave, failComponent: !!OPT.failComponent,
+             malformedAck: !!OPT.malformedAck };
+};
 
 window.__serverState = () => JSON.parse(JSON.stringify(STATE));
 window.__resetServerState = () => { try { localStorage.removeItem(SKEY); } catch (e) {} };

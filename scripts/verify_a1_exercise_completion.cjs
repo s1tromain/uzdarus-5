@@ -90,40 +90,58 @@ function harness(over = {}) {
 (async () => {
 
 /* ================================================================ *
- * 1. THE GATE — nothing happens until every group is passed
+ * 1. THE GATE — the OFFICIAL SCORE, and nothing else
+ *
+ * It used to demand a pass on every single group, which is not the rule the
+ * summary screen states and not the rule the product has: a topic is earned
+ * when the official total reaches 80%. Gaps and a weak exercise are allowed
+ * to cost marks; what they cannot do is create a screen that says "80%
+ * passed" above a handler that refuses.
  * ================================================================ */
 {
+    const total = GROUPS.reduce((n, g) => n + (g.items || []).length, 0);
+
+    /* one weak exercise, but the paper still reaches the bar */
     const h = harness();
     const partial = attempt(GROUPS, 100);
-    /* fail exactly one group */
-    const victim = GROUPS[1].id;
-    partial.checked[victim] = { correct: 7, total: 10, passed: false };
+    partial.checked[GROUPS[1].id] = { correct: 7, total: 10, passed: false };
     const r = await A1.completeExercises({ topicId: 6, groups: GROUPS, result: partial,
                                            uid: 'u1', api: h.api });
-    eq('one failed group stops the pipeline', r.ok, false);
-    eq('  at the gate', r.stage, 'gate');
-    eq('  nothing was saved', h.calls.length, 0);
+    eq(`one weak exercise still leaves ${total - 3}/${total} — the topic is earned`, r.ok, true);
+    eq('  and it was reported', h.calls.length, 2);
 
-    /* and a group that was never attempted */
+    /* a whole exercise left unanswered, and the total is still exactly 80% */
     const untouched = attempt(GROUPS, 100);
     delete untouched.checked[GROUPS[0].id];
     const h2 = harness();
     const r2 = await A1.completeExercises({ topicId: 6, groups: GROUPS, result: untouched,
                                             uid: 'u1', api: h2.api });
-    eq('an unattempted group stops the pipeline', r2.ok, false);
-    eq('  nothing was called', h2.calls.length, 0);
+    const snap2 = A1.buildSnapshot(6, GROUPS, untouched);
+    eq('  an unanswered exercise costs its marks', snap2.percentage, 80);
+    eq('exactly 80% with a whole exercise skipped is still earned', r2.ok, true);
 
-    /* 79% is not enough, 80% is */
-    const at79 = attempt(GROUPS, 79);
+    /* below the bar nothing happens at all */
+    const at70 = attempt(GROUPS, 70);
     const h3 = harness();
-    eq('79% on a group stops the pipeline',
-        (await A1.completeExercises({ topicId: 6, groups: GROUPS, result: at79, uid: 'u1', api: h3.api })).ok,
-        false);
-    eq('  and calls nothing', h3.calls.length, 0);
-    const at80 = attempt(GROUPS, 80);
+    const r3 = await A1.completeExercises({ topicId: 6, groups: GROUPS, result: at70,
+                                            uid: 'u1', api: h3.api });
+    eq('70% stops the pipeline', r3.ok, false);
+    eq('  at the gate', r3.stage, 'gate');
+    eq('  and nothing was called', h3.calls.length, 0);
+    ok(!/lug‘at|lugat/i.test(String(r3.message)),
+        `  and the refusal is about the score, not the deck (${r3.message})`);
+
+    /* the boundary itself */
+    const at79 = attempt(GROUPS, 79);
     const h4 = harness();
-    eq('80% on every group proceeds',
-        (await A1.completeExercises({ topicId: 6, groups: GROUPS, result: at80, uid: 'u1', api: h4.api })).ok,
+    eq('79% is refused',
+        (await A1.completeExercises({ topicId: 6, groups: GROUPS, result: at79, uid: 'u1', api: h4.api })).ok,
+        false);
+    eq('  and calls nothing', h4.calls.length, 0);
+    const at80 = attempt(GROUPS, 80);
+    const h5 = harness();
+    eq('exactly 80% proceeds',
+        (await A1.completeExercises({ topicId: 6, groups: GROUPS, result: at80, uid: 'u1', api: h5.api })).ok,
         true);
 }
 
@@ -258,15 +276,18 @@ function harness(over = {}) {
  * 5. THE SERVER DECIDES PROGRESSION
  * ================================================================ */
 {
-    /* exercises done, vocabulary not: a SUCCESS that does not unlock */
+    /* THE SERVER'S WORD IS FINAL, whatever it is. A server that answers
+       "not completed" is an anomaly now — the exercises are the whole rule —
+       and the client must report it as a failure to retry, never as a
+       vocabulary errand. That errand is what stranded the learners. */
     const h = harness();
     const r = await A1.completeExercises({ topicId: 6, groups: GROUPS,
                                            result: attempt(GROUPS), uid: 'u1', api: h.api });
     eq('exercises are completed', r.exercisesCompleted, true);
-    eq('but the topic is not', r.topicCompleted, false);
+    eq('the client repeats the server verdict rather than inventing one', r.topicCompleted, false);
     eq('so no next topic is offered', r.nextTopic, null);
-    eq('and the learner is told what is missing', r.message,
-        'Avval ushbu mavzuning lug‘at bo‘limini yakunlang.');
+    ok(!/lug‘at|lugat|yakunlang/i.test(String(r.message)),
+        `and the learner is NEVER sent to the deck (${r.message})`);
 
     /* both done: the SERVER's arrays, never a local push */
     const h2 = harness({
@@ -429,14 +450,26 @@ function harness(over = {}) {
             JSON.stringify(ctx.getCompletedTopics()), '[]');
     }
 
-    /* ---- exercises alone leave the topic locked ---- */
+    /* ---- EXERCISES ALONE COMPLETE THE TOPIC ---- */
+    {
+        const ctx = H.makePage({ topicCompleted: true, ackCompletedTopics: [6] });
+        const onFinish = mountAndCapture(ctx, 6);
+        await onFinish(H.finishedAttempt(groupsOf(ctx, 6), 0));
+        eq('the exercises alone complete the topic',
+            JSON.stringify(ctx.getCompletedTopics()), '[6]');
+        ok(!/lug‘at bo‘limini yakunlang|Avval ushbu mavzuning lug/i.test(ctx.text()),
+            'and the learner is never told to finish the deck first');
+    }
+
+    /* ---- and a server that still says no is reported as a failure ---- */
     {
         const ctx = H.makePage({ topicCompleted: false, ackCompletedTopics: [] });
         const onFinish = mountAndCapture(ctx, 6);
         await onFinish(H.finishedAttempt(groupsOf(ctx, 6), 0));
-        eq('the exercises half alone does not complete the topic',
+        eq('a refused completion unlocks nothing',
             JSON.stringify(ctx.getCompletedTopics()), '[]');
-        ok(/lug‘at/.test(ctx.text()), 'and the learner is pointed at the vocabulary half');
+        ok(!/lug‘at bo‘limini yakunlang/i.test(ctx.text()),
+            'and still does not blame the deck');
     }
 
     /* ================================================================ *
@@ -530,8 +563,8 @@ function harness(over = {}) {
         /* THE REASON MUST SURVIVE THE RE-RENDER. Applying the outcome draws
            this line and re-rendering the panel wipes it, so the order matters:
            without it the topic stays locked and says nothing about why. */
-        ok(/lug‘at/.test(ctx.text()),
-            'and the learner is told the vocabulary half is what is still missing');
+        ok(!/lug‘at bo‘limini yakunlang/i.test(ctx.text()),
+            'and the reason shown is never "finish the vocabulary first"');
     }
 
     /* a sync retry that FAILS leaves exactly one retry, not a stack of them */

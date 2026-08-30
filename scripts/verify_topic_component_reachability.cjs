@@ -114,16 +114,19 @@ COURSES.forEach((c) => {
         eq(`${c.code}: and the server's array carries it`,
             JSON.stringify(s.completedTopics), `[${T}]`);
     }
-    /* ---- exercises first, vocabulary second ---- */
+    /* ---- exercises alone: THIS is what finishes a topic ---- */
     {
         let s = { topicComponents: {}, completedTopics: [] };
         s = apply(s, T, 'exercises');
-        eq(`${c.code}: exercises alone does not complete the topic`,
-            isTopicComplete(s, T, c.total), false);
-        s = apply(s, T, 'vocabulary');
-        eq(`${c.code}: THE TOPIC COMPLETES (exercises -> vocab)`,
+        eq(`${c.code}: the exercises alone COMPLETE the topic`,
             isTopicComplete(s, T, c.total), true);
         eq(`${c.code}: server array carries it`, JSON.stringify(s.completedTopics), `[${T}]`);
+        eq(`${c.code}: and the deck is still recorded as outstanding`,
+            bothComponentsComplete(s, T), false);
+        /* reporting the deck afterwards changes nothing */
+        s = apply(s, T, 'vocabulary');
+        eq(`${c.code}: the deck afterwards adds no duplicate`,
+            JSON.stringify(s.completedTopics), `[${T}]`);
     }
     /* ---- a legacy learner is never disturbed ---- */
     {
@@ -142,8 +145,8 @@ COURSES.forEach((c) => {
  * ================================================================ */
 {
     const half = { topicComponents: { 1: { exercisesCompleted: true } }, completedTopics: [] };
-    eq('exercises without vocabulary can never finalise',
-        finalizeCompletedTopics(half, 1, 12), null);
+    eq('exercises alone finalise the topic',
+        JSON.stringify(finalizeCompletedTopics(half, 1, 12)), '[1]');
     const other = { topicComponents: { 1: { vocabularyCompleted: true } }, completedTopics: [] };
     eq('vocabulary without exercises can never finalise',
         finalizeCompletedTopics(other, 1, 12), null);

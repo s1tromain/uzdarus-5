@@ -7,16 +7,17 @@ import { isAccountFrozen } from '../../account-freeze.js';
 import { COURSE_CANON } from '../_lib/course-canon.js';
 import {
     normalizeComponent, componentsOf, completedIds,
-    previousTopicSatisfied, finalizeCompletedTopics, bothComponentsComplete
+    previousTopicSatisfied, finalizeCompletedTopics, isTopicComplete
 } from '../_lib/topic-components.js';
 
 /**
  * POST /api/progress?action=complete-component  { course, topicId, component }
  *
- * A paid topic has two halves — the vocabulary deck and the exercise section —
- * and this is how a learner reports finishing one of them. It is the ONLY way
+ * A paid topic has two sections — the vocabulary deck and the exercises — and
+ * this is how a learner reports finishing one of them. It is the ONLY way
  * `completedTopics` grows for a topic that is not already complete: the topic
- * id is appended here, by the server, at the moment the SECOND half lands.
+ * id is appended here, by the server, the moment the EXERCISES land. The deck
+ * is recorded the same way and gates nothing (see topic-components.js).
  *
  * What the client sends is a claim about ONE half of ONE topic. It cannot send
  * the array, cannot name another user, cannot reach a topic it has not walked
@@ -47,6 +48,7 @@ export default async function handler(req, res) {
             throw Object.assign(new Error('Noma’lum kurs'), { statusCode: 400 });
         }
 
+        const totalTopics = canon.totalTopics;
         const topicId = Number(body.topicId);
         if (!Number.isInteger(topicId) || topicId < 1 || topicId > canon.totalTopics) {
             throw Object.assign(new Error('Noto‘g‘ri mavzu raqami'), { statusCode: 400 });
@@ -125,7 +127,9 @@ export default async function handler(req, res) {
             const completedTopics = finalized || completedIds(courseState, canon.totalTopics);
             return {
                 components,
-                topicCompleted: bothComponentsComplete(after, topicId),
+                /* THE GATE IS THE EXERCISES, and isTopicComplete() is the only
+                   place that decides it. The deck never appears here. */
+                topicCompleted: isTopicComplete(after, topicId, totalTopics),
                 completedTopics,
                 changed: !alreadyThisOne
             };

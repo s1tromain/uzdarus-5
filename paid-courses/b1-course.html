@@ -20,6 +20,8 @@
     <script src="../exercise-session.js"></script>
     <script src="../sentence-builder.js"></script>
     <script src="../course-exercise-ui.js"></script>
+    <!-- ONE completion contract for A1, A2, B1 and B2. -->
+    <script src="../topic-completion.js"></script>
     <script src="../b1-host.js"></script>
     <script defer src="pro-toast.js"></script>
     <script type="module" src="paid-platform.js"></script>
@@ -7274,6 +7276,43 @@
 
         // ==================== GLOBAL VARIABLES ====================
         let b1CourseState = null;
+
+        /* STUCK LEARNERS, REPAIRED ON LOAD.
+
+           Anyone who passed the exercises while the two-component rule was in
+           force has the attempt stored and the topic still locked, because the
+           server was waiting on a vocabulary deck that is no longer required.
+           They must not have to solve anything again.
+
+           Reported through the SAME authoritative call the button uses — the
+           client still never writes completedTopics, and the server still
+           refuses a topic whose exercises are not done. Idempotent: a topic
+           already complete, or whose exercises component is already recorded,
+           is not sent, so the next load sends nothing at all. A stored attempt
+           below the threshold is never sent. */
+        async function b1ReconcileEarned() {
+            var TC = window.UzTopicCompletion;
+            if (!TC || typeof TC.reconcile !== 'function') return null;
+            if (typeof window.completeCourseComponent !== 'function') return null;
+            var ids = [];
+            try { ids = (courseData.topics || []).map(function (t) { return t.id; }); } catch (e) { return null; }
+            var res = await TC.reconcile({
+                topicIds: ids,
+                courseState: b1CourseState || {},
+                results: (typeof userQuizResults !== 'undefined' && userQuizResults) || {},
+                resultField: 'b1ExerciseResult',
+                report: function (id) { return window.completeCourseComponent('B1', id, 'exercises'); }
+            });
+            if (res && res.completedTopics) {
+                if (typeof b1ApplyCompletedArray === 'function') { b1ApplyCompletedArray(res.completedTopics.slice()); }
+            else if (typeof completedTopics !== 'undefined') { completedTopics = res.completedTopics.slice(); }
+                if (typeof renderTopics === 'function') renderTopics();
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            }
+            return res;
+        }
+        window.b1ReconcileEarned = b1ReconcileEarned;
+
         let completedTopics = [];
         let currentTopicId = 1;
         let currentScore = 0;
@@ -7412,6 +7451,7 @@
                     mergeB1Completion(savedProgress, true);
 
                     userQuizResults = await window.getUserQuizResults(currentUserId, 'B1') || {};
+                    await b1ReconcileEarned().catch(function () {});
                 } else {
                     completedTopics = JSON.parse(localStorage.getItem(`b1_progress_${currentUserId}`) || '[]');
                 }
@@ -9213,7 +9253,22 @@
                 onOpenVocabulary: function (id) {
                     window.location.href = 'b1-vocabulary.html?topic=' + id;
                 },
-                onRetry: function () { return b1RetrySave(); }
+                onRetry: function () { return b1RetrySave(); },
+                /* WHERE THE LEARNER GOES NEXT. The only thing about finishing a
+                   topic that genuinely differs between the four courses. `next`
+                   is null when the course has no topic after this one. */
+                isLastTopic: function (id) { return Number(id) >= 20; },
+                onNavigate: function (next, outcome) {
+                    if (next == null) { window.location.href = 'b1-final-exam.html'; return; }
+                    var id = Number(next);
+                    try { currentTopicId = id; } catch (e) {}
+                    loadTopics();
+                    if (typeof updateProgressBar === 'function') updateProgressBar();
+                    loadLesson(id);
+                    var anchor = document.getElementById('lesson') || document.getElementById('lessonContent');
+                    if (anchor && anchor.scrollIntoView) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } }
+                }
             });
             if (!ok) { quizSection.innerHTML = ''; return false; }
             b1RenderMatching(topicId);
@@ -9305,8 +9360,12 @@
         }
 
         /** Retry ONLY what failed. Never the exercises. */
+        /* RETURN THE VERDICT. It used to return nothing, so the summary's
+           button could not tell a successful retry from a failed one and
+           fell back to "not sent yet" — no error, no explanation, on the
+           one screen whose whole job is to say what happened. */
         async function b1RetrySave() {
-            if (!b1PendingRetry || !window.B1Host) return;
+            if (!b1PendingRetry || !window.B1Host) return null;
             var p = b1PendingRetry;
             var api = {
                 saveQuizResult: window.saveQuizResult,
@@ -9320,6 +9379,7 @@
                     topicId: p.topicId, uid: p.uid, groups: p.groups,
                     result: p.result, api: api });
             b1ApplyOutcome(p.topicId, p.uid, p.groups, p.result, outcome);
+            return outcome;
         }
 
         function b1ShowNotice(text) {

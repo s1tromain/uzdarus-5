@@ -507,54 +507,36 @@
                 return ui().renderResults(payload || scoreFromAnswers(answers), {});
             },
             bindSummary: function (root, payload, sess) {
-                root.addEventListener('click', function (e) {
-                    var b = e.target && e.target.closest ? e.target.closest('[data-b2h-act]') : null;
-                    if (!b) return;
-                    var act = b.getAttribute('data-b2h-act');
-                    if (act === 'restart') {
-                        if (sess && typeof sess.reset === 'function') sess.reset();
-                        if (sess && typeof sess.open === 'function') { sess.open(); return; }
-                        if (sess && typeof sess.close === 'function') sess.close();
-                        return;
-                    }
-                    if (act === 'vocab') {
-                        if (sess && typeof sess.close === 'function') sess.close();
+                var r = payload || {};
+                /* ONE CONTRACT, FOUR COURSES. The summary no longer draws its own
+                   buttons and no longer decides anything: topic-completion.js owns the
+                   rule, the wording and the action, so a fix here cannot leave the other
+                   three courses behind — which is exactly how the vocabulary gate
+                   survived being "fixed" twice. */
+                var TC = global.UzTopicCompletion;
+                if (!TC || typeof TC.attach !== 'function') return;
+                TC.attach(root, {
+                    topicId: topic.id,
+                    snapshot: r,
+                    outcome: null,
+                    isLast: typeof deps.isLastTopic === 'function' ? !!deps.isLastTopic(topic.id) : false,
+                    hasVocabulary: typeof deps.openVocabulary === 'function',
+                    finish: function () {
+                        return typeof deps.completeTopic === 'function' ? deps.completeTopic(topic.id, r) : null;
+                    },
+                    navigate: function (next, outcome) {
+                        if (typeof deps.navigate === 'function') deps.navigate(next, outcome);
+                    },
+                    openVocabulary: function () {
                         if (typeof deps.openVocabulary === 'function') deps.openVocabulary(topic.id);
-                        return;
+                    },
+                    retryExercises: function () {
+                        if (sess && typeof sess.reset === 'function') sess.reset();
+                        if (sess && typeof sess.open === 'function') sess.open();
+                    },
+                    close: function () {
+                        if (sess && typeof sess.close === 'function') sess.close();
                     }
-                    if (act === 'complete' || act === 'retry') {
-                        b.disabled = true;
-                        b.textContent = 'Сохранение...';
-                        Promise.resolve()
-                            .then(function () {
-                                return typeof deps.completeTopic === 'function'
-                                    ? deps.completeTopic(topic.id, payload) : null;
-                            })
-                            .then(function (outcome) {
-                                /* CLOSE ONLY ON A REAL COMPLETION. The old handler
-                                   ran completeTopic inside a try/catch that dropped
-                                   the error, ignored the returned promise entirely,
-                                   and then closed the modal for every act — so a
-                                   failed save and a topic still missing its
-                                   vocabulary half both looked like success. */
-                                var U = ui();
-                                if (outcome && outcome.ok === true && outcome.topicCompleted !== false) {
-                                    if (U && typeof U.clearSummaryStatus === 'function') U.clearSummaryStatus(root);
-                                    if (sess && typeof sess.close === 'function') sess.close();
-                                    return;
-                                }
-                                if (U && typeof U.applySummaryStatus === 'function') {
-                                    U.applySummaryStatus(root, outcome);
-                                }
-                            }, function () {
-                                var U = ui();
-                                if (U && typeof U.applySummaryStatus === 'function') {
-                                    U.applySummaryStatus(root, null);
-                                }
-                            });
-                        return;
-                    }
-                    if (sess && typeof sess.close === 'function') sess.close();
                 });
             }
         });

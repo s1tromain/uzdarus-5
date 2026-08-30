@@ -370,30 +370,35 @@
                 return U.renderExerciseSummary(pl.snapshot, pl.outcome);
             },
             bindSummary: function (root, payload, session) {
-                root.addEventListener('click', function (e) {
-                    var btn = e.target && e.target.closest ? e.target.closest('[data-uzsum]') : null;
-                    if (!btn) return;
-                    var act = btn.getAttribute('data-uzsum');
-                    if (act === 'close') {
-                        if (session && typeof session.close === 'function') session.close();
-                        return;
-                    }
-                    if (act === 'vocab') {
-                        if (session && typeof session.close === 'function') session.close();
+                var pl = payload || {};
+                /* ONE CONTRACT, FOUR COURSES. The summary no longer draws its own
+                   buttons and no longer decides anything: topic-completion.js owns the
+                   rule, the wording and the action, so a fix here cannot leave the other
+                   three courses behind — which is exactly how the vocabulary gate
+                   survived being "fixed" twice. */
+                var TC = global.UzTopicCompletion;
+                if (!TC || typeof TC.attach !== 'function') return;
+                TC.attach(root, {
+                    topicId: topicId,
+                    snapshot: pl.snapshot,
+                    outcome: pl.outcome || null,
+                    isLast: typeof opts.isLastTopic === 'function' ? !!opts.isLastTopic(topicId) : false,
+                    hasVocabulary: typeof opts.onOpenVocabulary === 'function',
+                    finish: function () {
+                        return typeof opts.onRetry === 'function' ? opts.onRetry(topicId) : null;
+                    },
+                    navigate: function (next, outcome) {
+                        if (typeof opts.onNavigate === 'function') opts.onNavigate(next, outcome);
+                    },
+                    openVocabulary: function () {
                         if (typeof opts.onOpenVocabulary === 'function') opts.onOpenVocabulary(topicId);
-                        return;
-                    }
-                    if (act === 'retry') {
-                        btn.disabled = true;
-                        btn.textContent = 'Сохранение...';
-                        Promise.resolve(
-                            typeof opts.onRetry === 'function' ? opts.onRetry(topicId) : null
-                        ).then(function () {
-                            if (session && typeof session.close === 'function') session.close();
-                        }, function () {
-                            btn.disabled = false;
-                            btn.textContent = 'Qayta urinish';
-                        });
+                    },
+                    retryExercises: function () {
+                        if (session && typeof session.reset === 'function') session.reset();
+                        if (session && typeof session.open === 'function') session.open();
+                    },
+                    close: function () {
+                        if (session && typeof session.close === 'function') session.close();
                     }
                 });
             }
@@ -509,7 +514,6 @@
     }
 
     var SAVE_FAILED = 'Natijani saqlab bo‘lmadi.\nInternet aloqasini tekshirib, qayta urinib ko‘ring.';
-    var NEED_VOCAB = 'Avval ushbu mavzuning lug‘at bo‘limini yakunlang.';
 
     /**
      * Finish the exercise section, authoritatively.
@@ -533,6 +537,24 @@
      * asked to solve 685 items again — the retry sends the component call
      * alone.
      */
+    var NOT_EARNED = 'Mavzuni yakunlash uchun kamida 80 foiz kerak.';
+
+    /**
+     * THE ONE RULE, shared with topic-completion.js and mirrored by the server.
+     *
+     * An EXACT integer ratio, never a rounded percent: Math.round puts the
+     * boundary in the wrong place (39/49 rounds to 80 and is really 79.6).
+     * Exactly 80 passes, 79 does not. The vocabulary deck is not consulted.
+     */
+    function topicEarned(snapshot) {
+        var TC = global.UzTopicCompletion;
+        if (TC && typeof TC.earned === 'function') return TC.earned(snapshot);
+        var s = snapshot || {};
+        var score = Number(s.score) || 0;
+        var total = Number(s.total) || 0;
+        return total > 0 && score * 100 >= total * PASS_PERCENT;
+    }
+
     async function completeExercises(opts) {
         opts = opts || {};
         var topicId = opts.topicId;
@@ -545,14 +567,19 @@
            attempt — the durable snapshot is the proof, and it is held to the
            identical per-group threshold. Neither path can be skipped: with
            no result AND no snapshot this stops here. */
-        var passed = opts.result != null
-            ? allGroupsPassed(groups, result)
-            : snapshotProvesCompletion(opts.snapshot, groups, topicId);
-        if (!passed) {
-            return { ok: false, stage: 'gate', message: null };
-        }
-
+        /* THE GATE IS THE OFFICIAL SCORE, AND NOTHING ELSE.
+           It used to be allGroupsPassed(), a per-exercise rule the summary
+           screen does not use — so a screen reading "the 80 threshold is
+           passed" could sit above a handler that refused. One formula now
+           decides both, and it lives in topic-completion.js beside the
+           button that presses it. Unanswered questions are already inside
+           `total`, so an attempt with gaps that still reaches the threshold
+           is earned. The per-exercise rule keeps its real job: you cannot
+           walk past an exercise you failed while the session is running. */
         var snapshot = opts.snapshot || buildSnapshot(topicId, groups, result);
+        if (!topicEarned(snapshot)) {
+            return { ok: false, stage: 'gate', snapshot: snapshot, message: NOT_EARNED };
+        }
 
         /* ---- 3. the durable result, first and awaited ---- */
         if (!opts.skipSave) {
@@ -602,7 +629,9 @@
             topicCompleted: ack.topicCompleted === true,
             completedTopics: ack.completedTopics.slice(),
             nextTopic: ack.topicCompleted === true ? (ack.nextTopic == null ? null : ack.nextTopic) : null,
-            message: ack.topicCompleted === true ? null : NEED_VOCAB
+            /* The server completes a topic on the exercises alone, so a
+               false verdict here is an anomaly, not a missing deck. */
+            message: ack.topicCompleted === true ? null : SAVE_FAILED
         };
     }
 
@@ -756,7 +785,11 @@
         pageState: pageState,
         ctaLabel: ctaLabel,
         buildReview: buildReview,
-        MESSAGES: { SAVE_FAILED: SAVE_FAILED, NEED_VOCAB: NEED_VOCAB,
+        /* NEED_VOCAB IS GONE ON PURPOSE. There is no state in which
+                   finishing a topic waits on the deck; a message saying so
+                   would be a lie, and its presence is what a negative control
+                   re-introduces. */
+            MESSAGES: { SAVE_FAILED: SAVE_FAILED, NOT_EARNED: NOT_EARNED,
                     SYNC_PENDING: SYNC_PENDING, LEGACY_DONE: LEGACY_DONE },
         PASS_PERCENT: PASS_PERCENT,
         mountPractice: mountPractice,

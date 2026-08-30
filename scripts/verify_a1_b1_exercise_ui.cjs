@@ -403,11 +403,18 @@ try {
     }
 
     /* ---------------------------------------------------------------- *
-     * 3. ONE HALF IS NOT A TOPIC — fail closed without the vocabulary
+     * 3. THE DECK IS OPTIONAL — the exercises finish the topic on their own
+     *
+     * This block used to assert the opposite: that the exercises alone left
+     * the topic locked and sent the learner to the vocabulary. That errand is
+     * what stranded them — a learner who had finished a B2 topic three times,
+     * and a brand-new A1 account that finished the exercises AND the whole
+     * deck, both faced a locked next topic. The deck is a study aid now; its
+     * progress is kept and it decides nothing.
      * ---------------------------------------------------------------- */
     for (const course of (FAST ? ['A1'] : ['A1', 'B1'])) {
         const cfg = COURSES[course];
-        const T = `${course} T1 without vocabulary`;
+        const T = `${course} T1 with no vocabulary at all`;
         seed = { [course]: { completedTopics: [], topicComponents: {} } };
         await openTopic(p, site, cfg, 1);
         const finished = await walkToEnd(p, cfg, 1, T, false);
@@ -427,24 +434,20 @@ try {
                      buttons: body?Array.prototype.map.call(body.querySelectorAll('button'),
                         function(x){return (x.textContent||'').trim();}):[] };`);
         eq(`${T} — the exercises half IS recorded`, a.exercises, true);
-        eq(`${T} — but the topic is NOT completed`, a.complete, false);
-        eq(`${T} — and the next topic stays locked`, a.nextLocked, true);
-        ok(a.summary.length > 20, `${T} — the learner still sees a summary`);
+        eq(`${T} — and the topic IS completed without the deck`, a.complete, true);
+        eq(`${T} — so the next topic is unlocked`, a.nextLocked, false);
+        ok(a.summary.length > 20, `${T} — the learner sees a summary`);
         ok(a.buttons.length > 0, `${T} — with a way forward`);
-        ok(/lug|Lug/.test(a.summary), `${T} — the summary says the vocabulary is still needed`);
+        ok(!/lug‘at bo‘limini yakunlang/i.test(a.summary),
+            `${T} — and is never told to finish the deck first`);
 
-        /* THE BUTTON MUST GO SOMEWHERE.
-           REPORTED BY A LEARNER: "I worked to the end twice, scored above the
-           mark, it did not accept, and pressing does not finish it." Their
-           exercises WERE saved — the topic simply also needs its vocabulary
-           half. The summary said so and offered "Lug'atga o'tish", but the
-           course pages never passed onOpenVocabulary, so the button only
-           closed the modal and left the learner exactly where they were with
-           no way forward. A CTA that does nothing is worse than no CTA. */
+        /* THE DECK IS STILL ONE TAP AWAY, and the tap still has to work.
+           It is offered as a study aid beside the completion button, never as
+           a condition. A CTA that does nothing is worse than no CTA — that is
+           why this is asserted rather than assumed. */
         const before = await p.evaluate(`return location.pathname;`);
         await p.evaluate(`
-            var b = Array.prototype.slice.call(document.querySelectorAll('.uz-body button'))
-                .filter(function (x) { return /Lug/.test(x.textContent || ''); })[0];
+            var b = document.querySelector('.uz-body [data-uztc="vocab"]');
             if (b) b.click();
             return 1;`);
         await sleep(2200);

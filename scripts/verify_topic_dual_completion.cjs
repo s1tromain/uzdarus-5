@@ -1,25 +1,27 @@
 #!/usr/bin/env node
 /**
- * verify_topic_dual_completion.cjs — a paid topic has two halves.
+ * verify_topic_dual_completion.cjs — a paid topic has two sections, and ONE of
+ * them decides whether it is finished.
  *
- * THE DEFECT THIS SUITE EXISTS FOR. `completedTopics` was appended by whoever
- * asked first, so finishing a topic's exercises unlocked the next topic and its
- * vocabulary deck could be skipped entirely — or the reverse. There was no
- * record of which half had been done, and no server rule that both must be.
+ * THE RULE:  a topic id enters `completedTopics` when its EXERCISES are
+ * reported, and never for the vocabulary deck alone.
  *
- * Now there is:
+ *   courses.<C>.topicComponents.<id>.exercisesCompleted   the gate
+ *   courses.<C>.topicComponents.<id>.vocabularyCompleted  recorded, optional
  *
- *   courses.<C>.topicComponents.<id>.vocabularyCompleted
- *   courses.<C>.topicComponents.<id>.exercisesCompleted
+ * WHY IT IS NOT BOTH ANY MORE. Requiring both stranded learners: one had
+ * finished a B2 topic three times over, and a brand-new A1 account finished
+ * the exercises AND the whole deck and still faced a locked topic 2. Every
+ * route that left the deck unrecorded — finished before the component model
+ * shipped, a completion screen closed one tap early, one dropped call — locked
+ * the learner out of the rest of the course, and the only remedy was to walk a
+ * hundred words again and hope. The exercises are the assessment; they decide.
  *
- * and a topic id enters `completedTopics` only when BOTH are true. The two
- * endpoints that can write progress are driven here against a fake Firestore —
- * the real handlers, not a copy of their rules — because the older
- * `complete-topic` route must not remain a way around the new one.
+ * Both endpoints that can write progress are driven here against a fake
+ * Firestore — the real handlers, not a copy of their rules — because the older
+ * `complete-topic` route must not remain a way around the current one.
  *
- * LEGACY IS NEVER REVOKED. Topics finished under the old one-step rule are
- * already in the array with no component record; they stay complete, and no
- * learner is asked to redo them.
+ * LEGACY IS NEVER REVOKED, and nothing here ever removes an id.
  */
 'use strict';
 const fs = require('fs');
@@ -163,25 +165,36 @@ const done = (store) => (b2Of(store).completedTopics || []);
         eq('  and the topic is NOT in completedTopics', done(r.store).length, 0);
         eq('  no next topic is offered', r.payload.nextTopic, null);
     }
-    /* 0 / 1 — exercises only */
+    /* 0 / 1 — EXERCISES ONLY: this is what finishes a topic */
     {
         const r = await component(base(), 'u1', { course: 'B2', topicId: 1, component: 'exercises' });
         eq('exercises reported: accepted', r.status, 200);
-        eq('  0 vocab / 1 exercises -> topic NOT complete', r.payload.topicCompleted, false);
-        eq('  and the topic is NOT in completedTopics', done(r.store).length, 0);
+        eq('  0 vocab / 1 exercises -> topic COMPLETE', r.payload.topicCompleted, true);
+        eq('  and the id is in completedTopics', done(r.store).join(','), '1');
+        eq('  the next topic is offered', r.payload.nextTopic, 2);
+        eq('  the deck is still recorded as outstanding, not required',
+            r.payload.components.vocabularyCompleted, false);
+        ok(!!b2Of(r.store).topicComponents['1'].exercisesCompletedAt, '  with an exercises timestamp');
     }
-    /* 1 / 1 — both, in either order */
-    for (const [first, second] of [['vocabulary', 'exercises'], ['exercises', 'vocabulary']]) {
-        const users = base();
-        const r1 = await component(users, 'u1', { course: 'B2', topicId: 1, component: first });
-        eq(`${first} then ${second}: after the first, topic incomplete`, r1.payload.topicCompleted, false);
-        /* carry the server's own state forward, as a real second request would */
+    /* the deck AFTER the topic is already complete: recorded, nothing changes */
+    {
+        const r1 = await component(base(), 'u1', { course: 'B2', topicId: 1, component: 'exercises' });
         const r2 = await component({ u1: r1.store.users.u1 }, 'u1',
-            { course: 'B2', topicId: 1, component: second });
-        eq(`${first} then ${second}: after the second, topic COMPLETE`, r2.payload.topicCompleted, true);
-        eq('  and the id is in completedTopics', done(r2.store).join(','), '1');
-        eq('  the next topic is offered', r2.payload.nextTopic, 2);
-        eq('  both components are recorded',
+            { course: 'B2', topicId: 1, component: 'vocabulary' });
+        eq('the deck reported afterwards is accepted', r2.status, 200);
+        eq('  it is recorded', r2.payload.components.vocabularyCompleted, true);
+        eq('  the topic stays complete', r2.payload.topicCompleted, true);
+        eq('  with no duplicate id', done(r2.store).join(','), '1');
+    }
+    /* the deck FIRST: recorded, and the topic waits for the exercises */
+    {
+        const r1 = await component(base(), 'u1', { course: 'B2', topicId: 1, component: 'vocabulary' });
+        eq('the deck alone leaves the topic open', r1.payload.topicCompleted, false);
+        const r2 = await component({ u1: r1.store.users.u1 }, 'u1',
+            { course: 'B2', topicId: 1, component: 'exercises' });
+        eq('and the exercises then complete it', r2.payload.topicCompleted, true);
+        eq('  with the id in completedTopics', done(r2.store).join(','), '1');
+        eq('  both sections recorded',
             r2.payload.components.vocabularyCompleted && r2.payload.components.exercisesCompleted, true);
         ok(!!b2Of(r2.store).topicComponents['1'].vocabularyCompletedAt,
             '  with a vocabulary timestamp');
@@ -212,10 +225,15 @@ const done = (store) => (b2Of(store).completedTopics || []);
     eq('complete-topic on a legacy topic still succeeds', r.status, 200);
     eq('  and changes nothing', done(r.store).join(','), '1,2,3');
 
-    /* and the NEXT topic still obeys the new rule */
+    /* and the NEXT topic obeys the current rule: the exercises finish it */
     const r2 = await component(legacy, 'u1', { course: 'B2', topicId: 4, component: 'exercises' });
-    eq('a legacy learner\'s next topic uses the new rule', r2.payload.topicCompleted, false);
-    eq('  so it is not appended', done(r2.store).join(','), '1,2,3');
+    eq('a legacy learner finishes topic 4 with the exercises', r2.payload.topicCompleted, true);
+    eq('  and it is appended without disturbing the legacy ids',
+        done(r2.store).join(','), '1,2,3,4');
+    /* the deck alone still finishes nothing, for a legacy learner either */
+    const r3 = await component(legacy, 'u1', { course: 'B2', topicId: 4, component: 'vocabulary' });
+    eq('the deck alone finishes nothing', r3.payload.topicCompleted, false);
+    eq('  and appends nothing', done(r3.store).join(','), '1,2,3');
 }
 
 /* ================================================================ *
@@ -226,19 +244,26 @@ const done = (store) => (b2Of(store).completedTopics || []);
         topicComponents: { 1: { [`${component}Completed`]: true,
                                 [`${component}CompletedAt`]: now.toISOString() } } } }) });
 
-    for (const c of ['vocabulary', 'exercises']) {
-        const r = await completeTopic(half(c), 'u1', { course: 'B2', topicId: 1 });
-        eq(`complete-topic with ONLY ${c} done: REFUSED`, r.status, 409);
-        eq(`  and the topic is not appended`, done(r.store).length, 0);
+    /* THE DECK ALONE IS STILL NOT A COMPLETION, through this route either. */
+    {
+        const r = await completeTopic(half('vocabulary'), 'u1', { course: 'B2', topicId: 1 });
+        eq('complete-topic with ONLY the deck done: REFUSED', r.status, 409);
+        eq('  and the topic is not appended', done(r.store).length, 0);
+        eq('  and the refusal names the exercises',
+            r.payload.error, 'Avval ushbu mavzudagi mashqlarni yakunlang.');
     }
-    /* the refusal names the missing half, in the product's words */
+    /* the exercises DO finish it, through the old route as well as the new */
     {
         const r = await completeTopic(half('exercises'), 'u1', { course: 'B2', topicId: 1 });
-        eq('exercises done, vocabulary missing: the message says so',
-            r.payload.error, 'Avval ushbu mavzuning lug‘at bo‘limini yakunlang.');
-        const r2 = await completeTopic(half('vocabulary'), 'u1', { course: 'B2', topicId: 1 });
-        eq('vocabulary done, exercises missing: the message says so',
-            r2.payload.error, 'Avval ushbu mavzudagi mashqlarni yakunlang.');
+        eq('complete-topic with the exercises done: accepted', r.status, 200);
+        eq('  and the topic is appended', done(r.store).join(','), '1');
+    }
+    /* nothing at all is still refused */
+    {
+        const r = await completeTopic({ u1: learner({ B2: {} }) }, 'u1',
+            { course: 'B2', topicId: 1 });
+        eq('complete-topic with nothing done: REFUSED', r.status, 409);
+        eq('  and nothing is appended', done(r.store).length, 0);
     }
     /* nothing reported at all */
     {

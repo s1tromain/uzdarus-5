@@ -71,6 +71,39 @@ const call = (ctx, fn) => ctx[P + fn];
     });
     eq('a checked entry claiming passed:true on 1/N is refused',
         L.allGroupsPassed(groups, { answers: {}, checked: lying }), false);
+
+    /* A SCREEN WITH NOTHING TO ANSWER IS NOT A REQUIREMENT.
+       A2 topics 6-16 carry an `audio` briefing between the last exercise and
+       the Rost/Yolg'on questions: a listening screen with zero items. The gate
+       demanded a passing score from every group, and a screen with no
+       questions can never produce one — so those eleven topics could not be
+       completed however perfectly they were answered. It stayed invisible
+       until the checked map was fixed, because before that nothing passed the
+       gate at all. */
+    /* a DISTINCT id: A2 topic 1 already has a group called `audio` (with ten
+       questions), and reusing that name makes the assertion a tautology —
+       both entries would look up the same, perfectly valid, checked record */
+    const briefing = { id: '__briefing__', title: 'Audio', type: 'reading', items: [] };
+    const withBriefing = [briefing].concat(groups);
+    eq('a group with no questions cannot block a perfect attempt',
+        L.allGroupsPassed(withBriefing, at(-1, 0)), true);
+    eq('and it does not need a checked entry of its own',
+        L.allGroupsPassed(withBriefing, at(-1, 0)) === L.allGroupsPassed(groups, at(-1, 0)), true);
+    /* the exemption must not leak: a group that HAS questions and was never
+       attempted still fails, and a briefing alone completes nothing */
+    const short = { answers: {}, checked: {} };
+    groups.slice(1).forEach((g) => { short.checked[g.id] = { correct: g.items.length, total: g.items.length }; });
+    eq('an unattempted group with questions still fails',
+        L.allGroupsPassed(withBriefing, short), false);
+    eq('a topic that is nothing but a briefing completes nothing',
+        L.allGroupsPassed([briefing], { answers: {}, checked: {} }), false);
+
+    /* the same rule read off a STORED attempt, so a reload-time retry agrees */
+    const snap = L.buildSnapshot(T, withBriefing, at(-1, 0));
+    eq('a stored perfect attempt is not blocked by the briefing either',
+        L.snapshotProvesCompletion(snap, withBriefing, T), true);
+    eq('and a stored attempt missing a real group is still refused',
+        L.snapshotProvesCompletion(L.buildSnapshot(T, withBriefing, short), withBriefing, T), false);
 }
 
 /* ================================================================ *
@@ -139,20 +172,35 @@ const call = (ctx, fn) => ctx[P + fn];
     eq('progression is the SERVER array', JSON.stringify(ctx.getCompletedTopics()), `[${T}]`);
 }
 
-/* the gate runs before anything is written */
+/* THE GATE RUNS BEFORE ANYTHING IS WRITTEN — and the gate is the OFFICIAL
+   TOTAL, not a pass on every single exercise. One weak exercise that still
+   leaves the paper at 80% is earned; a paper genuinely under the bar writes
+   nothing at all. Testing this with a single low exercise and the rest
+   perfect proved nothing about the gate, because such a paper is a pass. */
 {
     const ctx = H.makePage(C, { topicId: T });
     const groups = ctx.groups.filter((g) => (g.items || []).length);
-    const checked = {};
-    groups.forEach((g, i) => {
+    const under = {};
+    groups.forEach((g) => {
         const total = g.items.length;
-        checked[g.id] = { correct: i === 0 ? Math.floor(total * 0.5) : total, total };
+        under[g.id] = { correct: Math.floor(total * 0.5), total };
     });
     ctx.resetWrites();
-    await call(ctx, 'FinishExercises')(T, { answers: {}, checked });
-    eq('a failed exercise saves nothing', ctx.writes.save, 0);
+    await call(ctx, 'FinishExercises')(T, { answers: {}, checked: under });
+    eq('a paper under the threshold saves nothing', ctx.writes.save, 0);
     eq('and reports nothing', ctx.writes.component, 0);
     eq('and unlocks nothing', JSON.stringify(ctx.getCompletedTopics()), '[]');
+
+    /* one weak exercise, the rest perfect: still above the bar, still earned */
+    const mostly = {};
+    groups.forEach((g, i) => {
+        const total = g.items.length;
+        mostly[g.id] = { correct: i === 0 ? Math.floor(total * 0.5) : total, total };
+    });
+    ctx.resetWrites();
+    await call(ctx, 'FinishExercises')(T, { answers: {}, checked: mostly });
+    ok(ctx.writes.save >= 1 && ctx.writes.component >= 1,
+        'one weak exercise does not sink a paper that still reaches 80%');
 }
 
 /* ================================================================ *
@@ -184,16 +232,30 @@ for (const bad of [{ ok: true }, { ok: true, course: 'ZZ', topicId: T },
 }
 
 /* ================================================================ *
- * 5. EXERCISES DONE, VOCABULARY MISSING
+ * 5. THE EXERCISES ARE THE WHOLE RULE
+ *
+ * This block used to assert the opposite — that reporting the exercises left
+ * the topic locked and sent the learner to the deck. That errand is what
+ * stranded people: every route that left the deck unrecorded locked them out
+ * of the rest of the course with no way back.
  * ================================================================ */
+{
+    const ctx = H.makePage(C, { topicId: T, topicCompleted: true, ackCompletedTopics: [T] });
+    const out = await call(ctx, 'FinishExercises')(T, H.finishedAttempt(ctx.groups, 0));
+    ok(out && out.ok, 'reporting the exercises succeeds');
+    eq('and the topic completes without the deck',
+        JSON.stringify(ctx.getCompletedTopics()), JSON.stringify([T]));
+    ok(!/lug‘at bo‘limini yakunlang/i.test(String(out.message)),
+        `and nothing points at the deck (${out.message})`);
+}
+
+/* a server that still refuses is reported as a failure to retry */
 {
     const ctx = H.makePage(C, { topicId: T, topicCompleted: false, ackCompletedTopics: [] });
     const out = await call(ctx, 'FinishExercises')(T, H.finishedAttempt(ctx.groups, 0));
-    ok(out && out.ok, 'reporting the exercises half succeeds');
-    eq('but the topic is not complete', JSON.stringify(ctx.getCompletedTopics()), '[]');
-    eq('and the learner is pointed at the vocabulary half',
-        out.message, 'Avval ushbu mavzuning lug‘at bo‘limini yakunlang.');
-    ok(/lug‘at/.test(ctx.text()), 'which is rendered in the page');
+    eq('a refused completion unlocks nothing', JSON.stringify(ctx.getCompletedTopics()), '[]');
+    ok(!/lug‘at bo‘limini yakunlang/i.test(String(out && out.message)),
+        'and the learner is never sent to the deck instead');
 }
 
 /* ================================================================ *

@@ -88,18 +88,34 @@ const groupsOf = (ctx, id) =>
     const ctx = H.makePage({});
     const groups = groupsOf(ctx, T);
     const onFinish = mountAndCapture(ctx, T);
+/* THE GATE RUNS BEFORE ANYTHING IS WRITTEN — and the gate is the OFFICIAL
+   TOTAL, not a pass on every single exercise. One weak exercise that still
+   leaves the paper at 80% is earned; a paper genuinely under the bar writes
+   nothing at all. Testing this with a single low exercise and the rest
+   perfect proved nothing about the gate, because such a paper is a pass. */
     ctx.resetWrites();
-    /* one exercise at 7/10 — a pass under the OLD topic-wide sum, a fail now */
-    const checked = {};
-    groups.forEach((g, i) => {
+    const under = {};
+    groups.forEach((g) => {
         const total = g.items.length;
-        const c = i === 0 ? Math.floor(total * 0.7) : total;
-        checked[g.id] = { correct: c, total, passed: c * 100 >= total * 80 };
+        const c = Math.floor(total * 0.7);
+        under[g.id] = { correct: c, total, passed: c * 100 >= total * 80 };
     });
-    await onFinish({ answers: {}, checked });
-    eq('a failed exercise saves nothing', ctx.writes.save, 0);
+    await onFinish({ answers: {}, checked: under });
+    eq('a paper under the threshold saves nothing', ctx.writes.save, 0);
     eq('reports nothing', ctx.writes.component, 0);
     eq('and unlocks nothing', JSON.stringify(ctx.getCompletedTopics()), '[]');
+
+    /* one weak exercise, the rest perfect: still above the bar, still earned */
+    ctx.resetWrites();
+    const mostly = {};
+    groups.forEach((g, i) => {
+        const total = g.items.length;
+        const c = i === 0 ? Math.floor(total * 0.5) : total;
+        mostly[g.id] = { correct: c, total, passed: c * 100 >= total * 80 };
+    });
+    await onFinish({ answers: {}, checked: mostly });
+    ok(ctx.writes.save >= 1 && ctx.writes.component >= 1,
+        'one weak exercise does not sink a paper that still reaches 80%');
 }
 
 /* ---- the REAL saveQuizResult contract: true / false ---- */
@@ -151,13 +167,23 @@ for (const bad of [{ ok: true }, { ok: true, course: 'A2', topicId: T },
         JSON.stringify(ctx.getCompletedTopics()), '[]');
 }
 
-/* ---- exercises alone leave the topic locked ---- */
+/* ---- EXERCISES ALONE COMPLETE THE TOPIC ---- */
+{
+    const ctx = H.makePage({ topicCompleted: true, ackCompletedTopics: [T] });
+    await mountAndCapture(ctx, T)(H.finishedAttempt(groupsOf(ctx, T), 0));
+    eq('the exercises alone complete the topic',
+        JSON.stringify(ctx.getCompletedTopics()), JSON.stringify([T]));
+    ok(!/lug‘at bo‘limini yakunlang/i.test(ctx.text()),
+        'and the learner is never told to finish the deck first');
+}
+
+/* ---- a server that still refuses is a failure, not an errand ---- */
 {
     const ctx = H.makePage({ topicCompleted: false, ackCompletedTopics: [] });
     await mountAndCapture(ctx, T)(H.finishedAttempt(groupsOf(ctx, T), 0));
-    eq('the exercises half alone does not complete the topic',
+    eq('a refused completion unlocks nothing',
         JSON.stringify(ctx.getCompletedTopics()), '[]');
-    ok(/lug‘at/.test(ctx.text()), 'and the learner is pointed at the vocabulary half');
+    ok(!/lug‘at bo‘limini yakunlang/i.test(ctx.text()), 'and does not blame the deck');
 }
 
 /* ---- the old topic-wide completion is not the learner's path ---- */
@@ -251,8 +277,8 @@ for (const bad of [{ ok: true }, { ok: true, course: 'A2', topicId: T },
         JSON.stringify(ctx.getCompletedTopics()), '[]');
     eq('the sync prompt is gone once the server answered',
         !!ctx.button('Qayta urinish'), false);
-    ok(/lug‘at/.test(ctx.text()),
-        'and the learner is told the vocabulary half is what is missing');
+    ok(!/lug‘at bo‘limini yakunlang/i.test(ctx.text()),
+        'and the reason shown is never "finish the vocabulary first"');
 }
 {
     const base = H.makePage({});

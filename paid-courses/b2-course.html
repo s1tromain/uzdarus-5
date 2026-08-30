@@ -22,6 +22,8 @@
     <script defer src="../b2-topics.js"></script>
     <script defer src="../exercise-session.js"></script>
     <script defer src="../course-exercise-ui.js"></script>
+    <!-- ONE completion contract for A1, A2, B1 and B2. -->
+    <script defer src="../topic-completion.js"></script>
     <script defer src="../sentence-builder.js"></script>
     <script defer src="../exercise-lifecycle.js"></script>
     <script defer src="../b2-host.js"></script>
@@ -1486,6 +1488,42 @@
         let currentUser = null;
         let currentUserId = null;
         let b2CourseState = null;
+
+        /* STUCK LEARNERS, REPAIRED ON LOAD.
+
+           Anyone who passed the exercises while the two-component rule was in
+           force has the attempt stored and the topic still locked, because the
+           server was waiting on a vocabulary deck that is no longer required.
+           They must not have to solve anything again.
+
+           Reported through the SAME authoritative call the button uses — the
+           client still never writes completedTopics, and the server still
+           refuses a topic whose exercises are not done. Idempotent: a topic
+           already complete, or whose exercises component is already recorded,
+           is not sent, so the next load sends nothing at all. A stored attempt
+           below the threshold is never sent. */
+        async function b2ReconcileEarned() {
+            var TC = window.UzTopicCompletion;
+            if (!TC || typeof TC.reconcile !== 'function') return null;
+            if (typeof window.completeCourseComponent !== 'function') return null;
+            var ids = [];
+            try { ids = (courseData.topics || []).map(function (t) { return t.id; }); } catch (e) { return null; }
+            var res = await TC.reconcile({
+                topicIds: ids,
+                courseState: b2CourseState || {},
+                results: (typeof userQuizResults !== 'undefined' && userQuizResults) || {},
+                resultField: 'b2ExerciseResult',
+                report: function (id) { return window.completeCourseComponent('B2', id, 'exercises'); }
+            });
+            if (res && res.completedTopics) {
+                if (typeof b2ApplyCompletedArray === 'function') b2ApplyCompletedArray(res.completedTopics.slice());
+                if (typeof renderTopics === 'function') renderTopics();
+                if (typeof updateProgressBar === 'function') updateProgressBar();
+            }
+            return res;
+        }
+        window.b2ReconcileEarned = b2ReconcileEarned;
+
         let b2PendingRetry = null;
         let userProgress = {};
         let hasSubscription = true;
@@ -1576,6 +1614,7 @@
                     /* The SAME record carries the exam verdict the server wrote.
                        Only this Firebase-sourced copy may confirm a pass. */
                     mergeB2Completion(rp, true);
+                    await b2ReconcileEarned().catch(function () {});
                 }
             } catch (error) {
                 console.error('B2: Firestore load error, falling back to localStorage:', error);
@@ -2503,11 +2542,14 @@
                            open with a retry, and rebuilding the page underneath
                            a modal that is staying open would tear out the mount
                            the modal lives in. */
+                        /* The summary STAYS OPEN after a completion now — it is
+                           where "Перейти к следующей теме" lives — so this must
+                           not rebuild the page underneath it. Repaint the list
+                           and the bar; navigation is the button's job. */
                         return Promise.resolve(b2FinishExercises(id, r)).then(function (outcome) {
                             if (outcome && outcome.ok === true && outcome.topicCompleted === true) {
                                 renderTopics();
                                 updateProgressBar();
-                                loadTopic(id);      // reopens as the archived result
                             }
                             return outcome;
                         });
@@ -2517,6 +2559,22 @@
                     openVocabulary: function (id) {
                         window.location.href = 'b2-vocabulary.html?topic=' + id;
                     },
+                    /* WHERE THE LEARNER GOES NEXT. The only thing about finishing a
+                       topic that genuinely differs between the four courses. `next`
+                       is null when the course has no topic after this one. */
+                    isLastTopic: function (id) { return Number(id) >= 16; },
+                    navigate: function (next, outcome) {
+                        if (next == null) { window.location.href = 'b2-final-exam.html'; return; }
+                        var id = Number(next);
+                        try { currentTopicId = id; } catch (e) {}
+                        renderTopics();
+                        if (typeof updateProgressBar === 'function') updateProgressBar();
+                        loadTopic(id);
+                        var anchor = document.getElementById('lesson') || document.getElementById('lessonContent');
+                        if (anchor && anchor.scrollIntoView) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        else { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } }
+                    },
+
 
                     saveResult: b2SaveTopicResult,
                     loadResult: b2LoadTopicResult,
