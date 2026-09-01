@@ -599,7 +599,16 @@
                     return '<button type="button" class="b2h-opt" data-value="' + escAttr(o) + '">' +
                            lbl + '<span>' + escHtml(o) + '</span></button>';
                 }).join('');
-                cell = '<div class="b2h-opts b2h-opts-' + style + '" data-b2h-row="' + escAttr(key) + '">' +
+                /* A CUE BELONGS WITH THE SENTENCE, AND BEFORE THE CHOICE.
+                   `hint` was drawn for input and builder items but not for
+                   choice ones, so a course that put its cue there showed the
+                   learner nothing. A1 topic 11 needs it: "Я ___ спортом."
+                   accepts заниматься, увлекаться AND интересоваться, and the
+                   Uzbek cue is what makes exactly one of them right. It is
+                   escaped like every other prompt, and an item without a hint
+                   renders byte for byte as before. */
+                cell = (item.hint ? '<div class="b2h-hint">' + escHtml(item.hint) + '</div>' : '') +
+                       '<div class="b2h-opts b2h-opts-' + style + '" data-b2h-row="' + escAttr(key) + '">' +
                        opts + '</div>';
             } else if (g.type === 'builder') {
                 /* Delegated wholesale to the standalone component. */

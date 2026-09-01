@@ -4439,17 +4439,36 @@
                         exercise1: {
                             title: "1. To'g'ri fe'lni tanlang",
                             instruction: "(Qavs ichidan to'g'ri variantni tanlang)",
+                            /* THE SENTENCE IS THE SENTENCE; THE CUE IS A CUE.
+                               Every prompt used to carry the Uzbek cue INSIDE the
+                               Russian sentence wrapped in an em tag, and the
+                               renderer escapes prompts — correctly, it must, they
+                               are content — so the learner read the markup on
+                               screen. The cue still has to be there: the sentence
+                               Я ___ спортом accepts заниматься, увлекаться AND
+                               интересоваться, so without it the item has no single
+                               right answer. It moves to the hint field, which the
+                               shared renderer draws as its own escaped line under
+                               the sentence. The cues follow the rule box above:
+                               shugullan- is заниматься, juda qiziq- is увлекаться,
+                               qiziq- is интересоваться.
+
+                               NOTE FOR EDITORS: comments in this literal must not
+                               contain an apostrophe or a quote. The courseData
+                               extractor used by several suites does not skip
+                               comments, so an odd quote inside one truncates the
+                               whole course. */
                             items: [
-                                { prompt: 'Я <em>shug\'ullanaman</em> спортом.', options: ['занимаюсь', 'увлекаюсь', 'интересуюсь'], answer: 'занимаюсь' },
-                                { prompt: 'Он <em>juda qiziqadi</em> музыкой с детства.', options: ['занимается', 'увлекается', 'интересуется'], answer: 'увлекается' },
-                                { prompt: 'Мы <em>qiziqamiz</em> историей.', options: ['занимаемся', 'увлекаемся', 'интересуемся'], answer: 'интересуемся' },
-                                { prompt: 'Она <em>shug\'ullanadi</em> танцами каждый день.', options: ['занимается', 'увлекается', 'интересуется'], answer: 'занимается' },
-                                { prompt: 'Ты <em>qiziqasanmi</em> политикой?', options: ['занимаешься', 'увлекаешься', 'интересуешься'], answer: 'интересуешься' },
-                                { prompt: 'Я <em>juda qiziqaman</em> фотографией как хобби.', options: ['занимаюсь', 'увлекаюсь', 'интересуюсь'], answer: 'увлекаюсь' },
-                                { prompt: 'Они <em>qiziqadi</em> культурой других стран.', options: ['занимаются', 'увлекаются', 'интересуются'], answer: 'интересуются' },
-                                { prompt: 'Он <em>shug\'ullanadi</em> английским языком каждый день.', options: ['занимается', 'увлекается', 'интересуется'], answer: 'занимается' },
-                                { prompt: 'Мы <em>juda qiziqamiz</em> кино.', options: ['занимаемся', 'увлекаемся', 'интересуемся'], answer: 'увлекаемся' },
-                                { prompt: 'Я <em>shug\'ullanaman</em> плаванием.', options: ['занимаюсь', 'увлекаюсь', 'интересуюсь'], answer: 'занимаюсь' }
+                                { prompt: 'Я ___ спортом.', hint: "shug'ullanaman", options: ['занимаюсь', 'увлекаюсь', 'интересуюсь'], answer: 'занимаюсь' },
+                                { prompt: 'Он ___ музыкой с детства.', hint: 'juda qiziqadi', options: ['занимается', 'увлекается', 'интересуется'], answer: 'увлекается' },
+                                { prompt: 'Мы ___ историей.', hint: 'qiziqamiz', options: ['занимаемся', 'увлекаемся', 'интересуемся'], answer: 'интересуемся' },
+                                { prompt: 'Она ___ танцами каждый день.', hint: "shug'ullanadi", options: ['занимается', 'увлекается', 'интересуется'], answer: 'занимается' },
+                                { prompt: 'Ты ___ политикой?', hint: 'qiziqasanmi', options: ['занимаешься', 'увлекаешься', 'интересуешься'], answer: 'интересуешься' },
+                                { prompt: 'Я ___ фотографией как хобби.', hint: 'juda qiziqaman', options: ['занимаюсь', 'увлекаюсь', 'интересуюсь'], answer: 'увлекаюсь' },
+                                { prompt: 'Они ___ культурой других стран.', hint: 'qiziqadi', options: ['занимаются', 'увлекаются', 'интересуются'], answer: 'интересуются' },
+                                { prompt: 'Он ___ английским языком каждый день.', hint: "shug'ullanadi", options: ['занимается', 'увлекается', 'интересуется'], answer: 'занимается' },
+                                { prompt: 'Мы ___ кино.', hint: 'juda qiziqamiz', options: ['занимаемся', 'увлекаемся', 'интересуемся'], answer: 'увлекаемся' },
+                                { prompt: 'Я ___ плаванием.', hint: "shug'ullanaman", options: ['занимаюсь', 'увлекаюсь', 'интересуюсь'], answer: 'занимаюсь' }
                             ]
                         },
                         exercise2: {
@@ -4489,34 +4508,55 @@
                             instruction: '(Uzbekchadan rus tiliga)',
                             items: [
                                 { prompt: 'Men sport bilan shug\'ullanaman', answers: ['я занимаюсь спортом'] },
-                                { prompt: 'Men musiqa bilan qiziqaman', answers: ['я увлекаюсь музыкой'] },
+                                { prompt: 'Men musiqa bilan juda qiziqaman', answers: ['я увлекаюсь музыкой'] },
                                 { prompt: 'Men tarixga qiziqaman', answers: ['я интересуюсь историей'] },
                                 { prompt: 'U futbol bilan shug\'ullanadi', answers: ['он занимается футболом', 'она занимается футболом'] },
-                                { prompt: 'Biz kino bilan qiziqamiz', answers: ['мы увлекаемся кино'] },
-                                { prompt: 'U rasm chizishga qiziqadi', answers: ['она увлекается рисованием', 'он увлекается рисованием'] },
-                                { prompt: 'Men fotografiyaga qiziqaman', answers: ['я увлекаюсь фотографией'] },
+                                { prompt: 'Biz kino bilan juda qiziqamiz', answers: ['мы увлекаемся кино'] },
+                                { prompt: 'U rasm chizishga juda qiziqadi', answers: ['она увлекается рисованием', 'он увлекается рисованием'] },
+                                { prompt: 'Men fotografiyaga juda qiziqaman', answers: ['я увлекаюсь фотографией'] },
                                 { prompt: 'Ular siyosatga qiziqadi', answers: ['они интересуются политикой'] },
                                 { prompt: 'Sen yoga bilan shug\'ullanasanmi?', answers: ['ты занимаешься йогой?', 'ты занимаешься йогой'] },
-                                { prompt: 'Men raqsga qiziqaman', answers: ['я увлекаюсь танцами'] }
+                                { prompt: 'Men raqslarga juda qiziqaman', answers: ['я увлекаюсь танцами'] }
                             ]
                         },
+                        /* REBUILT FROM NOTHING USABLE.
+                           This exercise was titled True/False, had no controls
+                           of its own — so it rendered as free-text boxes — and
+                           its answer keys were the characters ✅ and ❌, which
+                           no learner can type. Its statements were also not
+                           readable against anything: they were grammar
+                           judgements with no source text, so half of them were
+                           simply opinions.
+
+                           It is now what its title always claimed: a short A1
+                           text about hobbies, and eight statements that the
+                           text alone settles. Two options per statement make it
+                           a choice group, which is the shared renderer own
+                           two-button layout — no new widget, and the same
+                           green and red marking, answer review and retake that
+                           every other exercise gets. */
                         exercise5: {
-                            title: "5. To'g'ri / noto'g'ri (True / False)",
+                            title: "5. Matnni o'qing va To'g'ri / Noto'g'ri deb belgilang",
+                            instruction: "(Matnga qarab har bir gap uchun To'g'ri yoki Noto'g'ri ni tanlang)",
+                            passage: '<p><strong>Мои друзья и хобби</strong></p>' +
+                                     '<p>Меня зовут Азиз. Я занимаюсь футболом два раза в неделю. ' +
+                                     'Моя сестра Малика увлекается музыкой и играет на пианино. ' +
+                                     'Наш друг Тимур интересуется историей, но не занимается спортом. ' +
+                                     'По выходным мы вместе смотрим фильмы.</p>',
                             items: [
-                                { prompt: 'Я занимаюсь спорт.', answer: '❌' },
-                                { prompt: 'Он увлекается музыкой.', answer: '✅' },
-                                { prompt: 'Мы интересуемся история.', answer: '❌' },
-                                { prompt: 'Она занимается танцами.', answer: '✅' },
-                                { prompt: 'Я увлекаюсь фотографией.', answer: '✅' },
-                                { prompt: 'Они интересуются культурой.', answer: '✅' },
-                                { prompt: 'Ты занимаешься английский язык?', answer: '❌' },
-                                { prompt: 'Я интересуюсь спортом.', answer: '✅' },
-                                { prompt: 'Он увлекается футбол.', answer: '❌' },
-                                { prompt: 'Мне нравится книги.', answer: '❌' }
+                                { prompt: 'Азиз занимается футболом.', options: ["To'g'ri", "Noto'g'ri"], answer: "To'g'ri" },
+                                { prompt: 'Азиз занимается футболом каждый день.', options: ["To'g'ri", "Noto'g'ri"], answer: "Noto'g'ri" },
+                                { prompt: 'Малика увлекается музыкой.', options: ["To'g'ri", "Noto'g'ri"], answer: "To'g'ri" },
+                                { prompt: 'Малика играет на гитаре.', options: ["To'g'ri", "Noto'g'ri"], answer: "Noto'g'ri" },
+                                { prompt: 'Тимур интересуется историей.', options: ["To'g'ri", "Noto'g'ri"], answer: "To'g'ri" },
+                                { prompt: 'Тимур занимается спортом.', options: ["To'g'ri", "Noto'g'ri"], answer: "Noto'g'ri" },
+                                { prompt: 'По выходным они вместе смотрят фильмы.', options: ["To'g'ri", "Noto'g'ri"], answer: "To'g'ri" },
+                                { prompt: 'Тимур — брат Азиза.', options: ["To'g'ri", "Noto'g'ri"], answer: "Noto'g'ri" }
                             ]
                         },
                         exercise6: {
                             title: "6. To'g'ri variantni tanlang",
+                            instruction: "(нравится yoki нравятся — to'g'ri shaklni tanlang)",
                             items: [
                                 { prompt: 'Мне __________ музыка.', options: ['нравится', 'нравятся'], answer: 'нравится' },
                                 { prompt: 'Мне __________ книги.', options: ['нравится', 'нравятся'], answer: 'нравятся' },
@@ -4548,12 +4588,13 @@
                         },
                         exercise8: {
                             title: '8. Tarjima qiling',
+                            instruction: '(Uzbekchadan rus tiliga yozing)',
                             items: [
                                 { prompt: 'Menga musiqa yoqadi', answers: ['мне нравится музыка'] },
                                 { prompt: 'Menga kitoblar yoqadi', answers: ['мне нравятся книги'] },
                                 { prompt: 'Menga film ko\'rish yoqadi', answers: ['мне нравится смотреть фильмы'] },
                                 { prompt: 'Menga sport yoqadi', answers: ['мне нравится спорт'] },
-                                { prompt: 'Menga raqs yoqadi', answers: ['мне нравятся танцы'] },
+                                { prompt: 'Menga raqslar yoqadi', answers: ['мне нравятся танцы'] },
                                 { prompt: 'Menga yangi filmlar yoqadi', answers: ['мне нравятся новые фильмы'] },
                                 { prompt: 'Menga o\'qish yoqadi', answers: ['мне нравится читать'] },
                                 { prompt: 'Menga bu qo\'shiqlar yoqadi', answers: ['мне нравятся эти песни'] },

@@ -126,6 +126,12 @@
 
         var group = { id: id, title: raw.title || id, items: items };
         if (raw.instruction) group.intro = raw.instruction;
+        /* A READING TASK NEEDS ITS TEXT. The shared renderer already draws
+           `passage` above the questions; A1 simply never carried the field
+           through, so a topic-11 True/False exercise was asking about a text
+           the learner could not see. Authored markup only — item prompts stay
+           escaped. */
+        if (raw.passage) group.passage = raw.passage;
         if (raw.namuna) group.namuna = raw.namuna;
         /* Choice only when EVERY item offers options — a mixed group stays an
            input group so an option-less item is still answerable. */
