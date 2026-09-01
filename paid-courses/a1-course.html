@@ -10496,20 +10496,31 @@
                     </div>
             `;
 
-            // ===== EXERCISE 5 — True/False (❌ / ✅) =====
+            /* ===== EXERCISE 5 — the two answers the DATA offers =====
+
+               This is the legacy fallback, reached only when the shared engine
+               fails to mount (see the dispatch table: mountA1Practice(11) ||
+               loadTopic11Exercises(11)). Its chips used to be hard-coded to the
+               characters that were once the answer keys, so once the exercise
+               was rebuilt with real labels this path would have marked every
+               answer wrong. It reads the labels from the item now, exactly as
+               the checker below already read the key from it. */
             html += `
                     <div class="topic5-exercise-block">
                         <h3 class="topic5-exercise-title">${exercises.exercise5.title}</h3>
+                        ${exercises.exercise5.instruction ? `<p class="topic5-exercise-instruction">${exercises.exercise5.instruction}</p>` : ''}
+                        ${exercises.exercise5.passage ? `<div class="topic5-exercise-passage">${exercises.exercise5.passage}</div>` : ''}
                         <div class="topic7-choice-list">
             `;
             exercises.exercise5.items.forEach((item, index) => {
                 const savedValue = ex5Answers[index] || '';
+                const labels = Array.isArray(item.options) && item.options.length
+                    ? item.options : ['❌', '✅'];
                 html += `
                     <div class="topic7-choice-item" data-topic11-e5-row="${index}" data-value="${savedValue}">
                         <div class="topic7-choice-text">${index + 1}. ${item.prompt}</div>
                         <div class="topic7-choice-options">
-                            <button type="button" class="topic5-option-chip ${savedValue === '❌' ? 'selected' : ''}" data-topic11-e5-option="${index}" data-value="❌">❌</button>
-                            <button type="button" class="topic5-option-chip ${savedValue === '✅' ? 'selected' : ''}" data-topic11-e5-option="${index}" data-value="✅">✅</button>
+                            ${labels.map((label) => `<button type="button" class="topic5-option-chip ${savedValue === label ? 'selected' : ''}" data-topic11-e5-option="${index}" data-value="${label}">${label}</button>`).join('')}
                         </div>
                     </div>
                 `;
@@ -10710,7 +10721,9 @@
                     userAnswer: userValue,
                     correctAnswer: item.answer,
                     isCorrect: userValue === item.answer,
-                    explanation: item.answer === '❌' ? "Grammatik xato bor — творительный падеж kerak" : "Gap grammatik jihatdan to'g'ri"
+                    /* The reason comes from the exercise, not from an assumption
+                       about what its answers used to mean. */
+                    explanation: item.hint || item.explanation || ''
                 });
             });
 

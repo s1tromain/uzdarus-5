@@ -145,6 +145,29 @@ GROUPS.forEach((g, gi) => {
         .forEach((w) => ok(text.indexOf(w) >= 0, `exercise 5: the passage mentions "${w}"`));
 }
 
+/* ---- the legacy fallback must agree with the data it renders ----
+
+   The page keeps a hand-written renderer for topic 11, reached only when the
+   shared engine fails to mount. Its True/False chips were hard-coded to the
+   characters that used to be the answer keys, so once exercise 5 was rebuilt
+   with real labels that path would have marked every answer wrong. */
+{
+    const fs = require('fs');
+    const src = fs.readFileSync(path.join(__dirname, '..', 'paid-courses', 'a1-course.html'), 'utf8');
+    /* Anchor on the one string unique to topic 11's own render block:
+       "EXERCISE 5" and `exercises.exercise5.title` both appear in the
+       hand-written renderers of several other topics, and the first
+       data-topic11-e5-row is the click binding rather than the markup. */
+    const at = src.indexOf('data-topic11-e5-option="${index}"');
+    const block = at > 0 ? src.slice(at - 1800, at + 600) : '';
+    ok(block.length > 0, 'the legacy topic 11 renderer is present');
+    ok(/item\.options/.test(block), 'the legacy chips read their labels from the item');
+    ok(!/data-value="✅"|data-value="❌"/.test(block),
+        'and no answer label is hard-coded into the markup');
+    ok(/exercises\.exercise5\.passage/.test(block),
+        'the legacy path also shows the passage');
+}
+
 /* ================================================================ *
  * 2. THE BROWSER. Every exercise, driven.
  * ================================================================ */
