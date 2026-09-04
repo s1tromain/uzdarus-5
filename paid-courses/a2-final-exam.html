@@ -12,6 +12,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="pro-toast.css">
     <script defer src="pro-toast.js"></script>
+    <!-- ONE exam gate for A1, A2, B1 and B2. Classic scripts on purpose:
+         paid-platform.js is a deferred MODULE and lands after the page's
+         own inline script, which is exactly what broke the A1 gate. -->
+    <script src="../topic-completion.js"></script>
+    <script src="../exam-gate.js"></script>
     <script type="module" src="paid-platform.js"></script>
     <style>
         * {
@@ -1067,7 +1072,13 @@
         }
 
         // ========== COMPLETION GATE — exam refuses to start unless the whole course is done ==========
-        var REQUIRED_TOPICS = 16;
+        /* THE GATE LIVES IN exam-gate.js, ONCE, FOR ALL FOUR EXAMS.
+           This page used to carry its own copy — a required-topic constant, an
+           authoritative read, a "locked" screen and a "could not check" screen.
+           The four copies drifted, and A1's read the platform helper before the
+           deferred module had installed it, so every A1 learner was told to
+           check their internet. UzExamGate.mount() below is the whole gate. */
+
         var COURSE_PAGE = 'a2-course.html';
         // Developer/Admin accounts bypass ALL completion gates (customers unaffected).
         function isPrivilegedUser() {
@@ -1076,85 +1087,6 @@
                 return r === 'developer' || r === 'admin';
             } catch (e) { return false; }
         }
-        /**
-         * EXAM ELIGIBILITY IS AUTHORITATIVE OR IT IS NOTHING.
-         *
-         * This used to fall back to localStorage whenever the remote read came
-         * back empty — which meant a learner could open the final exam by
-         * typing their own progress into DevTools, and it also meant a network
-         * blip was indistinguishable from a finished course. localStorage is
-         * still a fine cache for DRAFT ANSWERS and for RENDERING, and it is
-         * still used for both. It is never again allowed to decide whether the
-         * exam opens.
-         *
-         * Returns one of:
-         *   { ok: true,  count: <n> }        a real answer from the server
-         *   { ok: false, reason: 'sync' }    the read did not succeed
-         * Both non-passing cases fail closed; only the message differs.
-         */
-        async function readAuthoritativeCompletion() {
-            if (USER_ID === 'guest') return { ok: false, reason: 'sync' };
-            await waitForSync(3500);
-            if (!window.getAuthoritativeCourseProgress) {
-                /* The authoritative helper is part of paid-platform.js. If it
-                   is not there the page cannot authorise anything, so it says
-                   so rather than reaching for a local value. */
-                return { ok: false, reason: 'sync' };
-            }
-            try {
-                var p = await window.getAuthoritativeCourseProgress(USER_ID, COURSE);
-                var ids = (p && Array.isArray(p.completedTopics)) ? p.completedTopics : [];
-                return { ok: true, count: new Set(ids.filter(function (n) {
-                    return typeof n === 'number' && isFinite(n);
-                })).size };
-            } catch (e) {
-                return { ok: false, reason: 'sync' };
-            }
-        }
-
-        /* Distinct from showExamLocked(): the learner may well have finished
-           the course — we simply could not confirm it. Saying "you have not
-           completed the course" here would be a lie. */
-        function showExamSyncError() {
-            examFinished = true;
-            stopAutosave();
-            if (timerInterval) clearInterval(timerInterval);
-            var footer = document.getElementById('examFooterBar'); if (footer) footer.classList.add('hidden');
-            var timer = document.getElementById('examTimer'); if (timer) timer.style.visibility = 'hidden';
-            var note = document.getElementById('examAutosaveNote'); if (note) note.style.display = 'none';
-            var body = document.getElementById('examExercises');
-            if (body) {
-                body.innerHTML = '<div class="exam-intro" style="border-color:#FF9800;background:linear-gradient(135deg,#FFF3E0,#FFE0B2);">'
-                    + '<div style="font-size:2.4rem;margin-bottom:8px;">\u26A0\uFE0F</div>'
-                    + '<div style="font-size:1.12rem;font-weight:800;margin-bottom:6px;">Kurs holatini tekshirib bo\'lmadi.</div>'
-                    + '<div style="font-size:0.95rem;font-weight:600;">Internet aloqasini tekshirib, qayta urinib ko\'ring.</div>'
-                    + '<div style="margin-top:16px;">'
-                    + '<button type="button" onclick="window.location.reload()" style="background:linear-gradient(135deg,#FF9800,#E65100);color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Qayta urinish</button> '
-                    + '<button type="button" onclick="window.location.href=\'' + COURSE_PAGE + '\'" style="background:#607d8b;color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Kursga qaytish</button>'
-                    + '</div></div>';
-            }
-            var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
-        }
-        function showExamLocked() {
-            examFinished = true;     // stop timer / autosave / beforeunload prompt
-            stopAutosave();
-            if (timerInterval) clearInterval(timerInterval);
-            var footer = document.getElementById('examFooterBar'); if (footer) footer.classList.add('hidden');
-            var timer = document.getElementById('examTimer'); if (timer) timer.style.visibility = 'hidden';
-            var note = document.getElementById('examAutosaveNote'); if (note) note.style.display = 'none';
-            var body = document.getElementById('examExercises');
-            if (body) {
-                body.innerHTML = '<div class="exam-intro" style="border-color:#F44336;background:linear-gradient(135deg,#FFEBEE,#FFCDD2);">'
-                    + '<div style="font-size:2.4rem;margin-bottom:8px;">🔒</div>'
-                    + '<div style="font-size:1.12rem;font-weight:800;margin-bottom:6px;">Kursni to\'liq tugatgandan so\'ng yakuniy imtihon ochiladi.</div>'
-                    + '<div style="font-size:0.95rem;font-weight:600;">A2 kursidagi barcha 16 ta mavzuni tugating. Kurs sahifasiga yo\'naltirilmoqda…</div>'
-                    + '<div style="margin-top:16px;"><button type="button" onclick="window.location.href=\'' + COURSE_PAGE + '\'" style="background:linear-gradient(135deg,#FF9800,#E65100);color:#fff;border:none;padding:12px 28px;border-radius:50px;font-size:1rem;font-weight:700;cursor:pointer;">Kursga qaytish</button></div>'
-                    + '</div>';
-            }
-            var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
-            setTimeout(function () { window.location.href = COURSE_PAGE; }, 3500);
-        }
-
         // ========== FINISH EXAM ==========
         async function finishExam(isAutoFinish) {
             if (examFinished) return;
@@ -1528,17 +1460,10 @@
         _autosaveInterval = setInterval(function () { if (!examFinished) { persistLocal(); persistRemote(); flashAutosave(); } }, 30000);
 
         // ========== INIT ==========
-        (async function init() {
+        (function init() {
             // Gate: refuse to render / start the exam unless ALL 20 topics are completed.
             // Developer/Admin bypass the gate entirely; customers are unaffected.
-            if (!isPrivilegedUser()) {
-                /* Fail closed on BOTH branches: an unconfirmed course state
-                   never opens the exam, it only changes what we tell them. */
-                var progress = await readAuthoritativeCompletion();
-                if (!progress.ok) { showExamSyncError(); return; }
-                if (progress.count < REQUIRED_TOPICS) { showExamLocked(); return; }
-            }
-
+            async function startExam() {
             renderExam();
 
             var saved = await loadSavedState();
@@ -1565,6 +1490,45 @@
             updateProgressCount();
             startTimer();
             armBackGuard();
+            }
+
+            /* THE GATE, SHARED BY ALL FOUR EXAMS.
+
+               It used to be four hand-written copies, and they drifted: A1
+               read window.getAuthoritativeCourseProgress before the deferred
+               paid-platform.js module had installed it, found nothing, and
+               rendered "check your internet" — with no request behind it, for
+               every A1 learner, on every load. This page happened to await a
+               helper first, which is the only reason it did not break too.
+
+               UzExamGate waits for the platform, tells the six outcomes apart,
+               names the topics that are actually missing, repairs a learner
+               whose earned topics were never recorded, and gives a retry that
+               really re-runs the check. */
+            UzExamGate.mount({
+                course: COURSE,
+                uid: USER_ID,
+                privileged: isPrivilegedUser(),
+                host: document.getElementById('examExercises'),
+                coursePage: COURSE_PAGE,
+                loginPage: '../my.cabinet/index.html?redirect=' +
+                    encodeURIComponent(location.pathname),
+                onBlocked: function () {
+                    examFinished = true;
+                    try { if (typeof stopAutosave === 'function') stopAutosave(); } catch (e) {}
+                    if (typeof timerInterval !== 'undefined' && timerInterval) clearInterval(timerInterval);
+                    var f = document.getElementById('examFooterBar'); if (f) f.classList.add('hidden');
+                    var t = document.getElementById('examTimer'); if (t) t.style.visibility = 'hidden';
+                    var n = document.getElementById('examAutosaveNote'); if (n) n.style.display = 'none';
+                    var fb = document.getElementById('examFeedback'); if (fb) fb.innerHTML = '';
+                },
+                onEligible: function () {
+                    examFinished = false;
+                    var f = document.getElementById('examFooterBar'); if (f) f.classList.remove('hidden');
+                    var t = document.getElementById('examTimer'); if (t) t.style.visibility = '';
+                    startExam();
+                }
+            });
         })();
 
     })();

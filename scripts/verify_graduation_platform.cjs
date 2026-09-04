@@ -96,23 +96,27 @@ console.log(`  certifiable courses: ${certCourses.join(', ')}`);
         ok(fs.existsSync(path.join(ROOT, c.coursePage)), `${c.code}: the course page exists`);
         ok(fs.existsSync(path.join(ROOT, c.examPage)), `${c.code}: the exam page exists`);
 
-        /* THE PAGE'S OWN GATE MUST BE THE CANON'S NUMBER. */
+        /* ONE GATE, NOT FOUR. Each page used to carry its own required-topic
+           constant and its own two failure screens; the four copies drifted,
+           and A1's read the platform helper before the deferred module had
+           installed it — so every A1 learner was told to check their internet.
+           The number now lives in exam-gate.js, pinned to this same canon by
+           verify_exam_progression.cjs, and the page's job is to delegate. */
         const exam = read(c.examPage);
-        /* THE CONTRACT, NOT THE IDIOM. A1's exam page is an older file that
-           expresses the same guarantees with different names (GATE_REQUIRED
-           rather than REQUIRED_TOPICS, COURSE_RETURN_URL rather than
-           COURSE_PAGE). Asserting one spelling would report a difference in
-           style as a defect, so each guarantee is checked in whichever form
-           the page actually uses — and a page providing NEITHER form fails. */
-        const req = exam.match(/var (?:REQUIRED_TOPICS|GATE_REQUIRED) = (\d+);/);
-        ok(!!req, `${c.code}: the exam page declares a required-topic gate`);
-        if (req) {
-            eq(`${c.code}: the exam gate equals the canon (${total})`, Number(req[1]), total);
-        }
-        /* the gate must be applied, not merely declared */
-        ok(/showExamLocked\(\); return;/.test(exam),
+        const gateSrc = read('exam-gate.js');
+        ok(/<script src="\.\.\/exam-gate\.js">/.test(exam),
+            `${c.code}: the exam page loads the shared gate`);
+        ok(/UzExamGate\.mount\(/.test(exam),
+            `${c.code}: and delegates the decision to it`);
+        eq(`${c.code}: the shared gate knows this course is ${total} topics`,
+            Number((gateSrc.match(new RegExp(c.code + ':\\s*(\\d+)')) || [])[1]), total);
+        /* the exam may be started ONLY from the gate's eligible callback */
+        ok(/onEligible: function \(\) \{[\s\S]{0,400}?startExam\(\);/.test(exam),
             `${c.code}: an unfinished course is locked out`);
-        ok(/if \(!progress\.ok\) \{ showExamSyncError\(\); return; \}/.test(exam),
+        ok(!/^(?![\s\S]*onEligible)[\s\S]*startExam\(\)/.test(exam),
+            `${c.code}: nothing starts the exam outside that callback`);
+        /* and the gate itself is eligible ONLY when nothing is missing */
+        ok(/state: missing\.length \? STATES\.LOCKED : STATES\.ELIGIBLE/.test(gateSrc),
             `${c.code}: an unreadable course state fails CLOSED`);
         ok(/window\.getAuthoritativeCourseProgress/.test(exam),
             `${c.code}: eligibility comes from the authoritative helper`);
