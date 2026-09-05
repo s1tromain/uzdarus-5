@@ -232,12 +232,18 @@ for (const p of PAGES) {
     ok(s.includes(`${p.vocab}?topic=\${topic.id}`),
         `${T} links to ${p.vocab} with the topic id`);
     /* rendered for every topic, from the shared template — no per-topic content */
-    const tpl = s.slice(s.indexOf('lessonContent.innerHTML'), s.indexOf('lessonContent.innerHTML') + 2600);
-    ok(/\$\{b2VocabCard\(topic\.id\)\}/.test(tpl),
+    /* ONE TEMPLATE, STILL. The lesson pane used to assemble the deck card and
+       the explanation itself; the topic overview draws all three stages now, so
+       the single template is the one UzTopicRoute.open call every topic goes
+       through — and the deck is still reached from exactly one place. */
+    ok((s.match(/UzTopicRoute\.open\(/g) || []).length === 1,
         `${T} the card sits in the single lesson template`);
-    ok(!/topic\.content\}<\/div>\s*\n\s*<div class="b2-vocab-card"/.test(tpl) ||
-        tpl.includes('${topic.content ?'), `${T} no empty explanation div is rendered`);
-    ok(tpl.includes('${topic.content ?'), `${T} the explanation block is skipped when empty`);
+    ok((s.match(/vocabHref: '[a-z0-9-]*vocabulary\.html\?topic='/g) || []).length === 1,
+        `${T} exactly one vocabulary entry point`);
+    /* the explanation moved to the reader with the rest of the material, and an
+       empty one must still leave no empty block behind */
+    ok(/description: [^\n]*topic\.description|description: [^\n]*explanation/.test(s),
+        `${T} the overview carries the topic's own description`);
     ok(fs.existsSync(path.join(ROOT, p.file.startsWith('paid') ? 'paid-courses/' + p.vocab : p.vocab)),
         `${T} the linked vocabulary page exists on disk`);
 }

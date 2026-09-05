@@ -334,12 +334,14 @@ const EXPECTED = [
         'window.saveUserProgress=async function(u,c,p){window.__safe.push(p);return 1;};' +
         'window.getUserProgress=async()=>({completedTopics:[1,2,3,4,5,6]});' +
         'window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};');
-    ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js']
+    ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js',
+     'topic-route.js']
         .forEach((f) => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
     if (pre) w.eval(pre);
     w.eval(main + '\n;window.__api={loadLesson:loadLesson,exData:getT1ExData,' +
         'setCompleted:function(v){completedTopics=v;},getCompleted:function(){return completedTopics;},' +
-        'render:renderTopic1Exercises,complete:a2CompleteTopic,check:window.checkTopic1Exercises};');
+        'render:renderTopic1Exercises,complete:a2CompleteTopic,check:window.checkTopic1Exercises,'+
+        'startTopicExercises:startTopicExercises};');
     w.eval('window.currentUserId="u1";');
     return w;
     }
@@ -348,16 +350,20 @@ const EXPECTED = [
     w.__api.setCompleted([1, 2, 3, 4, 5, 6]);
     w.eval('currentTopicId=7;');
     w.__api.loadLesson(7);
+    /* the topic opens on its overview; the exercises are the stage picked here */
+    w.__api.startTopicExercises(7);
     const D = w.document;
 
     ok(!!w.__api.exData(t7), 'the generic engine claims topic 7');
     eq('twelve steps exist in the hidden bridge', D.querySelectorAll('[data-t1-ex]').length, 12);
     /* ex1 and ex6 are text inputs, ex5 and ex10 are builders with hidden inputs. */
     eq('forty text inputs render across the input and builder steps', D.querySelectorAll('[data-t1-input]').length, 40);
-    const lesson = (D.getElementById('lessonContent') || D.body).textContent;
-    ok(/Мне нравятся/.test(lesson), 'the grammar reaches the screen');
+    /* the grammar is served by the shared reader now — same words, new address */
+    const gram = require('./_grammar_material.cjs').materialOf('A2', 7);
+    const lesson = gram.text;
+    ok(/Мне нравятся/.test(lesson), 'the grammar reaches the reader');
     ok(/Audio va tushunish savollari/.test(lesson),
-        'the lesson announces the listening step');
+        'the material announces the listening step');
 
     /* Answer everything correctly and check the score. */
     const first = (a) => (Array.isArray(a) ? a[0] : a);

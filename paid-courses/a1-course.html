@@ -23,6 +23,10 @@
          only expresses A1's existing exercise data as groups. -->
     <script defer src="../exercise-session.js"></script>
     <script defer src="../sentence-builder.js"></script>
+    <link rel="stylesheet" href="../learning-route.css">
+    <!-- ONE topic overview for A1, A2, B1, B2 and all four demos. -->
+    <script defer src="../topic-route.js"></script>
+    <script defer src="../grammar-data/a1-index.js"></script>
     <script defer src="../course-exercise-ui.js"></script>
     <!-- ONE completion contract for A1, A2, B1 and B2. -->
     <script defer src="../topic-completion.js"></script>
@@ -6118,6 +6122,12 @@
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
 
+            /* The topic on screen is the topic just loaded. Every caller used to
+               set this before calling in, and the exercises stage refuses to
+               render for anything else — so a caller that forgot left the stage
+               dead. Setting it here removes the ordering requirement. */
+            currentTopicId = topicId;
+
             // Логируем открытие темы
             if (currentUser && window.logActivity) {
                 window.logActivity(
@@ -6127,51 +6137,104 @@
                 ).catch(err => console.error('❌ Error logging topic visit:', err));
             }
 
-            let lessonHTML = `
-                <div class="lesson-content active">
+            /* THE OVERVIEW IS THE TOPIC NOW.
+               A topic used to open as a wall of grammar with the exercises
+               somewhere below it and the vocabulary reachable only from a
+               button on the topic card — no screen said what a topic contains
+               or in what order to do it. UzTopicRoute draws the same three
+               stages for all four courses and both demos; the grammar moved to
+               its own reader page, so it is not repeated underneath. */
+            if (topic.isSubscriptionLocked) {
+                lessonContent.innerHTML = `<div class="lesson-content active">
                     <h3 class="lesson-title">${topic.id}. ${topic.title}</h3>
-            `;
-
-            if (!topic.isSubscriptionLocked) {
-                if (topic.grammar && topic.grammar.trim()) {
-                    lessonHTML += `
-                    <div class="grammar-section">
-                        <div class="grammar-header">
-                            <i class="fas fa-language"></i>
-                            <h3>Grammatik qism</h3>
-                        </div>
-                        <div class="grammar-content">
-                            ${topic.grammar}
-                        </div>
-                    </div>
-                    `;
-                }
-                lessonHTML += `
-                    <div class="topic-explanation">
-                        <h3>Mavzu Tushuntirish</h3>
-                        <p>${topic.explanation.uz}</p>
-                        ${topic.content}
-                    </div>
-                `;
-            } else {
-                lessonHTML += topic.content + '</div>';
-            }
-
-            lessonContent.innerHTML = lessonHTML;
-
-            if (!topic.isSubscriptionLocked) {
-                if (EXERCISE_TOPIC_LOADERS[topicId]) {
-                    quizSection.innerHTML = '';
-                    resultsSection.classList.remove('show');
-                    completeBtn.style.display = 'none';
-                    retryBtn.style.display = 'none';
-                    scheduleExerciseRender(topicId);
-                } else {
-                    loadQuiz(topicId);
-                }
-            } else {
+                    ${topic.content}</div>`;
                 quizSection.innerHTML = '';
+                return;
             }
+
+            lessonContent.innerHTML = '<div class="lesson-content active">'
+                + '<h3 class="lesson-title"></h3><div id="a1TopicRoute"></div></div>';
+            /* the title is written as text, never as markup */
+            lessonContent.querySelector('.lesson-title').textContent = topic.id + '. ' + topic.title;
+            quizSection.innerHTML = '';
+            resultsSection.classList.remove('show');
+            completeBtn.style.display = 'none';
+            retryBtn.style.display = 'none';
+            renderTopicRoute(topic);
+        }
+
+        /* The exercises are rendered only when the learner asks for them, so
+           the overview is what a topic opens with. */
+        function startTopicExercises(topicId) {
+            if (topicId !== currentTopicId) return;
+            if (EXERCISE_TOPIC_LOADERS[topicId]) {
+                quizSection.innerHTML = '';
+                resultsSection.classList.remove('show');
+                scheduleExerciseRender(topicId);
+            } else {
+                loadQuiz(topicId);
+            }
+            var anchor = document.getElementById('quizSection') || quizSection;
+            if (anchor && anchor.scrollIntoView) {
+                anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        /** Everything the shared overview needs to know about an A1 topic. */
+        function renderTopicRoute(topic) {
+            var host = document.getElementById('a1TopicRoute');
+            if (!host || !window.UzTopicRoute) return;
+            var id = topic.id;
+            var stored = (userQuizResults && userQuizResults['topic_' + id]) || {};
+            var durable = stored.a1ExerciseResult || null;
+            var best = durable && durable.total
+                ? Math.round((durable.score / durable.total) * 100) : null;
+            var groups = [];
+            try { groups = (window.A1Host && window.A1Host.groupsOf(topic)) || []; } catch (e) {}
+
+            window.UzTopicRoute.open({
+                course: 'A1',
+                topicId: id,
+                title: topic.title,
+                description: (topic.explanation && topic.explanation.uz) || topic.description || '',
+                host: host,
+                completed: Array.isArray(completedTopics) && completedTopics.indexOf(id) >= 0,
+                grammarChars: (typeof A1_GRAMMAR_CHARS === 'function') ? A1_GRAMMAR_CHARS(id) : 0,
+                grammarHref: 'grammar-a1a2.html?course=A1&topic=' + id,
+                vocabHref: 'a1-vocabulary.html?topic=' + id,
+                vocabWords: window.UzTopicRoute.wordCountFrom(topic.content),
+                vocabPercent: a1VocabPercent(id),
+                exerciseCount: groups.length || null,
+                exerciseBest: best,
+                exerciseState: durable ? 'viewed' : 'not_started',
+                exercisePercent: best,
+                onExercises: function () { startTopicExercises(id); }
+            });
+        }
+
+        /* The deck's own progress, read from the same place the vocabulary page
+           writes it. It is shown, never required. */
+        function a1VocabPercent(topicId) {
+            try {
+                var uid = (JSON.parse(localStorage.getItem('currentUser')) || {}).id;
+                var raw = localStorage.getItem('a1_vocabulary_progress_' + uid);
+                var learned = raw ? JSON.parse(raw) : null;
+                if (!learned) return undefined;
+                var have = Number(learned['topic_' + topicId]);
+                if (!Number.isFinite(have) || have <= 0) return 0;
+                var total = (window.UzGrammarIndex && window.UzGrammarIndex.A1) ? 0 : 0;
+                return Math.min(100, have);   /* the deck stores a word count */
+            } catch (e) { return undefined; }
+        }
+
+        /* How much material a topic's grammar has, for the reading estimate.
+           The index is a few KB and carries no material. */
+        function A1_GRAMMAR_CHARS(topicId) {
+            var idx = (window.UzGrammarIndex && window.UzGrammarIndex.A1) || [];
+            for (var i = 0; i < idx.length; i++) {
+                if (Number(idx[i].id) === Number(topicId)) return idx[i].chars || 0;
+            }
+            return 0;
         }
 
         // Load quiz content

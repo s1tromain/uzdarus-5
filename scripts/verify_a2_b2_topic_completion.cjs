@@ -138,6 +138,9 @@ try {
             await p.goto(`http://127.0.0.1:${site.port}${cfg.url}`, { waitMs: 2400 });
             await p.evaluate(`try{ ${cfg.open}(${topic}); }catch(e){ try{ loadTopic(${topic}); }catch(e2){} } return 1;`);
             await sleep(1500);
+            /* the topic opens on its overview: pick the exercises stage first */
+            await p.evaluate(`var s=document.querySelector('[data-uzr-open="exercises"]'); if(s)s.click(); return 1;`);
+            await sleep(1200);
             await p.evaluate(`var b=document.querySelector('.uz-practice-btn'); if(b)b.click(); return 1;`);
             await sleep(1600);
 
@@ -206,6 +209,9 @@ try {
         await p.setDevice(360, 800, true);
         await p.goto(`http://127.0.0.1:${site.port}${cfg.url}`, { waitMs: 2400 });
         await p.evaluate(`try{ loadTopic(${topic}); }catch(e){} return 1;`); await sleep(1500);
+        /* the topic opens on its overview: pick the exercises stage first */
+        await p.evaluate(`var s=document.querySelector('[data-uzr-open="exercises"]'); if(s)s.click(); return 1;`);
+        await sleep(1200);
         await p.evaluate(`var b=document.querySelector('.uz-practice-btn'); if(b)b.click(); return 1;`); await sleep(1600);
         for (let i = 0; i < 18; i++) {
             const g = await p.evaluate(CUR); if (!g) break;

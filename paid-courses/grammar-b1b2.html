@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <title>Grammatika B1 / B2 — UzdaRus</title>
+    <!--
+      The grammar of the B1 / B2 pack. There are two of these pages, one per
+      ACCESS PACK, because the gate in firebase-client.js maps a page NAME to
+      a pack and a single shared page could not belong to both. They are thin:
+      all the reading, the route guard and the sanitiser live in
+      grammar-reader.js, so there is one implementation, not two.
+
+      The material of a single topic is generated into
+      grammar-data/<course>/<id>.js and fetched on demand by grammar-reader.js,
+      so opening one topic downloads about 2-15 KB rather than a 600 KB course
+      document. The route names the course and the topic; anything the canon
+      does not know is refused with a readable screen, not a blank page.
+    -->
+    <link rel="stylesheet" href="../learning-route.css">
+    <style>
+        :root { color-scheme: light dark; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+            background: #F6F8FC;
+            color: #1F2430;
+            -webkit-font-smoothing: antialiased;
+        }
+        .gr-top {
+            position: sticky; top: 0; z-index: 5;
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, .92);
+            backdrop-filter: saturate(140%) blur(8px);
+            border-bottom: 1px solid #E4E7F2;
+        }
+        .gr-back {
+            display: inline-flex; align-items: center; gap: 8px;
+            min-height: 44px; padding: 9px 16px;
+            border: 1px solid #C9D4EE; border-radius: 999px;
+            background: #fff; color: #3F51B5;
+            font: inherit; font-weight: 700; font-size: .94rem; cursor: pointer;
+        }
+        .gr-back:hover { background: #F3F6FF; }
+        .gr-back:focus-visible { outline: 3px solid #1F2430; outline-offset: 2px; }
+        .gr-top-title {
+            font-size: .92rem; font-weight: 800; color: #6B7290;
+            letter-spacing: .04em; text-transform: uppercase;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        main { padding: 0 0 8px; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #151A26; color: #EEF1F8; }
+            .gr-top { background: rgba(27, 33, 48, .92); border-bottom-color: #313A52; }
+            .gr-back { background: #232B3D; color: #C9D4EE; border-color: #3B466A; }
+        }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+    </style>
+</head>
+<body>
+    <header class="gr-top">
+        <button type="button" class="gr-back" id="grBack" aria-label="Mavzu sharhiga qaytish">
+            <span aria-hidden="true">←</span> Orqaga
+        </button>
+        <span class="gr-top-title" id="grTop">Grammatika</span>
+    </header>
+
+    <main>
+        <div id="grammarRoot" role="main" aria-live="polite"></div>
+    </main>
+
+    <script type="module" src="paid-platform.js"></script>
+    <script src="../grammar-reader.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        var PACK = ['B1','B2'];
+        /* A page may only open the courses of its own pack: the access gate
+           authorises by page NAME, so the page has to hold that line too.
+           The allowlist goes to the reader, which is where the route is
+           actually decided — a check kept here would be decorative. */
+        var route = window.UzGrammarReader.readRoute(location.search, PACK);
+        var course = (route.course || '').toLowerCase();
+
+        /* The demo courses live at the site root and the paid ones in this
+           folder, so the way back differs; the route says which. */
+        var demo = route.demo === true;
+        var coursePage = demo ? ('../' + course + '-demo.html') : (course + '-course.html');
+        var vocabPage = demo ? ('../' + course + '-demo-vocabulary.html')
+                             : (course + '-vocabulary.html');
+
+        var top = document.getElementById('grTop');
+        if (top && route.ok) top.textContent = route.course + ' · ' + route.topic + '-mavzu';
+
+        /* BACK MUST MEAN BACK. If the learner arrived from the topic overview
+           the history entry is theirs and history.back() keeps their scroll
+           position; a direct link has no such entry, so fall back to the
+           course page for the same topic. */
+        var cameFromCourse = document.referrer && /course\.html|demo\.html/.test(document.referrer);
+        function goBack() {
+            if (cameFromCourse && history.length > 1) { history.back(); return; }
+            location.href = coursePage + '?topic=' + (route.topic || 1);
+        }
+        document.getElementById('grBack').addEventListener('click', goBack);
+
+        window.UzGrammarReader.mount({
+            host: document.getElementById('grammarRoot'),
+            allowCourses: PACK,
+            base: '../grammar-data/',
+            coursePage: coursePage,
+            vocabPage: vocabPage,
+            onNavigate: function (where) {
+                if (where === 'overview') { goBack(); return true; }
+                return false;
+            }
+        });
+    })();
+    </script>
+</body>
+</html>

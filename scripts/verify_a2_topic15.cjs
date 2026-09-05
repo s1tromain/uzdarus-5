@@ -661,12 +661,14 @@ const EXPECTED = [
             'window.saveUserProgress=async function(u,c,p){window.__safe.push(p);return 1;};' +
             'window.getUserProgress=async()=>({completedTopics:[1,2,3,4,5,6,7]});' +
             'window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};');
-        ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js']
+        ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js',
+     'topic-route.js']
             .forEach((f) => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
         if (pre) w.eval(pre);
         w.eval(main + '\n;window.__api={loadLesson:loadLesson,exData:getT1ExData,' +
             'setCompleted:function(v){completedTopics=v;},getCompleted:function(){return completedTopics;},' +
-            'render:renderTopic1Exercises,complete:a2CompleteTopic,check:window.checkTopic1Exercises};');
+            'render:renderTopic1Exercises,complete:a2CompleteTopic,check:window.checkTopic1Exercises,'+
+        'startTopicExercises:startTopicExercises};');
         w.eval('window.currentUserId="u1";');
         return w;
     }
@@ -676,6 +678,8 @@ const EXPECTED = [
     w.__api.setCompleted(DONE.slice());
     w.eval('currentTopicId=15;');
     w.__api.loadLesson(15);
+    /* the topic opens on its overview; the exercises are the stage picked here */
+    w.__api.startTopicExercises(15);
     const D = w.document;
 
     ok(!!w.__api.exData(t15), 'the generic engine claims topic 15');
@@ -684,9 +688,11 @@ const EXPECTED = [
        one hidden input per item. */
     eq('fifty text inputs render across the four input steps and the builder',
         D.querySelectorAll('[data-t1-input]').length, 50);
-    const lesson = (D.getElementById('lessonContent') || D.body).textContent;
+    /* the grammar is served by the shared reader now — same words, new address */
+    const gram = require('./_grammar_material.cjs').materialOf('A2', 15);
+    const lesson = gram.text;
     ok(/Мы говорим учителю правду/.test(lesson), 'the corrected grammar reaches the screen');
-    ok(/Audio va tushunish savollari/.test(lesson), 'the lesson announces the listening step');
+    ok(/Audio va tushunish savollari/.test(lesson), 'the material announces the listening step');
 
     let missing = 0;
     t15.topic15Exercises.exercises.forEach((g) => {

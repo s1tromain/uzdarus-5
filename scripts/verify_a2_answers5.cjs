@@ -232,7 +232,7 @@ ok('every A2 vocabulary topic now ships cards',
   if (mm) eq(`T${tid}: shown count (${mm[1]}) equals imported count (${actual})`,
              Number(mm[1]), actual);
   ok(`T${tid}: rendered through the shared component`,
-     /UzExerciseUI\.renderVocabCard/.test(SRC));
+     /UzTopicRoute\.open\(/.test(SRC));
 });
 
 console.log('\n' + '─'.repeat(64));

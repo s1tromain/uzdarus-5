@@ -197,7 +197,7 @@ ok('every A2 vocabulary topic now ships cards',
   if (m) eq(`T${tid}: shown count (${m[1]}) equals imported count (${actual})`,
             Number(m[1]), actual);
   ok(`T${tid}: rendered through the shared component`,
-     /UzExerciseUI\.renderVocabCard/.test(SRC));
+     /UzTopicRoute\.open\(/.test(SRC));
 });
 
 console.log('\n' + '─'.repeat(64));

@@ -10,6 +10,11 @@ let html = fs.readFileSync(htmlPath, 'utf8');
 // Drop the external module script so jsdom doesn't try to load it; we stub the sync fns.
 html = html.replace(/<script type="module" src="paid-platform.js"><\/script>/, '');
 html = html.replace(/<script defer src="pro-toast.js"><\/script>/, '');
+/* JSDOM fetches no external script, so the shared exam gate would be missing
+   and every screen it draws would be absent. Inline it exactly as the
+   browser would have loaded it. */
+html = html.replace(/<script src="\.\.\/exam-gate\.js"><\/script>/,
+    () => '<script>' + fs.readFileSync(path.join(path.dirname(htmlPath), '..', 'exam-gate.js'), 'utf8') + '<\/script>');
 
 const data = JSON.parse(html.match(/var FINAL_EXAM_DATA = (\[.*?\]);/s)[1]);
 
@@ -193,7 +198,8 @@ function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
     const d5 = dom.window.document;
     await wait(500);
     check('NO question rows rendered', d5.querySelectorAll('[data-exam-row]').length === 0);
-    check('shows locked message', /yakuniy imtihon ochiladi/.test(d5.getElementById('examExercises').textContent));
+    /* the shared gate words the locked screen and names what is still missing */
+    check('shows locked message', /hali ochilmagan/.test(d5.getElementById('examExercises').textContent));
     check('footer (submit) hidden', d5.getElementById('examFooterBar').classList.contains('hidden'));
     check('no timer running (still 02:00:00)', d5.getElementById('examTimerDisplay').textContent === '02:00:00');
     dom.window.close();

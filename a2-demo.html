@@ -16,6 +16,10 @@
     <link rel="stylesheet" href="./course-global-fixes.css">
     <script defer src="./exercise-session.js"></script>
     <script defer src="./sentence-builder.js"></script>
+    <link rel="stylesheet" href="learning-route.css">
+    <!-- the same topic overview the paid courses use -->
+    <script defer src="./topic-route.js"></script>
+    <script defer src="./grammar-data/a2-index.js"></script>
     <script defer src="./course-exercise-ui.js"></script>
     <script defer src="./a2-host.js"></script>
     <script defer src="./course-global-fixes.js"></script>
@@ -4792,13 +4796,8 @@
            build if it ever drifts from the real word lists. */
         var A2_VOCAB_COUNTS = { 1: 45, 2: 77, 3: 73 };
 
-        function a2VocabCard(topicId) {
-            if (!window.UzExerciseUI || !window.UzExerciseUI.renderVocabCard) return '';
-            return window.UzExerciseUI.renderVocabCard({
-                href: 'a2-demo-vocabulary.html?topic=' + topicId,
-                count: A2_VOCAB_COUNTS[topicId] || 0
-            });
-        }
+        /* THE DECK IS A STAGE NOW, NOT A CARD UNDER THE LESSON — the same as the
+           paid course. The counts stay; the overview shows them. */
 
         /** The legacy results panel lives in its own page section; keep that
             section out of the layout whenever the panel itself is hidden. */
@@ -4853,42 +4852,58 @@
                 return;
             }
 
-            let lessonHTML = `
-                <div class="lesson-content active">
+            /* THE OVERVIEW IS THE TOPIC HERE TOO — the same three stages the
+               paid course shows, for the topics this demo may open. */
+            if (topic.isSubscriptionLocked) {
+                lessonContent.innerHTML = `<div class="lesson-content active">
                     <h3 class="lesson-title">${topic.id}. ${topic.title}</h3>
-            `;
-
-            if (!topic.isSubscriptionLocked) {
-                lessonHTML += `
-                    <div class="grammar-section">
-                        <div class="grammar-header">
-                            <i class="fas fa-language"></i>
-                            <h3>Grammatik qism</h3>
-                        </div>
-                        <div class="grammar-content">
-                            ${topic.grammar}
-                        </div>
-                    </div>                    <div class="topic-explanation">
-                        <h3>Mavzu Tushuntirish</h3>
-                        <p>${topic.explanation.uz}</p>
-                        ${topic.content}
-                    </div>
-                    
-
-                    ${a2VocabCard(topic.id)}
-                `;
-            } else {
-                lessonHTML += topic.content + '</div>';
-            }
-
-            lessonContent.innerHTML = lessonHTML;
-
-            if (!topic.isSubscriptionLocked) {
-                loadQuiz(topicId);
-            } else {
+                    ${topic.content}</div>`;
                 quizSection.innerHTML = '';
                 quizSection.removeAttribute('data-uz-owned');
+                return;
             }
+
+            lessonContent.innerHTML =
+                '<div class="lesson-content active">'
+                + '<h3 class="lesson-title"></h3><div id="demoTopicRoute"></div></div>';
+            /* the title is written as text, never as markup */
+            lessonContent.querySelector('.lesson-title').textContent = topic.id + '. ' + topic.title;
+            quizSection.innerHTML = '';
+            quizSection.removeAttribute('data-uz-owned');
+            renderTopicRoute(topic);
+        }
+
+        function startTopicExercises(topicId) {
+            loadQuiz(topicId);
+            var anchor = document.getElementById('quizSection');
+            if (anchor && anchor.scrollIntoView) {
+                anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+
+        /** The shared overview, with the demo's own limits. */
+        function renderTopicRoute(topic) {
+            var host = document.getElementById('demoTopicRoute');
+            if (!host || !window.UzTopicRoute) return;
+            var id = topic.id, chars = 0;
+            var idx = (window.UzGrammarIndex && window.UzGrammarIndex.A2) || [];
+            for (var i = 0; i < idx.length; i++) {
+                if (Number(idx[i].id) === Number(id)) { chars = idx[i].chars || 0; break; }
+            }
+            window.UzTopicRoute.open({
+                course: 'A2', topicId: id, title: topic.title,
+                description: (topic.explanation && topic.explanation.uz) || topic.description || '',
+                host: host,
+                completed: typeof completedTopics !== 'undefined'
+                    && Array.isArray(completedTopics) && completedTopics.indexOf(id) >= 0,
+                grammarChars: chars,
+                grammarHref: 'grammar-demo.html?course=A2&topic=' + id + '&demo=1',
+                vocabHref: 'a2-demo-vocabulary.html?topic=' + id,
+                /* the demo carries the same count table as the paid course */
+                vocabWords: A2_VOCAB_COUNTS[id] || null,
+                exerciseState: 'not_started',
+                onExercises: function () { startTopicExercises(id); }
+            });
         }
 
         // Load quiz content

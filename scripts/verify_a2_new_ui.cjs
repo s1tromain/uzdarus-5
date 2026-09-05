@@ -49,8 +49,11 @@ for (const p of PAGES) {
     ok(/background:\s*#FFFFFF/.test(gsec), `${T} grammar uses B2's light surface`);
     ok(!/class="b2-vocab-card"/.test(s),
         `${T} the page holds no private vocabulary card markup`);
-    ok(/UzExerciseUI\.renderVocabCard/.test(s),
-        `${T} the vocabulary card comes from the shared component`);
+    /* THE DECK IS DRAWN BY THE SHARED OVERVIEW NOW. It used to be a card from
+       UzExerciseUI; either way the point is the same — this page does not
+       hand-roll its own. */
+    ok(/UzTopicRoute\.open\(/.test(s),
+        `${T} the deck is drawn by the shared overview`);
     ok(/var A2_VOCAB_COUNTS/.test(s), `${T} per-topic word counts are preserved`);
 
     /* behaviour must be untouched */
@@ -263,9 +266,13 @@ for (const p of PAGES) {
         const s = fs.readFileSync(path.join(ROOT, p.file), 'utf8');
         const T = p.label;
 
-        /* one vocabulary card, no orphaned debris from the old inline card */
-        ok((s.match(/\$\{a2VocabCard\(topic\.id\)\}/g) || []).length === 1,
-            `${T} exactly one vocabulary card call`);
+        /* ONE ENTRY TO THE DECK. It used to be a card rendered under the lesson;
+           it is a stage on the topic overview now, and there must still be
+           exactly one of it — the old inline card gone, not merely hidden. */
+        ok((s.match(/a2VocabCard\(/g) || []).length === 0,
+            `${T} the old inline vocabulary card is gone`);
+        ok((s.match(/vocabHref: '[a-z0-9-]*vocabulary\.html\?topic='/g) || []).length === 1,
+            `${T} exactly one vocabulary entry point on the overview`);
         ok(!/Lug'atni ochish/.test(s), `${T} no leftover vocabulary markup in the page`);
 
         /* the legacy results surface never occupies the layout */

@@ -29,20 +29,23 @@ w.alert = () => {};
 w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};");
 /* production loads these via <script>; the harness must too, or the shared
    components (vocabulary card, exercise UI) are simply absent */
-['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js']
+['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js',
+ 'topic-route.js']
   .forEach(f => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
 if (pre) w.eval(pre);
 let err = null;
 try {
   w.eval(main + '\n;window.__api={courseData:courseData,loadQuiz:loadQuiz,loadLesson:loadLesson,getT1ExData:getT1ExData,' +
     'resetCompleted:function(){completedTopics.length=0;},isDone:function(i){return completedTopics.includes(i);},' +
-    'quizResults:function(){return userQuizResults;}};');
+    'quizResults:function(){return userQuizResults;},'+
+    'startTopicExercises:startTopicExercises};');
 } catch (e) { err = e; }
 ok('module evaluates without throwing', !err, err && err.message);
 if (err) process.exit(1);
 ok('no runtime errors during load', errs.length === 0, errs.join(' | '));
 
-const { courseData, loadLesson, getT1ExData } = w.__api;
+const { courseData, loadLesson, getT1ExData, startTopicExercises } = w.__api;
+const { materialOf } = require('./_grammar_material.cjs');
 const t3 = courseData.topics.find(t => t.id === 3);
 eq('topic 3 title', t3.title, 'Uy va yashash joyi');
 eq('topic 3 free', t3.isLocked, false);
@@ -85,32 +88,40 @@ ok('each lesson audio resolves to a real distinct file on disk',
 
 // ---- render ----
 loadLesson(3);
+/* THE TOPIC OPENS ON ITS OVERVIEW NOW — the exercises are one of three
+   stages and render when that stage is picked. */
+startTopicExercises(3);
+
+/* The grammar moved to the shared reader: same content, new address. */
+const gram = materialOf('A2', 3);
+
 const lc = w.document.getElementById('lessonContent');
 const qs = w.document.getElementById('quizSection');
 ok('lesson title rendered', /Uy va yashash joyi/.test(lc.textContent));
-ok('grammar rendered', !!lc.querySelector('.b2g-lead-title'));
-ok('Где? formula rendered', lc.textContent.includes('в / на + Предложный падеж'));
-ok('Куда? formula rendered', lc.textContent.includes('в / на + Винительный падеж'));
-ok('Откуда? formula rendered', lc.textContent.includes('из / с / от + Родительный падеж'));
-ok('П.п. endings table rendered', lc.textContent.includes('-ах / -ях'));
-ok('в шкафу exception documented', lc.textContent.includes('в шкафу'));
-ok('В.п. endings rule rendered', lc.textContent.includes('-а → -у, -я → -ю'));
-ok('Р.п. endings table rendered', lc.textContent.includes('-ы / -и'));
-ok('от друга example rendered', lc.textContent.includes('от друга'));
+ok('grammar carried across', gram.body.includes('b2g-lead-title'));
+ok('Где? formula rendered', gram.text.includes('в / на + Предложный падеж'));
+ok('Куда? formula rendered', gram.text.includes('в / на + Винительный падеж'));
+ok('Откуда? formula rendered', gram.text.includes('из / с / от + Родительный падеж'));
+ok('П.п. endings table rendered', gram.text.includes('-ах / -ях'));
+ok('в шкафу exception documented', gram.text.includes('в шкафу'));
+ok('В.п. endings rule rendered', gram.text.includes('-а → -у, -я → -ю'));
+ok('Р.п. endings table rendered', gram.text.includes('-ы / -и'));
+ok('от друга example rendered', gram.text.includes('от друга'));
 ok('preposition master table rendered', ['ichida','ustida','ichiga','ustiga','ichidan','ustidan','yonidan']
-   .every(x => lc.textContent.includes(x)));
+   .every(x => gram.text.includes(x)));
 ok('all 10 room names rendered',
    ['дом','квартира','комната','кухня','спальня','гостиная','ванная','туалет','коридор','балкон']
-   .every(x => lc.textContent.includes(x)));
+   .every(x => gram.text.includes(x)));
 ok('all 8 outdoor names rendered',
-   ['двор','улица','город','деревня','парк','сад','подъезд','лифт'].every(x => lc.textContent.includes(x)));
+   ['двор','улица','город','деревня','парк','сад','подъезд','лифт'].every(x => gram.text.includes(x)));
 ok('three-way comparison table rendered',
-   ['со двора','с улицы','с балкона','из кухни'].every(x => lc.textContent.includes(x)));
-ok('Eslab qoling block rendered', lc.textContent.includes('Eslab qoling!'));
-ok('short formula rendered', lc.textContent.includes('из, с, от + Р.п.'));
-ok('closing note rendered', lc.textContent.includes('kundalik nutqda eng ko'));
-ok('no template placeholder leaked', !lc.textContent.includes('${'));
-ok('grammar tables rendered', lc.querySelectorAll('.b2g-t').length >= 10);
+   ['со двора','с улицы','с балкона','из кухни'].every(x => gram.text.includes(x)));
+ok('Eslab qoling block rendered', gram.text.includes('Eslab qoling!'));
+ok('short formula rendered', gram.text.includes('из, с, от + Р.п.'));
+ok('closing note rendered', gram.text.includes('kundalik nutqda eng ko'));
+ok('no template placeholder leaked', !gram.text.includes('${'));
+ok('grammar tables rendered',
+   (gram.body.match(/class="b2g-t/g) || []).length >= 10);
 ok('exercises rendered', !!qs.querySelector('.t1-wrap'));
 eq('11 exercise cards', qs.querySelectorAll('.t1-card').length, 11);
 eq('audio player present exactly once', qs.querySelectorAll('audio').length, 1);
