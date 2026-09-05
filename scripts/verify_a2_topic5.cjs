@@ -28,23 +28,20 @@ w.HTMLElement.prototype.scrollIntoView = function () {}; w.alert = () => {};
 w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};");
 /* production loads these via <script>; the harness must too, or the shared
    components (vocabulary card, exercise UI) are simply absent */
-['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js',
- 'topic-route.js']
+['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js']
   .forEach(f => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
 if (pre) w.eval(pre);
 let err = null;
 try {
   w.eval(main + '\n;window.__api={courseData:courseData,loadQuiz:loadQuiz,loadLesson:loadLesson,getT1ExData:getT1ExData,' +
     'resetCompleted:function(){completedTopics.length=0;},isDone:function(i){return completedTopics.includes(i);},' +
-    'quizResults:function(){return userQuizResults;},'+
-    'startTopicExercises:startTopicExercises};');
+    'quizResults:function(){return userQuizResults;}};');
 } catch (e) { err = e; }
 ok('module evaluates without throwing', !err, err && err.message);
 if (err) process.exit(1);
 ok('no runtime errors during load', errs.length === 0, errs.join(' | '));
 
-const { courseData, loadLesson, getT1ExData, startTopicExercises } = w.__api;
-const { materialOf } = require('./_grammar_material.cjs');
+const { courseData, loadLesson, getT1ExData } = w.__api;
 const t5 = courseData.topics.find(t => t.id === 5);
 eq('topic 5 title', t5.title, "Kasblar va mashg'ulotlar");
 ok('topic 5 uses the generic engine shape', Array.isArray(t5.topic5Exercises.exercises));
@@ -86,55 +83,45 @@ ok('each of the five resolves to a distinct real file',
 
 // ---- render ----
 loadLesson(5);
-/* THE TOPIC OPENS ON ITS OVERVIEW NOW — the exercises are one of three
-   stages and render when that stage is picked. */
-startTopicExercises(5);
-
-/* The grammar moved to the shared reader: same content, new address. */
-const gram = materialOf('A2', 5);
-
 const lc = w.document.getElementById('lessonContent');
 const qs = w.document.getElementById('quizSection');
 ok('lesson title rendered', /Kasblar va mashg'ulotlar/.test(lc.textContent));
-ok('grammar carried across', gram.body.includes('b2g-lead-title'));
-ok('profession formula rendered', gram.text.includes('Кто? + быть + kasb'));
-ok('Кем? formula rendered', gram.text.includes('Работать + кем?'));
-ok('Где? formula rendered', gram.text.includes('Работать + где?'));
-ok('Стать + кем? formula rendered', gram.text.includes('Стать + кем?'));
+ok('grammar rendered', !!lc.querySelector('.b2g-lead-title'));
+ok('profession formula rendered', lc.textContent.includes('Кто? + быть + kasb'));
+ok('Кем? formula rendered', lc.textContent.includes('Работать + кем?'));
+ok('Где? formula rendered', lc.textContent.includes('Работать + где?'));
+ok('Стать + кем? formula rendered', lc.textContent.includes('Стать + кем?'));
 ok('masculine instrumental table rendered',
-   ['врачом','учителем','инженером','водителем','программистом'].every(x => gram.text.includes(x)));
+   ['врачом','учителем','инженером','водителем','программистом'].every(x => lc.textContent.includes(x)));
 ok('feminine instrumental table rendered',
-   ['медсестрой','учительницей','продавщицей','официанткой'].every(x => gram.text.includes(x)));
+   ['медсестрой','учительницей','продавщицей','официанткой'].every(x => lc.textContent.includes(x)));
 ok('all 8 "what does X do" examples rendered',
    ['Врач лечит людей.','Учитель учит детей.','Повар готовит еду.','Водитель водит машину.',
     'Продавец продаёт товары.','Парикмахер стрижёт людей.','Полицейский защищает людей.',
-    'Инженер проектирует здания.'].every(x => gram.text.includes(x)));
+    'Инженер проектирует здания.'].every(x => lc.textContent.includes(x)));
 ok('работать conjugation rendered (all 6 forms)',
-   ['работаю','работаешь','работает','работаем','работаете','работают'].every(x => gram.text.includes(x)));
+   ['работаю','работаешь','работает','работаем','работаете','работают'].every(x => lc.textContent.includes(x)));
 ok('учиться conjugation rendered (all 6 forms)',
-   ['учусь','учишься','учится','учимся','учитесь','учатся'].every(x => gram.text.includes(x)));
+   ['учусь','учишься','учится','учимся','учитесь','учатся'].every(x => lc.textContent.includes(x)));
 ok('хотеть conjugation rendered (all 6 forms)',
-   ['хочу','хочешь','хочет','хотим','хотите','хотят'].every(x => gram.text.includes(x)));
+   ['хочу','хочешь','хочет','хотим','хотите','хотят'].every(x => lc.textContent.includes(x)));
 ok('work-time section rendered',
    ['утром','днём','вечером','ночью','каждый день','по будням','по выходным','с понедельника по пятницу']
-   .every(x => gram.text.includes(x)));
+   .every(x => lc.textContent.includes(x)));
 ok('work-schedule section rendered',
-   ['восемь часов','полный день','неполный день','по сменам'].every(x => gram.text.includes(x)));
+   ['восемь часов','полный день','неполный день','по сменам'].every(x => lc.textContent.includes(x)));
 ok('all 10 questions rendered',
    ['Кто вы?','Кто он?','Кем вы работаете?','Кем работает твой отец?','Где ты работаешь?',
     'Где работает она?','Что делает врач?','Что делает учитель?','Где ты учишься?','Кем ты хочешь стать?']
-   .every(x => gram.text.includes(x)));
+   .every(x => lc.textContent.includes(x)));
 ok('all 6 answers rendered',
    ['Я врач.','Я работаю врачом.','Я работаю в больнице.','Я лечу людей.','Я учусь в университете.',
-    'Я хочу стать хирургом.'].every(x => gram.text.includes(x)));
-ok('summary block rendered', gram.text.includes('A2 daraja uchun asosiy grammatik mavzular'));
-ok('summary lists all 8 points', gram.text.includes('лечит, учит, готовит, продаёт, строит, водит'));
-ok('no template placeholder leaked', !gram.text.includes('${'));
-ok('grammar tables rendered',
-   (gram.body.match(/class="b2g-t/g) || []).length >= 14);
-/* the deck is one of the three stages now, not a card under the lesson */
-ok('the vocabulary stage is offered',
-   !!lc.querySelector('[data-uzr-open="vocabulary"]'));
+    'Я хочу стать хирургом.'].every(x => lc.textContent.includes(x)));
+ok('summary block rendered', lc.textContent.includes('A2 daraja uchun asosiy grammatik mavzular'));
+ok('summary lists all 8 points', lc.textContent.includes('лечит, учит, готовит, продаёт, строит, водит'));
+ok('no template placeholder leaked', !lc.textContent.includes('${'));
+ok('grammar tables rendered', lc.querySelectorAll('.b2g-t').length >= 14);
+ok('vocabulary card rendered', lc.textContent.includes("Lug'atni ochish"));
 /* One shared vocabulary card now; it deep-links with the live topic id. */
 ok('single shared vocabulary card deep-links by topic id',
    /a2-vocabulary\.html\?topic=\$\{topic\.id\}/.test(SRC));

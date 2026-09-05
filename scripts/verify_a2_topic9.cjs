@@ -414,14 +414,12 @@ const EXPECTED = [
             'window.saveUserProgress=async function(u,c,p){window.__safe.push(p);return 1;};' +
             'window.getUserProgress=async()=>({completedTopics:[1,2,3,4,5,6,7]});' +
             'window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};');
-        ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js',
-     'topic-route.js']
+        ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js']
             .forEach((f) => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
         if (pre) w.eval(pre);
         w.eval(main + '\n;window.__api={loadLesson:loadLesson,exData:getT1ExData,' +
             'setCompleted:function(v){completedTopics=v;},getCompleted:function(){return completedTopics;},' +
-            'render:renderTopic1Exercises,complete:a2CompleteTopic,check:window.checkTopic1Exercises,'+
-        'startTopicExercises:startTopicExercises};');
+            'render:renderTopic1Exercises,complete:a2CompleteTopic,check:window.checkTopic1Exercises};');
         w.eval('window.currentUserId="u1";');
         return w;
     }
@@ -430,8 +428,6 @@ const EXPECTED = [
     w.__api.setCompleted([1, 2, 3, 4, 5, 6, 7, 8]);
     w.eval('currentTopicId=9;');
     w.__api.loadLesson(9);
-    /* the topic opens on its overview; the exercises are the stage picked here */
-    w.__api.startTopicExercises(9);
     const D = w.document;
 
     ok(!!w.__api.exData(t9), 'the generic engine claims topic 8');
@@ -439,11 +435,9 @@ const EXPECTED = [
     /* ex3 and ex8 are text-input drills; ex7 is a builder with hidden inputs. */
     eq('thirty text inputs render across the input and builder steps',
         D.querySelectorAll('[data-t1-input]').length, 30);
-    /* the grammar is served by the shared reader now — same words, new address */
-    const gram = require('./_grammar_material.cjs').materialOf('A2', 9);
-    const lesson = gram.text;
-    ok(/Я часто езжу в Ташкент/.test(lesson), 'the grammar reaches the reader');
-    ok(/Audio va tushunish savollari/.test(lesson), 'the material announces the listening step');
+    const lesson = (D.getElementById('lessonContent') || D.body).textContent;
+    ok(/Я часто езжу в Ташкент/.test(lesson), 'the grammar reaches the screen');
+    ok(/Audio va tushunish savollari/.test(lesson), 'the lesson announces the listening step');
 
     const first = (a) => (Array.isArray(a) ? a[0] : a);
     let missing = 0;

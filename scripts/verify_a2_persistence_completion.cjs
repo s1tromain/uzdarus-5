@@ -21,8 +21,7 @@ let pass = 0, fail = 0;
 const failures = [];
 const ok = (c, l) => { if (c) { pass++; } else { fail++; failures.push(l); } };
 
-const MODULES = ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js',
-                 'topic-route.js'];
+const MODULES = ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js'];
 const UID = 'uid-test-1';
 
 function boot(rel) {
@@ -75,8 +74,7 @@ function boot(rel) {
            'uqr:function(){return userQuizResults;},exData:getT1ExData,' +
            'toRecord:(typeof a2AnswersToRecord==="function")?a2AnswersToRecord:null,' +
            'persist:(typeof a2PersistAttempt==="function")?a2PersistAttempt:null,' +
-           'complete:(typeof a2CompleteTopic==="function")?a2CompleteTopic:null,'+
-           'startTopicExercises:startTopicExercises};');
+           'complete:(typeof a2CompleteTopic==="function")?a2CompleteTopic:null};');
     /* AFTER the page script: its own init assigns window.currentUserId = null,
        which would silently push every write onto the localStorage fallback and
        leave the Firebase branch untested. */
@@ -218,11 +216,8 @@ function answersFor(w, topicId) {
         console.log(`  localStorage keys  : ${JSON.stringify(keys.slice(0, 6))}`);
         ok(progressKey, `${rel}: progress localStorage key is still a2_progress_<uid>`);
 
-        /* completed topic reopens to review, never to a new attempt.
-           The topic opens on its overview; picking the exercises stage is what
-           a learner does, and that is where the review entry must appear. */
+        /* completed topic reopens to review, never to a new attempt */
         w.__api.loadLesson(TOPIC);
-        w.__api.startTopicExercises(TOPIC);
         await new Promise(r => setTimeout(r, 120));
         const visible = el => {
             for (let n = el; n && n.nodeType === 1; n = n.parentElement) {

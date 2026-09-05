@@ -20,10 +20,6 @@
     <link rel="stylesheet" href="../course-global-fixes.css">
     <script defer src="../exercise-session.js"></script>
     <script defer src="../sentence-builder.js"></script>
-    <link rel="stylesheet" href="../learning-route.css">
-    <!-- ONE topic overview for A1, A2, B1, B2 and all four demos. -->
-    <script defer src="../topic-route.js"></script>
-    <script defer src="../grammar-data/a2-index.js"></script>
     <script defer src="../course-exercise-ui.js"></script>
     <!-- ONE completion contract for A1, A2, B1 and B2. -->
     <script defer src="../topic-completion.js"></script>
@@ -5913,11 +5909,13 @@
            build if it ever drifts from the real word lists. */
         var A2_VOCAB_COUNTS = { 1: 45, 2: 77, 3: 73, 4: 106, 5: 50, 6: 69, 7: 85, 8: 85, 9: 50, 10: 69, 11: 70, 12: 55, 13: 80, 14: 60, 15: 91, 16: 69 };
 
-        /* THE DECK IS A STAGE NOW, NOT A CARD UNDER THE LESSON. a2VocabCard used
-           to render that card; the overview offers the deck once, so the card
-           would be a second, competing entry point. The counts stay — the
-           overview shows them, and verify_a2_vocab1.cjs holds them to the real
-           word lists. */
+        function a2VocabCard(topicId) {
+            if (!window.UzExerciseUI || !window.UzExerciseUI.renderVocabCard) return '';
+            return window.UzExerciseUI.renderVocabCard({
+                href: 'a2-vocabulary.html?topic=' + topicId,
+                count: A2_VOCAB_COUNTS[topicId] || 0
+            });
+        }
 
         /** The legacy results panel lives in its own page section; keep that
             section out of the layout whenever the panel itself is hidden. */
@@ -5944,12 +5942,6 @@
         function loadLesson(topicId) {
             const topic = courseData.topics.find(t => t.id === topicId);
             if (!topic) return;
-
-            /* The topic on screen is the topic just loaded. Every caller used to
-               set this before calling in, and the exercises stage refuses to
-               render for anything else — so a caller that forgot left the stage
-               dead. Setting it here removes the ordering requirement. */
-            currentTopicId = topicId;
 
             // Логируем открытие темы
             if (currentUser && window.logActivity) {
@@ -5978,91 +5970,42 @@
                 return;
             }
 
-            /* THE OVERVIEW IS THE TOPIC NOW — the same three stages A1, B1, B2
-               and the demos show. The grammar moved to its own reader page, so
-               it is not repeated underneath, and the vocabulary card the page
-               used to draw itself is one of the three stages. */
-            if (topic.isSubscriptionLocked) {
-                lessonContent.innerHTML = `<div class="lesson-content active">
+            let lessonHTML = `
+                <div class="lesson-content active">
                     <h3 class="lesson-title">${topic.id}. ${topic.title}</h3>
-                    ${topic.content}</div>`;
+            `;
+
+            if (!topic.isSubscriptionLocked) {
+                lessonHTML += `
+                    <div class="grammar-section">
+                        <div class="grammar-header">
+                            <i class="fas fa-language"></i>
+                            <h3>Grammatik qism</h3>
+                        </div>
+                        <div class="grammar-content">
+                            ${topic.grammar}
+                        </div>
+                    </div>                    <div class="topic-explanation">
+                        <h3>Mavzu Tushuntirish</h3>
+                        <p>${topic.explanation.uz}</p>
+                        ${topic.content}
+                    </div>
+                    
+
+                    ${a2VocabCard(topic.id)}
+                `;
+            } else {
+                lessonHTML += topic.content + '</div>';
+            }
+
+            lessonContent.innerHTML = lessonHTML;
+
+            if (!topic.isSubscriptionLocked) {
+                loadQuiz(topicId);
+            } else {
                 quizSection.innerHTML = '';
                 quizSection.removeAttribute('data-uz-owned');
-                return;
             }
-
-            lessonContent.innerHTML = '<div class="lesson-content active">'
-                + '<h3 class="lesson-title"></h3><div id="a2TopicRoute"></div></div>';
-            /* the title is written as text, never as markup */
-            lessonContent.querySelector('.lesson-title').textContent = topic.id + '. ' + topic.title;
-            quizSection.innerHTML = '';
-            quizSection.removeAttribute('data-uz-owned');
-            renderTopicRoute(topic);
-        }
-
-        /* The exercises render only when the learner picks that stage. */
-        function startTopicExercises(topicId) {
-            if (topicId !== currentTopicId) return;
-            loadQuiz(topicId);
-            var anchor = document.getElementById('quizSection');
-            if (anchor && anchor.scrollIntoView) {
-                anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
-        function a2GrammarChars(topicId) {
-            var idx = (window.UzGrammarIndex && window.UzGrammarIndex.A2) || [];
-            for (var i = 0; i < idx.length; i++) {
-                if (Number(idx[i].id) === Number(topicId)) return idx[i].chars || 0;
-            }
-            return 0;
-        }
-
-        function a2VocabPercent(topicId) {
-            try {
-                var uid = (JSON.parse(localStorage.getItem('currentUser')) || {}).id;
-                var raw = localStorage.getItem('a2_vocabulary_progress_' + uid);
-                var learned = raw ? JSON.parse(raw) : null;
-                if (!learned) return undefined;
-                var have = Number(learned['topic_' + topicId]);
-                return Number.isFinite(have) && have > 0 ? Math.min(100, have) : 0;
-            } catch (e) { return undefined; }
-        }
-
-        /** Everything the shared overview needs to know about an A2 topic. */
-        function renderTopicRoute(topic) {
-            var host = document.getElementById('a2TopicRoute');
-            if (!host || !window.UzTopicRoute) return;
-            var id = topic.id;
-            var stored = (typeof userQuizResults !== 'undefined' && userQuizResults
-                ? userQuizResults['topic_' + id] : null) || {};
-            var durable = stored.a2ExerciseResult || null;
-            var best = durable && durable.total
-                ? Math.round((durable.score / durable.total) * 100) : null;
-            var groups = [];
-            try { groups = (typeof a2GroupsOf === 'function' ? a2GroupsOf(id) : []) || []; } catch (e) {}
-
-            window.UzTopicRoute.open({
-                course: 'A2',
-                topicId: id,
-                title: topic.title,
-                description: (topic.explanation && topic.explanation.uz) || topic.description || '',
-                host: host,
-                completed: typeof completedTopics !== 'undefined'
-                    && Array.isArray(completedTopics) && completedTopics.indexOf(id) >= 0,
-                grammarChars: a2GrammarChars(id),
-                grammarHref: 'grammar-a1a2.html?course=A2&topic=' + id,
-                vocabHref: 'a2-vocabulary.html?topic=' + id,
-                /* A2 keeps its own count table — verify_a2_vocab1.cjs holds it to
-                   the real word lists — and has always shown the figure. */
-                vocabWords: A2_VOCAB_COUNTS[id] || null,
-                vocabPercent: a2VocabPercent(id),
-                exerciseCount: groups.length || null,
-                exerciseBest: best,
-                exercisePercent: best,
-                exerciseState: durable ? 'viewed' : 'not_started',
-                onExercises: function () { startTopicExercises(id); }
-            });
         }
 
         // Load quiz content

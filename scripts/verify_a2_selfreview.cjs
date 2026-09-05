@@ -14,14 +14,13 @@ for (const rel of ['paid-courses/a2-course.html','a2-demo.html']) {
   const w=dom.window;w.HTMLElement.prototype.scrollIntoView=function(){};w.alert=()=>{};
   w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};");
   if(pre)w.eval(pre);
-  w.eval(main+'\n;window.__api={courseData:courseData,'+
-   'loadLesson:function(id){loadLesson(id);startTopicExercises(id);}};');
+  w.eval(main+'\n;window.__api={courseData:courseData,loadLesson:loadLesson};');
   console.log('\n─── '+rel+' ───');
   ok('no runtime errors while loading',errs.length===0);
 
   const t2=w.__api.courseData.topics.find(t=>t.id===2);
   ok('T2 explanation preserved',!!(t2.explanation&&t2.explanation.uz));
-  ok('T2 vocabulary reachable via the shared card', /UzTopicRoute\.open\(/.test(SRC));
+  ok('T2 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
   ok('T2 content carries no private vocabulary card', !/Lug.atni ochish/.test(t2.content));
   ok('T2 description preserved',/O.tgan zamon/.test(t2.description));
 
@@ -36,7 +35,7 @@ for (const rel of ['paid-courses/a2-course.html','a2-demo.html']) {
     ok('T4 renders one audio',q4.querySelectorAll('audio').length===1);
     const t4o=w.__api.courseData.topics.find(t=>t.id===4);
     ok('T4 explanation preserved',!!(t4o.explanation&&t4o.explanation.uz));
-    ok('T4 vocabulary reachable via the shared card', /UzTopicRoute\.open\(/.test(SRC));
+    ok('T4 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
   ok('T4 content carries no private vocabulary card', !/Lug.atni ochish/.test(t4o.content));
     w.__api.loadLesson(5);
     const q5=w.document.getElementById('quizSection');
@@ -44,7 +43,7 @@ for (const rel of ['paid-courses/a2-course.html','a2-demo.html']) {
     ok('T5 renders one audio',q5.querySelectorAll('audio').length===1);
     const t5o=w.__api.courseData.topics.find(t=>t.id===5);
     ok('T5 explanation preserved',!!(t5o.explanation&&t5o.explanation.uz));
-    ok('T5 vocabulary reachable via the shared card', /UzTopicRoute\.open\(/.test(SRC));
+    ok('T5 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
   ok('T5 content carries no private vocabulary card', !/Lug.atni ochish/.test(t5o.content));
   }
   w.__api.loadLesson(2);
@@ -64,7 +63,7 @@ for (const rel of ['paid-courses/a2-course.html','a2-demo.html']) {
   // builder: click a word, it moves to the slot exactly once
   const t3o=w.__api.courseData.topics.find(t=>t.id===3);
   ok('T3 explanation preserved',!!(t3o.explanation&&t3o.explanation.uz));
-  ok('T3 vocabulary reachable via the shared card', /UzTopicRoute\.open\(/.test(SRC));
+  ok('T3 vocabulary reachable via the shared card', /UzExerciseUI\.renderVocabCard/.test(SRC));
   ok('T3 content carries no private vocabulary card', !/Lug.atni ochish/.test(t3o.content));
   w.__api.loadLesson(3);
   const qs3=w.document.getElementById('quizSection');

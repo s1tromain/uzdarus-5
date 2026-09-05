@@ -268,9 +268,6 @@ try {
         await p.evaluate(`var cards=Array.prototype.slice.call(document.querySelectorAll('.topic-btn'));
             if(cards[${TOPIC} - 1]) cards[${TOPIC} - 1].click(); return 1;`);
         await sleep(1800);
-        /* the topic opens on its overview: pick the exercises stage first */
-        await p.evaluate(`var s=document.querySelector('[data-uzr-open="exercises"]'); if(s)s.click(); return 1;`);
-        await sleep(1200);
         const started = await p.evaluate(
             `var b=document.querySelector('.uz-practice-btn'); if(b){b.click();return 1;} return 0;`);
         await sleep(1700);

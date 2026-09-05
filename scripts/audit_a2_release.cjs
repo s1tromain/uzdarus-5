@@ -41,7 +41,6 @@ function boot(rel){
   w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};window.__saves=[];window.saveQuizResultToFirebase=async function(i,dd){window.__saves.push({id:i,score:dd.score,total:dd.total});};window.currentUserId='uid-audit';window.completeCourseTopic=async function(){return window.__srv?window.__srv.slice():[];};window.completeCourseComponent=async function(c,t,cm){window.__ps=(window.__ps||0)+1;window.__srv=Array.from(new Set([...(window.__srv||[]),t])).sort(function(a,b){return a-b;});return {ok:true,course:c,topicId:t,component:cm,components:{vocabularyCompleted:true,exercisesCompleted:true},topicCompleted:true,completedTopics:window.__srv.slice(),nextTopic:t+1};};");
   if(pre)w.eval(pre);
   w.eval(main+'\n;window.__api={cd:courseData,loadLesson:loadLesson,loadQuiz:loadQuiz,getT1ExData:getT1ExData,'+
-   'startTopicExercises:startTopicExercises,'+
    'reset:function(){completedTopics.length=0;},done:function(i){return completedTopics.includes(i);},'+
    'countDone:function(i){return completedTopics.filter(function(x){return x===i;}).length;},'+
    'qr:function(){return userQuizResults;},clearQR:function(){Object.keys(userQuizResults).forEach(function(k){delete userQuizResults[k];});}};');
@@ -86,16 +85,16 @@ for(const [name,B] of [['paid',PAID],['demo',DEMO]]){
 
 /* ===================== 2. RUNTIME ===================== */
 sec('[2] Runtime — 100 opens, random order, rapid switching');
-for(let i=0;i<100;i++) (PAID.w.__api.loadLesson(5), PAID.w.__api.startTopicExercises(5));
+for(let i=0;i<100;i++) PAID.w.__api.loadLesson(5);
 const qsP=()=>PAID.w.document.getElementById('quizSection');
 ok('100 opens: still 11 cards', qsP().querySelectorAll('.t1-card').length===11);
 ok('100 opens: still 1 audio', PAID.w.document.querySelectorAll('audio').length===1);
 ok('100 opens: still 1 style tag', PAID.w.document.querySelectorAll('#t1-styles').length===1);
 const rnd=[3,1,5,2,4,5,1,3,2,4,1,5,3,4,2];
-rnd.forEach(t=>(PAID.w.__api.loadLesson(t), PAID.w.__api.startTopicExercises(t)));
+rnd.forEach(t=>PAID.w.__api.loadLesson(t));
 /* Card count is per-topic: Lesson 2's resource has 9 mashq + audio = 10 groups,
    the others 10 + audio = 11. Assert rendered == data, not a constant. */
-ENGINE_PAID.forEach(t=>{(PAID.w.__api.loadLesson(t), PAID.w.__api.startTopicExercises(t));
+ENGINE_PAID.forEach(t=>{PAID.w.__api.loadLesson(t);
   ok(`topic ${t}: rendered cards == data groups`,
      qsP().querySelectorAll('.t1-card').length===groupsOf(PAID.w,t).length);});
 ok('random-order switching: exactly one <audio> document-wide', PAID.w.document.querySelectorAll('audio').length===1);
@@ -103,13 +102,13 @@ ok('random-order switching: one .t1-wrap', PAID.w.document.querySelectorAll('.t1
 ok('no runtime/console errors after 115 renders', PAID.errs.length===0, PAID.errs.slice(0,2).join('|'));
 
 sec('[2b] Cross-topic state leakage (item keys repeat across topics)');
-(PAID.w.__api.loadLesson(1), PAID.w.__api.startTopicExercises(1));
+PAID.w.__api.loadLesson(1);
 const g1=groupsOf(PAID.w,1);
 qsP().querySelector('[data-t1-input="ex1-0"]').value='ПРОБА-УТЕЧКИ';
-(PAID.w.__api.loadLesson(2), PAID.w.__api.startTopicExercises(2));
+PAID.w.__api.loadLesson(2);
 ok('switching topics clears the previous topic\'s inputs',
    qsP().querySelector('[data-t1-input="ex1-0"]').value==='');
-(PAID.w.__api.loadLesson(1), PAID.w.__api.startTopicExercises(1));
+PAID.w.__api.loadLesson(1);
 ok('returning to a topic does not restore stale DOM values',
    qsP().querySelector('[data-t1-input="ex1-0"]').value==='');
 
@@ -225,7 +224,7 @@ srcs.forEach((s,i)=>{
 ok('five distinct file sizes (no duplicated file)',
    new Set(srcs.map(s=>{const p=path.join(ROOT,decodeURIComponent(s));return fs.existsSync(p)?fs.statSync(p).size:0;})).size===5);
 ENGINE_PAID.forEach(t=>{
-  (PAID.w.__api.loadLesson(t), PAID.w.__api.startTopicExercises(t));
+  PAID.w.__api.loadLesson(t);
   const a=qsP().querySelectorAll('audio');
   ok(`Lesson ${t}: exactly one player rendered`, a.length===1);
   ok(`Lesson ${t}: path is ../audios/ in paid`,
@@ -235,7 +234,7 @@ ENGINE_PAID.forEach(t=>{
 /* ===================== 7/8. FIREBASE + PROGRESSION ===================== */
 sec('[7/8] Firebase, completion, progression — bypass attempts');
 async function runTopic(t,mode){
-  (PAID.w.__api.loadLesson(t), PAID.w.__api.startTopicExercises(t));
+  PAID.w.__api.loadLesson(t);
   const gs=groupsOf(PAID.w,t);
   gs.forEach(g=>g.items.forEach((it,i)=>{
     const key=g.id+'-'+i, first=Array.isArray(it.answer)?it.answer[0]:it.answer;
@@ -260,7 +259,7 @@ for(const t of ENGINE_PAID){
   const B=boot('paid-courses/a2-course.html');
   const qsB=()=>B.w.document.getElementById('quizSection');
   const runTopicB=async(tid,mode)=>{
-    (B.w.__api.loadLesson(tid), B.w.__api.startTopicExercises(tid));
+    B.w.__api.loadLesson(tid);
     groupsOf(B.w,tid).forEach(g=>g.items.forEach((it,i)=>{
       const key=g.id+'-'+i, keys=Array.isArray(it.answer)?it.answer:[it.answer], first=keys[0];
       if(mode==='empty')return;

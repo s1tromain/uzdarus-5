@@ -21,10 +21,6 @@
     <link rel="stylesheet" href="../course-global-fixes.css">
     <script defer src="../b2-topics.js"></script>
     <script defer src="../exercise-session.js"></script>
-    <link rel="stylesheet" href="../learning-route.css">
-    <!-- ONE topic overview for A1, A2, B1, B2 and all four demos. -->
-    <script defer src="../topic-route.js"></script>
-    <script defer src="../grammar-data/b2-index.js"></script>
     <script defer src="../course-exercise-ui.js"></script>
     <!-- ONE completion contract for A1, A2, B1 and B2. -->
     <script defer src="../topic-completion.js"></script>
@@ -2611,38 +2607,44 @@
             const lessonContent = document.getElementById('lessonContent');
             lessonContent.className = 'lesson-content active';
             
-            /* THE OVERVIEW IS THE TOPIC NOW — the same three stages every course
-               and demo shows. The grammar moved to its own reader page and the
-               vocabulary card became one of the three stages, so neither is
-               repeated underneath. */
-            lessonContent.innerHTML = '<h2 class="lesson-title"></h2>' +
-                '<div id="b2TopicRoute"></div>' +
-                '<div id="b2StageHost" hidden></div>';
-            /* the title is written as text, never as markup */
-            lessonContent.firstChild.textContent = topic.id + '. ' + topic.title;
+            lessonContent.innerHTML = `
+                <h2 class="lesson-title">${topic.id}. ${topic.title}</h2>
+                
+                ${topic.grammar ? `
+                <div class="grammar-section">
+                    <div class="grammar-header">
+                        <i class="fas fa-book"></i>
+                        <h3>Grammatika</h3>
+                    </div>
+                    <div class="grammar-content">${topic.grammar}</div>
+                </div>
+                ` : ''}
+                
+                ${topic.content ? `<div class="topic-explanation">${topic.content}</div>` : ''}
 
+                ${b2VocabCard(topic.id)}
+                
+                ${b2Ex ? `
+                <div id="b2PracticeMount"></div>
+                <div class="quiz-results" id="quizResults"></div>
+                ` : `
+                ${topic.quiz && topic.quiz.mcQuestions.length > 0 ? renderQuiz(topic) : ''}
+                ${topic.quiz && topic.quiz.blankQuestions.length > 0 ? renderBlankTest(topic) : ''}
+                ${topic.quiz && topic.quiz.matchingGame ? renderMatchingGame(topic) : ''}
+                `}
+                
+                ${!topic.isSubscriptionLocked && !b2Ex ? `
+                <div style="text-align: center; margin-top: 40px;">
+                    <button class="subscribe-btn" onclick="window.completeTopicHandler(${topicId})">
+                        <i class="fas fa-check"></i> Mavzuni tugatish
+                    </button>
+                </div>
+                ` : ''}
+            `;
+
+            // Scroll to lesson section
             document.getElementById('lesson').scrollIntoView({ behavior: 'smooth' });
-            renderTopicRoute(topic, b2Ex);
-        }
-
-        /* The exercises render only when the learner picks that stage. */
-        function startTopicExercises(topicId, b2Ex) {
-            if (!currentTopic || currentTopic.id !== topicId) return;
-            var topic = currentTopic;
-            var stage = document.getElementById('b2StageHost');
-            if (!stage) return;
-            stage.hidden = false;
-            stage.innerHTML = b2Ex
-                ? '<div id="b2PracticeMount"></div><div class="quiz-results" id="quizResults"></div>'
-                : ((topic.quiz && topic.quiz.mcQuestions.length > 0 ? renderQuiz(topic) : '') +
-                   (topic.quiz && topic.quiz.blankQuestions.length > 0 ? renderBlankTest(topic) : '') +
-                   (topic.quiz && topic.quiz.matchingGame ? renderMatchingGame(topic) : '') +
-                   (!topic.isSubscriptionLocked
-                       ? '<div style="text-align:center;margin-top:40px;">' +
-                         '<button class="subscribe-btn" onclick="window.completeTopicHandler(' +
-                         topicId + ')"><i class="fas fa-check"></i> Mavzuni tugatish</button></div>'
-                       : ''));
-
+            
             if (b2Ex) {
                 mountB2Practice(topicId);
             } else {
@@ -2650,62 +2652,6 @@
                 if (topic.quiz && topic.quiz.blankQuestions.length > 0) initBlankTest(topic);
                 if (topic.quiz && topic.quiz.matchingGame) initMatchingGame(topic);
             }
-            if (stage.scrollIntoView) stage.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        function b2GrammarChars(topicId) {
-            var idx = (window.UzGrammarIndex && window.UzGrammarIndex.B2) || [];
-            for (var i = 0; i < idx.length; i++) {
-                if (Number(idx[i].id) === Number(topicId)) return idx[i].chars || 0;
-            }
-            return 0;
-        }
-
-        function b2VocabPercent(topicId) {
-            try {
-                var uid = (JSON.parse(localStorage.getItem('currentUser')) || {}).id;
-                var raw = localStorage.getItem('b2_vocabulary_progress_' + uid);
-                var learned = raw ? JSON.parse(raw) : null;
-                if (!learned) return undefined;
-                var have = Number(learned['topic_' + topicId]);
-                return Number.isFinite(have) && have > 0 ? Math.min(100, have) : 0;
-            } catch (e) { return undefined; }
-        }
-
-        /** Everything the shared overview needs to know about a B2 topic. */
-        function renderTopicRoute(topic, b2Ex) {
-            var host = document.getElementById('b2TopicRoute');
-            if (!host || !window.UzTopicRoute) return;
-            var id = topic.id;
-            var store = (typeof userQuizResults !== 'undefined' && userQuizResults)
-                ? userQuizResults : (window.__b2Results || {});
-            var stored = store['topic_' + id] || {};
-            var durable = stored.b2ExerciseResult || null;
-            var best = durable && durable.total
-                ? Math.round((durable.score / durable.total) * 100) : null;
-            var groups = [];
-            try { groups = (typeof b2GroupsOf === 'function' ? b2GroupsOf(id) : []) || []; } catch (e) {}
-
-            window.UzTopicRoute.open({
-                course: 'B2',
-                topicId: id,
-                title: topic.title,
-                description: topic.description || topic.grammatika || '',
-                host: host,
-                locked: !!topic.isSubscriptionLocked,
-                lockedReason: 'Bu mavzu obuna bilan ochiladi.',
-                completed: typeof b2CompletedArray === 'function'
-                    && b2CompletedArray().indexOf(id) >= 0,
-                grammarChars: b2GrammarChars(id),
-                grammarHref: 'grammar-b1b2.html?course=B2&topic=' + id,
-                vocabHref: 'b2-vocabulary.html?topic=' + id,
-                vocabPercent: b2VocabPercent(id),
-                exerciseCount: groups.length || null,
-                exerciseBest: best,
-                exercisePercent: best,
-                exerciseState: durable ? 'viewed' : 'not_started',
-                onExercises: function () { startTopicExercises(id, b2Ex); }
-            });
         }
 
         window.completeTopicHandler = async function(topicId) {

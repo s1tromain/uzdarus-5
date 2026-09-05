@@ -1526,10 +1526,6 @@
             }
         }
     </style>
-    <link rel="stylesheet" href="learning-route.css">
-    <!-- the same topic overview the paid courses use -->
-    <script defer src="topic-route.js"></script>
-    <script defer src="grammar-data/a1-index.js"></script>
 </head>
 
 <body>
@@ -2675,61 +2671,40 @@
                 ).catch(err => console.error('❌ Error logging topic visit:', err));
             }
 
-            /* THE OVERVIEW IS THE TOPIC HERE TOO — the demo shows exactly the
-               same three stages as the paid course, for the three topics it is
-               allowed to open. A topic behind the paywall keeps its own panel. */
-            if (topic.isSubscriptionLocked) {
-                lessonContent.innerHTML = `<div class="lesson-content active">
+            let lessonHTML = `
+                <div class="lesson-content active">
                     <h3 class="lesson-title">${topic.id}. ${topic.title}</h3>
-                    ${topic.content}</div>`;
+            `;
+
+            if (!topic.isSubscriptionLocked) {
+                lessonHTML += `
+                    <div class="grammar-section">
+                        <div class="grammar-header">
+                            <i class="fas fa-language"></i>
+                            <h3>Grammatik qism</h3>
+                        </div>
+                        <div class="grammar-content">
+                            ${topic.grammar}
+                        </div>
+                    </div>
+                    
+                    <div class="topic-explanation">
+                        <h3>Mavzu Tushuntirish</h3>
+                        <p>${topic.explanation.uz}</p>
+                        ${topic.content}
+                    </div>
+                `;
+            } else {
+                lessonHTML += topic.content + '</div>';
+            }
+
+            lessonContent.innerHTML = lessonHTML;
+
+            if (!topic.isSubscriptionLocked) {
+                loadQuiz(topicId);
+            } else {
                 quizSection.innerHTML = '';
-                return;
             }
-
-            lessonContent.innerHTML =
-                '<div class="lesson-content active">'
-                + '<h3 class="lesson-title"></h3><div id="demoTopicRoute"></div></div>';
-            /* the title is written as text, never as markup */
-            lessonContent.querySelector('.lesson-title').textContent = topic.id + '. ' + topic.title;
-            quizSection.innerHTML = '';
-            renderTopicRoute(topic);
-        }
-
-        /* The exercises render only when the learner picks that stage. */
-        function startTopicExercises(topicId) {
-            loadQuiz(topicId);
-            var anchor = document.getElementById('quizSection');
-            if (anchor && anchor.scrollIntoView) {
-                anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }
-
-        /** The shared overview, with the demo's own limits. */
-        function renderTopicRoute(topic) {
-            var host = document.getElementById('demoTopicRoute');
-            if (!host || !window.UzTopicRoute) return;
-            var id = topic.id;
-            var chars = 0;
-            var idx = (window.UzGrammarIndex && window.UzGrammarIndex.A1) || [];
-            for (var i = 0; i < idx.length; i++) {
-                if (Number(idx[i].id) === Number(id)) { chars = idx[i].chars || 0; break; }
-            }
-            window.UzTopicRoute.open({
-                course: 'A1',
-                topicId: id,
-                title: topic.title,
-                description: (topic.explanation && topic.explanation.uz) || topic.description || '',
-                host: host,
-                completed: typeof completedTopics !== 'undefined'
-                    && Array.isArray(completedTopics) && completedTopics.indexOf(id) >= 0,
-                grammarChars: chars,
-                /* demo=1 sends the reader back to the DEMO, not the paid page */
-                grammarHref: 'grammar-demo.html?course=A1&topic=' + id + '&demo=1',
-                vocabHref: 'a1-demo-vocabulary.html?topic=' + id,
-                vocabWords: window.UzTopicRoute.wordCountFrom(topic.content),
-                exerciseState: 'not_started',
-                onExercises: function () { startTopicExercises(id); }
-            });
         }
 
         // Load quiz content

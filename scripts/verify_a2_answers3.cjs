@@ -213,10 +213,8 @@ console.log('\n─── word-count auto-sync ───');
     const m = new RegExp('\\b' + tid + '\\s*:\\s*(\\d+)').exec(block);
     if (m) eq(`${rel} T${tid}: shown count (${m[1]}) equals imported count (${actual})`,
               Number(m[1]), actual);
-    /* THE DECK IS DRAWN BY THE SHARED OVERVIEW NOW. It used to be a card from
-       UzExerciseUI; either way this page hand-rolls nothing of its own. */
     ok(`${rel} T${tid}: rendered through the shared component`,
-       /UzTopicRoute\.open\(/.test(S));
+       /UzExerciseUI\.renderVocabCard/.test(S));
   });
 });
 

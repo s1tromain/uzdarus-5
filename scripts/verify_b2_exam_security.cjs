@@ -353,11 +353,6 @@ async function call(handlerMod, { token, body, query = {}, method = 'POST' }) {
 
 /* the real B2 paper, used to build real submissions */
 const EXAM_SRC = read('paid-courses/b2-final-exam.html');
-/* JSDOM fetches no external script, so the shared gate would be missing and
-   every screen it draws would be absent. Inline it exactly as the browser
-   would have loaded it. */
-const EXAM_DOC = EXAM_SRC.replace(/<script src="\.\.\/exam-gate\.js"><\/script>/,
-    () => '<script>' + read('exam-gate.js') + '<\/script>');
 const DATA = JSON.parse(EXAM_SRC.match(/var FINAL_EXAM_DATA = (\[[\s\S]*?\]);\r?\n/)[1]);
 const firstAns = (it) => (Array.isArray(it.answer) ? it.answer[0] : it.answer);
 const PERFECT = DATA.map((g) => g.items.map(firstAns));
@@ -415,7 +410,7 @@ async function issueVia(users, token, body, query = { action: 'issue' }) {
 
     /* ---- the page half: localStorage says 16, the server says 15 ---- */
     const mem = {};
-    const dom = new JSDOM(EXAM_DOC.replace(/<script type="module" src="paid-platform\.js"><\/script>/, '')
+    const dom = new JSDOM(EXAM_SRC.replace(/<script type="module" src="paid-platform\.js"><\/script>/, '')
         .replace(/<script defer src="pro-toast\.js"><\/script>/, ''), {
         runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://x.test/paid-courses/b2-final-exam.html',
         beforeParse(w) {
@@ -444,9 +439,7 @@ async function issueVia(users, token, body, query = { action: 'issue' }) {
     const d = dom.window.document;
     eq('page · localStorage 16/16 with server 15/16: NO questions rendered',
         d.querySelectorAll('[data-exam-row]').length, 0);
-    /* the shared gate words the locked screen; what matters is that the learner
-       is told the exam is not open yet and how much is left */
-    ok(/hali ochilmagan/.test(d.getElementById('examExercises').textContent),
+    ok(/tugatgandan/.test(d.getElementById('examExercises').innerHTML),
         'page · the learner is shown the locked screen');
     eq('page · nothing was submitted', dom.window.__submitted, 0);
     const footer = d.getElementById('examFooterBar');
@@ -549,7 +542,7 @@ async function issueVia(users, token, body, query = { action: 'issue' }) {
 
     /* a read failure on the page side must also fail closed */
     const mem = {};
-    const dom = new JSDOM(EXAM_DOC.replace(/<script type="module" src="paid-platform\.js"><\/script>/, '')
+    const dom = new JSDOM(EXAM_SRC.replace(/<script type="module" src="paid-platform\.js"><\/script>/, '')
         .replace(/<script defer src="pro-toast\.js"><\/script>/, ''), {
         runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://x.test/paid-courses/b2-final-exam.html',
         beforeParse(w) {
@@ -573,16 +566,8 @@ async function issueVia(users, token, body, query = { action: 'issue' }) {
     const d = dom.window.document;
     eq('page · a failed authoritative read renders NO questions',
         d.querySelectorAll('[data-exam-row]').length, 0);
-    /* A read that throws "network down" is a connection failure, and the shared
-       gate says so in those words — never "you have not finished the course" —
-       and offers a retry that really re-reads. */
-    {
-        const screen = (d.getElementById('examExercises').textContent || '').replace(/\s+/g, ' ');
-        ok(/Aloqa uzildi|tekshirib bo/.test(screen) && /Qayta urinish/.test(screen),
-            'page · and says the state could not be checked');
-        ok(!/tugating|tugatilgan/.test(screen),
-            'page · and never blames the learner for an unfinished course');
-    }
+    ok(/tekshirib bo/.test(d.getElementById('examExercises').innerHTML),
+        'page · and says the state could not be checked');
     ok(!/tugating/.test(d.getElementById('examExercises').innerHTML),
         'page · without accusing the learner of not finishing');
     eq('page · nothing was submitted', dom.window.__submitted, 0);
@@ -766,7 +751,7 @@ async function issueVia(users, token, body, query = { action: 'issue' }) {
  * ================================================================ */
 function bootExam(tweak) {
     const mem = {};
-    const dom = new JSDOM(EXAM_DOC.replace(/<script type="module" src="paid-platform\.js"><\/script>/, '')
+    const dom = new JSDOM(EXAM_SRC.replace(/<script type="module" src="paid-platform\.js"><\/script>/, '')
         .replace(/<script defer src="pro-toast\.js"><\/script>/, ''), {
         runScripts: 'dangerously', pretendToBeVisual: true, url: 'https://x.test/paid-courses/b2-final-exam.html',
         beforeParse(w) {

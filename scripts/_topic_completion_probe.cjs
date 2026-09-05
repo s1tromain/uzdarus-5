@@ -138,15 +138,6 @@ async function walkTopic(p, code, topicId, opts) {
                  screen: await p.evaluate(DIAG), groups: [] };
     }
     await sleep(1800);
-    /* THE TOPIC OPENS ON ITS OVERVIEW NOW. The exercises are one deliberate
-       click deeper — the learner picks the stage — so the walker picks it too
-       before looking for the practice button. Pages that have not been wired
-       to the overview still answer the second selector directly. */
-    await p.evaluate(
-        `var s=document.querySelector('[data-uzr-open="exercises"]'); if(s){s.click();return 1;} return 0;`);
-    /* A1 schedules its exercise render on a timer, so this wait is the render,
-       not politeness. */
-    await sleep(2600);
     const practice = await p.evaluate(
         `var b=document.querySelector('.uz-practice-btn'); if(b){b.click();return 1;} return 0;`);
     if (!practice) {

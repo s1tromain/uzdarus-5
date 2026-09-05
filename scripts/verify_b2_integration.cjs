@@ -73,11 +73,7 @@ for (const p of PAGES) {
     /* --------------------------------------- 4. exactly ONE result screen */
     const resultDivs = (s.match(/id="quizResults"/g) || []).length;
     ok(resultDivs === 2, `${T} #quizResults declared in both branches only (${resultDivs})`);
-    /* The exercises are a stage on the topic overview now, so the branch moved
-       out of the lesson template and into startTopicExercises — still one
-       ternary, still exactly one of the two paths. */
-    ok(/stage\.innerHTML = b2Ex\s*\n?\s*\?/.test(s),
-        `${T} the two branches are mutually exclusive`);
+    ok(/\$\{b2Ex \? `/.test(s), `${T} the two branches are mutually exclusive`);
     ok(/<div class="quiz-score">/.test(s) || /class="quiz-score"/.test(s),
         `${T} host fills the page's own .quiz-score`);
     ok(!/uz-result|uz-final|new-result-screen/.test(s), `${T} no second result screen introduced`);
@@ -90,14 +86,8 @@ for (const p of PAGES) {
         `${T} draft syncs to the same Firestore field as before`);
 
     /* --------------------------------------- 6. completion path */
-    {
-        /* the legacy "finish topic" button belongs to the legacy arm only */
-        const at = s.indexOf('stage.innerHTML = b2Ex');
-        const branch = s.slice(at, s.indexOf('if (b2Ex) {', at));
-        const engineArm = branch.slice(0, branch.indexOf(': ('));
-        ok(branch.includes('completeTopicHandler') && !engineArm.includes('completeTopicHandler'),
-            `${T} legacy "finish topic" button suppressed for session topics (one completion path)`);
-    }
+    ok(/!topic\.isSubscriptionLocked && !b2Ex \?/.test(s),
+        `${T} legacy "finish topic" button suppressed for session topics (one completion path)`);
     /* THE PAID PAGE routes completion into the shared lifecycle, which saves
        the attempt and AWAITS it before reporting the exercises half. It used to
        call saveProgress(id) directly, claiming the whole topic — a route that

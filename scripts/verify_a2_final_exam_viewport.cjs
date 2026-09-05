@@ -45,11 +45,6 @@ const REL = 'paid-courses/a2-final-exam.html';
 let html = fs.readFileSync(path.join(ROOT, REL), 'utf8');
 html = html.replace(/<script type="module" src="paid-platform\.js"><\/script>/, '');
 html = html.replace(/<script defer src="pro-toast\.js"><\/script>/, '');
-/* JSDOM fetches no external script, so the shared exam gate would be missing
-   and every screen it draws would be absent. Inline it exactly as the
-   browser would have loaded it. */
-html = html.replace(/<script src="\.\.\/exam-gate\.js"><\/script>/,
-    () => '<script>' + fs.readFileSync(path.join(ROOT, 'exam-gate.js'), 'utf8') + '<\/script>');
 const pageCss = html.slice(html.indexOf('<style>') + 7, html.indexOf('</style>'));
 ok(pageCss.length > 2000, `the exam page stylesheet was lifted (${pageCss.length} chars)`);
 
@@ -154,8 +149,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     await wait(500);
     d = dom.window.document;
     states.locked = d.getElementById('examExercises').outerHTML;
-    /* the shared gate words the locked screen */
-    ok(/hali ochilmagan/.test(states.locked), 'the locked screen was captured');
+    ok(/tugatgandan/.test(states.locked), 'the locked screen was captured');
     dom.window.close();
 
     /* sync error */
@@ -164,7 +158,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     await wait(500);
     d = dom.window.document;
     states.sync = d.getElementById('examExercises').outerHTML;
-    ok(/tekshirib bo|Aloqa uzildi/.test(states.sync), 'the sync-error screen was captured');
+    ok(/tekshirib bo/.test(states.sync), 'the sync-error screen was captured');
     dom.window.close();
 
     /* ---- measure every state in real Chrome ---- */

@@ -191,9 +191,6 @@ async function openTopic(p, site, cfg, topicId) {
     await p.goto(`http://127.0.0.1:${site.port}${cfg.url}`, { waitMs: 1800 });
     await p.evaluate(`try{ ${cfg.mount}(${topicId}); }catch(e){} return 1;`);
     await sleep(550);
-    /* the topic opens on its overview: pick the exercises stage first */
-    await p.evaluate(`var s=document.querySelector('[data-uzr-open="exercises"]'); if(s)s.click(); return 1;`);
-    await sleep(1200);
     await p.evaluate(`var b=document.querySelector('.uz-practice-btn'); if(b)b.click(); return 1;`);
     await sleep(1100);
 }

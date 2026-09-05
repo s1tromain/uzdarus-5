@@ -479,10 +479,7 @@ for (const bad of [{ ok: true }, { ok: true, course: 'ZZ', topicId: T },
     /* the older whole-lesson button is still a paid learner path, so it must
        report the component too — never claim the topic outright. */
     {
-        /* anchor on the DEFINITION, not on the first mention: the button that
-           calls the handler is written earlier in the file, and slicing from
-           there reads a stretch of unrelated markup. */
-        const at = SRC.indexOf('window.completeTopicHandler = ');
+        const at = SRC.indexOf('window.completeTopicHandler');
         ok(at > 0, 'the legacy whole-lesson completion button still exists');
         const body = SRC.slice(at, SRC.indexOf('};', at));
         ok(/saveProgress\(topicId\)/.test(body),

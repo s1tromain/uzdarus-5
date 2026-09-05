@@ -38,8 +38,7 @@ const ok = (c, l) => { if (c) { pass++; } else { fail++; failures.push(l); } };
 /* Production load order: the module scripts are deferred, course-global-fixes
    last of them. */
 const MODULES = ['exercise-session.js', 'sentence-builder.js',
-                 'course-exercise-ui.js', 'a2-host.js', 'course-global-fixes.js',
-                 'topic-route.js'];
+                 'course-exercise-ui.js', 'a2-host.js', 'course-global-fixes.js'];
 
 function boot(rel) {
     const SRC = fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -67,8 +66,7 @@ function boot(rel) {
            'setCompleted:function(v){completedTopics=v;},' +
            'getCompleted:function(){return completedTopics;},' +
            'setQuizResults:function(v){userQuizResults=v;},' +
-           'exData:getT1ExData,resultKey:a2ResultKey,'+
-           'startTopicExercises:startTopicExercises};');
+           'exData:getT1ExData,resultKey:a2ResultKey};');
     return w;
 }
 
@@ -114,19 +112,10 @@ function isVisible(el) {
 
 const label = b => (b.textContent || '').trim().replace(/\s+/g, ' ');
 
-/* A STAGE CARD IS A BUTTON, and its body is a paragraph of explanation —
-   "…80% to‘plang", "…tugatish uchun shart emas". Reading the whole card as a
-   control label makes ordinary prose look like an offer to start over, so a
-   card answers with the words written on its call to action. */
-function controlLabel(b) {
-    const cta = b.hasAttribute('data-uzr-open') ? b.querySelector('.uzr-cta') : null;
-    return label(cta || b);
-}
-
 function visibleButtons(w) {
     return Array.from(w.document.querySelectorAll('button'))
         .filter(isVisible)
-        .map(controlLabel)
+        .map(label)
         .filter(t => t && t !== '↑');          // global scroll-to-top, every page
 }
 
@@ -142,7 +131,7 @@ function lessonButtons(w) {
     zones.forEach(z => Array.from(z.querySelectorAll('button')).forEach(b => {
         if (seen.has(b) || !isVisible(b)) return;
         seen.add(b);
-        const t = controlLabel(b);
+        const t = label(b);
         if (t) out.push(t);
     }));
     return out;
@@ -162,8 +151,6 @@ const settle = () => new Promise(r => setTimeout(r, 900));
    global script already reads. */
 async function open(w, id) {
     w.__api.loadLesson(id);
-    /* the topic opens on its overview; the exercises are the stage picked here */
-    w.__api.startTopicExercises(id);
     w.currentTopicId = id;
     w.currentTopic = w.__api.courseData.topics.find(t => t.id === id) || null;
     await settle();
@@ -238,7 +225,7 @@ async function walk(rel, topicIds, legacyTopicId) {
         ok(!after.some(t => /Открыть задания/.test(t)),
             `${tag}: the practice card is replaced, not kept`);
         ok(!after.some(t => RESTART_RE.test(t)),
-            `${tag}: nothing offers a restart after completion (${after.join(' | ')})`);
+            `${tag}: nothing offers a restart after completion`);
 
         const done = w.document.querySelector('.a2-done');
         ok(!!done, `${tag}: completed state rendered`);
@@ -251,13 +238,11 @@ async function walk(rel, topicIds, legacyTopicId) {
         /* restore the un-completed state for the legacy comparison below */
         w.__api.setCompleted([]);
 
-        /* THE LESSON IS STILL FULLY REACHABLE. Grammar and vocabulary used to sit
-           under the exercises; they are two of the three stages on the topic
-           overview now, and a completed topic must still offer both. */
+        /* the learner may still read the lesson */
         const lc = w.document.getElementById('lessonContent');
-        ok(!!lc && !!lc.querySelector('[data-uzr-open="grammar"]'),
-            `${tag}: grammar still reachable after completion`);
-        ok(!!lc && !!lc.querySelector('[data-uzr-open="vocabulary"]'),
+        ok(!!lc && /grammar-section/.test(lc.innerHTML),
+            `${tag}: grammar still readable after completion`);
+        ok(!!lc && /Lug'atni ochish/.test(lc.textContent),
             `${tag}: vocabulary still reachable after completion`);
     }
 
