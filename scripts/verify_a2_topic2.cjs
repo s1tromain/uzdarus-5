@@ -27,19 +27,22 @@ w.alert = () => {};
 w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};");
 /* production loads these via <script>; the harness must too, or the shared
    components (vocabulary card, exercise UI) are simply absent */
-['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js']
+['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js',
+ 'topic-route.js']
   .forEach(f => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
 if (pre) w.eval(pre);
 let err = null;
 try {
   w.eval(main + '\n;window.__api={courseData:courseData,loadQuiz:loadQuiz,loadLesson:loadLesson,getT1ExData:getT1ExData,' +
      'resetCompleted:function(){completedTopics.length=0;},isDone:function(i){return completedTopics.includes(i);},' +
-     'quizResults:function(){return userQuizResults;}};');
+     'quizResults:function(){return userQuizResults;},'+
+     'startTopicExercises:startTopicExercises};');
 } catch (e) { err = e; }
 ok('module evaluates', !err, err && err.message);
 if (err) process.exit(1);
 
-const { courseData, loadQuiz, loadLesson, getT1ExData } = w.__api;
+const { courseData, loadQuiz, loadLesson, getT1ExData, startTopicExercises } = w.__api;
+const { materialOf } = require('./_grammar_material.cjs');
 const t2 = courseData.topics.find(t => t.id === 2);
 eq('topic 2 title', t2.title, 'Oila va munosabatlar');
 eq('topic 2 free', t2.isLocked, false);
@@ -65,19 +68,29 @@ ok('lesson 1 audio is a DIFFERENT file',
 
 // ---- render ----
 loadLesson(2);
+/* THE TOPIC OPENS ON ITS OVERVIEW NOW. The exercises are one of three stages
+   and render when that stage is picked, which is what this call is. */
+startTopicExercises(2);
 const lc = w.document.getElementById('lessonContent');
 const qs = w.document.getElementById('quizSection');
-ok('grammar rendered', !!lc.querySelector('.b2g-lead-title'));
-ok('past-tense suffix table rendered', lc.textContent.includes('-ла') && lc.textContent.includes('-ли'));
-ok('быть forms rendered', ['был','была','было','были'].every(f => lc.textContent.includes(f)));
-ok('negation section rendered', lc.textContent.includes('не + o‘tgan zamon'));
-ok('question section rendered', lc.textContent.includes('Ты жил в Самарканде?'));
-ok('all possessive tables rendered', ['мой','твой','наш','ваш','его','её','их'].every(x => lc.textContent.includes(x)));
-ok('gender-agreement block rendered', lc.textContent.includes('моё имя') && lc.textContent.includes('мои родители'));
-ok('family possessives table rendered', lc.textContent.includes('mening ota-onam'));
-ok('10 family examples rendered', lc.textContent.includes('Наши дети выросли очень быстро.'));
-ok('его/её/их invariance highlighted', lc.textContent.includes('hech qachon o'.concat("'zgarmaydi")));
-ok('no template placeholder leaked', !lc.textContent.includes('${'));
+ok('the overview names this topic', lc.textContent.includes('2. Oila va munosabatlar'));
+ok('the three stages are offered', lc.querySelectorAll('[data-uzr-open]').length === 3);
+
+/* The grammar moved to the shared reader. Same content, new address — every
+   assertion below used to read the lesson pane and now reads the material the
+   reader serves for this topic. */
+const gram = materialOf('A2', 2);
+ok('grammar carried across', gram.body.includes('b2g-lead-title'));
+ok('past-tense suffix table rendered', gram.text.includes('-ла') && gram.text.includes('-ли'));
+ok('быть forms rendered', ['был','была','было','были'].every(f => gram.text.includes(f)));
+ok('negation section rendered', gram.text.includes('не + o‘tgan zamon'));
+ok('question section rendered', gram.text.includes('Ты жил в Самарканде?'));
+ok('all possessive tables rendered', ['мой','твой','наш','ваш','его','её','их'].every(x => gram.text.includes(x)));
+ok('gender-agreement block rendered', gram.text.includes('моё имя') && gram.text.includes('мои родители'));
+ok('family possessives table rendered', gram.text.includes('mening ota-onam'));
+ok('10 family examples rendered', gram.text.includes('Наши дети выросли очень быстро.'));
+ok('его/её/их invariance highlighted', gram.text.includes('hech qachon o'.concat("'zgarmaydi")));
+ok('no template placeholder leaked', !gram.text.includes('${') && !lc.textContent.includes('${'));
 ok('exercises rendered', !!qs.querySelector('.t1-wrap'));
 eq('10 exercise cards', qs.querySelectorAll('.t1-card').length, 10);
 eq('audio player present once', qs.querySelectorAll('audio').length, 1);

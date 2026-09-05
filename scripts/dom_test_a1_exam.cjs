@@ -4,6 +4,11 @@ const { JSDOM } = require('jsdom');
 let html = fs.readFileSync('paid-courses/a1-final-exam.html', 'utf8')
     .replace(/<script type="module" src="paid-platform.js"><\/script>/, '')
     .replace(/<script defer src="pro-toast.js"><\/script>/, '');
+/* JSDOM fetches no external script, so the shared exam gate would be missing
+   and every screen it draws would be absent. Inline it exactly as the
+   browser would have loaded it. */
+html = html.replace(/<script src="\.\.\/exam-gate\.js"><\/script>/,
+    () => '<script>' + fs.readFileSync('exam-gate.js', 'utf8') + '<\/script>');
 
 const mem = {};
 function ls() { return { getItem: k => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); }, removeItem: k => { delete mem[k]; }, clear: () => { Object.keys(mem).forEach(k => delete mem[k]); } }; }
@@ -38,7 +43,9 @@ function build(completed, role, opts) {
     let d = dom.window.document;
     await wait(500);
     ck('no question rows', d.querySelectorAll('[data-exam-row]').length === 0);
-    ck('locked message shown', /yakuniy imtihon ochiladi/.test(d.getElementById('examExercises').textContent));
+    /* the shared gate words the locked screen and names what is still missing */
+    ck('locked message shown',
+        /hali ochilmagan/.test(d.getElementById('examExercises').textContent));
     ck('footer hidden', d.getElementById('examFooterBar').classList.contains('hidden'));
     ck('timer not started (02:00:00)', d.getElementById('examTimerDisplay').textContent === '02:00:00');
     dom.window.close();
@@ -82,8 +89,11 @@ function build(completed, role, opts) {
         const txt = d.getElementById('examExercises').textContent;
         ck('read failure does not open the exam',
             d.querySelectorAll('.exam-q-chip').length === 0);
+        /* the shared gate words this by the KIND of failure — a dropped
+           connection says so, a server fault says so — and neither may tell the
+           learner the course is unfinished */
         ck('and shows the sync error rather than accusing the learner',
-            /tekshirib bo'lmadi/.test(txt));
+            /tekshirib bo|Aloqa uzildi/.test(txt) && !/tugating/.test(txt));
         dom.window.close();
     }
 

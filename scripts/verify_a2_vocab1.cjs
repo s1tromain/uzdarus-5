@@ -138,10 +138,12 @@ ok('topic 2 card advertises 77 words', /\b2\s*:\s*77\b/.test(COURSE));
 ok('demo topic 1 card also says 45', /\b1\s*:\s*45\b/.test(DEMO));
 ok('demo topic 2 card also says 77', /\b2\s*:\s*77\b/.test(DEMO));
 ok('no stale 40-word label remains anywhere', !/40 ta so'z/.test(COURSE) && !/40 ta so'z/.test(DEMO));
+/* the deck stage carries the deep link now; the variable it appends is the
+   topic id the overview was opened with */
 ok('course card deep-links by topic id',
-   /a2-vocabulary\.html\?topic=' \+ topicId/.test(COURSE));
+   /a2-vocabulary\.html\?topic=' \+ (topicId|id)/.test(COURSE));
 ok('demo card deep-links to its own vocabulary page',
-   /a2-demo-vocabulary\.html\?topic=' \+ topicId/.test(DEMO));
+   /a2-demo-vocabulary\.html\?topic=' \+ (topicId|id)/.test(DEMO));
 ok('vocabulary page declares its course for speech.js', /window\.VOCAB_COURSE\s*=\s*'a2'/.test(SRC));
 ok('speech engine loaded on the vocabulary page', /paid-courses\/speech\.js/.test(SRC));
 
@@ -180,8 +182,8 @@ ok('demo topics 4-16 left untouched (they carry no words, as before)',
    dv.topics.filter(t => t.id >= 4).every(t => t.words.length === 0));
 ok('demo vocabulary page uses the same speech engine', /paid-courses\/speech\.js/.test(DVOC) || /speech\.js/.test(DVOC));
 ok('demo course deep-links to the DEMO vocabulary page',
-   /a2-demo-vocabulary\.html\?topic=' \+ topicId/.test(DEMO) &&
-   !/[^-]a2-vocabulary\.html\?topic=' \+ topicId/.test(DEMO));
+   /a2-demo-vocabulary\.html\?topic=' \+ (topicId|id)/.test(DEMO) &&
+   !/[^-]a2-vocabulary\.html\?topic=' \+ (topicId|id)/.test(DEMO));
 
 /* AUTO word-count sync must hold for the DEMO page too — now read from
    A2_VOCAB_COUNTS, which the shared vocabulary component renders. */
@@ -234,8 +236,10 @@ console.log(fail === 0 ? `  ✅ A2 VOCAB (paid+demo): ${pass}/${pass} passed` : 
     Object.keys(declared).forEach(id => {
       eq(`${page}: topic ${id} card count equals the real word list`, declared[id], real[id]);
     });
+    /* THE DECK IS DRAWN BY THE SHARED OVERVIEW NOW — it used to be a card from
+       UzExerciseUI; either way this page hand-rolls nothing of its own. */
     ok(`${page}: the card renders through the shared component`,
-       /window\.UzExerciseUI\.renderVocabCard/.test(src));
+       /UzTopicRoute\.open\(/.test(src));
     ok(`${page}: exactly one vocabulary card implementation`,
        (src.match(/class="b2-vocab-card"/g) || []).length === 0);
   }

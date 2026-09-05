@@ -1,0 +1,352 @@
+/* ============================================================================
+ * learning-route.css — the three-stage topic route and the grammar reader.
+ *
+ * ONE stylesheet for A1, A2, B1, B2 and all four demos. The courses had four
+ * visual languages for the same three things; this is the shared one. It is
+ * deliberately small, uses no framework, animates only transform and opacity,
+ * and honours prefers-reduced-motion.
+ * ==========================================================================*/
+
+.uzr,
+.gr-doc {
+    --uzr-ink: #1F2430;
+    --uzr-soft: #5A6178;
+    --uzr-line: #E4E7F2;
+    --uzr-bg: #FFFFFF;
+    --uzr-sunk: #F6F8FC;
+    --uzr-grammar: #5B4BC4;
+    --uzr-vocab: #0B7A54;
+    --uzr-exercise: #3F51B5;
+    --uzr-warn: #E67E22;
+    --uzr-radius: 18px;
+    --uzr-gap: 16px;
+    color: var(--uzr-ink);
+    font-family: inherit;
+    box-sizing: border-box;
+    /* THESE PAGES ARE LIGHT, ON EVERY DEVICE. A learner reading grammar on a
+       phone in dark mode was handed a black screen with dark text on it; the
+       material is a printed page and it stays one. Declaring the scheme also
+       keeps form controls, scrollbars and focus rings light. */
+    color-scheme: light;
+}
+.uzr *, .gr-doc * { box-sizing: border-box; }
+
+/* ------------------------------------------------------------ the header */
+
+.uzr-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 20px 22px;
+    border: 1px solid var(--uzr-line);
+    border-radius: var(--uzr-radius);
+    background: linear-gradient(135deg, #FFFFFF, #F7F9FF);
+    box-shadow: 0 6px 22px rgba(31, 36, 48, .05);
+}
+.uzr-head-main { flex: 1 1 auto; min-width: 0; }
+.uzr-crumb {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .84rem; font-weight: 700; color: var(--uzr-soft);
+    letter-spacing: .04em; text-transform: uppercase;
+}
+.uzr-level {
+    background: var(--uzr-exercise); color: #fff;
+    border-radius: 999px; padding: 3px 10px; letter-spacing: .06em;
+}
+.uzr-title {
+    margin: 8px 0 4px;
+    font-size: clamp(1.22rem, 4.4vw, 1.62rem);
+    font-weight: 800; line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+.uzr-desc { margin: 0; color: var(--uzr-soft); font-size: .98rem; line-height: 1.55; }
+.uzr-state {
+    flex: none; display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; font-weight: 800; padding: 7px 12px;
+    border-radius: 999px; white-space: nowrap;
+    background: var(--uzr-sunk); color: var(--uzr-soft); border: 1px solid var(--uzr-line);
+}
+.uzr-state.is-done { background: #E9F9F1; color: #0B5D46; border-color: #BCE9D4; }
+.uzr-close {
+    flex: none; width: 44px; height: 44px; border-radius: 12px;
+    border: 1px solid var(--uzr-line); background: #fff; color: var(--uzr-soft);
+    font-size: 1.1rem; cursor: pointer; line-height: 1;
+}
+.uzr-close:hover { background: var(--uzr-sunk); }
+
+/* ------------------------------------------------------------- the route */
+
+.uzr-route { position: relative; margin-top: 18px; display: grid; gap: var(--uzr-gap); }
+/* the connecting line, purely decorative */
+.uzr-route::before {
+    content: ''; position: absolute; left: 27px; top: 34px; bottom: 34px;
+    width: 2px; background: linear-gradient(180deg, var(--uzr-grammar), var(--uzr-vocab), var(--uzr-exercise));
+    opacity: .22; border-radius: 2px;
+}
+@media (max-width: 560px) { .uzr-route::before { left: 22px; } }
+
+.uzr-card {
+    position: relative;
+    display: grid;
+    /* the icon takes what it needs; the text takes the rest AND is allowed to
+       shrink — minmax(0, 1fr), not 1fr, or a long word sets the column width */
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+    padding: 18px 20px 18px 16px;
+    border: 1px solid var(--uzr-line);
+    border-radius: var(--uzr-radius);
+    background: var(--uzr-bg);
+    box-shadow: 0 4px 16px rgba(31, 36, 48, .04);
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: uzrIn .42s cubic-bezier(.22, 1, .36, 1) forwards;
+}
+.uzr-card:nth-child(1) { animation-delay: .04s; }
+.uzr-card:nth-child(2) { animation-delay: .12s; }
+.uzr-card:nth-child(3) { animation-delay: .20s; }
+@keyframes uzrIn { to { opacity: 1; transform: none; } }
+
+.uzr-card:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(31, 36, 48, .10); }
+.uzr-card:active { transform: translateY(0) scale(.995); }
+.uzr-card:focus-visible { outline: 3px solid var(--uzr-exercise); outline-offset: 3px; }
+.uzr-card.is-current { border-color: #C3C8EE; background: linear-gradient(180deg, #FDFDFF, #FAFBFF); }
+.uzr-card[disabled], .uzr-card.is-blocked { cursor: default; }
+
+.uzr-card-main { min-width: 0; }
+
+.uzr-step {
+    width: 44px; height: 44px; border-radius: 14px;
+    display: grid; place-items: center;
+    font-size: 1.24rem; color: #fff;
+    box-shadow: 0 4px 12px rgba(31, 36, 48, .16);
+}
+.uzr-card[data-stage="grammar"] .uzr-step { background: linear-gradient(135deg, #5B4BC4, #6E5DD4); }
+.uzr-card[data-stage="vocabulary"] .uzr-step { background: linear-gradient(135deg, #0B7A54, #0C8259); }
+.uzr-card[data-stage="exercises"] .uzr-step { background: linear-gradient(135deg, #3F51B5, #4A5CB8); }
+
+.uzr-card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.uzr-card-title { margin: 0; font-size: 1.08rem; font-weight: 800; overflow-wrap: break-word; }
+.uzr-tag {
+    font-size: .74rem; font-weight: 800; letter-spacing: .03em;
+    padding: 3px 9px; border-radius: 999px;
+    background: var(--uzr-sunk); color: var(--uzr-soft); border: 1px solid var(--uzr-line);
+}
+.uzr-tag.is-rec { background: #FFF7E8; color: #7A5713; border-color: #F1DFB4; }
+.uzr-tag.is-req { background: #EEF0FF; color: #2B3080; border-color: #C9CFF5; }
+.uzr-tag.is-done { background: #E9F9F1; color: #0B5D46; border-color: #BCE9D4; }
+.uzr-card-body,
+.uzr-note,
+.uzr-blocked { overflow-wrap: break-word; }
+.uzr-card-body { margin: 6px 0 0; color: var(--uzr-soft); font-size: 1rem; line-height: 1.55; }
+.uzr-meta { margin: 10px 0 0; display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: .95rem; color: var(--uzr-soft); }
+.uzr-meta b { color: var(--uzr-ink); font-weight: 700; }
+.uzr-note { margin: 10px 0 0; font-size: .95rem; color: var(--uzr-soft); line-height: 1.5; }
+
+.uzr-bar { margin: 12px 0 0; height: 7px; border-radius: 5px; background: #EDF0F9; overflow: hidden; }
+.uzr-bar i { display: block; height: 100%; border-radius: 5px; background: var(--uzr-vocab); width: 0; transition: width .5s cubic-bezier(.22, 1, .36, 1); }
+.uzr-card[data-stage="exercises"] .uzr-bar i { background: var(--uzr-exercise); }
+
+.uzr-cta {
+    margin: 14px 0 0;
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 44px; min-width: 44px; padding: 11px 20px;
+    border: none; border-radius: 12px; cursor: pointer;
+    justify-content: center; text-align: center; white-space: normal;
+    font-family: inherit; font-size: 1rem; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, #3F51B5, #4A5CB8);
+    transition: filter .16s ease, transform .16s ease;
+}
+.uzr-card[data-stage="grammar"] .uzr-cta { background: linear-gradient(135deg, #5B4BC4, #6E5DD4); }
+.uzr-card[data-stage="vocabulary"] .uzr-cta { background: linear-gradient(135deg, #0B7A54, #0C8259); }
+.uzr-cta:hover { filter: brightness(1.05); }
+.uzr-cta:active { transform: scale(.98); }
+.uzr-cta:focus-visible { outline: 3px solid #1F2430; outline-offset: 2px; }
+
+.uzr-blocked {
+    margin: 12px 0 0; padding: 11px 14px; border-radius: 12px;
+    background: #FFF5F5; border: 1px solid #EFB3B3; color: #8E2B2B;
+    font-size: .9rem; line-height: 1.5;
+}
+.uzr-skeleton {
+    border-radius: 12px; background: linear-gradient(90deg, #EEF1F8, #F7F9FF, #EEF1F8);
+    background-size: 200% 100%; animation: uzrShimmer 1.3s linear infinite;
+    height: 14px; margin: 8px 0;
+}
+@keyframes uzrShimmer { to { background-position: -200% 0; } }
+
+/* --------------------------------------------------------- grammar reader */
+
+.gr-doc {
+    max-width: 780px; margin: 0 auto; padding: 20px 18px 40px;
+    line-height: 1.65; font-size: 1rem;
+}
+.gr-head { margin-bottom: 18px; }
+.gr-crumb { display: flex; align-items: center; gap: 8px; font-size: .84rem; font-weight: 700;
+    color: var(--uzr-soft); text-transform: uppercase; letter-spacing: .04em; }
+.gr-level { background: var(--uzr-grammar); color: #fff; border-radius: 999px; padding: 3px 10px; }
+.gr-title { margin: 10px 0 6px; font-size: clamp(1.35rem, 5vw, 1.9rem); font-weight: 800; line-height: 1.22; overflow-wrap: anywhere; }
+.gr-desc { margin: 0; color: var(--uzr-soft); }
+.gr-goal {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 16px; margin: 0 0 20px;
+    border-radius: 14px; background: #F3F0FF; border: 1px solid #DDD6FF; color: #3B2E8C;
+}
+.gr-goal p { margin: 0; font-weight: 600; }
+.gr-goal-ico { font-size: 1.2rem; line-height: 1.4; }
+
+.gr-body > :first-child { margin-top: 0; }
+.gr-body h3, .gr-body h4 { margin: 26px 0 10px; font-size: 1.08rem; font-weight: 800; line-height: 1.35; }
+.gr-body p { margin: 0 0 12px; }
+.gr-body ul, .gr-body ol { margin: 0 0 14px; padding-left: 22px; }
+.gr-body li { margin: 0 0 6px; }
+.gr-body strong { color: #2B3080; }
+/* a table must scroll inside its own box, never widen the page */
+.gr-body table {
+    display: block; width: 100%; overflow-x: auto; border-collapse: collapse;
+    margin: 0 0 16px; font-size: .95rem; -webkit-overflow-scrolling: touch;
+}
+.gr-body th, .gr-body td { border: 1px solid var(--uzr-line); padding: 9px 12px; text-align: left; }
+.gr-body th { background: var(--uzr-sunk); font-weight: 800; }
+/* ------------------------------------------------------- grammar pictures */
+
+.gr-figure {
+    margin: 14px 0 18px; padding: 12px; border-radius: 16px;
+    background: var(--uzr-sunk); border: 1px solid var(--uzr-line);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.gr-body img,
+.gr-figure img {
+    max-width: 100%; height: auto; display: block;
+    border-radius: 12px; background: #fff;
+    object-fit: contain; cursor: zoom-in;
+}
+.gr-figure img:focus-visible { outline: 3px solid var(--uzr-exercise); outline-offset: 3px; }
+.gr-figure-open {
+    min-height: 44px; min-width: 44px; padding: 10px 18px;
+    border-radius: 12px; border: 1px solid #C9D4EE; background: #fff;
+    color: #2B3080; font-family: inherit; font-size: .95rem; font-weight: 700;
+    cursor: pointer;
+}
+.gr-figure-open:hover { background: #F3F6FF; }
+.gr-figure-open:focus-visible { outline: 3px solid var(--uzr-ink); outline-offset: 2px; }
+/* the notice belongs to a picture that truly failed, not to a slow one */
+.gr-figure.is-broken::after {
+    content: 'Rasmni yuklab bo‘lmadi.';
+    display: block; font-size: .92rem; color: #8E2B2B;
+}
+
+.gr-lightbox {
+    position: fixed; inset: 0; z-index: 9999;
+    display: flex; flex-direction: column;
+    background: rgba(23, 27, 38, .82);
+    padding: 12px;
+}
+.gr-lightbox[hidden] { display: none; }
+.gr-lb-bar { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+.gr-lb-btn {
+    min-height: 44px; min-width: 44px; padding: 11px 18px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 12px; border: 1px solid #C9D4EE; background: #fff;
+    color: #2B3080; font-family: inherit; font-size: .95rem; font-weight: 700;
+    text-decoration: none; cursor: pointer;
+}
+.gr-lb-btn:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.gr-lb-stage {
+    flex: 1 1 auto; margin-top: 12px; overflow: auto;
+    display: flex; align-items: flex-start; justify-content: center;
+    -webkit-overflow-scrolling: touch;
+}
+/* wide enough to actually read: it may exceed the viewport and be panned */
+.gr-lb-stage img {
+    /* a flex item shrinks by default, which would undo the magnification the
+       learner opened this for — it keeps its size and the stage pans */
+    flex: 0 0 auto;
+    min-width: min(100%, 900px); max-width: none; width: 250%;
+    height: auto; border-radius: 10px; background: #fff; cursor: zoom-out;
+}
+@media (min-width: 900px) { .gr-lb-stage img { width: auto; max-width: 100%; min-width: 0; } }
+/* the course markup labels its grammar block with a small badge; without a
+   style it read as a stray word floating above the first heading */
+.gr-body .b2g-lead-badge {
+    display: inline-block; margin: 0 0 10px;
+    padding: 4px 12px; border-radius: 999px;
+    background: #EFEBFF; color: #3B2E8C; border: 1px solid #DDD6FF;
+    font-size: .82rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase;
+}
+.gr-body .b2g-lead { margin: 0 0 6px; }
+.gr-body .b2g-lead-title { margin: 0 0 10px; font-size: 1.12rem; font-weight: 800; }
+
+.gr-body .grammar-rule, .gr-body .image-preview {
+    border: 1px solid var(--uzr-line); border-radius: 14px; padding: 14px 16px;
+    margin: 0 0 16px; background: var(--uzr-sunk);
+}
+.gr-body .zoom-hint { display: block; margin-top: 6px; font-size: .84rem; color: var(--uzr-soft); }
+.gr-empty { color: var(--uzr-soft); font-style: italic; }
+
+.gr-notes, .gr-mistake-list { margin: 0 0 16px; padding-left: 22px; }
+.gr-mistakes h2, .gr-summary h2 { font-size: 1.02rem; font-weight: 800; margin: 22px 0 8px; }
+.gr-mistakes { border-left: 4px solid var(--uzr-warn); padding-left: 14px; }
+.gr-summary {
+    margin-top: 22px; padding: 14px 16px; border-radius: 14px;
+    background: #E9F9F1; border: 1px solid #BCE9D4; color: #0B5D46;
+}
+.gr-summary p { margin: 0; font-weight: 600; }
+
+.gr-next { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 26px; }
+.gr-btn, .gr-state-acts .gr-btn {
+    min-height: 44px; padding: 12px 20px; border-radius: 12px; cursor: pointer;
+    font-family: inherit; font-size: .96rem; font-weight: 700;
+    background: #fff; color: #3F51B5; border: 1px solid #C9D4EE;
+    transition: transform .16s ease, filter .16s ease;
+}
+.gr-btn.gr-primary { background: linear-gradient(135deg, #5B4BC4, #6E5DD4); color: #fff; border: none; font-weight: 800; }
+.gr-btn:hover { filter: brightness(1.04); }
+.gr-btn:active { transform: scale(.98); }
+.gr-btn:focus-visible { outline: 3px solid #1F2430; outline-offset: 2px; }
+
+.gr-state { text-align: center; padding: 42px 20px; }
+.gr-state-ico { font-size: 2.6rem; margin-bottom: 10px; }
+.gr-state h2 { margin: 0 0 6px; font-size: 1.16rem; font-weight: 800; }
+.gr-state p { margin: 0 0 4px; color: var(--uzr-soft); }
+.gr-state-detail { font-size: .86rem; opacity: .8; }
+.gr-state-acts { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+
+/* -------------------------------------------------------------- responsive */
+
+@media (max-width: 560px) {
+    .uzr-head { flex-wrap: wrap; padding: 16px 16px; }
+    /* one column on a phone: the icon sits above the text it labels, and the
+       text gets the full width of the card */
+    .uzr-card { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 16px 14px; }
+    .uzr-step { width: 40px; height: 40px; border-radius: 12px; font-size: 1.1rem; }
+    .uzr-card-body, .uzr-note, .uzr-meta { font-size: 1rem; }
+    .uzr-cta { width: 100%; justify-content: center; }
+    .gr-doc { padding: 16px 14px 32px; }
+    .gr-next .gr-btn { flex: 1 1 100%; }
+}
+/* keep the last control clear of a phone's home indicator */
+@supports (padding: max(0px)) {
+    .gr-doc { padding-bottom: max(32px, calc(env(safe-area-inset-bottom) + 24px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .uzr-card, .uzr-cta, .gr-btn, .uzr-bar i {
+        animation: none !important;
+        transition: none !important;
+    }
+    .uzr-card { opacity: 1; transform: none; }
+    .uzr-skeleton { animation: none; background: #EEF1F8; }
+}
+
+/* NO DARK OVERRIDE LIVES HERE ANY MORE.
+   There used to be a prefers-color-scheme: dark block that repainted the
+   overview and the reader in near-black. On a phone set to dark — which is
+   most of them — the learner got dark text on dark panels and unreadable
+   grammar. The lesson surfaces are light by design; color-scheme: light on the
+   containers above tells the browser so too. */

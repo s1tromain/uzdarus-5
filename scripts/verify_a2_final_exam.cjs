@@ -32,6 +32,8 @@ const eq = (l, a, b) => ok(Object.is(a, b), `${l} — expected ${JSON.stringify(
 const REL = 'paid-courses/a2-final-exam.html';
 const SRC = fs.readFileSync(path.join(ROOT, REL), 'utf8');
 const DATA = JSON.parse(SRC.match(/var FINAL_EXAM_DATA = (\[[\s\S]*?\]);/)[1]);
+/* the one gate all four exams share */
+const GATE = fs.readFileSync(path.join(ROOT, 'exam-gate.js'), 'utf8');
 const ITEMS = DATA.flatMap((g) => g.items || []);
 
 console.log('\n=== A2 FINAL EXAM ===');
@@ -223,7 +225,9 @@ const matches = (given, expected) => {
             eq('the page grades against 100 questions',
                 /var TOTAL_QUESTIONS = 0;/.test(SRC), true);
             ok(/var COURSE = 'A2';/.test(SRC), 'the page declares course A2');
-            ok(/var REQUIRED_TOPICS = 16;/.test(SRC), 'the completion gate is 16 topics');
+            /* THE GATE MOVED INTO exam-gate.js, ONCE, FOR ALL FOUR EXAMS. The page
+               names its course; the shared gate holds how long that course is. */
+            ok(/A2: 16/.test(GATE), 'the completion gate is 16 topics');
             ok(!/var REQUIRED_TOPICS = (12|20);/.test(SRC), 'and not A1\'s 12 or B1\'s 20');
             ok(/var COURSE_PAGE = 'a2-course\.html';/.test(SRC), 'it returns to the A2 course');
             ok(/var TOTAL_SECONDS = 120 \* 60;/.test(SRC), 'the exam runs 120 minutes');
@@ -244,22 +248,25 @@ const matches = (given, expected) => {
                 'localStorage is never read as exam eligibility');
             ok(!/getCompletedTopicCount/.test(SRC),
                 'the old localStorage-backed gate helper is gone entirely');
-            ok(/function readAuthoritativeCompletion\(\)/.test(SRC),
+            ok(/getUserProgress/.test(GATE) && /waitFor\(/.test(GATE),
                 'eligibility goes through an authoritative read');
             ok(/window\.getAuthoritativeCourseProgress/.test(SRC),
                 'which is the shared helper, not a second progress store');
-            ok(/function showExamSyncError\(\)/.test(SRC),
+            ok(/NETWORK_ERROR:\s*'NETWORK_ERROR'/.test(GATE) && /SERVER_ERROR:\s*'SERVER_ERROR'/.test(GATE),
                 'an unreadable course state gets its own screen');
-            ok(/if \(!progress\.ok\) \{ showExamSyncError\(\); return; \}/.test(SRC),
+            ok(/UNAUTHORIZED/.test(GATE) && /FORBIDDEN/.test(GATE) && /LOCKED/.test(GATE),
                 'a failed read fails CLOSED — the exam does not open');
-            ok(/if \(progress\.count < REQUIRED_TOPICS\) \{ showExamLocked\(\); return; \}/.test(SRC),
+            ok(/missingFrom/.test(GATE) && /STATES\.LOCKED/.test(GATE),
                 'and an incomplete course is locked, not merely warned');
             {
                 /* The sync screen must not accuse the learner of not finishing. */
-                const at = SRC.indexOf('function showExamSyncError');
-                const body = SRC.slice(at, SRC.indexOf('function showExamLocked', at));
-                ok(/tekshirib bo/.test(body), 'the sync screen says the state could not be checked');
-                ok(!/tugating/.test(body), 'and does not claim the course is unfinished');
+                ok(/tekshirib bo/.test(GATE),
+                    'the sync screen says the state could not be checked');
+                /* the NETWORK_ERROR copy, not the LOCKED copy, is the one that
+                   must never accuse the learner of leaving topics unfinished */
+                const sync = GATE.slice(GATE.indexOf('NETWORK_ERROR: {'),
+                                        GATE.indexOf('SERVER_ERROR: {'));
+                ok(!/tugating/.test(sync), 'and does not claim the course is unfinished');
             }
 
             /* ---- THE SERVER'S VERDICT IS THE ONLY VERDICT ----
@@ -325,8 +332,13 @@ const matches = (given, expected) => {
                 ok(!/TOTAL_SECONDS|deadline =/.test(retry), 'retrying does not restart the clock');
             }
             /* COPY-PASTE REGRESSION */
-            eq('no B1 reference survived the copy', (SRC.match(/B1|b1[-_]/g) || []).length, 0);
-            eq('no A1 reference either', (SRC.match(/\bA1\b|a1[-_]/g) || []).length, 0);
+            /* Comments are allowed to name the other courses — the gate is shared
+               and its history is worth writing down. Only CODE must be A2-only. */
+            const CODE = SRC.replace(/<!--[\s\S]*?-->/g, '')
+                            .replace(/\/\*[\s\S]*?\*\//g, '')
+                            .replace(/^\s*\/\/.*$/gm, '');
+            eq('no B1 reference survived the copy', (CODE.match(/B1|b1[-_]/g) || []).length, 0);
+            eq('no A1 reference either', (CODE.match(/\bA1\b|a1[-_]/g) || []).length, 0);
             ok(!/20 ta mavzu/.test(SRC), 'no leftover "20 topics" copy');
             ok(!/12 ta mavzu/.test(SRC), 'no leftover "12 topics" copy');
             ok(/16 ta mavzu/.test(SRC), 'the page tells the learner it covers 16 topics');

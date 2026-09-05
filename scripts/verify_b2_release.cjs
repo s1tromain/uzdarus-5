@@ -213,7 +213,10 @@ console.log(`\n=== B2 RELEASE · TOPICS 1-${N} ===`);
     eq('the exam ships ten groups', DATA.length, 10);
     eq('of ten questions each', new Set(DATA.map((g) => g.items.length)).size, 1);
     eq('one hundred graded questions in total', examItems, 100);
-    ok(/var REQUIRED_TOPICS = 16;/.test(exam), `the exam gate is all ${N} topics`);
+    /* the gate moved into exam-gate.js, once, for all four exams: the page names
+       its course and the shared gate holds how long that course is */
+    ok(/B2: 16/.test(fs.readFileSync(path.join(ROOT, 'exam-gate.js'), 'utf8')),
+        `the exam gate is all ${N} topics`);
     ok(/var TOTAL_SECONDS = 120 \* 60;/.test(exam), 'the exam runs 120 minutes');
     ok(/var passed = pct >= 80;/.test(exam), 'the pass mark is 80');
 

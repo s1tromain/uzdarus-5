@@ -141,8 +141,8 @@ const PROFILE_CACHE_TTL_MS = 15000;
 const profileCache = new Map();
 
 const packToCourses = {
-    A1A2: ['a1-course.html', 'a1-vocabulary.html', 'a1-final-exam.html', 'a2-course.html', 'a2-vocabulary.html', 'a2-final-exam.html'],
-    B1B2: ['b1-course.html', 'b1-vocabulary.html', 'b1-final-exam.html', 'b2-course.html', 'b2-vocabulary.html', 'b2-final-exam.html']
+    A1A2: ['a1-course.html', 'a1-vocabulary.html', 'a1-final-exam.html', 'a2-course.html', 'a2-vocabulary.html', 'a2-final-exam.html', 'grammar-a1a2.html'],
+    B1B2: ['b1-course.html', 'b1-vocabulary.html', 'b1-final-exam.html', 'b2-course.html', 'b2-vocabulary.html', 'b2-final-exam.html', 'grammar-b1b2.html']
 };
 
 const PRIVILEGED_ROLES = new Set(['developer', 'admin']);

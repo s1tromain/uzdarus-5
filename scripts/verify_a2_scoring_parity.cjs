@@ -29,7 +29,8 @@ let pass = 0, fail = 0;
 const failures = [];
 const ok = (c, l) => { if (c) { pass++; } else { fail++; failures.push(l); } };
 
-const MODULES = ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js'];
+const MODULES = ['exercise-session.js', 'sentence-builder.js', 'course-exercise-ui.js', 'a2-host.js',
+                 'topic-route.js'];
 
 function boot(rel) {
     const SRC = fs.readFileSync(path.join(ROOT, rel), 'utf8');
@@ -57,7 +58,8 @@ function boot(rel) {
     w.eval(main + '\n;window.__api={courseData:courseData,loadLesson:loadLesson,' +
            'setCompleted:function(v){completedTopics=v;},getCompleted:function(){return completedTopics;},' +
            'uqr:function(){return userQuizResults;},exData:getT1ExData,passNeeded:a2PassNeeded,' +
-           't1Match:t1Match,t1IsOpen:t1IsOpenAnswer};');
+           't1Match:t1Match,t1IsOpen:t1IsOpenAnswer,'+
+           'startTopicExercises:startTopicExercises};');
     return w;
 }
 
@@ -183,6 +185,7 @@ async function scoreParity(w, topicId, targets) {
     console.log(`\n  SCORE-LEVEL PARITY — topic ${topicId} (${total} items)`);
     for (const want of targets) {
         w.__api.loadLesson(topicId);
+        w.__api.startTopicExercises(topicId);
         const spy = {};
         const s = mountSession(w, topicId, spy);
         if (!s) { ok(false, `topic ${topicId}: session mounts for target ${want}`); continue; }
@@ -257,6 +260,7 @@ async function independence(w, topicId) {
 
     for (const [label, corrupt] of scenarios) {
         w.__api.loadLesson(topicId);
+        w.__api.startTopicExercises(topicId);
         const spy = {};
         const s = mountSession(w, topicId, spy);
         const answers = {};

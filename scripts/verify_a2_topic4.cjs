@@ -28,20 +28,23 @@ w.HTMLElement.prototype.scrollIntoView = function () {}; w.alert = () => {};
 w.eval("window.saveQuizResult=async()=>1;window.saveUserProgress=async()=>1;window.getUserProgress=async()=>[];window.getUserQuizResults=async()=>({});window.logActivity=async()=>{};");
 /* production loads these via <script>; the harness must too, or the shared
    components (vocabulary card, exercise UI) are simply absent */
-['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js']
+['shared-normalizer.js','exercise-session.js','sentence-builder.js','course-exercise-ui.js','a2-host.js',
+ 'topic-route.js']
   .forEach(f => w.eval(fs.readFileSync(path.join(ROOT, f), 'utf8')));
 if (pre) w.eval(pre);
 let err = null;
 try {
   w.eval(main + '\n;window.__api={courseData:courseData,loadQuiz:loadQuiz,loadLesson:loadLesson,getT1ExData:getT1ExData,' +
     'resetCompleted:function(){completedTopics.length=0;},isDone:function(i){return completedTopics.includes(i);},' +
-    'quizResults:function(){return userQuizResults;}};');
+    'quizResults:function(){return userQuizResults;},'+
+    'startTopicExercises:startTopicExercises};');
 } catch (e) { err = e; }
 ok('module evaluates without throwing', !err, err && err.message);
 if (err) process.exit(1);
 ok('no runtime errors during load', errs.length === 0, errs.join(' | '));
 
-const { courseData, loadLesson, getT1ExData } = w.__api;
+const { courseData, loadLesson, getT1ExData, startTopicExercises } = w.__api;
+const { materialOf } = require('./_grammar_material.cjs');
 const t4 = courseData.topics.find(t => t.id === 4);
 eq('topic 4 title', t4.title, 'Kunlar, oylar va fasllar');
 ok('topic 4 uses the generic engine shape', Array.isArray(t4.topic4Exercises.exercises));
@@ -86,40 +89,50 @@ ok('each of the four resolves to a distinct real file',
 
 // ---- render ----
 loadLesson(4);
+/* THE TOPIC OPENS ON ITS OVERVIEW NOW — the exercises are one of three
+   stages and render when that stage is picked. */
+startTopicExercises(4);
+
+/* The grammar moved to the shared reader: same content, new address. */
+const gram = materialOf('A2', 4);
+
 const lc = w.document.getElementById('lessonContent');
 const qs = w.document.getElementById('quizSection');
 ok('lesson title rendered', /Kunlar, oylar va fasllar/.test(lc.textContent));
-ok('grammar rendered', !!lc.querySelector('.b2g-lead-title'));
+ok('grammar carried across', gram.body.includes('b2g-lead-title'));
 ok('all 7 weekdays rendered',
-   ['понедельник','вторник','среда','четверг','пятница','суббота','воскресенье'].every(x => lc.textContent.includes(x)));
-ok('во вторник exception documented', lc.textContent.includes('во') && lc.textContent.includes('talaffuz qulayligi'));
+   ['понедельник','вторник','среда','четверг','пятница','суббота','воскресенье'].every(x => gram.text.includes(x)));
+ok('во вторник exception documented', gram.text.includes('во') && gram.text.includes('talaffuz qulayligi'));
 ok('all 12 months rendered',
    ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь']
-   .every(x => lc.textContent.includes(x)));
+   .every(x => gram.text.includes(x)));
 ok('all 12 prepositional month forms rendered',
    ['в январе','в феврале','в марте','в апреле','в мае','в июне','в июле','в августе','в сентябре','в октябре','в ноябре','в декабре']
-   .every(x => lc.textContent.includes(x)));
+   .every(x => gram.text.includes(x)));
 ok('all 4 seasons + instrumental forms rendered',
-   ['весна','лето','осень','зима','весной','летом','осенью','зимой'].every(x => lc.textContent.includes(x)));
-ok('season instrumental note rendered', lc.textContent.includes('творительный'));
+   ['весна','лето','осень','зима','весной','летом','осенью','зимой'].every(x => gram.text.includes(x)));
+ok('season instrumental note rendered', gram.text.includes('творительный'));
 ok('в зимнее время / в летнее время rendered',
-   lc.textContent.includes('В зимнее время холодно.') && lc.textContent.includes('В летнее время жарко.'));
+   gram.text.includes('В зимнее время холодно.') && gram.text.includes('В летнее время жарко.'));
 ok('hour rule table rendered (час/часа/часов)',
-   lc.textContent.includes('час') && lc.textContent.includes('часа') && lc.textContent.includes('часов') && lc.textContent.includes('5–20'));
-ok('parts of day rendered', ['утро','день','вечер','ночь','утром','днём','вечером','ночью'].every(x => lc.textContent.includes(x)));
-ok('date section rendered', lc.textContent.includes('Какое сегодня число?') && lc.textContent.includes('двадцать пятого декабря'));
-ok('year section rendered', lc.textContent.includes('В каком году?') && lc.textContent.includes('в прошлом году'));
+   gram.text.includes('час') && gram.text.includes('часа') && gram.text.includes('часов') && gram.text.includes('5–20'));
+ok('parts of day rendered', ['утро','день','вечер','ночь','утром','днём','вечером','ночью'].every(x => gram.text.includes(x)));
+ok('date section rendered', gram.text.includes('Какое сегодня число?') && gram.text.includes('двадцать пятого декабря'));
+ok('year section rendered', gram.text.includes('В каком году?') && gram.text.includes('в прошлом году'));
 ok('weather section rendered',
    ['Жарко.','Холодно.','Тепло.','Прохладно.','Ветрено.','Солнечно.','Пасмурно.','Идёт дождь.','Идёт снег.']
-   .every(x => lc.textContent.includes(x)));
+   .every(x => gram.text.includes(x)));
 ok('time-expression table rendered',
    ['сейчас','потом','позже','скоро','уже','ещё','всегда','никогда','иногда','часто','редко',
-    'каждый день','каждую неделю','каждый месяц','каждый год'].every(x => lc.textContent.includes(x)));
-ok('Esda saqlang block rendered', lc.textContent.includes('Esda saqlang'));
-ok('closing note rendered', lc.textContent.includes('asosiy va eng ko'));
-ok('no template placeholder leaked', !lc.textContent.includes('${'));
-ok('grammar tables rendered', lc.querySelectorAll('.b2g-t').length >= 12);
-ok('vocabulary card rendered', lc.textContent.includes("Lug'atni ochish"));
+    'каждый день','каждую неделю','каждый месяц','каждый год'].every(x => gram.text.includes(x)));
+ok('Esda saqlang block rendered', gram.text.includes('Esda saqlang'));
+ok('closing note rendered', gram.text.includes('asosiy va eng ko'));
+ok('no template placeholder leaked', !gram.text.includes('${'));
+ok('grammar tables rendered',
+   (gram.body.match(/class="b2g-t/g) || []).length >= 12);
+/* the deck is one of the three stages now, not a card under the lesson */
+ok('the vocabulary stage is offered',
+   !!lc.querySelector('[data-uzr-open="vocabulary"]'));
 /* The per-topic vocabulary card was removed: there is now ONE shared card, and
    it deep-links with the live topic id rather than a hard-coded one. */
 ok('single shared vocabulary card deep-links by topic id',
