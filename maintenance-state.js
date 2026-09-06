@@ -54,11 +54,21 @@ export const MAINTENANCE_ROLE = 'developer';
 export const MAX_REASON_LENGTH = 300;
 
 /**
- * Windows kept in the document. Maintenance happens a handful of times a year;
- * this is several decades of history and keeps the document small enough to
- * read on every page load.
+ * HOW MANY CLOSED WINDOWS THE DOCUMENT ITSELF CARRIES.
+ *
+ * This is NOT a limit on history. When the inline list fills, the oldest
+ * windows move into immutable chunk documents under system/maintenance/history
+ * and the credit is computed over inline + archived together. Nothing is ever
+ * dropped: the 201st outage, and the 5000th, are worth every millisecond they
+ * lasted. The inline list exists only so the common case is one document read.
  */
-export const MAX_WINDOWS = 200;
+export const INLINE_WINDOWS = 400;
+
+/** Windows per archived chunk document. */
+export const WINDOWS_PER_CHUNK = 400;
+
+/** Where the overflow lives. */
+export const HISTORY_SUBCOLLECTION = 'history';
 
 /**
  * Normalise anything a date can arrive as: a Firestore Timestamp (client or
@@ -130,6 +140,12 @@ export function normalizeState(raw, nowMs = Date.now()) {
         currentMs: active ? Math.max(0, nowMs - startedAt) : 0,
         /* every closed window added up — for display, never for the clock */
         accumulatedMs: windows.reduce((sum, w) => sum + (w.end - w.start), 0)
+            + (Number.isFinite(Number(doc.archivedMs)) ? Number(doc.archivedMs) : 0),
+        /* what has been moved out of the document, so a reader can tell whether
+           the inline list is the whole story */
+        archivedMs: Number.isFinite(Number(doc.archivedMs)) ? Number(doc.archivedMs) : 0,
+        archivedCount: Number.isFinite(Number(doc.archivedCount)) ? Number(doc.archivedCount) : 0,
+        archivedUntil: toMs(doc.archivedUntil)
     };
 }
 
@@ -162,6 +178,15 @@ export function maintenanceCreditMs(subscription, state, nowMs = Date.now()) {
     const endAt = toMs(subscription && subscription.endAt);
     if (endAt === null) return 0;
 
+    /* THE SERVER MAY HAVE DONE THE ARITHMETIC ALREADY. It reads the complete
+       history — inline windows and archived chunks — and hands the browser one
+       number. When that number is present it IS the answer: recomputing it from
+       a partial window list is exactly how a long-lived subscription would be
+       short-changed. */
+    if (state && Number.isFinite(Number(state.creditMs))) {
+        return Math.max(0, Number(state.creditMs));
+    }
+
     /* The lower bound is when this paid period began. Older records predate
        subscription.startAt; updatedAt is the next best witness, and with
        neither the period gets no credit rather than a guess. */
@@ -187,6 +212,22 @@ export function effectiveEndAtMs(subscription, state, nowMs = Date.now()) {
 /** Does this role keep using the platform while maintenance is on? */
 export function bypassesMaintenance(role) {
     return String(role || '').trim().toLowerCase() === MAINTENANCE_ROLE;
+}
+
+/**
+ * Is this state the whole history, or has some of it been archived?
+ *
+ * A credit computed from an incomplete list would silently short-change a
+ * learner whose subscription reaches back past the archive, so the caller has
+ * to know. The server always reads everything; the browser is handed a credit
+ * the server computed rather than a list to compute it from.
+ */
+export function isComplete(state, subscription) {
+    const s = state && state.windows ? state : normalizeState(state);
+    if (!s.archivedCount) return true;
+    const from = toMs(subscription && subscription.startAt);
+    if (from === null) return false;
+    return s.archivedUntil === null || from >= s.archivedUntil;
 }
 
 /** Everything safe to hand an anonymous visitor. */

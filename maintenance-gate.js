@@ -15,12 +15,22 @@
  * anyway after a short wait: an unreachable status endpoint must not become an
  * outage of its own.
  *
- * WHY A DEVELOPER STILL SEES THE PLATFORM
- * ---------------------------------------
- * The mode exists so that a developer can work on a platform nobody else is
- * touching. Their role lives in Firestore and takes a moment to resolve, so
- * the screen goes up first and comes down again if the viewer turns out to be
- * a developer — the opposite order would flash the platform at everyone.
+ * WHY A DEVELOPER STILL SEES THE PLATFORM, AND WHY THE SERVER SAYS SO
+ * -------------------------------------------------------------------
+ * The mode exists so a developer can work on a platform nobody else is
+ * touching. This used to read the role out of localStorage, which meant anyone
+ * could type role: "developer" into devtools and walk past the screen. A role
+ * is not something a browser can assert about itself, so it no longer does:
+ * the gate presents a Firebase ID token to /api/maintenance?action=session and
+ * the server answers with one boolean. A forged localStorage changes nothing.
+ *
+ * WHY IT FAILS CLOSED
+ * -------------------
+ * If the state cannot be determined — a timeout, a 500, a truncated body — the
+ * platform is NOT revealed. Guessing "probably fine" is how a maintenance mode
+ * silently stops being one. The learner gets a light "could not check" screen
+ * with a retry instead, and the retry backs off rather than hammering a server
+ * that is already struggling.
  *
  * The screen is presentation. The rule is on the server: while the mode is on,
  * a learner's write is refused with 503 MAINTENANCE_MODE whatever page, tab or
@@ -55,7 +65,14 @@
     }
 
     hideDocument();
-    var revealTimer = global.setTimeout(revealDocument, REVEAL_TIMEOUT_MS);
+    /* NO TIMED REVEAL. This used to uncover the platform after a few seconds
+       whatever the answer was, which is a maintenance mode that turns itself
+       off when the network is slow. The timer now shows the "could not check"
+       screen instead — the learner is never left staring at a blank page, and
+       the platform is never shown without an answer. */
+    var revealTimer = global.setTimeout(function () {
+        if (!screenEl) unknown();
+    }, REVEAL_TIMEOUT_MS);
 
     /* --------------------------------------------------------- the screen */
 
@@ -69,7 +86,12 @@
             + 'xavfsiz saqlanadi.',
         auto: 'Texnik ishlar yakunlangach, ushbu sahifa avtomatik yangilanadi.',
         check: 'Holatni tekshirish',
-        checking: 'Tekshirilmoqda…'
+        checking: 'Tekshirilmoqda…',
+        unknownTitle: 'Holatni tekshirib bo‘lmadi',
+        unknown: 'Platforma holatini hozir aniqlab bo‘lmadi. Internet aloqangizni '
+            + 'tekshirib, qayta urinib ko‘ring — sahifa o‘zi ham qayta tekshiradi.',
+        unknownCalm: 'Bu obunangizga ta’sir qilmaydi. O‘quv natijalaringiz va '
+            + 'tugallangan mavzularingiz joyida.'
     };
 
     var CSS = [
@@ -134,12 +156,16 @@
     }
 
     var screenEl = null;
+    var screenKind = null;
 
-    function showScreen(state) {
-        if (screenEl) {
+    function showScreen(state, kind) {
+        var want = kind || 'maintenance';
+        if (screenEl && screenKind === want) {
             updateReason(state);
             return;
         }
+        if (screenEl) { screenEl.remove(); screenEl = null; }
+        screenKind = want;
         if (!doc.getElementById('uzm-style')) {
             var st = doc.createElement('style');
             st.id = 'uzm-style';
@@ -151,16 +177,18 @@
         screenEl.setAttribute('role', 'dialog');
         screenEl.setAttribute('aria-modal', 'true');
         screenEl.setAttribute('aria-labelledby', 'uzmTitle');
+        var unknown = want === 'unknown';
         screenEl.innerHTML =
             '<div class="uzm-card">' +
                 '<p class="uzm-logo"><i>Uzda</i><b>Rus</b></p>' +
                 '<div class="uzm-gears" aria-hidden="true">' + gear('') + gear('two') + '</div>' +
-                '<h1 class="uzm-h1" id="uzmTitle">' + esc(COPY.title) + '</h1>' +
-                '<p class="uzm-p">' + esc(COPY.body) + '</p>' +
+                '<h1 class="uzm-h1" id="uzmTitle">' +
+                    esc(unknown ? COPY.unknownTitle : COPY.title) + '</h1>' +
+                '<p class="uzm-p">' + esc(unknown ? COPY.unknown : COPY.body) + '</p>' +
                 '<div class="uzm-reason" data-uzm="reason" hidden></div>' +
                 '<div class="uzm-calm"><h2>' + esc(COPY.calmTitle) + '</h2>' +
-                    '<p>' + esc(COPY.calm) + '</p></div>' +
-                '<p class="uzm-auto">' + esc(COPY.auto) + '</p>' +
+                    '<p>' + esc(unknown ? COPY.unknownCalm : COPY.calm) + '</p></div>' +
+                (unknown ? '' : '<p class="uzm-auto">' + esc(COPY.auto) + '</p>') +
                 '<button type="button" class="uzm-btn" data-uzm="check">' + esc(COPY.check) + '</button>' +
                 (isLoginPage()
                     ? '<p class="uzm-staff-link"><button type="button" class="uzm-link" '
@@ -208,6 +236,7 @@
         if (!screenEl) return;
         screenEl.remove();
         screenEl = null;
+        screenKind = null;
         doc.documentElement.classList.remove('uzm-on');
         revealDocument();
     }
@@ -229,78 +258,176 @@
 
     /* -------------------------------------------------------------- state */
 
-    var lastVersion = null;
     var pollTimer = null;
+    var retryTimer = null;
+    var attempt = 0;
+    var SESSION_URL = '/api/maintenance?action=session';
 
+    /** The public status: is the platform off? Nothing else, and no token. */
     function fetchState() {
-        if (typeof global.fetch !== 'function') return Promise.resolve(null);
+        if (typeof global.fetch !== 'function') return Promise.reject(new Error('no fetch'));
         return global.fetch(STATUS_URL, { cache: 'no-store', credentials: 'omit' })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (j) { return j && j.ok ? j.maintenance : null; })
+            .then(function (r) {
+                if (!r.ok) throw new Error('status ' + r.status);
+                return r.json();
+            })
+            .then(function (j) {
+                if (!j || j.ok !== true || !j.maintenance) throw new Error('bad body');
+                return j.maintenance;
+            });
+    }
+
+    /**
+     * THE ID TOKEN, OR NOTHING.
+     *
+     * The gate is a classic script that runs before the page's own modules, so
+     * it reaches the Firebase SDK itself. The web config identifies the project
+     * and authorises nothing — the token it produces is what the server checks.
+     */
+    var FIREBASE_CONFIG = {
+        apiKey: 'AIzaSyB_0gyDPwaZpMIzhP7ukpi-KTWPPAlhfTs',
+        authDomain: 'uzdarus-b97aa.firebaseapp.com',
+        projectId: 'uzdarus-b97aa'
+    };
+    var SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
+
+    function idToken() {
+        if (typeof global.__uzmTokenOverride === 'function') {
+            /* the suites drive the gate without a real Firebase project */
+            return Promise.resolve(global.__uzmTokenOverride());
+        }
+        return Promise.all([import(SDK + 'firebase-app.js'), import(SDK + 'firebase-auth.js')])
+            .then(function (mods) {
+                var appMod = mods[0], authMod = mods[1];
+                var app = appMod.getApps()[0] || appMod.initializeApp(FIREBASE_CONFIG, 'uzm-gate');
+                var auth = authMod.getAuth(app);
+                return new Promise(function (resolve) {
+                    var done = false;
+                    var stop = authMod.onAuthStateChanged(auth, function (user) {
+                        if (done) return;
+                        done = true;
+                        try { stop(); } catch (e) {}
+                        if (!user) { resolve(null); return; }
+                        user.getIdToken().then(resolve, function () { resolve(null); });
+                    });
+                    /* a session that never resolves is the same as no session */
+                    global.setTimeout(function () {
+                        if (done) return;
+                        done = true;
+                        try { stop(); } catch (e) {}
+                        resolve(null);
+                    }, 6000);
+                });
+            })
             .catch(function () { return null; });
     }
 
-    /** The viewer's role, if the platform's own client has already resolved it. */
-    function viewerRole() {
-        try {
-            var p = global.UZ_PROFILE || global.currentUserProfile || null;
-            if (p && p.role) return String(p.role).toLowerCase();
-            var raw = global.localStorage && global.localStorage.getItem('currentUser');
-            if (raw) {
-                var u = JSON.parse(raw);
-                if (u && u.role) return String(u.role).toLowerCase();
-            }
-        } catch (e) { /* storage may be unavailable; that is not an error here */ }
-        return null;
+    /**
+     * May THIS visitor keep using the platform, and how much paid time are they
+     * owed? Both answers come from the server, which verified the token and
+     * read the role from the canonical source. A forged localStorage cannot
+     * reach this decision.
+     */
+    function askServer() {
+        return idToken().then(function (token) {
+            if (!token) return { bypass: false, creditMs: 0 };
+            return global.fetch(SESSION_URL, {
+                method: 'POST',
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+                body: '{}'
+            }).then(function (r) {
+                if (!r.ok) return { bypass: false, creditMs: 0 };
+                return r.json();
+            }).then(function (j) {
+                return {
+                    bypass: !!(j && j.ok && j.bypass === true),
+                    creditMs: (j && Number(j.creditMs)) || 0
+                };
+            }).catch(function () { return { bypass: false, creditMs: 0 }; });
+        });
     }
 
-    function isDeveloper() {
-        return viewerRole() === 'developer';
+    function publish(state, creditMs) {
+        if (global.UzFirebaseClient && typeof global.UzFirebaseClient.setMaintenanceState === 'function') {
+            global.UzFirebaseClient.setMaintenanceState(
+                state ? { active: state.active, startedAt: state.startedAt,
+                          windows: [], creditMs: creditMs || 0 } : null);
+        }
+        global.UZ_MAINTENANCE = state;
     }
 
     function apply(state) {
-        if (global.UzFirebaseClient && typeof global.UzFirebaseClient.setMaintenanceState === 'function') {
-            global.UzFirebaseClient.setMaintenanceState(state);
-        }
-        global.UZ_MAINTENANCE = state;
+        publish(state, 0);
 
         if (!state || !state.active) {
             var wasOn = !!screenEl;
             hideScreen();
             stopPoll();
+            /* THE PLATFORM IS ON: SHOW IT. hideScreen() reveals the document
+               only when there was a screen to hide, so a page that never saw
+               one — the ordinary case, on an ordinary day — stayed invisible.
+               Revealing here is unconditional and is the whole point of the
+               check having succeeded. */
+            revealDocument();
             if (wasOn) {
                 /* the platform came back: return the learner to what they asked
                    for, which is the page they are already on */
                 global.location.reload();
             }
-            return;
+            return Promise.resolve();
         }
 
-        if (isDeveloper()) {
+        /* THE SCREEN GOES UP FIRST. Asking the server who this is takes a round
+           trip, and showing the platform during it would flash it at everyone. */
+        showScreen(state, 'maintenance');
+        startPoll();
+
+        return askServer().then(function (answer) {
+            publish(state, answer.creditMs);
+            if (!answer.bypass) return;
             hideScreen();
+            stopPoll();
             revealDocument();
             showStaffBanner(state);
-            return;
-        }
+        });
+    }
 
-        lastVersion = state.version;
-        showScreen(state);
-        startPoll();
+    /** The state could not be determined. Show nothing of the platform. */
+    function unknown() {
+        publish(null, 0);
+        showScreen(null, 'unknown');
+        scheduleRetry();
+    }
+
+    function scheduleRetry() {
+        if (retryTimer) return;
+        /* bounded backoff: 2s, 4s, 8s, 16s, then every 30s — enough to recover
+           on its own, never a hammer on a server that is already unwell */
+        var wait = Math.min(30000, 2000 * Math.pow(2, Math.min(attempt, 4)));
+        retryTimer = global.setTimeout(function () {
+            retryTimer = null;
+            check(false);
+        }, wait);
     }
 
     function check(force) {
         return fetchState().then(function (state) {
             global.clearTimeout(revealTimer);
-            apply(state);
-            if (!state || !state.active) revealDocument();
-            return state;
+            attempt = 0;
+            if (retryTimer) { global.clearTimeout(retryTimer); retryTimer = null; }
+            return apply(state);
+        }).catch(function () {
+            global.clearTimeout(revealTimer);
+            attempt++;
+            unknown();
         });
     }
 
     function startPoll() {
         if (pollTimer) return;
-        /* a calm heartbeat, and only while the screen is up — never a tight
-           loop and never a timer left running on a working platform */
+        /* a calm heartbeat, and only while a screen is up — never a tight loop
+           and never a timer left running on a working platform */
         pollTimer = global.setInterval(function () {
             if (doc.hidden) return;
             check(false);
@@ -318,7 +445,8 @@
         apply: apply,
         showScreen: showScreen,
         hideScreen: hideScreen,
-        isDeveloper: isDeveloper,
+        askServer: askServer,
+        unknown: unknown,
         state: function () { return global.UZ_MAINTENANCE || null; }
     };
 

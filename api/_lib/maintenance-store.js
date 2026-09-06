@@ -7,14 +7,27 @@
  * one twice, and a retried HTTP request must not add the pause again: the
  * transaction reads the current state and returns unchanged when the requested
  * state is the one already stored.
+ *
+ * ---------------------------------------------------------------------------
+ * THE HISTORY IS NOT CAPPED
+ * ---------------------------------------------------------------------------
+ * It used to keep the last 200 windows and drop the rest, which would one day
+ * have handed a long-lived subscription less time back than the platform owed
+ * it — silently, and only for the oldest customers. Now the document carries
+ * the most recent INLINE_WINDOWS and everything older moves into immutable
+ * chunk documents under system/maintenance/history. Nothing is discarded, and
+ * readAllWindows() puts the whole record back together for the clock.
  */
 import { initAdmin } from '../_firebaseAdmin.js';
 import {
     MAINTENANCE_COLLECTION,
     MAINTENANCE_DOC_ID,
-    MAX_WINDOWS,
+    HISTORY_SUBCOLLECTION,
+    INLINE_WINDOWS,
+    WINDOWS_PER_CHUNK,
     normalizeState,
-    normalizeReason
+    normalizeReason,
+    toMs
 } from '../../maintenance-state.js';
 
 function docRef() {
@@ -22,10 +35,38 @@ function docRef() {
     return adminDb.collection(MAINTENANCE_COLLECTION).doc(MAINTENANCE_DOC_ID);
 }
 
+function historyRef() {
+    return docRef().collection(HISTORY_SUBCOLLECTION);
+}
+
 /** The stored state, or the "off" default when nothing has ever been written. */
 export async function readMaintenance() {
     const snap = await docRef().get();
     return normalizeState(snap.exists ? snap.data() : null);
+}
+
+/**
+ * Every closed window there has ever been, inline and archived, oldest first.
+ *
+ * Only the server calls this — the browser is handed a credit computed here
+ * rather than a list to compute it from, so the size of the history never
+ * reaches a phone.
+ */
+export async function readAllWindows() {
+    const state = await readMaintenance();
+    if (!state.archivedCount) return state.windows;
+
+    const chunks = await historyRef().orderBy('firstStart').get();
+    const archived = [];
+    chunks.forEach((doc) => {
+        const rows = Array.isArray(doc.data().windows) ? doc.data().windows : [];
+        rows.forEach((w) => {
+            const start = toMs(w && w.start);
+            const end = toMs(w && w.end);
+            if (start !== null && end !== null && end > start) archived.push({ start, end });
+        });
+    });
+    return archived.concat(state.windows).sort((a, b) => a.start - b.start);
 }
 
 /**
@@ -57,9 +98,9 @@ export async function setMaintenance({ active, reason, actor }) {
                     updatedBy: actor,
                     version: current.version + 1
                 }, { merge: true });
-                return { changed: false, reasonUpdated: true, state: { ...current, reason: normalizeReason(reason) } };
+                return { changed: false, reasonUpdated: true };
             }
-            return { changed: false, reasonUpdated: false, state: current };
+            return { changed: false, reasonUpdated: false };
         }
 
         if (want) {
@@ -69,13 +110,9 @@ export async function setMaintenance({ active, reason, actor }) {
                 reason: normalizeReason(reason),
                 updatedAt: now,
                 updatedBy: actor,
-                version: current.version + 1,
-                windows: current.windows.map((w) => ({
-                    start: Timestamp.fromMillis(w.start),
-                    end: Timestamp.fromMillis(w.end)
-                }))
+                version: current.version + 1
             }, { merge: true });
-            return { changed: true, opened: true, state: null };
+            return { changed: true, opened: true };
         }
 
         /* Closing: the window that just ended is recorded with SERVER time at
@@ -86,19 +123,52 @@ export async function setMaintenance({ active, reason, actor }) {
         if (started !== null && now.toMillis() > started) {
             windows.push({ start: started, end: now.toMillis() });
         }
-        const trimmed = windows.slice(-MAX_WINDOWS);
 
-        tx.set(ref, {
+        const patch = {
             active: false,
             startedAt: null,
             updatedAt: now,
             updatedBy: actor,
-            version: current.version + 1,
-            windows: trimmed.map((w) => ({
+            version: current.version + 1
+        };
+
+        if (windows.length > INLINE_WINDOWS) {
+            /* Overflow moves out; it is never dropped. The chunk is written in
+               the SAME transaction as the shortened inline list, so the two can
+               never disagree — there is no instant at which a window exists in
+               neither place. */
+            const overflow = windows.slice(0, windows.length - INLINE_WINDOWS);
+            const keep = windows.slice(windows.length - INLINE_WINDOWS);
+
+            for (let i = 0; i < overflow.length; i += WINDOWS_PER_CHUNK) {
+                const slice = overflow.slice(i, i + WINDOWS_PER_CHUNK);
+                const chunk = historyRef().doc(String(slice[0].start));
+                tx.set(chunk, {
+                    firstStart: Timestamp.fromMillis(slice[0].start),
+                    lastEnd: Timestamp.fromMillis(slice[slice.length - 1].end),
+                    windows: slice.map((w) => ({
+                        start: Timestamp.fromMillis(w.start),
+                        end: Timestamp.fromMillis(w.end)
+                    }))
+                });
+            }
+
+            patch.windows = keep.map((w) => ({
                 start: Timestamp.fromMillis(w.start),
                 end: Timestamp.fromMillis(w.end)
-            }))
-        }, { merge: true });
-        return { changed: true, opened: false, state: null };
+            }));
+            patch.archivedMs = current.archivedMs
+                + overflow.reduce((sum, w) => sum + (w.end - w.start), 0);
+            patch.archivedCount = current.archivedCount + overflow.length;
+            patch.archivedUntil = Timestamp.fromMillis(overflow[overflow.length - 1].end);
+        } else {
+            patch.windows = windows.map((w) => ({
+                start: Timestamp.fromMillis(w.start),
+                end: Timestamp.fromMillis(w.end)
+            }));
+        }
+
+        tx.set(ref, patch, { merge: true });
+        return { changed: true, opened: false };
     });
 }

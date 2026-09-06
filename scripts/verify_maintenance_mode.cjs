@@ -304,14 +304,26 @@ const R = await import(pathToFileURL(path.join(ROOT, 'api/_lib/roles.js')).href)
             }) }),
             runTransaction: async (fn) => fn({
                 get: async () => ({ exists: !!stored, data: () => stored }),
-                set: (ref, data) => { stored = Object.assign({}, stored, data); }
+                set: (ref, data) => {
+                    if (ref && ref.__history) { chunks[ref.id] = data; return; }
+                    stored = Object.assign({}, stored, data);
+                }
             })
         }
     };
     /* requireSession reads the profile from adminDb.collection('users') */
     const users = { 'u-dev': { role: 'developer' }, 'u-admin': { role: 'admin' } };
+    const chunks = {};
+    const historyCollection = {
+        doc: (id) => ({ id, __history: true }),
+        orderBy: () => ({ get: async () => ({
+            forEach: (fn) => Object.keys(chunks).sort()
+                .forEach((k) => fn({ data: () => chunks[k] }))
+        }) })
+    };
     globalThis.__ADMIN.adminDb.collection = (name) => ({
         doc: (id) => ({
+            collection: () => historyCollection,
             get: async () => (name === 'users'
                 ? { exists: !!users[id], data: () => users[id] }
                 : { exists: !!stored, data: () => stored })
@@ -388,7 +400,102 @@ const R = await import(pathToFileURL(path.join(ROOT, 'api/_lib/roles.js')).href)
         const res = await call('GET', { action: 'nonsense' }, {});
         eq('an unknown action is a plain 400', res.statusCode, 400);
     }
+
+    /* ---- THE BYPASS IS THE SERVER'S DECISION ---- */
+    {
+        const res = await call('POST', { action: 'session' }, {}, {});
+        eq('asking without a token is refused', res.statusCode, 401);
+    }
+    {
+        const res = await call('POST', { action: 'session' },
+            { authorization: 'Bearer nonsense' }, {});
+        eq('a token the server cannot verify is refused', res.statusCode, 401);
+    }
+    {
+        const res = await call('POST', { action: 'session' },
+            { authorization: 'Bearer admin' }, {});
+        eq('an ordinary admin is answered', res.statusCode, 200);
+        eq('and told no', res.payload.bypass, false);
+        ok(!('role' in res.payload), 'without being told anything about roles');
+        ok(!('profile' in res.payload) && !('uid' in res.payload),
+            'or about the account');
+    }
+    {
+        const res = await call('POST', { action: 'session' },
+            { authorization: 'Bearer dev' }, {});
+        eq('a developer is answered', res.statusCode, 200);
+        eq('and told yes', res.payload.bypass, true);
+    }
+    {
+        /* the credit comes back with it, computed over the whole history */
+        users['u-cust'] = { role: 'customer', subscription: {
+            active: true,
+            startAt: { toMillis: () => clock - 40 * DAY },
+            endAt: { toMillis: () => clock + 5 * DAY },
+            updatedAt: { toMillis: () => clock - 40 * DAY }
+        } };
+        globalThis.__ADMIN.adminAuth.verifyIdToken = async (t) => {
+            if (t === 'dev') return { uid: 'u-dev' };
+            if (t === 'admin') return { uid: 'u-admin' };
+            if (t === 'cust') return { uid: 'u-cust' };
+            throw new Error('bad token');
+        };
+        const res = await call('POST', { action: 'session' },
+            { authorization: 'Bearer cust' }, {});
+        eq('a customer is answered', res.statusCode, 200);
+        eq('and told no', res.payload.bypass, false);
+        ok(typeof res.payload.creditMs === 'number',
+            `and handed the paid time they are owed (${res.payload.creditMs})`);
+    }
     try { fs.rmSync(TMP, { recursive: true, force: true }); } catch (e) {}
+}
+
+/* ================================================================ *
+ * 3c. THE HISTORY IS NOT CAPPED
+ * ---------------------------------------------------------------- *
+ * It used to keep the last 200 windows and drop the rest, which one day
+ * would have handed a long-lived subscription less time back than the
+ * platform owed it — silently, and only to the oldest customers.
+ * ================================================================ */
+{
+    const src = read('api/_lib/maintenance-store.js');
+    ok(!/slice\(-\s*MAX_WINDOWS|slice\(-200/.test(src), 'nothing truncates the record');
+    ok(/HISTORY_SUBCOLLECTION|historyRef/.test(src), 'the overflow goes to a subcollection');
+    ok(/archivedMs/.test(src) && /archivedCount/.test(src),
+        'and what moved is accounted for');
+    ok(/export async function readAllWindows/.test(src),
+        'the clock can read inline and archived together');
+    ok(!/MAX_WINDOWS/.test(read('maintenance-state.js')), 'the old cap is gone');
+
+    /* the arithmetic itself, at the sizes that used to be the boundary */
+    const T0 = 1_600_000_000_000;
+    const HOUR = 3600000;
+    for (const count of [199, 200, 201, 500]) {
+        /* one outage a week, an hour each; a subscription that spans them all */
+        const windows = Array.from({ length: count }, (_, i) => ({
+            start: T0 + i * 7 * DAY,
+            end: T0 + i * 7 * DAY + HOUR
+        }));
+        const last = windows[count - 1].end;
+        const sub = { active: true, startAt: T0 - DAY, endAt: last + 30 * DAY,
+                      updatedAt: T0 - DAY };
+        eq(`${count} outages are worth ${count} hours`,
+            M.maintenanceCreditMs(sub, { active: false, windows }, last + DAY),
+            count * HOUR);
+    }
+    {
+        /* and a subscription that only lived through the last few of them gets
+           exactly those, however long the record is */
+        const windows = Array.from({ length: 500 }, (_, i) => ({
+            start: T0 + i * 7 * DAY, end: T0 + i * 7 * DAY + HOUR
+        }));
+        const from = windows[497].start - HOUR;
+        const sub = { active: true, startAt: from, endAt: windows[499].end + DAY,
+                      updatedAt: from };
+        eq('a late subscription is credited only its own outages',
+            M.maintenanceCreditMs(sub, { active: false, windows }, windows[499].end + DAY),
+            3 * HOUR);
+    }
 }
 
 /* ================================================================ *
@@ -450,17 +557,41 @@ try {
     let state = { active: false, version: 1, reason: '', startedAt: null, currentMs: 0 };
     let role = null;
 
-    /* the driver fulfils a route with a plain string body; fetch().json()
-       parses it regardless of the content type it is served under */
-    await p.route((u) => (/\/api\/maintenance/.test(u)
-        ? JSON.stringify({ ok: true, maintenance: state })
-        : null));
+    /* The driver fulfils a route with a plain string body; fetch().json()
+       parses it regardless of the content type it is served under.
+       `serverSays` is the SERVER's answer about the caller — the only thing
+       that may grant a bypass. `statusFails` makes the state unreadable. */
+    let serverSays = { bypass: false, creditMs: 0 };
+    let statusFails = null;
+    await p.route((u) => {
+        if (/action=session/.test(u)) {
+            return JSON.stringify(Object.assign({ ok: true }, serverSays));
+        }
+        if (/\/api\/maintenance/.test(u)) {
+            if (statusFails === 'garbage') return 'not json at all';
+            if (statusFails === 'wrong') return JSON.stringify({ ok: false });
+            if (statusFails) return null;   /* let it 404 into a real failure */
+            return JSON.stringify({ ok: true, maintenance: state });
+        }
+        return null;
+    });
 
+    /**
+     * `viewer` is what the BROWSER claims — a localStorage profile, nothing
+     * more. It must not decide anything; `serverSays` is what decides. The two
+     * are set independently on purpose, so a test can claim to be a developer
+     * while the server says otherwise.
+     */
     async function open(url, viewer, opts) {
         role = viewer;
-        await p.onNewDocument(viewer
+        await p.onNewDocument((viewer
             ? `try{localStorage.setItem('currentUser',JSON.stringify({id:'m',email:'m@t.uz',role:'${viewer}'}));}catch(e){}`
-            : `try{localStorage.removeItem('currentUser');}catch(e){}`);
+            : `try{localStorage.removeItem('currentUser');}catch(e){}`)
+            + `\n/* the gate asks Firebase for a token; the suite supplies one
+                 directly so no real project is contacted */
+               window.__uzmTokenOverride = function () { return ${
+                   (opts && opts.token === null) ? 'null' : JSON.stringify((opts && opts.token) || 'token')
+               }; };`);
         await p.goto(U(url), { waitMs: (opts && opts.waitMs) || 2000 });
     }
 
@@ -555,13 +686,42 @@ try {
         ? [['/index.html', 'bosh sahifa']]
         : [['/index.html', 'bosh sahifa'], ['/a1-demo.html', 'demo'],
            ['/tolov.html', 'tariflar'], ['/verify-certificate.html', 'sertifikat']];
+    serverSays = { bypass: true, creditMs: 0 };
     for (const [url, label] of OPEN_PAGES) {
         await open(url, 'developer');
-        await sleep(1200);
+        await sleep(1800);
         const s = JSON.parse(await p.evaluate(SCREEN));
         ok(!s.shown, `${label} · developer: platforma ochiq`);
         ok(s.staff, `${label} · developer: xizmat banneri ko‘rinadi`);
         ok(s.bodyVisible, `${label} · developer: sahifa ko‘rinadi`);
+    }
+
+    /* ---- A CLAIM IS NOT A ROLE ----
+       Every one of these says "I am a developer" in the only place the browser
+       controls. The server says no, and the server is what counts. */
+    serverSays = { bypass: false, creditMs: 0 };
+    for (const claim of ['developer', 'admin', 'moderator', 'teacher', 'customer']) {
+        await open('/index.html', claim);
+        ok(await waitForScreen(true, 6000),
+            `localStorage'da role="${claim}" bo‘lsa ham ekran ko‘rinadi`);
+        eq(`va xizmat banneri yo‘q (${claim})`,
+            await p.evaluate(`return !!document.querySelector('.uzm-staff');`), false);
+    }
+    {
+        /* a hand-built profile object on window is no better */
+        await p.onNewDocument(`window.UZ_PROFILE={role:'developer'};
+            window.currentUserProfile={role:'developer'};
+            window.__uzmTokenOverride=function(){return 'token';};`);
+        await p.goto(U('/index.html'), { waitMs: 2000 });
+        ok(await waitForScreen(true, 6000), 'soxta profil obyekti ham yordam bermaydi');
+    }
+    {
+        /* no token at all, and a token the server refuses */
+        await open('/index.html', 'developer', { token: null });
+        ok(await waitForScreen(true, 6000), 'tokensiz bypass yo‘q');
+        serverSays = { bypass: false, creditMs: 0 };
+        await open('/index.html', 'developer', { token: 'expired' });
+        ok(await waitForScreen(true, 6000), 'server rad etgan token bypass bermaydi');
     }
 
     /* ---- a dark phone still gets a light notice ---- */
@@ -603,10 +763,41 @@ try {
         ok(await waitForScreen(true, 6000), 'ekran hali ko‘rinadi');
         state = { active: false, version: 3, reason: '', startedAt: null, currentMs: 0 };
         await p.evaluate(`window.UzMaintenanceGate.check(true); return 1;`);
+        /* the gate reloads the page so the learner lands on what they asked
+           for; the reload has to finish before anything is measured */
+        ok(await waitForScreen(false, 8000), 'o‘chirilgach ekran yo‘qoladi');
+        await sleep(1500);
+        const s = JSON.parse(await p.evaluate(SCREEN));
+        ok(s.bodyVisible, 'va foydalanuvchi so‘ragan sahifaga qaytadi');
+    }
+
+    /* ---- THE STATE CANNOT BE READ: SHOW NOTHING OF THE PLATFORM ----
+       Guessing "probably fine" is how a maintenance mode stops being one. */
+    for (const [mode, label] of [['down', 'endpoint javob bermayapti'],
+                                 ['garbage', 'buzilgan javob'],
+                                 ['wrong', 'ok:false javob']]) {
+        statusFails = mode;
+        await open('/index.html', 'customer');
         await sleep(2600);
         const s = JSON.parse(await p.evaluate(SCREEN));
-        ok(!s.shown, 'o‘chirilgach ekran yo‘qoladi');
-        ok(s.bodyVisible, 'va foydalanuvchi so‘ragan sahifaga qaytadi');
+        ok(s.shown, `${label}: platforma ko‘rsatilmaydi`);
+        ok(/tekshirib bo/i.test(s.title), `${label}: "holatni tekshirib bo‘lmadi" ekrani (${s.title})`);
+        ok(s.button, `${label}: qayta urinish tugmasi bor`);
+        ok(s.lum !== null && s.lum > 0.75, `${label}: ekran yorug‘`);
+        eq(`${label}: gorizontal skroll yo‘q`, s.sideways, false);
+        const leaked = await p.evaluate(
+            `var b=document.body; return getComputedStyle(b).visibility;`);
+        ok(leaked === 'hidden' || s.shown, `${label}: asosiy kontent ochilmaydi`);
+    }
+    {
+        /* and when the endpoint comes back, the gate carries on by itself */
+        statusFails = null;
+        state = { active: false, version: 9, reason: '', startedAt: null, currentMs: 0 };
+        await p.evaluate(`window.UzMaintenanceGate.check(true); return 1;`);
+        ok(await waitForScreen(false, 8000), 'endpoint tiklangach ekran yo‘qoladi');
+        await sleep(1500);
+        const s = JSON.parse(await p.evaluate(SCREEN));
+        ok(s.bodyVisible, 'va platforma ochiladi');
     }
 
     /* ---- with the mode off nothing changes at all ---- */
