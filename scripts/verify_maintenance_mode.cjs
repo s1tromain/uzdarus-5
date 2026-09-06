@@ -242,6 +242,156 @@ const R = await import(pathToFileURL(path.join(ROOT, 'api/_lib/roles.js')).href)
 }
 
 /* ================================================================ *
+ * 3b. THE HANDLER ITSELF, CALLED
+ * ---------------------------------------------------------------- *
+ * Reading the source proves the right words are present; it does not
+ * prove the endpoint answers. It shipped once calling assertMethod with
+ * the wrong signature, which turned every status read into a 400 — and
+ * every assertion above still passed. So the handler gets driven.
+ * ================================================================ */
+{
+    const os = require('os');
+    const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'uz-maint-'));
+    const url = (rel) => JSON.stringify(pathToFileURL(path.join(ROOT, rel)).href);
+    const write = (name, src, map) => {
+        let out = src;
+        for (const [from, to] of Object.entries(map)) {
+            out = out.split(`'${from}'`).join(to);
+        }
+        fs.writeFileSync(path.join(TMP, name), out);
+    };
+
+    fs.writeFileSync(path.join(TMP, 'admin-stub.mjs'),
+        'export function initAdmin() { return globalThis.__ADMIN; }');
+    write('request.mjs', read('api/_lib/request.js'), {
+        '../_firebaseAdmin.js': "'./admin-stub.mjs'",
+        './roles.js': url('api/_lib/roles.js')
+    });
+    write('store.mjs', read('api/_lib/maintenance-store.js'), {
+        '../_firebaseAdmin.js': "'./admin-stub.mjs'",
+        '../../maintenance-state.js': url('maintenance-state.js')
+    });
+    fs.writeFileSync(path.join(TMP, 'audit-stub.mjs'),
+        'export async function writeAuditLog() {}');
+    write('endpoint.mjs', read('api/maintenance.js'), {
+        './_lib/request.js': "'./request.mjs'",
+        './_lib/roles.js': url('api/_lib/roles.js'),
+        './_lib/maintenance-store.js': "'./store.mjs'",
+        '../maintenance-state.js': url('maintenance-state.js'),
+        './_lib/audit.js': "'./audit-stub.mjs'"
+    });
+
+    let stored = null;
+    /* A CLOCK THAT MOVES. With a frozen one the window between switching on and
+       off has zero length and is rightly not recorded — which would make this
+       test agree with a store that recorded nothing at all. Each read advances
+       an hour, so the outage has a real duration. */
+    let clock = Date.UTC(2026, 0, 1);
+    const Timestamp = {
+        now: () => { clock += 3600000; return { toMillis: () => clock }; },
+        fromMillis: (m) => ({ toMillis: () => m })
+    };
+    globalThis.__ADMIN = {
+        Timestamp,
+        adminAuth: { verifyIdToken: async (t) => {
+            if (t === 'dev') return { uid: 'u-dev' };
+            if (t === 'admin') return { uid: 'u-admin' };
+            throw new Error('bad token');
+        } },
+        adminDb: {
+            collection: () => ({ doc: () => ({
+                get: async () => ({ exists: !!stored, data: () => stored })
+            }) }),
+            runTransaction: async (fn) => fn({
+                get: async () => ({ exists: !!stored, data: () => stored }),
+                set: (ref, data) => { stored = Object.assign({}, stored, data); }
+            })
+        }
+    };
+    /* requireSession reads the profile from adminDb.collection('users') */
+    const users = { 'u-dev': { role: 'developer' }, 'u-admin': { role: 'admin' } };
+    globalThis.__ADMIN.adminDb.collection = (name) => ({
+        doc: (id) => ({
+            get: async () => (name === 'users'
+                ? { exists: !!users[id], data: () => users[id] }
+                : { exists: !!stored, data: () => stored })
+        })
+    });
+
+    const handler = (await import(pathToFileURL(path.join(TMP, 'endpoint.mjs')).href)).default;
+
+    function call(method, query, headers, body) {
+        const res = { statusCode: null, payload: null, headers: {},
+            setHeader(k, v) { this.headers[k] = v; },
+            status(c) { this.statusCode = c; return this; },
+            json(p) { this.payload = p; return this; },
+            end() { return this; } };
+        return handler({ method, query, headers: headers || {}, body }, res)
+            .then(() => res);
+    }
+
+    {
+        const res = await call('GET', { action: 'status' }, {});
+        eq('GET status answers 200', res.statusCode, 200);
+        ok(res.payload && res.payload.ok === true, 'and says ok');
+        eq('with the mode off by default', res.payload.maintenance.active, false);
+        ok(/no-store/.test(String(res.headers['Cache-Control'] || '')),
+            'and forbids caching');
+        ok(!('updatedBy' in res.payload.maintenance),
+            'an anonymous reader is not told who last changed it');
+    }
+    {
+        const res = await call('POST', { action: 'status' }, {});
+        eq('POST to status is refused', res.statusCode, 405);
+    }
+    {
+        const res = await call('POST', { action: 'set' }, {}, { active: true });
+        eq('setting it without a token is refused', res.statusCode, 401);
+    }
+    {
+        const res = await call('POST', { action: 'set' },
+            { authorization: 'Bearer admin' }, { active: true });
+        eq('an ordinary admin is refused by the SERVER, not by a hidden button',
+            res.statusCode, 403);
+        eq('and the platform is still on', stored, null);
+    }
+    {
+        const res = await call('POST', { action: 'set' },
+            { authorization: 'Bearer dev' }, { active: true, reason: 'Bazani yangilash' });
+        eq('a developer may switch it on', res.statusCode, 200);
+        eq('and it reports the change', res.payload.changed, true);
+        eq('the platform is off', res.payload.maintenance.active, true);
+        eq('with the reason the learner will read', res.payload.maintenance.reason, 'Bazani yangilash');
+    }
+    {
+        const again = await call('POST', { action: 'set' },
+            { authorization: 'Bearer dev' }, { active: true, reason: 'Bazani yangilash' });
+        eq('switching it on twice changes nothing', again.payload.changed, false);
+        eq('and no window has been closed yet', (stored.windows || []).length, 0);
+    }
+    {
+        const res = await call('POST', { action: 'set' },
+            { authorization: 'Bearer dev' }, { active: false });
+        eq('a developer may switch it off', res.statusCode, 200);
+        eq('the platform is back', res.payload.maintenance.active, false);
+        const off = await call('POST', { action: 'set' },
+            { authorization: 'Bearer dev' }, { active: false });
+        eq('switching it off twice changes nothing', off.payload.changed, false);
+        eq('and the pause is recorded exactly once', (stored.windows || []).length, 1);
+    }
+    {
+        const res = await call('GET', { action: 'status' },
+            { authorization: 'Bearer dev' });
+        ok(res.payload.maintenance.updatedBy, 'signed-in staff are told who changed it');
+    }
+    {
+        const res = await call('GET', { action: 'nonsense' }, {});
+        eq('an unknown action is a plain 400', res.statusCode, 400);
+    }
+    try { fs.rmSync(TMP, { recursive: true, force: true }); } catch (e) {}
+}
+
+/* ================================================================ *
  * 4. EVERY USER PAGE IS BEHIND THE GATE
  * ================================================================ */
 {

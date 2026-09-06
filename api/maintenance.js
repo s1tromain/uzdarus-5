@@ -31,7 +31,8 @@ export default async function handler(req, res) {
 
     try {
         if (action === 'status') {
-            assertMethod(req, ['GET']);
+            /* assertMethod answers with 405 and returns false; it does not throw */
+            if (!assertMethod(req, res, 'GET')) return;
             const state = await readMaintenance();
             /* never cached: a page that asks whether the platform is off must
                not be answered by a CDN copy from before it went off */
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
         }
 
         if (action === 'set') {
-            assertMethod(req, ['POST']);
+            if (!assertMethod(req, res, 'POST')) return;
             const session = await requireSession(req);
             requireCapability(session, CAPABILITIES.MAINTENANCE_WRITE);
 
