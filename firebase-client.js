@@ -23,6 +23,7 @@ import {
     Timestamp
 } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { isAccountFrozen, getFreezeState, FREEZE_FIELD } from './account-freeze.js';
+import { effectiveEndAtMs as maintenanceEffectiveEndAtMs } from './maintenance-state.js';
 
 const firebaseConfig = {
     apiKey: 'AIzaSyB_0gyDPwaZpMIzhP7ukpi-KTWPPAlhfTs',
@@ -263,7 +264,33 @@ export function hasActiveSubscription(profile, options = {}) {
         return false;
     }
 
-    return endDate.getTime() >= Date.now();
+    /* THE MAINTENANCE CLOCK. Time spent with the platform switched off is not
+       time the learner got to use, so it is added back here — in the one place
+       every page already asks whether the subscription is live — rather than
+       by rewriting every subscription in the database when the mode ends.
+       maintenance-state.js does the arithmetic; it is a pure function of the
+       windows and this subscription, so reading it a thousand times credits
+       the same days exactly once. */
+    const endMs = maintenanceEffectiveEndAtMs(profile.subscription, currentMaintenanceState())
+        ?? endDate.getTime();
+
+    return endMs >= Date.now();
+}
+
+/* ------------------------------------------------------------------
+   The maintenance windows, as last read from the server. The gate fetches
+   them before the page paints and hands them here; with nothing loaded the
+   credit is zero, which is exactly the behaviour the platform had before the
+   mode existed. Never read from localStorage — a learner must not be able to
+   grant themselves days by editing browser storage. */
+let __maintenanceState = null;
+
+export function setMaintenanceState(state) {
+    __maintenanceState = state && typeof state === 'object' ? state : null;
+}
+
+export function currentMaintenanceState() {
+    return __maintenanceState;
 }
 
 export function hasPackAccess(profile, requiredPack, options = {}) {

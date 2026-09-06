@@ -43,7 +43,9 @@ export const CAPABILITIES = Object.freeze({
     SUBSCRIPTION_WRITE:   'subscription:write',
     ROLE_WRITE:           'role:write',
     CERTIFICATES_READ:    'certificates:read',
-    CERTIFICATES_MIGRATE: 'certificates:migrate'
+    CERTIFICATES_MIGRATE: 'certificates:migrate',
+    /* turning the whole platform off and on — developer alone */
+    MAINTENANCE_WRITE:    'maintenance:write'
 });
 
 const TEACHER_CAPABILITIES = [
@@ -71,7 +73,10 @@ const ADMIN_CAPABILITIES = [
 
 const DEVELOPER_CAPABILITIES = [
     ...ADMIN_CAPABILITIES,
-    CAPABILITIES.CERTIFICATES_MIGRATE
+    CAPABILITIES.CERTIFICATES_MIGRATE,
+    /* NOT in ADMIN_CAPABILITIES on purpose: an ordinary admin may run the
+       business of the platform but may not take it off the air. */
+    CAPABILITIES.MAINTENANCE_WRITE
 ];
 
 /* Frozen ARRAYS, not Sets. Object.freeze() on a Set is cosmetic — the internal

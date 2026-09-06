@@ -293,6 +293,34 @@
         </section>
 
         <section class="tab-panel" id="tab-admin">
+            <!-- TAKING THE PLATFORM OFF THE AIR. Rendered for every staff role so
+                 everyone can SEE the state; the switch itself is added by
+                 adminpanel.js only for a developer, and the server refuses the
+                 change with 403 for anyone else regardless of this markup. -->
+            <div class="card" id="maintenanceCard">
+                <h2>Texnik rejim</h2>
+                <p class="table-meta" id="maintenanceStatus">Holat yuklanmoqda…</p>
+                <dl class="maint-facts" id="maintenanceFacts" hidden>
+                    <div><dt>Yoqilgan vaqt</dt><dd id="maintStartedAt">—</dd></div>
+                    <div><dt>Davomiyligi</dt><dd id="maintDuration">—</dd></div>
+                    <div><dt>Kim yoqdi</dt><dd id="maintBy">—</dd></div>
+                </dl>
+                <div id="maintenanceControls" hidden>
+                    <label class="maint-reason">
+                        Sabab (foydalanuvchilarga ko‘rinadi, ixtiyoriy)
+                        <input type="text" id="maintenanceReason" maxlength="300"
+                               placeholder="Masalan: bazani yangilash">
+                    </label>
+                    <div class="maint-actions">
+                        <button class="btn" type="button" id="maintenanceToggle">Yoqish</button>
+                        <button class="btn btn-ghost" type="button" id="maintenancePreview">Ko‘rinishini oldindan ko‘rish</button>
+                    </div>
+                </div>
+                <p class="table-meta" id="maintenanceReadOnly" hidden>
+                    Texnik rejimni faqat DEVELOPER yoqa va o‘chira oladi.
+                </p>
+            </div>
+
             <div class="card" id="createStaffCard">
                 <h2>Staff foydalanuvchi yaratish</h2>
                 <form id="createStaffForm" class="form-grid">

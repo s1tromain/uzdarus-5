@@ -66,6 +66,15 @@ const GATE = new Function('isAccountFrozen', `
     function extractRole(u){ return typeof u==='string'?u.trim().toLowerCase():String(u?.role||'').trim().toLowerCase(); }
     function normalizeDate(v){ if(!v) return null; if(typeof v?.toDate==='function') return v.toDate();
         const d=new Date(v); return Number.isNaN(d.getTime())?null:d; }
+        /* hasActiveSubscription now discounts platform maintenance. This suite is
+           not about maintenance, so it gets the "nothing has ever happened" clock:
+           no windows, no credit, and the behaviour under test is unchanged. The
+           maintenance arithmetic has its own suite. */
+        function currentMaintenanceState() { return null; }
+        function maintenanceEffectiveEndAtMs(sub) {
+            const d = normalizeDate(sub && sub.endAt);
+            return d ? d.getTime() : null;
+        }
     const packToCourses = ${CLIENT.slice(CLIENT.indexOf('const packToCourses'),
         CLIENT.indexOf('};', CLIENT.indexOf('const packToCourses')) + 2).replace('const packToCourses =', '')}
     ${liftExport('isPrivilegedRole')}
@@ -250,13 +259,19 @@ writeShim('certificates.mjs', read('api/_lib/certificates.js'), {
     '../_firebaseAdmin.js': "'./admin-stub.js'",
     './course-canon.js': url('api/_lib/course-canon.js')
 });
+fs.writeFileSync(path.join(TMP, 'maintenance-stub.mjs'),
+    /* THE PLATFORM IS ON. This suite drives the exam, not the maintenance mode,
+       so the guard is given the answer it gives on a working platform: it lets
+       every request through. The maintenance behaviour has its own suite. */
+    'export async function assertNotInMaintenance() {}\n');
 writeShim('final-exam.mjs', read('api/_progress/final-exam.js'), {
     '../_firebaseAdmin.js': "'./admin-stub.js'",
     '../_lib/request.js': "'./request.mjs'",
     '../_lib/roles.js': url('api/_lib/roles.js'),
     '../../account-freeze.js': url('account-freeze.js'),
     '../_lib/course-canon.js': url('api/_lib/course-canon.js'),
-    '../_lib/exam-scoring.js': url('api/_lib/exam-scoring.js')
+    '../_lib/exam-scoring.js': url('api/_lib/exam-scoring.js'),
+        '../_lib/maintenance-guard.js': "'./maintenance-stub.mjs'"
 });
 writeShim('complete-topic.mjs', read('api/_progress/complete-topic.js'), {
     '../_firebaseAdmin.js': "'./admin-stub.js'",
@@ -264,7 +279,8 @@ writeShim('complete-topic.mjs', read('api/_progress/complete-topic.js'), {
     '../_lib/roles.js': url('api/_lib/roles.js'),
     '../../account-freeze.js': url('account-freeze.js'),
     '../_lib/course-canon.js': url('api/_lib/course-canon.js'),
-    '../_lib/topic-components.js': url('api/_lib/topic-components.js')
+    '../_lib/topic-components.js': url('api/_lib/topic-components.js'),
+        '../_lib/maintenance-guard.js': "'./maintenance-stub.mjs'"
 });
 writeShim('certificate.mjs', read('api/certificate.js'), {
     './_lib/request.js': "'./request.mjs'",

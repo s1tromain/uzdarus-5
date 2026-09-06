@@ -4,6 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- The platform-wide maintenance gate. Loaded FIRST and not deferred:
+         it hides the document before anything paints, so a learner never
+         sees a flash of the platform they are not supposed to be using. -->
+    <script src="maintenance-gate.js"></script>
     <title>To'lov - UzdaRus Ta'lim Platformasi</title>
     <link rel="icon" href="./images/shared/logo.png" type="image/png">
     <link rel="apple-touch-icon" href="./images/shared/logo.png">

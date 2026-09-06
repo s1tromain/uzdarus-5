@@ -2,6 +2,7 @@ import { initAdmin } from '../_firebaseAdmin.js';
 import {
     assertMethod, handleCors, readBody, requireSession, sendJson, safeError
 } from '../_lib/request.js';
+import { assertNotInMaintenance } from '../_lib/maintenance-guard.js';
 import { normalizeRole } from '../_lib/roles.js';
 import { isAccountFrozen } from '../../account-freeze.js';
 import { COURSE_CANON } from '../_lib/course-canon.js';
@@ -32,6 +33,9 @@ export default async function handler(req, res) {
 
     try {
         const session = await requireSession(req);
+        /* while the platform is off, a learner's write is refused with a
+           code the page can act on — the progress itself is untouched */
+        await assertNotInMaintenance(session);
         const { adminDb, FieldValue } = initAdmin();
         const body = await readBody(req);
 

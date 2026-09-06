@@ -56,13 +56,20 @@ writeShim('request.mjs', read('api/_lib/request.js'), {
     '../_firebaseAdmin.js': "'./admin-stub.js'",
     './roles.js': url('api/_lib/roles.js')
 });
+fs.writeFileSync(path.join(TMP, 'maintenance-stub.mjs'),
+    /* THE PLATFORM IS ON. This suite is about the completion rule, not about
+       maintenance, so the guard is given the answer it gives on a working
+       platform: it lets every request through. The maintenance behaviour has
+       its own suite, which drives the real guard. */
+    'export async function assertNotInMaintenance() {}\n');
 const PROGRESS_IMPORTS = {
     '../_firebaseAdmin.js': "'./admin-stub.js'",
     '../_lib/request.js': "'./request.mjs'",
     '../_lib/roles.js': url('api/_lib/roles.js'),
     '../../account-freeze.js': url('account-freeze.js'),
     '../_lib/course-canon.js': url('api/_lib/course-canon.js'),
-    '../_lib/topic-components.js': url('api/_lib/topic-components.js')
+    '../_lib/topic-components.js': url('api/_lib/topic-components.js'),
+    '../_lib/maintenance-guard.js': "'./maintenance-stub.mjs'"
 };
 writeShim('complete-component.mjs', read('api/_progress/complete-component.js'), PROGRESS_IMPORTS);
 writeShim('complete-topic.mjs', read('api/_progress/complete-topic.js'), PROGRESS_IMPORTS);

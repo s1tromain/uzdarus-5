@@ -91,6 +91,7 @@ console.log('\n[R3] TEACHER security matrix (the mutations from the spec)');
         ['read user management', CAPABILITIES.USERS_READ],
         ['read global stats',    CAPABILITIES.STATS_READ],
         ['migrate certificates', CAPABILITIES.CERTIFICATES_MIGRATE],
+        ['switch the platform off', CAPABILITIES.MAINTENANCE_WRITE],
     ];
     MUTATIONS.forEach(([label, cap]) => eq(`teacher -> ${label}: DENY 403`, denied('teacher', cap), 403));
 
@@ -121,7 +122,11 @@ console.log('\n[R4] Existing roles keep EXACTLY their previous powers');
         developer: ['panel:access', 'students:read', 'stats:read', 'users:read',
                     'users:create', 'users:delete', 'users:block', 'users:password',
                     'users:devices', 'certificates:read', 'subscription:write',
-                    'role:write', 'certificates:migrate'],
+                    'role:write', 'certificates:migrate',
+                    /* taking the whole platform off the air — developer alone,
+                       which is what makes it different from every other power
+                       an admin already has */
+                    'maintenance:write'],
     };
     ROLES.forEach((role) => {
         const actual = capabilitiesForRole(role).slice().sort();

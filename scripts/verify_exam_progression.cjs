@@ -314,13 +314,17 @@ try {
         '../_firebaseAdmin.js': "'./admin-stub.js'",
         './roles.js': url('api/_lib/roles.js')
     });
+    fs.writeFileSync(path.join(TMP, 'maintenance-stub.mjs'),
+        /* the platform is on: this suite drives the exam, not the mode */
+        'export async function assertNotInMaintenance() {}\n');
     shim('final-exam.mjs', read('api/_progress/final-exam.js'), {
         '../_firebaseAdmin.js': "'./admin-stub.js'",
         '../_lib/request.js': "'./request.mjs'",
         '../_lib/roles.js': url('api/_lib/roles.js'),
         '../../account-freeze.js': url('account-freeze.js'),
         '../_lib/course-canon.js': url('api/_lib/course-canon.js'),
-        '../_lib/exam-scoring.js': url('api/_lib/exam-scoring.js')
+        '../_lib/exam-scoring.js': url('api/_lib/exam-scoring.js'),
+        '../_lib/maintenance-guard.js': "'./maintenance-stub.mjs'"
     });
     const EXAMH = await import(pathToFileURL(path.join(TMP, 'final-exam.mjs')).href);
 

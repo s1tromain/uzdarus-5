@@ -392,6 +392,17 @@ const daysLeft = (user, now) =>
             const d = new Date(v);
             return Number.isNaN(d.getTime()) ? null : d;
         }
+        /* hasActiveSubscription now discounts platform maintenance. This suite
+           is about freezing ONE account, so the maintenance clock is given the
+           "nothing has ever happened" state: no windows, no credit, and the
+           freeze behaviour under test is unchanged by it. The maintenance
+           arithmetic has its own suite. */
+        function currentMaintenanceState() { return null; }
+        function maintenanceEffectiveEndAtMs(sub) {
+            const raw = sub && sub.endAt;
+            const d = normalizeDate(raw);
+            return d ? d.getTime() : null;
+        }
         ${lift('isPrivilegedRole')}
         ${lift('hasActiveSubscription')}
         ${lift('hasPackAccess')}

@@ -178,7 +178,9 @@ export function requireManagePermission(session, targetRole) {
 }
 
 export function safeError(res, error) {
-    const allowedStatuses = new Set([400, 401, 403, 404, 405, 409]);
+    /* 503 is here for the maintenance mode: a refusal the caller is meant to
+       recognise and retry, not a bug to be flattened into a generic 400. */
+    const allowedStatuses = new Set([400, 401, 403, 404, 405, 409, 503]);
     const authError = typeof error?.code === 'string' && error.code.startsWith('auth/');
     const requestedStatus = error?.statusCode || (authError ? 401 : null);
     const isWhitelisted = allowedStatuses.has(requestedStatus);
@@ -193,5 +195,11 @@ export function safeError(res, error) {
         console.error('[API_UNEXPECTED]', error);
     }
 
-    sendJson(res, statusCode, { error: message });
+    /* a machine-readable code survives, so a page can tell "the platform is
+       down for maintenance" from "your request was wrong" */
+    const payload = { error: message };
+    if (isWhitelisted && typeof error?.code === 'string' && !error.code.startsWith('auth/')) {
+        payload.code = error.code;
+    }
+    sendJson(res, statusCode, payload);
 }

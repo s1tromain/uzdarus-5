@@ -3,6 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <!-- The platform-wide maintenance gate. Loaded FIRST and not deferred:
+         it hides the document before anything paints, so a learner never
+         sees a flash of the platform they are not supposed to be using. -->
+    <script src="../maintenance-gate.js"></script>
     <meta name="robots" content="noindex">
     <title>Grammatika A1 / A2 — UzdaRus</title>
     <!--

@@ -187,6 +187,15 @@ const GATE = new Function('isAccountFrozen', `
     function extractRole(u){ return typeof u==='string'?u.trim().toLowerCase():String(u?.role||'').trim().toLowerCase(); }
     function normalizeDate(v){ if(!v) return null; if(typeof v?.toDate==='function') return v.toDate();
         const d=new Date(v); return Number.isNaN(d.getTime())?null:d; }
+        /* hasActiveSubscription now discounts platform maintenance. This suite is
+           not about maintenance, so it gets the "nothing has ever happened" clock:
+           no windows, no credit, and the behaviour under test is unchanged. The
+           maintenance arithmetic has its own suite. */
+        function currentMaintenanceState() { return null; }
+        function maintenanceEffectiveEndAtMs(sub) {
+            const d = normalizeDate(sub && sub.endAt);
+            return d ? d.getTime() : null;
+        }
     const packToCourses = ${CLIENT.slice(CLIENT.indexOf('const packToCourses'),
         CLIENT.indexOf('};', CLIENT.indexOf('const packToCourses')) + 2).replace('const packToCourses =', '')}
     ${liftExport('isPrivilegedRole')}

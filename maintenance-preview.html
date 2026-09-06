@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Texnik rejim — ko‘rinishi | UzdaRus</title>
+    <!--
+         WHAT A DEVELOPER SEES BEFORE THEY FLIP THE SWITCH.
+
+         The same maintenance-gate.js that runs on every learner page, told to
+         draw its screen without asking the server. Showing a hand-written copy
+         of the screen here would let the preview and the real thing drift; this
+         cannot drift, because it IS the real thing.
+
+         The page is deliberately NOT gated: it exists to be opened while
+         maintenance is off, and it shows nothing but the notice itself.
+    -->
+    <style>
+        :root { color-scheme: light; }
+        html, body { margin: 0; padding: 0; background: #FFF8E1; }
+        body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        .preview-note {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 2147483600;
+            background: #1F2430; color: #fff; font-size: .9rem; font-weight: 700;
+            padding: 10px 16px; text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <p class="preview-note">Bu — foydalanuvchilar ko‘radigan ekranning namunasi. Texnik rejim hozir o‘zgartirilmadi.</p>
+    <script src="maintenance-gate.js"></script>
+    <script>
+        /* Draw the screen from the same module the platform uses, with the
+           reason the developer is about to publish. Nothing is written and no
+           state is changed: this is a rehearsal, not a switch. */
+        (function () {
+            var reason = new URLSearchParams(location.search).get('reason') || '';
+            function draw() {
+                if (!window.UzMaintenanceGate) { setTimeout(draw, 50); return; }
+                window.UzMaintenanceGate.showScreen({
+                    active: true, version: 0, reason: reason,
+                    startedAt: Date.now(), currentMs: 0
+                });
+            }
+            draw();
+        })();
+    </script>
+</body>
+
+</html>

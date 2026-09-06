@@ -1213,3 +1213,24 @@ html[data-boot="restoring"] #adminGate {
     color: #14507f;
     border: 1px solid #a8cdec;
 }
+
+/* ------------------------------------------------------------------
+   TEXNIK REJIM — the switch that takes the whole platform off the air.
+
+   Deliberately calm rather than alarming: it is a normal operation, not an
+   emergency, and a red panic panel invites the hesitation that leaves a
+   platform half-off. The state it reports is the server's, never the DOM's. */
+.maint-facts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    gap: 10px 18px; margin: 14px 0 16px;
+}
+.maint-facts div { min-width: 0; }
+.maint-facts dt { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; opacity: .7; }
+.maint-facts dd { margin: 2px 0 0; font-weight: 700; overflow-wrap: break-word; }
+.maint-reason { display: block; margin: 0 0 14px; }
+.maint-reason input { width: 100%; }
+.maint-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.maint-actions .btn { min-height: 44px; }
+#maintenanceStatus.is-on { color: #7A5713; font-weight: 800; }
+#maintenanceStatus.is-off { color: #0B5D46; font-weight: 700; }
+#maintenanceToggle.is-on { background: linear-gradient(135deg, #B45309, #D97706); }

@@ -201,6 +201,24 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    /* ------------------------------------------------------------------
+       THE MAINTENANCE STATE IS SERVER-OWNED.
+
+       system/maintenance decides whether the whole platform is off and how
+       much paid time every subscription is owed back. A client that could
+       write it could take the platform down, or hand itself unlimited days by
+       inventing a maintenance window. So no client writes it and no client
+       reads it directly: the state reaches the browser only through
+       GET /api/maintenance?action=status, which serves the safe fields, and it
+       changes only through POST /api/maintenance?action=set, which verifies a
+       Firebase ID token and the developer capability with the Admin SDK.
+
+       The Admin SDK bypasses these rules by design, so denying everything here
+       costs the server nothing and closes the client off completely. */
+    match /system/{documentId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

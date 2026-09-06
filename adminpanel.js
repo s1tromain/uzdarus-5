@@ -10,6 +10,7 @@ import {
     callApi
 } from './firebase-client.js';
 import { isAccountFrozen, getFreezeState } from './account-freeze.js';
+import { normalizeState as normalizeMaintenance } from './maintenance-state.js';
 import { getTariffDisplayName } from './tariff-display.js';
 
 /* The tariff dropdown, in the order the site sells the plans.
@@ -2230,6 +2231,143 @@ function initActions() {
     });
 }
 
+
+/* ==================================================================
+ * TEXNIK REJIM — the platform-wide switch.
+ *
+ * The panel READS the state for every staff role, because knowing the
+ * platform is off is not a privilege. The switch is rendered only for a
+ * developer, and that is presentation: POST /api/maintenance?action=set
+ * verifies the ID token and the maintenance capability, so an admin who
+ * un-hides the button in devtools gets a 403 from the server.
+ * ================================================================== */
+
+const maintenance = { state: null, busy: false };
+
+function formatMaintenanceDuration(ms) {
+    const total = Math.max(0, Math.round(Number(ms) || 0) / 1000);
+    const d = Math.floor(total / 86400);
+    const h = Math.floor((total % 86400) / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    if (d > 0) return `${d} kun ${h} soat`;
+    if (h > 0) return `${h} soat ${m} daqiqa`;
+    return `${m} daqiqa`;
+}
+
+function renderMaintenance() {
+    const statusEl = document.getElementById('maintenanceStatus');
+    if (!statusEl) return;
+
+    const facts = document.getElementById('maintenanceFacts');
+    const controls = document.getElementById('maintenanceControls');
+    const readOnly = document.getElementById('maintenanceReadOnly');
+    const toggle = document.getElementById('maintenanceToggle');
+    const s = maintenance.state;
+    const mayToggle = can(CAPABILITIES.MAINTENANCE_WRITE);
+
+    if (!s) {
+        statusEl.textContent = 'Holatni o‘qib bo‘lmadi.';
+        statusEl.className = 'table-meta';
+        if (facts) facts.hidden = true;
+        if (controls) controls.hidden = !mayToggle;
+        if (readOnly) readOnly.hidden = mayToggle;
+        return;
+    }
+
+    statusEl.textContent = s.active
+        ? 'Texnik rejim YOQILGAN — oddiy foydalanuvchilar platformadan foydalana olmaydi.'
+        : 'Texnik rejim o‘chirilgan — platforma normal ishlayapti.';
+    statusEl.className = 'table-meta ' + (s.active ? 'is-on' : 'is-off');
+
+    if (facts) {
+        facts.hidden = !s.active;
+        if (s.active) {
+            const started = s.startedAt ? new Date(s.startedAt) : null;
+            document.getElementById('maintStartedAt').textContent =
+                started ? started.toLocaleString('ru-RU') : '—';
+            document.getElementById('maintDuration').textContent =
+                formatMaintenanceDuration(s.currentMs);
+            document.getElementById('maintBy').textContent =
+                (s.updatedBy && s.updatedBy.uid) ? s.updatedBy.uid : '—';
+        }
+    }
+
+    if (controls) controls.hidden = !mayToggle;
+    if (readOnly) readOnly.hidden = mayToggle;
+
+    if (toggle && mayToggle) {
+        toggle.textContent = s.active ? 'Texnik rejimni o‘chirish' : 'Texnik rejimni yoqish';
+        toggle.classList.toggle('is-on', s.active);
+        toggle.disabled = maintenance.busy;
+    }
+}
+
+async function loadMaintenance() {
+    try {
+        const result = await callApi('/api/maintenance?action=status', 'GET');
+        maintenance.state = normalizeMaintenance(result && result.maintenance);
+    } catch (error) {
+        maintenance.state = null;
+    }
+    renderMaintenance();
+}
+
+async function setMaintenanceMode(active) {
+    if (maintenance.busy) return;
+    const reasonEl = document.getElementById('maintenanceReason');
+    const reason = reasonEl ? reasonEl.value : '';
+
+    const question = active
+        ? 'Texnik rejimni YOQASIZMI? Oddiy foydalanuvchilar platformadan foydalana olmaydi.'
+        : 'Texnik rejimni O‘CHIRASIZMI? Platforma hamma uchun ochiladi.';
+    if (!window.confirm(question)) return;
+
+    maintenance.busy = true;
+    const toggle = document.getElementById('maintenanceToggle');
+    if (toggle) { toggle.disabled = true; toggle.textContent = 'Bajarilmoqda…'; }
+
+    try {
+        const result = await callApi('/api/maintenance?action=set', 'POST', { active, reason });
+        maintenance.state = normalizeMaintenance(result && result.maintenance);
+        showToast(active ? 'Texnik rejim yoqildi' : 'Texnik rejim o‘chirildi', 'success');
+    } catch (error) {
+        showToast(error?.message || 'Holatni o‘zgartirib bo‘lmadi', 'error');
+        await loadMaintenance();
+    } finally {
+        maintenance.busy = false;
+        renderMaintenance();
+    }
+}
+
+function previewMaintenanceScreen() {
+    const reasonEl = document.getElementById('maintenanceReason');
+    const url = 'maintenance-preview.html'
+        + (reasonEl && reasonEl.value ? ('?reason=' + encodeURIComponent(reasonEl.value)) : '');
+    window.open(url, '_blank', 'noopener');
+}
+
+function initMaintenance() {
+    const toggle = document.getElementById('maintenanceToggle');
+    if (toggle) {
+        toggle.addEventListener('click', () => {
+            setMaintenanceMode(!(maintenance.state && maintenance.state.active));
+        });
+    }
+    const preview = document.getElementById('maintenancePreview');
+    if (preview) preview.addEventListener('click', previewMaintenanceScreen);
+
+    loadMaintenance();
+
+    /* NO TIMER. The panel is deliberately poll-free — a rule the session suite
+       enforces — and a maintenance switch does not need one: the state is
+       re-read whenever this tab comes back to the front, which is exactly when
+       a second tab's change could have gone unnoticed. */
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) loadMaintenance();
+    });
+    window.addEventListener('focus', () => loadMaintenance());
+}
+
 initModal();
 initTabs();
 initCreateCustomer();
@@ -2237,6 +2375,7 @@ initCreateStaff();
 initRowActions();
 initActions();
 initCertificates();
+initMaintenance();
 // NOTE: initGate() is intentionally NOT called here either — see the note at
 // the very bottom of the file. Its auth callback reaches REALTIME_STATE and
 // globalState, which are `const` declarations further down; if Firebase were
