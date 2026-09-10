@@ -10,14 +10,9 @@ function sanitize(value) {
     return String(value).replace(/[*_`\[\]]/g, '').trim();
 }
 
-function getTariffPrice(tariff) {
-    switch (tariff) {
-        case 'START': return '780,000 so\'m';
-        case 'TURBO': return '1,300,000 so\'m';
-        case 'PREMIUM': return '1,900,000 so\'m';
-        default: return 'Noma\'lum';
-    }
-}
+/* One plan, one price. */
+const TARIFF = 'PREMIUM';
+const TARIFF_PRICE = '1,900,000 so\'m';
 
 /**
  * POST /api/send-payment
@@ -55,10 +50,13 @@ export default async function handler(req, res) {
     const phone = sanitize(body.phone || '');
     const email = sanitize(body.email || '');
     const telegram = sanitize(body.telegram || '');
-    const tariff = sanitize(body.tariff || '');
+    /* The plan is not the caller's to choose. Whatever the form posts —
+       an old name, a made-up one, nothing at all — this request is for
+       the one plan the platform sells. */
+    const tariff = TARIFF;
     const course = sanitize(body.course || '');
 
-    if (!name || !phone || !email || !telegram || !tariff || !course) {
+    if (!name || !phone || !email || !telegram || !course) {
         return sendJson(res, 400, { success: false, message: 'Barcha maydonlar majburiy' });
     }
 
@@ -70,7 +68,7 @@ export default async function handler(req, res) {
         `👑 *Tarif:* ${tariff}\n` +
         `🎓 *Kurs:* ${course}\n\n` +
         `⏰ *Vaqt:* ${new Date().toLocaleString('uz-UZ')}\n` +
-        `💰 *To'lov summasi:* ${getTariffPrice(tariff)}\n` +
+        `💰 *To'lov summasi:* ${TARIFF_PRICE}\n` +
         `🆔 *ID:* ${Date.now()}`;
 
     try {

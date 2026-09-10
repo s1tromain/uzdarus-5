@@ -9,7 +9,7 @@ import {
     safeError
 } from '../_lib/request.js';
 import { CAPABILITIES, normalizeRole } from '../_lib/roles.js';
-import { normalizeUserDocument, toDate } from '../_lib/user-helpers.js';
+import { normalizeUserDocument, toDate, canonicalTariffForWrite } from '../_lib/user-helpers.js';
 import { syncPulse } from '../_lib/analytics-store.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -96,7 +96,9 @@ export default async function handler(req, res) {
             const nextSubscription = {
                 ...(target.subscription || {}),
                 active,
-                tariff: target.subscription?.tariff || 'START',
+                /* adding or removing days does not change which plan this is;
+                   an account that had none gets the only one there is */
+                tariff: canonicalTariffForWrite(active),
                 endAt: nextEndAt,
                 updatedAt: FieldValue.serverTimestamp()
             };

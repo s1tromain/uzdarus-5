@@ -285,8 +285,10 @@ function buildProfileMeta(profile, role, privilegedRole) {
         return `@${profile.username || ''} • moderator • Admin panel ruxsati`;
     }
 
-    /* The stored value is never shown raw: `START` means the plan the site
-       now calls STANDART, and `STARTER` is the one it calls START. */
+    /* The platform sells one paid plan. getTariffDisplayName turns every stored
+       value that ever meant "paid" — STARTER, START, TURBO and older names
+       still sitting in documents — into PREMIUM, so nobody sees a plan that no
+       longer exists while the storage migration catches up. */
     const tariffLabel = getTariffDisplayName(profile.subscription?.tariff, 'Tarif yo‘q');
     return `@${profile.username || ''} • ${profile.role || 'customer'} • ${tariffLabel} (${formatDate(profile.subscription?.endAt)} gacha)`;
 }

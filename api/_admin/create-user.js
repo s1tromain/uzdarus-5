@@ -77,7 +77,7 @@ export default async function handler(req, res) {
         const subscription = isCustomer
             ? buildSubscription({
                   active: Boolean(body.subscriptionActive ?? true),
-                  tariff: body.tariff || 'START',
+                  /* the one paid plan; buildSubscription enforces it */
                   durationDays: body.subscriptionDays,
                   endAt: body.subscriptionEndAt
               })

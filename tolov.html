@@ -13,6 +13,20 @@
     <link rel="apple-touch-icon" href="./images/shared/logo.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* The plan is stated, not chosen: same shape as the inputs beside it,
+           visibly not something to type into. */
+        .tariff-fixed {
+            font-weight: 700;
+            letter-spacing: .04em;
+            background: #F5F7FB;
+            cursor: default;
+        }
+        .tariff-note {
+            margin: 6px 0 0;
+            font-size: .92rem;
+            color: #5A6178;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -662,15 +676,16 @@
 
                     <!-- Tariff and Course Selection -->
                     <div class="form-row">
+                        <!-- ONE PLAN, SO THERE IS NOTHING TO CHOOSE. The field
+                             stays in the form — the request and the Telegram
+                             message both carry it — but it states the plan
+                             instead of asking for it, and the server stores
+                             PREMIUM whatever arrives. -->
                         <div class="form-group">
-                            <label for="tariff"><i class="fas fa-crown"></i> Tarif *</label>
-                            <select id="tariff" name="tariff" required>
-                                <option value="">Tarifni tanlang</option>
-                                <option value="START">START - 780,000 so'm/oy</option>
-                                <option value="TURBO">TURBO - 1,300,000 so'm/oy</option>
-                                <option value="PREMIUM">PREMIUM - 1,900,000 so'm/oy</option>
-                            </select>
-                            <div class="error-message">Iltimos, tarifni tanlang</div>
+                            <label for="tariff"><i class="fas fa-crown"></i> Tarif</label>
+                            <input type="text" id="tariff" name="tariff" value="PREMIUM" readonly
+                                   aria-readonly="true" class="tariff-fixed">
+                            <p class="tariff-note">PREMIUM — 1 900 000 so'm/oy</p>
                         </div>
 
                         <div class="form-group">
@@ -679,7 +694,6 @@
                                 <option value="">Kursni tanlang</option>
                                 <option value="A1-A2">A1-A2 (Boshlang'ich)</option>
                                 <option value="B1-B2">B1-B2 (O'rta)</option>
-                                <option value="C1" id="c1-option" disabled>C1 (Yuqori) - Faqat PREMIUM</option>
                             </select>
                             <div class="error-message">Iltimos, kursni tanlang</div>
                         </div>
@@ -774,9 +788,7 @@
         const countdown = document.getElementById('countdown');
         const expiredMessage = document.getElementById('expiredMessage');
         const redirectMessage = document.getElementById('redirectMessage');
-        const tariffSelect = document.getElementById('tariff');
         const courseSelect = document.getElementById('course');
-        const c1Option = document.getElementById('c1-option');
         const screenshotInput = document.getElementById('screenshot');
         const fileName = document.getElementById('fileName');
         const previewImage = document.getElementById('previewImage');
@@ -828,33 +840,6 @@
 
         // Start timer when page loads
         startTimer();
-
-        // Tariff selection logic
-        tariffSelect.addEventListener('change', function () {
-            const selectedTariff = this.value;
-
-            // Reset course selection
-            courseSelect.value = '';
-            c1Option.disabled = true;
-
-            // Enable C1 option only for PREMIUM
-            if (selectedTariff === 'PREMIUM') {
-                c1Option.disabled = false;
-            }
-
-            // Update course options based on tariff
-            Array.from(courseSelect.options).forEach(option => {
-                if (option.value === 'C1') return;
-
-                if (selectedTariff === 'PREMIUM') {
-                    option.disabled = true;
-                } else {
-                    option.disabled = false;
-                }
-            });
-
-            validateForm();
-        });
 
         // File upload handling
         screenshotInput.addEventListener('change', function (e) {
@@ -935,7 +920,6 @@
             updateValidationState('phone', phone && isPhoneValid);
             updateValidationState('email', email && isEmailValid);
             updateValidationState('telegram', telegram && isTelegramValid);
-            updateValidationState('tariff', tariff);
             updateValidationState('course', course);
 
             // Show file error if no file selected
@@ -1034,14 +1018,9 @@
             }
         }
 
-        // Get tariff price
-        function getTariffPrice(tariff) {
-            switch (tariff) {
-                case 'START': return '780,000 so\'m';
-                case 'TURBO': return '1,300,000 so\'m';
-                case 'PREMIUM': return '1,900,000 so\'m';
-                default: return 'Noma\'lum';
-            }
+        // One plan, one price.
+        function getTariffPrice() {
+            return '1,900,000 so\'m';
         }
 
         // Form submission handler
@@ -1081,13 +1060,6 @@
                         successAlert.style.display = 'none';
                         validateForm();
 
-                        // Reset course options
-                        Array.from(courseSelect.options).forEach(option => {
-                            if (option.value !== 'C1') {
-                                option.disabled = false;
-                            }
-                        });
-                        c1Option.disabled = true;
                     }, 3000);
 
                 } else {

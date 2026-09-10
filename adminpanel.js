@@ -13,18 +13,11 @@ import { isAccountFrozen, getFreezeState } from './account-freeze.js';
 import { normalizeState as normalizeMaintenance } from './maintenance-state.js';
 import { getTariffDisplayName } from './tariff-display.js';
 
-/* The tariff dropdown, in the order the site sells the plans.
-   `value` is what a subscription document STORES; `label` is what the site
-   calls it. The two differ on purpose: the 980 000 plan has been stored as
-   START since launch and is now sold as STANDART, so the new 560 000 plan
-   took a fresh value, STARTER. Writing the label into the database instead
-   would repoint every historical subscription. */
-const TARIFF_OPTIONS = [
-    { value: 'STARTER', label: 'START' },
-    { value: 'START', label: 'STANDART' },
-    { value: 'TURBO', label: 'TURBO' },
-    { value: 'PREMIUM', label: 'PREMIUM' }
-];
+/* THERE IS NOTHING TO CHOOSE. The platform sells one paid plan, so the
+   subscription dialog no longer offers a tariff and the create-user form no
+   longer asks for one. The server stores PREMIUM for every active subscription
+   whatever a request carries, which is what makes this a simplification of the
+   interface rather than a hole in it. */
 import {
     CAPABILITIES,
     normalizeRole as normalizeRoleShared,
@@ -1429,7 +1422,7 @@ function initCreateCustomer() {
             displayName: String(data.get('displayName') || '').trim(),
             temporaryPassword: String(data.get('temporaryPassword') || ''),
             role: 'customer',
-            tariff: String(data.get('tariff') || 'START'),
+
             subscriptionDays: Number(data.get('subscriptionDays') || 30),
             subscriptionActive: true,
             accessPacks: collectPacks(form)
@@ -1546,7 +1539,7 @@ function remainingDays(endAt) {
 /**
  * Edit an EXISTING subscription.
  *
- * The dialog used to open on fixed defaults — active, 30 days, tariff START,
+ * The dialog used to open on fixed defaults — active, 30 days,
  * pack A1A2 — regardless of the account in front of the admin. Opening a
  * PREMIUM subscriber's settings to glance at the dates and pressing Saqlash
  * moved them to the 980 000 plan, reset their expiry to a month from now and
@@ -1575,23 +1568,10 @@ async function subscriptionFlow(userId, button) {
 
     const subscription = target.subscription || {};
     const originalActive = Boolean(subscription.active);
-    const originalTariff = String(subscription.tariff || '').trim().toUpperCase();
     const originalEndAt = toJsDate(subscription.endAt);
     const originalPacks = Array.isArray(target.accessPacks) ? target.accessPacks.slice() : [];
     const packKey = (list) => list.map(String).sort().join(',');
     const originalPackKey = packKey(originalPacks);
-
-    /* A tariff this dialog cannot represent — a DEVELOPER account, a one-off
-       plan — must still round-trip. It is offered as its own option, selected,
-       rather than being quietly rewritten to whatever sits first in the list. */
-    const known = TARIFF_OPTIONS.some((opt) => opt.value === originalTariff);
-    const tariffOptions = (originalTariff && !known)
-        ? TARIFF_OPTIONS.concat([{
-            value: originalTariff,
-            label: `${getTariffDisplayName(originalTariff, originalTariff)} (joriy)`
-        }])
-        : TARIFF_OPTIONS;
-    const initialTariff = originalTariff || '';
 
     /* Whole days left, shown for orientation. `null` when there is no usable
        expiry — an inactive or never-issued subscription — and the field then
@@ -1621,13 +1601,6 @@ async function subscriptionFlow(userId, button) {
                 min: 1
             },
             {
-                name: 'tariff',
-                label: 'Tarif',
-                type: 'select',
-                value: initialTariff,
-                options: tariffOptions
-            },
-            {
                 name: 'packs',
                 label: 'Packlar',
                 type: 'checkbox-group',
@@ -1639,7 +1612,7 @@ async function subscriptionFlow(userId, button) {
         ],
         confirmLabel: 'Saqlash',
         /* When Holat is O‘chirilgan the endpoint takes only { userId, active:false }
-           — the tariff, term and packs in the dialog are discarded. Leaving them
+           — the term and packs in the dialog are discarded. Leaving them
            editable invites an admin to set a plan that is then thrown away, so
            they are locked while the subscription is off and unlock the moment it
            is switched back on. Disabled controls still report their values, so
@@ -1648,7 +1621,6 @@ async function subscriptionFlow(userId, button) {
             const activeSelect = form.querySelector('[name="active"]');
             const dependents = [
                 form.querySelector('[name="durationDays"]'),
-                form.querySelector('[name="tariff"]'),
                 ...form.querySelectorAll('input[name="packs"]')
             ].filter(Boolean);
             const sync = () => {
@@ -1667,7 +1639,6 @@ async function subscriptionFlow(userId, button) {
     }
 
     const active = values.active === 'true';
-    const tariff = String(values.tariff || originalTariff || '').toUpperCase();
     const packs = Array.isArray(values.packs) ? values.packs : [];
     const rawDuration = String(values.durationDays || '').trim();
     const durationTouched = rawDuration !== initialDuration;
@@ -1676,7 +1647,6 @@ async function subscriptionFlow(userId, button) {
        hand a fresh chance to every rounding bug above, so the safest write is
        the one that does not happen. */
     if (active === originalActive
-        && tariff === originalTariff
         && packKey(packs) === originalPackKey
         && !durationTouched) {
         showSuccess('O‘zgarish kiritilmadi.');
@@ -1723,7 +1693,6 @@ async function subscriptionFlow(userId, button) {
         const payload = Object.assign({
             userId,
             active: true,
-            tariff,
             accessPacks: packs
         }, termPayload);
 

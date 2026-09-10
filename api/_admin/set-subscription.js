@@ -50,9 +50,13 @@ export default async function handler(req, res) {
             throw Object.assign(new Error('Subscription can only be changed for customers'), { statusCode: 400 });
         }
 
+        /* The plan is not the caller's to choose. buildSubscription stores
+           PREMIUM for any active subscription whatever it is handed, so an
+           admin form without a tariff field and a hand-made request carrying
+           "TURBO" both end at the same stored value. The term, the days and
+           the packs are still exactly what the request asked for. */
         const subscription = buildSubscription({
             active: Boolean(body.active),
-            tariff: body.tariff || targetData?.subscription?.tariff || 'START',
             durationDays: body.durationDays,
             endAt: body.endAt
         });
