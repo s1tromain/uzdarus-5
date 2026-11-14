@@ -1243,6 +1243,12 @@
             resize: vertical;
         }
 
+        /* On a 320–425px phone a long placeholder is wider than its field:
+           end it with "…" instead of cutting through a letter. */
+        .input-icon-group input {
+            text-overflow: ellipsis;
+        }
+
         .input-icon-group input:focus,
         .input-icon-group textarea:focus {
             outline: none;
@@ -1736,6 +1742,11 @@
                         <i class="fas fa-envelope"></i>
                         <input type="email" placeholder="Email manzilingiz" id="email" autocomplete="email">
                     </div>
+                    <div class="input-icon-group">
+                        <i class="fab fa-telegram"></i>
+                        <input type="text" placeholder="Telegram username (@username)" id="telegram"
+                            autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+                    </div>
                     <div class="input-icon-group textarea">
                         <i class="fas fa-comment-dots"></i>
                         <textarea placeholder="Xabaringiz" id="message"></textarea>
@@ -1901,12 +1912,12 @@
         }
 
         // БЕЗОПАСНАЯ отправка сообщения через API (токены на сервере!)
-        async function sendToTelegram(name, phone, email, message) {
+        async function sendToTelegram(name, phone, email, telegram, message) {
             try {
                 const response = await fetch('/api/send-contact', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, phone, email, message })
+                    body: JSON.stringify({ name, phone, email, telegram, message })
                 });
 
                 const result = await response.json().catch(() => ({ success: false }));
@@ -1929,11 +1940,34 @@
 
         const UZ_PHONE_RE = /^\+998\d{9}$/;
 
+        // Telegram username is optional. "username" and "@username" are the
+        // same username and are always sent as "@username" ('' when empty).
+        // api/send-contact.js applies the same rule on the server.
+        function normalizeTelegramUsername(value) {
+            const raw = String(value || '').trim();
+            return raw ? '@' + raw.replace(/^@/, '') : '';
+        }
+
+        // Rule: 5–32 characters — Latin letters, digits and "_".
+        // Returns the error to show, or '' when the value is acceptable.
+        function telegramUsernameError(telegram) {
+            if (!telegram) return '';
+            const username = telegram.slice(1);
+            if (!/^[A-Za-z0-9_]*$/.test(username)) {
+                return 'Telegram username faqat lotin harflari, raqamlar va pastki chiziqdan (_) iborat bo\'lishi kerak. Masalan: @username';
+            }
+            if (username.length < 5 || username.length > 32) {
+                return 'Telegram username 5 tadan 32 tagacha belgidan iborat bo\'lishi kerak. Masalan: @username';
+            }
+            return '';
+        }
+
         // Обработчик формы обратной связи
         document.getElementById('contactSubmit').addEventListener('click', async function () {
             const name = document.getElementById('name').value.trim();
             const phone = normalizeUzPhone(document.getElementById('phone').value);
             const email = document.getElementById('email').value.trim();
+            const telegram = normalizeTelegramUsername(document.getElementById('telegram').value);
             const message = document.getElementById('message').value.trim();
 
             if (!name || !phone || !email || !message) {
@@ -1952,18 +1986,25 @@
                 return;
             }
 
+            const telegramError = telegramUsernameError(telegram);
+            if (telegramError) {
+                showContactMessage(telegramError, 'error');
+                return;
+            }
+
             const originalText = this.innerHTML;
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yuborilmoqda...';
             this.disabled = true;
 
             try {
-                const sent = await sendToTelegram(name, phone, email, message);
+                const sent = await sendToTelegram(name, phone, email, telegram, message);
 
                 if (sent) {
                     showContactMessage('Xabaringiz yuborildi. Tez orada siz bilan bog\'lanamiz.', 'success');
                     document.getElementById('name').value = '';
                     document.getElementById('phone').value = '';
                     document.getElementById('email').value = '';
+                    document.getElementById('telegram').value = '';
                     document.getElementById('message').value = '';
                 } else {
                     showContactMessage('Xabar yuborilmadi. Qayta urinib ko\'ring.', 'error');

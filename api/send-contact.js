@@ -6,6 +6,8 @@ const limiter = rateLimit({ max: 5, windowSec: 60, prefix: 'send-contact' });
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const UZ_PHONE_RE = /^\+998\d{9}$/;
+/* 5–32 characters: Latin letters, digits and "_" (checked without the "@"). */
+const TELEGRAM_USERNAME_RE = /^[A-Za-z0-9_]{5,32}$/;
 
 /* Normalize an Uzbekistan phone number: strip spaces/dashes/brackets and
  * prefix the country code with "+" when the user omitted it. */
@@ -15,6 +17,14 @@ function normalizeUzPhone(value) {
         phone = '+' + phone;
     }
     return phone;
+}
+
+/* The Telegram username is optional. "username" and "@username" are the same
+ * username and are normalized to "@username"; an empty field stays ''.
+ * index.html applies the same rule before sending. */
+function normalizeTelegramUsername(value) {
+    const raw = String(value || '').trim();
+    return raw ? '@' + raw.replace(/^@/, '') : '';
 }
 
 /* Telegram parse_mode=HTML only requires &, <, > to be escaped in text nodes.
@@ -69,6 +79,7 @@ export default async function handler(req, res) {
     const phoneNormalized = normalizeUzPhone(body.phone || '');
     const phone = escapeHtml(phoneNormalized);
     const email = escapeHtml(body.email || '');
+    const telegram = normalizeTelegramUsername(body.telegram || '');
     const message = escapeHtml(body.message || '');
 
     if (!name || !phone || !email || !message) {
@@ -83,6 +94,10 @@ export default async function handler(req, res) {
         return sendJson(res, 400, { success: false, error: 'Email manzili noto‘g‘ri' });
     }
 
+    if (telegram && !TELEGRAM_USERNAME_RE.test(telegram.slice(1))) {
+        return sendJson(res, 400, { success: false, error: 'Telegram username noto‘g‘ri' });
+    }
+
     const date = new Date().toLocaleString('uz-UZ', { timeZone: 'Asia/Tashkent' });
 
     const text =
@@ -90,6 +105,7 @@ export default async function handler(req, res) {
         `👤 <b>Ism:</b> ${name}\n` +
         `📞 <b>Telefon:</b> ${phone}\n` +
         `📧 <b>Email:</b> ${email}\n` +
+        `✈️ <b>Telegram:</b> ${telegram ? escapeHtml(telegram) : 'ko‘rsatilmagan'}\n` +
         `📝 <b>Xabar:</b> ${message}\n\n` +
         `🕐 <b>Sana:</b> ${escapeHtml(date)}`;
 
