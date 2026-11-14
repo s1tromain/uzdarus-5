@@ -3,7 +3,7 @@
  * verify_contact_telegram.cjs — reaching UzdaRus through Telegram from the
  * home page: the «Qayta aloqa» form carries an optional Telegram username all
  * the way to the admins' chat, and the Telegram CTA right before that section
- * holds together from 320px up and opens https://t.me/ruschasiga in a new tab.
+ * holds together from 320px up and opens https://t.me/ruscasiga in a new tab.
  *
  * The form is checked on three layers, separately, because each can be right
  * while another is wrong:
@@ -250,12 +250,12 @@ const LOOK = `
     width: window.innerWidth });`;
 
 /* The Telegram CTA before «Qayta aloqa»: its words, its link, its layout. */
-const CTA_URL = 'https://t.me/ruschasiga';
+const CTA_URL = 'https://t.me/ruscasiga';
 const CTA_TEXT = {
     badge: 'Tezkor aloqa',
     title: "UzdaRus Pro'ga ulanishni xohlaysizmi?",
     desc: "UzdaRus Pro'dan foydalanish yoki qo'shimcha ma'lumot olish uchun biz bilan Telegram orqali bog'laning.",
-    username: 'Telegram: @ruschasiga',
+    username: 'Telegram: @ruscasiga',
     button: 'Telegramda yozish'
 };
 const CTA = `
@@ -406,7 +406,7 @@ try {
         await browser.send('Target.setAutoAttach', { autoAttach: false, waitForDebuggerOnStart: false, flatten: true });
         offAttach();
         eq('clicking «Telegramda yozish» opens exactly one new tab', tabs.length, 1);
-        eq('and that tab goes to https://t.me/ruschasiga', requested[0], CTA_URL);
+        eq('and that tab goes to https://t.me/ruscasiga', requested[0], CTA_URL);
         eq('while the home page stays where it was', await p.evaluate('return location.pathname;'), '/index.html');
         for (const id of tabs) await browser.send('Target.closeTarget', { targetId: id }).catch(() => {});
     }
