@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 /**
- * verify_contact_telegram.cjs — the «Qayta aloqa» form carries an optional
- * Telegram username all the way to the admins' Telegram chat.
+ * verify_contact_telegram.cjs — reaching UzdaRus through Telegram from the
+ * home page: the «Qayta aloqa» form carries an optional Telegram username all
+ * the way to the admins' chat, and the Telegram CTA right before that section
+ * holds together from 320px up and opens https://t.me/ruschasiga in a new tab.
  *
- * Three layers, checked separately, because each can be right while another
- * is wrong:
+ * The form is checked on three layers, separately, because each can be right
+ * while another is wrong:
  *
  *   the SERVER   api/send-contact.js driven with forged requests — what it
  *                accepts, what it refuses, and the exact notification it
@@ -85,7 +87,7 @@ const CASES = [
     ['t.me/username', 'REFUSED'], ['<b>bold</b>', 'REFUSED']
 ];
 
-console.log('\n=== CONTACT FORM — Telegram username ===' + (FAST ? '  [FAST subset]' : ''));
+console.log('\n=== CONTACT VIA TELEGRAM — form field + CTA ===' + (FAST ? '  [FAST subset]' : ''));
 
 (async () => {
 const { default: handler } = await import(pathToFileURL(path.join(ROOT, 'api/send-contact.js')).href);
@@ -247,6 +249,55 @@ const LOOK = `
     sideways: Math.max(d.scrollWidth, document.body.scrollWidth) > d.clientWidth,
     width: window.innerWidth });`;
 
+/* The Telegram CTA before «Qayta aloqa»: its words, its link, its layout. */
+const CTA_URL = 'https://t.me/ruschasiga';
+const CTA_TEXT = {
+    badge: 'Tezkor aloqa',
+    title: "UzdaRus Pro'ga ulanishni xohlaysizmi?",
+    desc: "UzdaRus Pro'dan foydalanish yoki qo'shimcha ma'lumot olish uchun biz bilan Telegram orqali bog'laning.",
+    username: 'Telegram: @ruschasiga',
+    button: 'Telegramda yozish'
+};
+const CTA = `
+  var q = function (s) { return document.querySelector(s); };
+  var cta = q('section.telegram-cta'), contact = q('section#contact');
+  if (!cta) return JSON.stringify({ missing: true });
+  var card = q('.telegram-cta-card'), btn = q('.telegram-cta-btn'), title = q('.telegram-cta-title');
+  btn.scrollIntoView({ block: 'center', behavior: 'instant' });
+  var R = function (el) { return el.getBoundingClientRect(); };
+  var c = R(card), b = R(btn), parts = [q('.telegram-cta-icon'), q('.telegram-cta-text'), btn].map(R);
+  function hit(a, z) { return a.left < z.right - 0.5 && z.left < a.right - 0.5 && a.top < z.bottom - 0.5 && z.top < a.bottom - 0.5; }
+  function lines(el) {   /* line boxes of the element's own words, icons left out */
+    var tops = {};
+    Array.prototype.forEach.call(el.childNodes, function (n) {
+      if (n.nodeType !== 3 || !n.textContent.trim()) return;
+      var r = document.createRange(); r.selectNodeContents(n);
+      Array.prototype.forEach.call(r.getClientRects(), function (x) { if (x.width > 1) tops[Math.round(x.top)] = 1; });
+    });
+    return Object.keys(tops).length;
+  }
+  var ccs = getComputedStyle(card), bcs = getComputedStyle(btn), bx = (b.left + b.right) / 2, by = (b.top + b.bottom) / 2;
+  var under = document.elementFromPoint(bx, by), d = document.documentElement;
+  return JSON.stringify({
+    beforeContact: cta.nextElementSibling === contact, above: R(cta).bottom <= R(contact).top + 0.5,
+    badge: q('.telegram-cta-badge').textContent.trim(), title: title.textContent.trim(),
+    desc: q('.telegram-cta-desc').textContent.trim(),
+    username: q('.telegram-cta-username').textContent.replace(/\\s+/g, ' ').trim(), button: btn.textContent.trim(),
+    href: btn.getAttribute('href'), target: btn.getAttribute('target'),
+    rel: (btn.getAttribute('rel') || '').split(/\\s+/).sort().join(' '),
+    inView: c.left >= 0 && c.right <= innerWidth,
+    btnInCard: b.left >= c.left && b.right <= c.right && b.top >= c.top && b.bottom <= c.bottom,
+    btnLines: lines(btn), clipped: btn.scrollWidth > btn.clientWidth || title.scrollWidth > title.clientWidth,
+    overlaps: [hit(parts[0], parts[1]), hit(parts[1], parts[2]), hit(parts[0], parts[2])].filter(Boolean).length,
+    descWidth: Math.round(R(q('.telegram-cta-desc')).width),
+    tappable: !!under && (under === btn || btn.contains(under)),
+    btnColor: bcs.color, btnBg: bcs.backgroundImage,
+    btnWidth: b.width, cardInner: card.clientWidth - parseFloat(ccs.paddingLeft) - parseFloat(ccs.paddingRight),
+    centered: Math.abs((c.left + c.right) / 2 - bx) <= 1,
+    sideBySide: parts[0].right <= parts[1].left && parts[1].right <= parts[2].left,
+    stacked: parts[0].bottom <= parts[1].top + 0.5 && parts[1].bottom <= parts[2].top + 0.5,
+    sideways: Math.max(d.scrollWidth, document.body.scrollWidth) > d.clientWidth });`;
+
 let glyphChecked = false;
 try {
     const p = await browser.newPage();
@@ -297,8 +348,68 @@ try {
         eq(`${N}: focused ring same as Email`, ft.shadow, fe.shadow);
         eq(`${N}: focused background same as Email`, ft.bg, fe.bg);
         ok(ft.border !== s.tg.border.split(' ').slice(2, 5).join(' '), `${N}: focus visibly changes the border`);
+
+        /* ---- the Telegram CTA right before «Qayta aloqa» ---- */
+        const t = JSON.parse(await p.evaluate(CTA));
+        if (t.missing) { ok(false, `${N}: the Telegram CTA exists`); continue; }
+        ok(t.beforeContact && t.above, `${N}: the CTA sits right before «Qayta aloqa»`);
+        for (const k of Object.keys(CTA_TEXT)) eq(`${N}: CTA ${k}`, t[k], CTA_TEXT[k]);
+        eq(`${N}: the CTA button goes to Telegram`, t.href, CTA_URL);
+        eq(`${N}: in a new tab`, t.target, '_blank');
+        eq(`${N}: without handing the page to it`, t.rel, 'noopener noreferrer');
+        ok(t.inView && t.btnInCard, `${N}: the card stays on screen and the button inside it`);
+        eq(`${N}: the button label is one line`, t.btnLines, 1);
+        eq(`${N}: no CTA text is cut off`, t.clipped, false);
+        eq(`${N}: icon, text and button do not overlap`, t.overlaps, 0);
+        ok(t.descWidth <= 600, `${N}: the description keeps a readable line length (${t.descWidth}px)`);
+        ok(t.tappable, `${N}: nothing covers the button`);
+        eq(`${N}: white label`, t.btnColor, 'rgb(255, 255, 255)');
+        ok(/rgb\(255, 152, 0\)/.test(t.btnBg) && /rgb\(245, 124, 0\)/.test(t.btnBg),
+            `${N}: on the site's orange gradient`);
+        if (w > 860) ok(t.sideBySide, `${N}: icon, text and button side by side`);
+        else ok(t.stacked && t.centered, `${N}: stacked, with the button centered`);
+        if (w <= 480) ok(Math.abs(t.btnWidth - Math.min(t.cardInner, 360)) <= 1,
+            `${N}: the button spans the card (${Math.round(t.btnWidth)} of ${Math.round(t.cardInner)}px)`);
+        eq(`${N}: no horizontal scroll with the CTA in view`, t.sideways, false);
     }
     if (!glyphChecked) console.log('  ⚠ Font Awesome did not load (offline?) — glyph rendering not checked');
+
+    /* The CTA button, clicked for real. The new tab is held before it navigates
+       and its request aborted: this proves where it goes, not that t.me is up. */
+    {
+        await p.setDevice(1440, 900, false);
+        await p.goto(U('/index.html'), { waitMs: 1500 });
+        const tabs = [], requested = [];
+        const offAttach = browser.on('Target.attachedToTarget', null, (e) => {
+            if (!e.waitingForDebugger) return;
+            const sid = e.sessionId;
+            if (e.targetInfo.type !== 'page') {   /* a browser worker starting meanwhile: let it run */
+                browser.send('Runtime.runIfWaitingForDebugger', {}, sid).catch(() => {});
+                return;
+            }
+            tabs.push(e.targetInfo.targetId);
+            browser.on('Fetch.requestPaused', sid, (ev) => {
+                requested.push(ev.request.url);
+                browser.send('Fetch.failRequest', { requestId: ev.requestId, errorReason: 'Aborted' }, sid).catch(() => {});
+            });
+            browser.send('Fetch.enable', { patterns: [{ urlPattern: '*' }] }, sid)
+                .then(() => browser.send('Runtime.runIfWaitingForDebugger', {}, sid)).catch(() => {});
+        });
+        await browser.send('Target.setAutoAttach', { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
+        const at = JSON.parse(await p.evaluate(`var el = document.querySelector('.telegram-cta-btn');
+            el.scrollIntoView({ block: 'center', behavior: 'instant' });
+            var r = el.getBoundingClientRect(); return JSON.stringify({ x: r.left + r.width / 2, y: r.top + r.height / 2 });`));
+        for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) {
+            await p.send('Input.dispatchMouseEvent', { type, x: at.x, y: at.y, button: 'left', clickCount: 1 });
+        }
+        for (let i = 0; i < 50 && !requested.length; i++) await sleep(100);
+        await browser.send('Target.setAutoAttach', { autoAttach: false, waitForDebuggerOnStart: false, flatten: true });
+        offAttach();
+        eq('clicking «Telegramda yozish» opens exactly one new tab', tabs.length, 1);
+        eq('and that tab goes to https://t.me/ruschasiga', requested[0], CTA_URL);
+        eq('while the home page stays where it was', await p.evaluate('return location.pathname;'), '/index.html');
+        for (const id of tabs) await browser.send('Target.closeTarget', { targetId: id }).catch(() => {});
+    }
 
     /* ------------------------------ the chain, at a phone's width ---- */
     await p.setDevice(375, 812, true);
