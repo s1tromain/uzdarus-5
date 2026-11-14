@@ -20,7 +20,7 @@
     "build:canon": "node scripts/build_server_canon.cjs"
   },
   "engines": {
-    "node": "20.x"
+    "node": "26.x"
   },
   "dependencies": {
     "firebase-admin": "^12.6.0"
